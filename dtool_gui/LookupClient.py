@@ -54,6 +54,17 @@ class LookupClient:
             verify=False)
         return r.json()
 
+    def search(self, keyword):
+        """Free text search"""
+        r = requests.post(
+            f'{self.lookup_url}/dataset/search',
+            headers=self.header,
+            json={
+                     'free_text': keyword
+            },
+            verify=False)
+        return r.json()
+
     def readme(self, uri):
         r = requests.post(
             f'{self.lookup_url}/dataset/readme',
