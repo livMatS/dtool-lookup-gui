@@ -33,6 +33,20 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
 
 
+def fill_tree_store(store, data, parent=None):
+    for i, current_data in enumerate(data):
+        if len(data) != 1:
+            current_parent = store.append(parent, [f'{i+1}', None])
+        else:
+            current_parent = parent
+        for entry, value in current_data.items():
+            if type(value) is list:
+                current = store.append(current_parent, [entry, None])
+                fill_tree_store(store, value, parent=current)
+            else:
+                print(entry, value)
+                store.append(current_parent, [entry, str(value)])
+
 class SignalHandler:
     def __init__(self, builder):
         self.builder = builder
@@ -81,9 +95,7 @@ class SignalHandler:
         readme_view = self.builder.get_object('dataset-readme')
         store = readme_view.get_model()
         store.clear()
-        for entry, value in readme.items():
-            print(entry)
-            store.append([entry, value])
+        fill_tree_store(store, [readme])
         readme_view.show_all()
 
 def run_gui():
