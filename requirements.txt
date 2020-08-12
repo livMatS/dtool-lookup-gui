@@ -1,1 +1,3 @@
 PyGObject
+pyyaml
+requests

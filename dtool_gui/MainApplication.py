@@ -23,7 +23,7 @@
 #
 
 import os
-from datetime import datetime
+from datetime import date, datetime
 
 import gi
 
@@ -36,7 +36,7 @@ from gi.repository import Gtk
 class SignalHandler:
     def __init__(self, builder):
         self.builder = builder
-        self.username = 'user'
+        self.username = 'username'
         self.password = 'password'
         self.lookup = None
 
@@ -44,20 +44,20 @@ class SignalHandler:
         self.lookup = LookupClient(self.username, self.password)
         self.datasets = self.lookup.all()
         results_widget = self.builder.get_object('search-results')
-        for dataset in self.datasets:
+        for dataset in sorted(self.datasets, key=lambda d: -d['frozen_at']):
             row = Gtk.ListBoxRow()
             vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
             label = Gtk.Label(xalign=0)
-            label.set_markup(f'<b>{dataset["name"]}</b>')
+            label.set_markup(f'<b>{dataset["uuid"]}</b>')
             vbox.pack_start(label, True, True, 0)
             label = Gtk.Label(xalign=0)
-            label.set_markup(f'{dataset["uuid"]}')
+            label.set_markup(f'{dataset["name"]}')
             vbox.pack_start(label, True, True, 0)
             label = Gtk.Label(xalign=0)
             label.set_markup(
                 f'<small>Created by: {dataset["creator_username"]}, '
                 f'frozen at: '
-                f'{datetime.fromtimestamp(dataset["frozen_at"])}</small>')
+                f'{date.fromtimestamp(dataset["frozen_at"])}</small>')
             vbox.pack_start(label, True, True, 0)
             row.dataset = dataset
             row.add(vbox)
@@ -65,7 +65,6 @@ class SignalHandler:
         results_widget.show_all()
 
     def on_window_destroy(self, *args):
-        print('onDestroy')
         Gtk.main_quit()
 
     def on_result_selected(self, list_box, list_box_row):
@@ -74,7 +73,18 @@ class SignalHandler:
         self.builder.get_object('dataset-name').set_text(dataset['name'])
         self.builder.get_object('dataset-uuid').set_text(dataset['uuid'])
         self.builder.get_object('dataset-uri').set_text(dataset['uri'])
+        self.builder.get_object('dataset-created-by').set_text(dataset['creator_username'])
+        self.builder.get_object('dataset-created-at').set_text(f'{datetime.fromtimestamp(dataset["created_at"])}')
+        self.builder.get_object('dataset-frozen-at').set_text(f'{datetime.fromtimestamp(dataset["frozen_at"])}')
 
+        readme = self.lookup.readme(dataset['uri'])
+        readme_view = self.builder.get_object('dataset-readme')
+        store = readme_view.get_model()
+        store.clear()
+        for entry, value in readme.items():
+            print(entry)
+            store.append([entry, value])
+        readme_view.show_all()
 
 def run_gui():
     builder = Gtk.Builder()

@@ -23,7 +23,7 @@
 #
 
 import requests
-
+import yaml
 
 class LookupClient:
     def __init__(self, username, password,
@@ -36,9 +36,6 @@ class LookupClient:
     def _authenticate(self, username, password):
         r = requests.post(
             self.auth_url,
-            headers={
-                'content-type': 'application/json'
-            },
             json={
                 'username': username,
                 'password': password
@@ -56,3 +53,13 @@ class LookupClient:
             headers=self.header,
             verify=False)
         return r.json()
+
+    def readme(self, uri):
+        r = requests.post(
+            f'{self.lookup_url}/dataset/readme',
+            headers=self.header,
+            json={
+                'uri': uri
+            },
+            verify=False)
+        return yaml.load(r.text)
