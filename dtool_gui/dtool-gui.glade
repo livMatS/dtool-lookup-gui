@@ -400,16 +400,18 @@
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="title" translatable="yes">dtool-gui</property>
-        <property name="subtitle" translatable="yes">Find and inspect datasets</property>
+        <property name="subtitle" translatable="yes">Inspect and find datasets</property>
         <property name="show_close_button">True</property>
+        <property name="decoration_layout">menu:menu,close</property>
         <child>
-          <object class="GtkSearchEntry" id="search-keyword">
+          <object class="GtkSearchEntry">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
-            <property name="max_width_chars">40</property>
+            <property name="width_chars">30</property>
             <property name="primary_icon_name">edit-find-symbolic</property>
             <property name="primary_icon_activatable">False</property>
             <property name="primary_icon_sensitive">False</property>
+            <signal name="search-changed" handler="on_search" swapped="no"/>
           </object>
         </child>
       </object>

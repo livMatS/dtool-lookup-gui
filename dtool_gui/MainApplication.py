@@ -36,7 +36,7 @@ from gi.repository import Gtk
 def fill_tree_store(store, data, parent=None):
     for i, current_data in enumerate(data):
         if len(data) != 1:
-            current_parent = store.append(parent, [f'{i+1}', None])
+            current_parent = store.append(parent, [f'{i + 1}', None])
         else:
             current_parent = parent
         for entry, value in current_data.items():
@@ -44,8 +44,8 @@ def fill_tree_store(store, data, parent=None):
                 current = store.append(current_parent, [entry, None])
                 fill_tree_store(store, value, parent=current)
             else:
-                print(entry, value)
                 store.append(current_parent, [entry, str(value)])
+
 
 class SignalHandler:
     def __init__(self, builder):
@@ -54,9 +54,7 @@ class SignalHandler:
         self.password = 'password'
         self.lookup = None
 
-    def connect(self):
-        self.lookup = LookupClient(self.username, self.password)
-        self.datasets = self.lookup.all()
+    def _refresh_results(self):
         results_widget = self.builder.get_object('search-results')
         for dataset in sorted(self.datasets, key=lambda d: -d['frozen_at']):
             row = Gtk.ListBoxRow()
@@ -78,6 +76,11 @@ class SignalHandler:
             results_widget.add(row)
         results_widget.show_all()
 
+    def connect(self):
+        self.lookup = LookupClient(self.username, self.password)
+        self.datasets = self.lookup.all()
+        self._refresh_results()
+
     def on_window_destroy(self, *args):
         Gtk.main_quit()
 
@@ -87,9 +90,12 @@ class SignalHandler:
         self.builder.get_object('dataset-name').set_text(dataset['name'])
         self.builder.get_object('dataset-uuid').set_text(dataset['uuid'])
         self.builder.get_object('dataset-uri').set_text(dataset['uri'])
-        self.builder.get_object('dataset-created-by').set_text(dataset['creator_username'])
-        self.builder.get_object('dataset-created-at').set_text(f'{datetime.fromtimestamp(dataset["created_at"])}')
-        self.builder.get_object('dataset-frozen-at').set_text(f'{datetime.fromtimestamp(dataset["frozen_at"])}')
+        self.builder.get_object('dataset-created-by').set_text(
+            dataset['creator_username'])
+        self.builder.get_object('dataset-created-at').set_text(
+            f'{datetime.fromtimestamp(dataset["created_at"])}')
+        self.builder.get_object('dataset-frozen-at').set_text(
+            f'{datetime.fromtimestamp(dataset["frozen_at"])}')
 
         readme = self.lookup.readme(dataset['uri'])
         readme_view = self.builder.get_object('dataset-readme')
@@ -97,6 +103,12 @@ class SignalHandler:
         store.clear()
         fill_tree_store(store, [readme])
         readme_view.show_all()
+
+    def on_search(self, search_entry):
+        self.dataset = self.lookup.search(search_entry.get_text())
+        print(len(self.datasets))
+        #self._refresh_results()
+
 
 def run_gui():
     builder = Gtk.Builder()
