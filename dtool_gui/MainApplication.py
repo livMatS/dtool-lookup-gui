@@ -30,7 +30,7 @@ import gi
 from .LookupClient import LookupClient
 
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk
+from gi.repository import Gtk, Gio
 
 
 def fill_tree_store(store, data, parent=None):
@@ -47,11 +47,31 @@ def fill_tree_store(store, data, parent=None):
                 store.append(current_parent, [entry, str(value)])
 
 
+class Settings:
+    def __init__(self):
+        self.settings = Gio.Settings.new('de.uni-freiburg.dtool-gui')
+
+    @property
+    def lookup_url(self):
+        return self.settings.get_string('lookup-url')
+
+    @property
+    def authenticator_url(self):
+        return self.settings.get_string('authenticator-url')
+
+    @property
+    def username(self):
+        return self.settings.get_string('lookup-username')
+
+    @property
+    def password(self):
+        return self.settings.get_string('lookup-password')
+
+
 class SignalHandler:
-    def __init__(self, builder):
+    def __init__(self, builder, settings):
         self.builder = builder
-        self.username = 'username'
-        self.password = 'password'
+        self.settings = settings
         self.lookup = None
 
     def _refresh_results(self):
@@ -77,7 +97,10 @@ class SignalHandler:
         results_widget.show_all()
 
     def connect(self):
-        self.lookup = LookupClient(self.username, self.password)
+        self.lookup = LookupClient(self.settings.lookup_url,
+                                   self.settings.authenticator_url,
+                                   self.settings.username,
+                                   self.settings.password)
         self.datasets = self.lookup.all()
         self._refresh_results()
 
@@ -107,14 +130,14 @@ class SignalHandler:
     def on_search(self, search_entry):
         self.dataset = self.lookup.search(search_entry.get_text())
         print(len(self.datasets))
-        #self._refresh_results()
+        # self._refresh_results()
 
 
 def run_gui():
     builder = Gtk.Builder()
     builder.add_from_file(os.path.dirname(__file__) + '/dtool-gui.glade')
 
-    signal_handler = SignalHandler(builder)
+    signal_handler = SignalHandler(builder, Settings())
     signal_handler.connect()
     builder.connect_signals(signal_handler)
 

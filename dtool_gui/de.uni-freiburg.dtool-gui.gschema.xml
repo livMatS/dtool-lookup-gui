@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<schemalist>
+
+    <schema path="/de/uni-freiburg/dtool-gui/" id="de.uni-freiburg.dtool-gui">
+
+        <key name='lookup-url' type='s'>
+            <default>"https://lookup-url/"</default>
+            <summary>URL of dtool lookup server</summary>
+        </key>
+
+        <key name='authenticator-url' type='s'>
+            <default>"https://authenticator-url/"</default>
+            <summary>URL of authentication server</summary>
+        </key>
+
+        <key name='lookup-username' type='s'>
+            <default>"username"</default>
+            <summary>Username for dtool lookup server</summary>
+        </key>
+
+        <key name='lookup-password' type='s'>
+            <default>"password"</default>
+            <summary>Password for dtool lookup server</summary>
+        </key>
+
+    </schema>
+
+</schemalist>

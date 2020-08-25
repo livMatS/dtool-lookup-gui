@@ -25,10 +25,9 @@
 import requests
 import yaml
 
+
 class LookupClient:
-    def __init__(self, username, password,
-                 auth_url='https://simdata.vm.uni-freiburg.de:5001/token',
-                 lookup_url='https://simdata.vm.uni-freiburg.de:5000'):
+    def __init__(self, lookup_url, auth_url, username, password):
         self.auth_url = auth_url
         self.lookup_url = lookup_url
         self._authenticate(username, password)
@@ -60,7 +59,7 @@ class LookupClient:
             f'{self.lookup_url}/dataset/search',
             headers=self.header,
             json={
-                     'free_text': keyword
+                'free_text': keyword
             },
             verify=False)
         return r.json()
