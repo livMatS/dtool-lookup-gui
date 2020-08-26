@@ -91,6 +91,8 @@ class SignalHandler:
 
     def _refresh_results(self):
         results_widget = self.builder.get_object('search-results')
+        statusbar_widget = self.builder.get_object('main-statusbar')
+        statusbar_widget.push(0, f'{len(self.datasets)} datasets')
         for entry in results_widget:
             entry.destroy()
         #for dataset in sorted(self.datasets, key=lambda d: -d['frozen_at']):
