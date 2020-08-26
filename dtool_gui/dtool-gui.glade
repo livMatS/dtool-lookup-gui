@@ -411,15 +411,13 @@
       <object class="GtkHeaderBar">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
-        <property name="title" translatable="yes">dtool-gui</property>
-        <property name="subtitle" translatable="yes">Find and inspect datasets</property>
         <property name="show_close_button">True</property>
         <property name="decoration_layout">menu:menu,close</property>
-        <child>
+        <child type="title">
           <object class="GtkSearchEntry">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
-            <property name="width_chars">30</property>
+            <property name="width_chars">60</property>
             <property name="primary_icon_name">edit-find-symbolic</property>
             <property name="primary_icon_activatable">False</property>
             <property name="primary_icon_sensitive">False</property>
