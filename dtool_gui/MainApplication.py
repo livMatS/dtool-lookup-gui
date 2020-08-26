@@ -91,7 +91,10 @@ class SignalHandler:
 
     def _refresh_results(self):
         results_widget = self.builder.get_object('search-results')
-        for dataset in sorted(self.datasets, key=lambda d: -d['frozen_at']):
+        for entry in results_widget:
+            entry.destroy()
+        #for dataset in sorted(self.datasets, key=lambda d: -d['frozen_at']):
+        for dataset in self.datasets:
             row = Gtk.ListBoxRow()
             vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
             label = Gtk.Label(xalign=0)
@@ -101,10 +104,12 @@ class SignalHandler:
             label.set_markup(f'{dataset["name"]}')
             vbox.pack_start(label, True, True, 0)
             label = Gtk.Label(xalign=0)
+            #label.set_markup(
+            #    f'<small>Created by: {dataset["creator_username"]}, '
+            #    f'frozen at: '
+            #    f'{date.fromtimestamp(dataset["frozen_at"])}</small>')
             label.set_markup(
-                f'<small>Created by: {dataset["creator_username"]}, '
-                f'frozen at: '
-                f'{date.fromtimestamp(dataset["frozen_at"])}</small>')
+                f'<small>Created by: {dataset["creator_username"]}</small>')
             vbox.pack_start(label, True, True, 0)
             row.dataset = dataset
             row.add(vbox)
@@ -124,7 +129,6 @@ class SignalHandler:
         self.event_loop.stop()
 
     def on_result_selected(self, list_box, list_box_row):
-        print(list_box_row.dataset)
         dataset = list_box_row.dataset
         self.builder.get_object('dataset-name').set_text(dataset['name'])
         self.builder.get_object('dataset-uuid').set_text(dataset['uuid'])
@@ -149,8 +153,11 @@ class SignalHandler:
     def on_search(self, search_entry):
         async def fetch_search_result():
             keyword = search_entry.get_text()
-            self.dataset = await self.lookup.search(keyword)
-            print(keyword, len(self.datasets))
+            if keyword:
+                self.datasets = await self.lookup.search(keyword)
+            else:
+                self.datasets = await self.lookup.all()
+            self._refresh_results()
 
         if self._search_task is not None:
             self._search_task.cancel()
