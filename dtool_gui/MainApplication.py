@@ -27,10 +27,14 @@ from datetime import date, datetime
 
 import gi
 
-from .LookupClient import LookupClient
-
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gio
+
+import asyncio, gbulb
+
+gbulb.install(gtk=True)
+
+from .LookupClient import LookupClient
 
 
 def fill_tree_store(store, data, parent=None):
@@ -69,10 +73,13 @@ class Settings:
 
 
 class SignalHandler:
-    def __init__(self, builder, settings):
+    def __init__(self, event_loop, builder, settings):
+        self.event_loop = event_loop
         self.builder = builder
         self.settings = settings
         self.lookup = None
+
+        self._search_task = None
 
     def _refresh_results(self):
         results_widget = self.builder.get_object('search-results')
@@ -96,16 +103,20 @@ class SignalHandler:
             results_widget.add(row)
         results_widget.show_all()
 
-    def connect(self):
+    async def connect(self):
         self.lookup = LookupClient(self.settings.lookup_url,
                                    self.settings.authenticator_url,
                                    self.settings.username,
                                    self.settings.password)
-        self.datasets = self.lookup.all()
+        await self.lookup.connect()
+        self.datasets = await self.lookup.all()
         self._refresh_results()
 
+    def on_connect_clicked(self, *args):
+        self._connect_task = asyncio.create_task(self.connect())
+
     def on_window_destroy(self, *args):
-        Gtk.main_quit()
+        self.event_loop.stop()
 
     def on_result_selected(self, list_box, list_box_row):
         print(list_box_row.dataset)
@@ -120,28 +131,37 @@ class SignalHandler:
         self.builder.get_object('dataset-frozen-at').set_text(
             f'{datetime.fromtimestamp(dataset["frozen_at"])}')
 
-        readme = self.lookup.readme(dataset['uri'])
-        readme_view = self.builder.get_object('dataset-readme')
-        store = readme_view.get_model()
-        store.clear()
-        fill_tree_store(store, [readme])
-        readme_view.show_all()
+        async def fetch_readme():
+            readme = await self.lookup.readme(dataset['uri'])
+            readme_view = self.builder.get_object('dataset-readme')
+            store = readme_view.get_model()
+            store.clear()
+            fill_tree_store(store, [readme])
+            readme_view.show_all()
+
+        self._readme_task = asyncio.create_task(fetch_readme())
 
     def on_search(self, search_entry):
-        self.dataset = self.lookup.search(search_entry.get_text())
-        print(len(self.datasets))
-        # self._refresh_results()
+        async def fetch_search_result():
+            keyword = search_entry.get_text()
+            self.dataset = await self.lookup.search(keyword)
+            print(keyword, len(self.datasets))
+
+        if self._search_task is not None:
+            self._search_task.cancel()
+        self._search_task = asyncio.create_task(fetch_search_result())
 
 
 def run_gui():
     builder = Gtk.Builder()
     builder.add_from_file(os.path.dirname(__file__) + '/dtool-gui.glade')
 
-    signal_handler = SignalHandler(builder, Settings())
-    signal_handler.connect()
+    loop = asyncio.get_event_loop()
+
+    signal_handler = SignalHandler(loop, builder, Settings())
     builder.connect_signals(signal_handler)
 
     win = builder.get_object('main-window')
     win.show_all()
 
-    Gtk.main()
+    loop.run_forever()

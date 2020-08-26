@@ -22,54 +22,57 @@
 # SOFTWARE.
 #
 
-import requests
+import aiohttp
 import yaml
 
 
 class LookupClient:
     def __init__(self, lookup_url, auth_url, username, password):
-        self.auth_url = auth_url
+        self.session = aiohttp.ClientSession()
         self.lookup_url = lookup_url
-        self._authenticate(username, password)
+        self.auth_url = auth_url
+        self.username = username
+        self.password = password
 
-    def _authenticate(self, username, password):
-        r = requests.post(
-            self.auth_url,
-            json={
-                'username': username,
-                'password': password
-            },
-            verify=False)
-        if r.status_code == 200:
-            self.token = r.json()['token']
-            self.header = {'Authorization': f'Bearer {self.token}'}
-        else:
-            raise RuntimeError('Authentication failed')
+    async def connect(self):
+        await self._authenticate(self.username, self.password)
 
-    def all(self):
-        r = requests.get(
-            f'{self.lookup_url}/dataset/list',
-            headers=self.header,
-            verify=False)
-        return r.json()
+    async def _authenticate(self, username, password):
+        async with self.session.post(
+                self.auth_url,
+                json={
+                    'username': username,
+                    'password': password
+                }, verify_ssl=False) as r:
+            if r.status == 200:
+                json = await r.json()
+                self.token = json['token']
+                self.header = {'Authorization': f'Bearer {self.token}'}
+            else:
+                raise RuntimeError('Authentication failed')
 
-    def search(self, keyword):
+    async def all(self):
+        async with self.session.get(
+                f'{self.lookup_url}/dataset/list',
+                headers=self.header, verify_ssl=False) as r:
+            return await r.json()
+
+    async def search(self, keyword):
         """Free text search"""
-        r = requests.post(
-            f'{self.lookup_url}/dataset/search',
-            headers=self.header,
-            json={
-                'free_text': keyword
-            },
-            verify=False)
-        return r.json()
+        async with self.session.post(
+                f'{self.lookup_url}/dataset/search',
+                headers=self.header,
+                json={
+                    'free_text': keyword
+                }, verify_ssl=False) as r:
+            return await r.json()
 
-    def readme(self, uri):
-        r = requests.post(
-            f'{self.lookup_url}/dataset/readme',
-            headers=self.header,
-            json={
-                'uri': uri
-            },
-            verify=False)
-        return yaml.load(r.text)
+    async def readme(self, uri):
+        async with self.session.post(
+                f'{self.lookup_url}/dataset/readme',
+                headers=self.header,
+                json={
+                    'uri': uri
+                }, verify_ssl=False) as r:
+            text = await r.text()
+            return yaml.load(text)

@@ -1,3 +1,4 @@
-PyGObject
+aiohttp
+gbulb
 pyyaml
-requests
+PyGObject
