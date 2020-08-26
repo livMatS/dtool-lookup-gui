@@ -112,9 +112,6 @@ class SignalHandler:
         self.datasets = await self.lookup.all()
         self._refresh_results()
 
-    def on_connect_clicked(self, *args):
-        self._connect_task = asyncio.create_task(self.connect())
-
     def on_window_destroy(self, *args):
         self.event_loop.stop()
 
@@ -132,10 +129,10 @@ class SignalHandler:
             f'{datetime.fromtimestamp(dataset["frozen_at"])}')
 
         async def fetch_readme():
-            readme = await self.lookup.readme(dataset['uri'])
             readme_view = self.builder.get_object('dataset-readme')
             store = readme_view.get_model()
             store.clear()
+            readme = await self.lookup.readme(dataset['uri'])
             fill_tree_store(store, [readme])
             readme_view.show_all()
 
@@ -163,5 +160,8 @@ def run_gui():
 
     win = builder.get_object('main-window')
     win.show_all()
+
+    # Connect to the lookup server upon startup
+    loop.create_task(signal_handler.connect())
 
     loop.run_forever()
