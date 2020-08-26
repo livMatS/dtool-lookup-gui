@@ -53,7 +53,12 @@ def fill_tree_store(store, data, parent=None):
 
 class Settings:
     def __init__(self):
-        self.settings = Gio.Settings.new('de.uni-freiburg.dtool-gui')
+        schema_source = Gio.SettingsSchemaSource.new_from_directory(
+            os.path.dirname(__file__), Gio.SettingsSchemaSource.get_default(),
+            False)
+        schema = Gio.SettingsSchemaSource.lookup(
+            schema_source, "de.uni-freiburg.dtool-gui", False)
+        self.settings = Gio.Settings.new_full(schema, None, None)
 
     @property
     def lookup_url(self):
@@ -78,6 +83,9 @@ class SignalHandler:
         self.builder = builder
         self.settings = settings
         self.lookup = None
+
+        self.main_window = self.builder.get_object('main-window')
+        self.settings_window = self.builder.get_object('settings-window')
 
         self._search_task = None
 
@@ -148,6 +156,15 @@ class SignalHandler:
             self._search_task.cancel()
         self._search_task = asyncio.create_task(fetch_search_result())
 
+    def on_settings_clicked(self, user_data):
+        self.settings_window.show()
+
+    def on_delete_settings(self, event, user_data):
+        self.settings_window.hide()
+        # Reconnect since settings may have been changed
+        asyncio.create_task(self.connect())
+        return True
+
 
 def run_gui():
     builder = Gtk.Builder()
@@ -155,11 +172,24 @@ def run_gui():
 
     loop = asyncio.get_event_loop()
 
-    signal_handler = SignalHandler(loop, builder, Settings())
+    settings = Settings()
+
+    signal_handler = SignalHandler(loop, builder, settings)
     builder.connect_signals(signal_handler)
 
-    win = builder.get_object('main-window')
-    win.show_all()
+    builder.get_object('main-window').show_all()
+
+    settings.settings.bind("lookup-url", builder.get_object('lookup-url-entry'),
+                           'text', Gio.SettingsBindFlags.DEFAULT)
+    settings.settings.bind("authenticator-url",
+                           builder.get_object('authenticator-url-entry'),
+                           'text', Gio.SettingsBindFlags.DEFAULT)
+    settings.settings.bind("lookup-username",
+                           builder.get_object('username-entry'), 'text',
+                           Gio.SettingsBindFlags.DEFAULT)
+    settings.settings.bind("lookup-password",
+                           builder.get_object('password-entry'), 'text',
+                           Gio.SettingsBindFlags.DEFAULT)
 
     # Connect to the lookup server upon startup
     loop.create_task(signal_handler.connect())
