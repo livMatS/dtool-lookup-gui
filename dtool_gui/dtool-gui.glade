@@ -464,7 +464,11 @@
             <property name="receives_default">True</property>
             <property name="popover">main-menu</property>
             <child>
-              <placeholder/>
+              <object class="GtkImage">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="icon_name">open-menu-symbolic</property>
+              </object>
             </child>
           </object>
           <packing>
@@ -586,6 +590,8 @@
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="hexpand">True</property>
+                    <property name="visibility">False</property>
+                    <property name="invisible_char">*</property>
                     <property name="input_purpose">password</property>
                   </object>
                   <packing>

@@ -22,19 +22,56 @@
 # SOFTWARE.
 #
 
+import asyncio
+import locale
 import os
+from contextlib import contextmanager
 from datetime import date, datetime
+
+import dtoolcore
 
 import gi
 
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gio
 
-import asyncio, gbulb
+import gbulb
 
 gbulb.install(gtk=True)
 
 from .LookupClient import LookupClient
+
+@contextmanager
+def time_locale(name):
+    # This code snippet was taken from:
+    # https://stackoverflow.com/questions/18593661/how-do-i-strftime-a-date-object-in-a-different-locale
+    saved = locale.setlocale(locale.LC_TIME)
+    try:
+        yield locale.setlocale(locale.LC_TIME, name)
+    finally:
+        locale.setlocale(locale.LC_TIME, saved)
+
+def to_timestamp(d):
+    """
+    Convert a sting or a timestamp to a timestamp. This is a dirty fix necessary
+    because the /dataset/list route return timestamps but /dataset/search
+    returns strings.
+    """
+    if type(d) is str:
+        try:
+            with time_locale('C'):
+                d = dtoolcore.utils.timestamp(
+                    datetime.strptime(d, '%a, %d %b %Y %H:%M:%S %Z'))
+        except ValueError as e:
+            d = -1
+    return d
+
+def datetime_to_string(d):
+    return datetime.fromtimestamp(to_timestamp(d))
+
+
+def date_to_string(d):
+    return date.fromtimestamp(to_timestamp(d))
 
 
 def fill_tree_store(store, data, parent=None):
@@ -95,7 +132,7 @@ class SignalHandler:
         statusbar_widget.push(0, f'{len(self.datasets)} datasets')
         for entry in results_widget:
             entry.destroy()
-        #for dataset in sorted(self.datasets, key=lambda d: -d['frozen_at']):
+        # for dataset in sorted(self.datasets, key=lambda d: -d['frozen_at']):
         for dataset in self.datasets:
             row = Gtk.ListBoxRow()
             vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -106,12 +143,10 @@ class SignalHandler:
             label.set_markup(f'{dataset["name"]}')
             vbox.pack_start(label, True, True, 0)
             label = Gtk.Label(xalign=0)
-            #label.set_markup(
-            #    f'<small>Created by: {dataset["creator_username"]}, '
-            #    f'frozen at: '
-            #    f'{date.fromtimestamp(dataset["frozen_at"])}</small>')
             label.set_markup(
-                f'<small>Created by: {dataset["creator_username"]}</small>')
+                f'<small>Created by: {dataset["creator_username"]}, '
+                f'frozen at: '
+                f'{date_to_string(dataset["frozen_at"])}</small>')
             vbox.pack_start(label, True, True, 0)
             row.dataset = dataset
             row.add(vbox)
@@ -138,9 +173,9 @@ class SignalHandler:
         self.builder.get_object('dataset-created-by').set_text(
             dataset['creator_username'])
         self.builder.get_object('dataset-created-at').set_text(
-            f'{datetime.fromtimestamp(dataset["created_at"])}')
+            f'{datetime_to_string(dataset["created_at"])}')
         self.builder.get_object('dataset-frozen-at').set_text(
-            f'{datetime.fromtimestamp(dataset["frozen_at"])}')
+            f'{datetime_to_string(dataset["frozen_at"])}')
 
         async def fetch_readme():
             readme_view = self.builder.get_object('dataset-readme')
