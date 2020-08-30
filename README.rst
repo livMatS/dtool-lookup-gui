@@ -29,6 +29,11 @@ After installation, run the GUI via:
 
    python -m dtool_gui
 
+Note that when you run the GUI for the first time, you will need to configure
+the URL of the lookup and the authentication server as well as provide a
+username and a password. To do this, click on the "Burger" symbol and select
+*Settings*.
+
 .. _dtool: https://github.com/jic-dtool/dtool
 
 .. _dtool-lookup-server: https://github.com/jic-dtool/dtool-lookup-server
