@@ -220,7 +220,6 @@ class SignalHandler:
         store = manifest_view.get_model()
         store.clear()
         self._manifest = await self.lookup.manifest(uri)
-        print(self._manifest)
         fill_manifest_tree_store(store, self._manifest['items'])
         manifest_view.columns_autosize()
         manifest_view.show_all()
@@ -296,7 +295,6 @@ class SignalHandler:
 
     def on_switch_page(self, notebook, page, page_num):
         if self._selected_dataset is not None:
-            print(page_num)
             if page_num == 0 and self._readme is None:
                 self._readme_task = asyncio.create_task(
                     self._fetch_readme(self._selected_dataset['uri']))
