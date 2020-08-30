@@ -150,11 +150,18 @@ class SignalHandler:
         self.main_window = self.builder.get_object('main-window')
         self.settings_window = self.builder.get_object('settings-window')
 
+        self.main_stack = self.builder.get_object('main-stack')
+        self.readme_stack = self.builder.get_object('readme-stack')
+        self.manifest_stack = self.builder.get_object('manifest-stack')
+
         self._search_task = None
 
         self._selected_dataset = None
         self._readme = None
         self._manifest = None
+
+        self.main_stack.set_visible_child(
+            self.builder.get_object('main-spinner'))
 
     def _refresh_results(self):
         results_widget = self.builder.get_object('search-results')
@@ -162,9 +169,12 @@ class SignalHandler:
         statusbar_widget.push(0, f'{len(self.datasets)} datasets')
         for entry in results_widget:
             entry.destroy()
+        first_row = None
         for dataset in sorted(self.datasets,
                               key=lambda d: -to_timestamp(d['frozen_at'])):
             row = Gtk.ListBoxRow()
+            if first_row is None:
+                first_row = row
             vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
             label = Gtk.Label(xalign=0)
             label.set_markup(f'<b>{dataset["uuid"]}</b>')
@@ -181,9 +191,16 @@ class SignalHandler:
             row.dataset = dataset
             row.add(vbox)
             results_widget.add(row)
+        results_widget.select_row(first_row)
         results_widget.show_all()
 
+        self.main_stack.set_visible_child(
+            self.builder.get_object('main-view'))
+
     async def _fetch_readme(self, uri):
+        self.readme_stack.set_visible_child(
+            self.builder.get_object('readme-spinner'))
+
         readme_view = self.builder.get_object('dataset-readme')
         store = readme_view.get_model()
         store.clear()
@@ -192,7 +209,13 @@ class SignalHandler:
         readme_view.columns_autosize()
         readme_view.show_all()
 
+        self.readme_stack.set_visible_child(
+            self.builder.get_object('readme-view'))
+
     async def _fetch_manifest(self, uri):
+        self.manifest_stack.set_visible_child(
+            self.builder.get_object('manifest-spinner'))
+
         manifest_view = self.builder.get_object('dataset-manifest')
         store = manifest_view.get_model()
         store.clear()
@@ -202,7 +225,13 @@ class SignalHandler:
         manifest_view.columns_autosize()
         manifest_view.show_all()
 
+        self.manifest_stack.set_visible_child(
+            self.builder.get_object('manifest-view'))
+
     async def connect(self):
+        self.main_stack.set_visible_child(
+            self.builder.get_object('main-spinner'))
+
         self.lookup = LookupClient(self.settings.lookup_url,
                                    self.settings.authenticator_url,
                                    self.settings.username,
@@ -241,6 +270,9 @@ class SignalHandler:
                 self._fetch_manifest(self._selected_dataset['uri']))
 
     def on_search(self, search_entry):
+        self.main_stack.set_visible_child(
+            self.builder.get_object('main-spinner'))
+
         async def fetch_search_result():
             keyword = search_entry.get_text()
             if keyword:
