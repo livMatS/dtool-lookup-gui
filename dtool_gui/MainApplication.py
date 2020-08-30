@@ -24,6 +24,7 @@
 
 import asyncio
 import locale
+import math
 import os
 from contextlib import contextmanager
 from datetime import date, datetime
@@ -41,6 +42,7 @@ gbulb.install(gtk=True)
 
 from .LookupClient import LookupClient
 
+
 @contextmanager
 def time_locale(name):
     # This code snippet was taken from:
@@ -50,6 +52,7 @@ def time_locale(name):
         yield locale.setlocale(locale.LC_TIME, name)
     finally:
         locale.setlocale(locale.LC_TIME, saved)
+
 
 def to_timestamp(d):
     """
@@ -66,6 +69,7 @@ def to_timestamp(d):
             d = -1
     return d
 
+
 def datetime_to_string(d):
     return datetime.fromtimestamp(to_timestamp(d))
 
@@ -74,7 +78,20 @@ def date_to_string(d):
     return date.fromtimestamp(to_timestamp(d))
 
 
-def fill_tree_store(store, data, parent=None):
+def human_readable_file_size(num, suffix='B'):
+    # From: https://gist.github.com/cbwar/d2dfbc19b140bd599daccbe0fe925597
+    if num == 0:
+        return '0B'
+    magnitude = int(math.floor(math.log(num, 1024)))
+    val = num / math.pow(1024, magnitude)
+    if magnitude > 7:
+        return '{:.1f}{}{}'.format(val, 'Yi', suffix)
+    return '{:3.1f}{}{}'.format(val,
+                                ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi'][
+                                    magnitude], suffix)
+
+
+def fill_readme_tree_store(store, data, parent=None):
     for i, current_data in enumerate(data):
         if len(data) != 1:
             current_parent = store.append(parent, [f'{i + 1}', None])
@@ -83,9 +100,18 @@ def fill_tree_store(store, data, parent=None):
         for entry, value in current_data.items():
             if type(value) is list:
                 current = store.append(current_parent, [entry, None])
-                fill_tree_store(store, value, parent=current)
+                fill_readme_tree_store(store, value, parent=current)
             else:
                 store.append(current_parent, [entry, str(value)])
+
+
+def fill_manifest_tree_store(store, data, parent=None):
+    for uuid, values in data.items():
+        store.append(parent,
+                     [values['relpath'],
+                      human_readable_file_size(values['size_in_bytes']),
+                      f'{date_to_string(values["utc_timestamp"])}',
+                      uuid])
 
 
 class Settings:
@@ -126,14 +152,18 @@ class SignalHandler:
 
         self._search_task = None
 
+        self._selected_dataset = None
+        self._readme = None
+        self._manifest = None
+
     def _refresh_results(self):
         results_widget = self.builder.get_object('search-results')
         statusbar_widget = self.builder.get_object('main-statusbar')
         statusbar_widget.push(0, f'{len(self.datasets)} datasets')
         for entry in results_widget:
             entry.destroy()
-        # for dataset in sorted(self.datasets, key=lambda d: -d['frozen_at']):
-        for dataset in self.datasets:
+        for dataset in sorted(self.datasets,
+                              key=lambda d: -to_timestamp(d['frozen_at'])):
             row = Gtk.ListBoxRow()
             vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
             label = Gtk.Label(xalign=0)
@@ -153,6 +183,25 @@ class SignalHandler:
             results_widget.add(row)
         results_widget.show_all()
 
+    async def _fetch_readme(self, uri):
+        readme_view = self.builder.get_object('dataset-readme')
+        store = readme_view.get_model()
+        store.clear()
+        self._readme = await self.lookup.readme(uri)
+        fill_readme_tree_store(store, [self._readme])
+        readme_view.columns_autosize()
+        readme_view.show_all()
+
+    async def _fetch_manifest(self, uri):
+        manifest_view = self.builder.get_object('dataset-manifest')
+        store = manifest_view.get_model()
+        store.clear()
+        self._manifest = await self.lookup.manifest(uri)
+        print(self._manifest)
+        fill_manifest_tree_store(store, self._manifest['items'])
+        manifest_view.columns_autosize()
+        manifest_view.show_all()
+
     async def connect(self):
         self.lookup = LookupClient(self.settings.lookup_url,
                                    self.settings.authenticator_url,
@@ -166,26 +215,30 @@ class SignalHandler:
         self.event_loop.stop()
 
     def on_result_selected(self, list_box, list_box_row):
-        dataset = list_box_row.dataset
-        self.builder.get_object('dataset-name').set_text(dataset['name'])
-        self.builder.get_object('dataset-uuid').set_text(dataset['uuid'])
-        self.builder.get_object('dataset-uri').set_text(dataset['uri'])
+        self._selected_dataset = list_box_row.dataset
+        self._readme = None
+        self._manifest = None
+
+        self.builder.get_object('dataset-name').set_text(
+            self._selected_dataset['name'])
+        self.builder.get_object('dataset-uuid').set_text(
+            self._selected_dataset['uuid'])
+        self.builder.get_object('dataset-uri').set_text(
+            self._selected_dataset['uri'])
         self.builder.get_object('dataset-created-by').set_text(
-            dataset['creator_username'])
+            self._selected_dataset['creator_username'])
         self.builder.get_object('dataset-created-at').set_text(
-            f'{datetime_to_string(dataset["created_at"])}')
+            f'{datetime_to_string(self._selected_dataset["created_at"])}')
         self.builder.get_object('dataset-frozen-at').set_text(
-            f'{datetime_to_string(dataset["frozen_at"])}')
+            f'{datetime_to_string(self._selected_dataset["frozen_at"])}')
 
-        async def fetch_readme():
-            readme_view = self.builder.get_object('dataset-readme')
-            store = readme_view.get_model()
-            store.clear()
-            readme = await self.lookup.readme(dataset['uri'])
-            fill_tree_store(store, [readme])
-            readme_view.show_all()
-
-        self._readme_task = asyncio.create_task(fetch_readme())
+        page = self.builder.get_object('dataset-notebook').get_property('page')
+        if page == 0:
+            self._readme_task = asyncio.create_task(
+                self._fetch_readme(self._selected_dataset['uri']))
+        elif page == 1:
+            self._manifest_task = asyncio.create_task(
+                self._fetch_manifest(self._selected_dataset['uri']))
 
     def on_search(self, search_entry):
         async def fetch_search_result():
@@ -208,6 +261,16 @@ class SignalHandler:
         # Reconnect since settings may have been changed
         asyncio.create_task(self.connect())
         return True
+
+    def on_switch_page(self, notebook, page, page_num):
+        if self._selected_dataset is not None:
+            print(page_num)
+            if page_num == 0 and self._readme is None:
+                self._readme_task = asyncio.create_task(
+                    self._fetch_readme(self._selected_dataset['uri']))
+            if page_num == 1 and self._manifest is None:
+                self._manifest_task = asyncio.create_task(
+                    self._fetch_manifest(self._selected_dataset['uri']))
 
 
 def run_gui():

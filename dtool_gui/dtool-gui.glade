@@ -46,7 +46,19 @@
       </packing>
     </child>
   </object>
-  <object class="GtkTreeStore" id="treestore1">
+  <object class="GtkTreeStore" id="manifest-treestore">
+    <columns>
+      <!-- column-name name -->
+      <column type="gchararray"/>
+      <!-- column-name size -->
+      <column type="gchararray"/>
+      <!-- column-name date -->
+      <column type="gchararray"/>
+      <!-- column-name uuid -->
+      <column type="gchararray"/>
+    </columns>
+  </object>
+  <object class="GtkTreeStore" id="readme-treestore">
     <columns>
       <!-- column-name key -->
       <column type="gchararray"/>
@@ -97,9 +109,10 @@
               </packing>
             </child>
             <child>
-              <object class="GtkNotebook">
+              <object class="GtkNotebook" id="dataset-notebook">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <signal name="switch-page" handler="on_switch_page" swapped="no"/>
                 <child>
                   <object class="GtkBox">
                     <property name="visible">True</property>
@@ -300,16 +313,16 @@
                               <object class="GtkTreeView" id="dataset-readme">
                                 <property name="visible">True</property>
                                 <property name="can_focus">True</property>
-                                <property name="model">treestore1</property>
+                                <property name="model">readme-treestore</property>
                                 <property name="enable_tree_lines">True</property>
                                 <child internal-child="selection">
                                   <object class="GtkTreeSelection"/>
                                 </child>
                                 <child>
-                                  <object class="GtkTreeViewColumn" id="column1">
+                                  <object class="GtkTreeViewColumn" id="readme-column1">
                                     <property name="title" translatable="yes">Key</property>
                                     <child>
-                                      <object class="GtkCellRendererText" id="renderer1"/>
+                                      <object class="GtkCellRendererText" id="readme-renderer1"/>
                                       <attributes>
                                         <attribute name="text">0</attribute>
                                       </attributes>
@@ -317,10 +330,10 @@
                                   </object>
                                 </child>
                                 <child>
-                                  <object class="GtkTreeViewColumn" id="column2">
+                                  <object class="GtkTreeViewColumn" id="readme-column2">
                                     <property name="title" translatable="yes">Value</property>
                                     <child>
-                                      <object class="GtkCellRendererText" id="renderer2">
+                                      <object class="GtkCellRendererText" id="readme-renderer2">
                                         <property name="editable">True</property>
                                         <property name="ellipsize">end</property>
                                         <property name="wrap_mode">word</property>
@@ -358,11 +371,69 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkTreeView">
+                  <object class="GtkScrolledWindow">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
-                    <child internal-child="selection">
-                      <object class="GtkTreeSelection"/>
+                    <property name="shadow_type">in</property>
+                    <child>
+                      <object class="GtkViewport">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <child>
+                          <object class="GtkTreeView" id="dataset-manifest">
+                            <property name="visible">True</property>
+                            <property name="can_focus">True</property>
+                            <property name="model">manifest-treestore</property>
+                            <child internal-child="selection">
+                              <object class="GtkTreeSelection"/>
+                            </child>
+                            <child>
+                              <object class="GtkTreeViewColumn" id="manifest-column1">
+                                <property name="title" translatable="yes">Name</property>
+                                <child>
+                                  <object class="GtkCellRendererText" id="manifest-renderer1"/>
+                                  <attributes>
+                                    <attribute name="text">0</attribute>
+                                  </attributes>
+                                </child>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkTreeViewColumn" id="manifest-column2">
+                                <property name="title" translatable="yes">Size</property>
+                                <child>
+                                  <object class="GtkCellRendererText" id="manifest-renderer2"/>
+                                  <attributes>
+                                    <attribute name="text">1</attribute>
+                                  </attributes>
+                                </child>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkTreeViewColumn" id="manifest-column3">
+                                <property name="title" translatable="yes">Date</property>
+                                <child>
+                                  <object class="GtkCellRendererText" id="manifest-renderer3"/>
+                                  <attributes>
+                                    <attribute name="text">2</attribute>
+                                  </attributes>
+                                </child>
+                              </object>
+                            </child>
+                            <child>
+                              <object class="GtkTreeViewColumn" id="manifest-column4">
+                                <property name="title" translatable="yes">UUID</property>
+                                <child>
+                                  <object class="GtkCellRendererText" id="manifest-renderer4"/>
+                                  <attributes>
+                                    <attribute name="text">3</attribute>
+                                  </attributes>
+                                </child>
+                              </object>
+                            </child>
+                          </object>
+                        </child>
+                      </object>
                     </child>
                   </object>
                   <packing>
@@ -373,7 +444,7 @@
                   <object class="GtkLabel">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
-                    <property name="label" translatable="yes">Files</property>
+                    <property name="label" translatable="yes">Manifest</property>
                   </object>
                   <packing>
                     <property name="position">1</property>
@@ -381,12 +452,11 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkTreeView">
+                  <object class="GtkGLArea">
                     <property name="visible">True</property>
-                    <property name="can_focus">True</property>
-                    <child internal-child="selection">
-                      <object class="GtkTreeSelection"/>
-                    </child>
+                    <property name="app_paintable">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="use_es">True</property>
                   </object>
                   <packing>
                     <property name="position">2</property>

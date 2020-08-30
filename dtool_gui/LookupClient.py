@@ -76,3 +76,13 @@ class LookupClient:
                 }, verify_ssl=False) as r:
             text = await r.text()
             return yaml.load(text)
+
+    async def manifest(self, uri):
+        async with self.session.post(
+                f'{self.lookup_url}/dataset/manifest',
+                headers=self.header,
+                json={
+                    'uri': uri
+                }, verify_ssl=False) as r:
+            text = await r.text()
+            return yaml.load(text)
