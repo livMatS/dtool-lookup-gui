@@ -67,6 +67,14 @@ class LookupClient:
                 }, verify_ssl=False) as r:
             return await r.json()
 
+    async def by_uuid(self, uuid):
+        """Search for a specific uuid"""
+        async with self.session.get(
+                f'{self.lookup_url}/dataset/lookup/{uuid}',
+                headers=self.header,
+                verify_ssl=False) as r:
+            return await r.json()
+
     async def readme(self, uri):
         async with self.session.post(
                 f'{self.lookup_url}/dataset/readme',

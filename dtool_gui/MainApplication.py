@@ -26,6 +26,7 @@ import asyncio
 import locale
 import math
 import os
+import uuid
 from contextlib import contextmanager
 from datetime import date, datetime
 
@@ -94,15 +95,30 @@ def human_readable_file_size(num, suffix='B'):
 def fill_readme_tree_store(store, data, parent=None):
     for i, current_data in enumerate(data):
         if len(data) != 1:
-            current_parent = store.append(parent, [f'{i + 1}', None])
+            current_parent = store.append(parent,
+                                          [f'{i + 1}', None, False, None])
         else:
             current_parent = parent
         for entry, value in current_data.items():
             if type(value) is list:
-                current = store.append(current_parent, [entry, None])
+                current = store.append(current_parent,
+                                       [entry, None, False, None])
                 fill_readme_tree_store(store, value, parent=current)
             else:
-                store.append(current_parent, [entry, str(value)])
+                # Check whether the data is a UUID. We then enable a
+                # hyperlink-like navigation between datasets
+                is_uuid = True
+                try:
+                    uuid.UUID(str(value))
+                except ValueError:
+                    is_uuid = False
+                if is_uuid:
+                    markup = '<span foreground="blue" underline="single">' \
+                             f'{str(value)}</span>'
+                else:
+                    markup = f'<span>{str(value)}</span>'
+                store.append(current_parent,
+                             [entry, str(value), is_uuid, markup])
 
 
 def fill_manifest_tree_store(store, data, parent=None):
@@ -249,6 +265,8 @@ class SignalHandler:
         self.event_loop.stop()
 
     def on_result_selected(self, list_box, list_box_row):
+        if list_box_row is None:
+            return
         self._selected_dataset = list_box_row.dataset
         self._readme = None
         self._manifest = None
@@ -278,17 +296,20 @@ class SignalHandler:
         self.main_stack.set_visible_child(
             self.builder.get_object('main-spinner'))
 
-        async def fetch_search_result():
-            keyword = search_entry.get_text()
+        async def fetch_search_result(keyword):
             if keyword:
-                self.datasets = await self.lookup.search(keyword)
+                if keyword.startswith('uuid:'):
+                    self.datasets = await self.lookup.by_uuid(keyword[5:])
+                else:
+                    self.datasets = await self.lookup.search(keyword)
             else:
                 self.datasets = await self.lookup.all()
             self._refresh_results()
 
         if self._search_task is not None:
             self._search_task.cancel()
-        self._search_task = asyncio.create_task(fetch_search_result())
+        self._search_task = asyncio.create_task(
+            fetch_search_result(search_entry.get_text()))
 
     def on_settings_clicked(self, user_data):
         self.settings_window.show()
@@ -307,6 +328,16 @@ class SignalHandler:
             if page_num == 1 and self._manifest is None:
                 self._manifest_task = asyncio.create_task(
                     self._fetch_manifest(self._selected_dataset['uri']))
+
+    def on_readme_row_activated(self, tree_view, path, column):
+        store = tree_view.get_model()
+        iter = store.get_iter(path)
+        is_uuid = store.get_value(iter, 2)
+        if is_uuid:
+            uuid = store.get_value(iter, 1)
+            self.builder.get_object('search-entry').set_text(f'uuid:{uuid}')
+            return True
+        return False
 
 
 def run_gui():

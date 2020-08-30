@@ -43,6 +43,7 @@
       </object>
       <packing>
         <property name="submenu">submenu0</property>
+        <property name="position">1</property>
       </packing>
     </child>
   </object>
@@ -63,6 +64,10 @@
       <!-- column-name key -->
       <column type="gchararray"/>
       <!-- column-name value -->
+      <column type="gchararray"/>
+      <!-- column-name is_uuid -->
+      <column type="gboolean"/>
+      <!-- column-name markup -->
       <column type="gchararray"/>
     </columns>
   </object>
@@ -154,6 +159,7 @@
                                 <property name="can_focus">False</property>
                                 <property name="halign">start</property>
                                 <property name="label" translatable="yes">label</property>
+                                <property name="selectable">True</property>
                               </object>
                               <packing>
                                 <property name="left_attach">1</property>
@@ -181,6 +187,7 @@
                                 <property name="can_focus">False</property>
                                 <property name="halign">start</property>
                                 <property name="label" translatable="yes">label</property>
+                                <property name="selectable">True</property>
                               </object>
                               <packing>
                                 <property name="left_attach">1</property>
@@ -208,6 +215,7 @@
                                 <property name="can_focus">False</property>
                                 <property name="halign">start</property>
                                 <property name="label" translatable="yes">label</property>
+                                <property name="selectable">True</property>
                               </object>
                               <packing>
                                 <property name="left_attach">1</property>
@@ -235,6 +243,7 @@
                                 <property name="can_focus">False</property>
                                 <property name="halign">start</property>
                                 <property name="label" translatable="yes">label</property>
+                                <property name="selectable">True</property>
                               </object>
                               <packing>
                                 <property name="left_attach">1</property>
@@ -262,6 +271,7 @@
                                 <property name="can_focus">False</property>
                                 <property name="halign">start</property>
                                 <property name="label" translatable="yes">label</property>
+                                <property name="selectable">True</property>
                               </object>
                               <packing>
                                 <property name="left_attach">1</property>
@@ -289,6 +299,7 @@
                                 <property name="can_focus">False</property>
                                 <property name="halign">start</property>
                                 <property name="label" translatable="yes">label</property>
+                                <property name="selectable">True</property>
                               </object>
                               <packing>
                                 <property name="left_attach">1</property>
@@ -323,6 +334,7 @@
                                         <property name="can_focus">True</property>
                                         <property name="model">readme-treestore</property>
                                         <property name="enable_tree_lines">True</property>
+                                        <signal name="row-activated" handler="on_readme_row_activated" swapped="no"/>
                                         <child internal-child="selection">
                                           <object class="GtkTreeSelection"/>
                                         </child>
@@ -347,7 +359,7 @@
                                                 <property name="wrap_mode">word</property>
                                               </object>
                                               <attributes>
-                                                <attribute name="text">1</attribute>
+                                                <attribute name="markup">3</attribute>
                                               </attributes>
                                             </child>
                                           </object>
@@ -598,7 +610,7 @@
         <property name="show_close_button">True</property>
         <property name="decoration_layout">menu:menu,close</property>
         <child type="title">
-          <object class="GtkSearchEntry">
+          <object class="GtkSearchEntry" id="search-entry">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="width_chars">50</property>
