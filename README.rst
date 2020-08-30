@@ -1,20 +1,21 @@
 dtool-gui
 =========
 
-dtool-gui is a GTK+ GUI application for dtool_ and dtool-lookup-server_.
+dtool-gui is a graphical user interface for dtool_ and dtool-lookup-server_
+written in Python_ and GTK_.
 
 .. image:: data/screenshots/screenshot1.png
 
 Installation
 ------------
 
-The application uses setuptools_. It can be installed via pip:
+The application uses setuptools_. It can be installed with pip_:
 
 .. code:: bash
 
     pip install https://github.com/IMTEK-Simulation/dtool-gui.git
 
-When checked out, simply install via the standard route
+When checked out, either use pip_ or install via the standard route
 
 .. code:: bash
 
@@ -23,7 +24,7 @@ When checked out, simply install via the standard route
 Running the GUI
 ---------------
 
-After installation, run the GUI via:
+After installation, run the GUI with:
 
 .. code:: bash
 
@@ -37,5 +38,11 @@ username and a password. To do this, click on the "Burger" symbol and select
 .. _dtool: https://github.com/jic-dtool/dtool
 
 .. _dtool-lookup-server: https://github.com/jic-dtool/dtool-lookup-server
+
+.. _Python: https://www.python.org/
+
+.. _GTK: https://www.gtk.org/
+
+.. _pip: https://pip.pypa.io/en/stable/
 
 .. _setuptools: https://setuptools.readthedocs.io/en/latest/
