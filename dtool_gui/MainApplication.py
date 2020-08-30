@@ -167,6 +167,12 @@ class SignalHandler:
         results_widget = self.builder.get_object('search-results')
         statusbar_widget = self.builder.get_object('main-statusbar')
         statusbar_widget.push(0, f'{len(self.datasets)} datasets')
+
+        if len(self.datasets) == 0:
+            self.main_stack.set_visible_child(
+                self.builder.get_object('main-not-found'))
+            return
+
         for entry in results_widget:
             entry.destroy()
         first_row = None
