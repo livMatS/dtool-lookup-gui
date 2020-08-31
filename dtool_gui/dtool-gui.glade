@@ -433,7 +433,9 @@
                                       <object class="GtkTreeViewColumn" id="manifest-column1">
                                         <property name="title" translatable="yes">Name</property>
                                         <child>
-                                          <object class="GtkCellRendererText" id="manifest-renderer1"/>
+                                          <object class="GtkCellRendererText" id="manifest-renderer1">
+                                            <property name="editable">True</property>
+                                          </object>
                                           <attributes>
                                             <attribute name="text">0</attribute>
                                           </attributes>
@@ -466,7 +468,9 @@
                                       <object class="GtkTreeViewColumn" id="manifest-column4">
                                         <property name="title" translatable="yes">UUID</property>
                                         <child>
-                                          <object class="GtkCellRendererText" id="manifest-renderer4"/>
+                                          <object class="GtkCellRendererText" id="manifest-renderer4">
+                                            <property name="editable">True</property>
+                                          </object>
                                           <attributes>
                                             <attribute name="text">3</attribute>
                                           </attributes>
@@ -508,28 +512,6 @@
                       </object>
                       <packing>
                         <property name="position">1</property>
-                        <property name="tab_fill">False</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkGLArea">
-                        <property name="visible">True</property>
-                        <property name="app_paintable">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="use_es">True</property>
-                      </object>
-                      <packing>
-                        <property name="position">2</property>
-                      </packing>
-                    </child>
-                    <child type="tab">
-                      <object class="GtkLabel">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <property name="label" translatable="yes">Dependencies</property>
-                      </object>
-                      <packing>
-                        <property name="position">2</property>
                         <property name="tab_fill">False</property>
                       </packing>
                     </child>
