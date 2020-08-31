@@ -192,6 +192,7 @@ class SignalHandler:
         self.main_stack = self.builder.get_object('main-stack')
         self.readme_stack = self.builder.get_object('readme-stack')
         self.manifest_stack = self.builder.get_object('manifest-stack')
+        self.dependency_stack = self.builder.get_object('dependency-stack')
 
         self._search_task = None
 
@@ -273,61 +274,61 @@ class SignalHandler:
         self.manifest_stack.set_visible_child(
             self.builder.get_object('manifest-view'))
 
-    async def _compute_dependencies(self, notebook, page, uri):
+    async def _compute_dependencies(self, uri):
         async def _trace_dependency(uuid, shape='square'):
             print('trace:', uuid)
             v = self._dependency_graph.add_vertex()
-            try:
-                self._vertex_uuid[v] = uuid
-                datasets = await self.lookup.by_uuid(uuid)
-                if len(datasets) == 0:
-                    # This UUID does not exist in the database
-                    self._vertex_shape[v] = 'triangle'
-                    self._vertex_name[v] = 'Dataset does not exist in database.'
-                else:
-                    # There may be the same dataset in multiple storage locations,
-                    # we just use the first
-                    self._vertex_shape[v] = shape
-                    dataset = datasets[0]
-                    self._vertex_name[v] = dataset['name']
-                    for path, uuid in enumerate_uuids(
-                            [await self.lookup.readme(dataset['uri'])]):
-                        v2 = await _trace_dependency(uuid, shape='circle')
-                        self._dependency_graph.add_edge(v2, v)
-            except Exception as e:
-                print(e)
+            self._vertex_uuid[v] = uuid
+            datasets = await self.lookup.by_uuid(uuid)
+            if len(datasets) == 0:
+                # This UUID does not exist in the database
+                self._vertex_shape[v] = 'triangle'
+                self._vertex_name[v] = 'Dataset does not exist in database.'
+            else:
+                # There may be the same dataset in multiple storage locations,
+                # we just use the first
+                self._vertex_shape[v] = shape
+                dataset = datasets[0]
+                self._vertex_name[v] = dataset['name']
+                for path, uuid in enumerate_uuids(
+                        [await self.lookup.readme(dataset['uri'])]):
+                    v2 = await _trace_dependency(uuid, shape='circle')
+                    self._dependency_graph.add_edge(v2, v)
             return v
 
         print('Start computing dependencies')
+        self.dependency_stack.set_visible_child(
+            self.builder.get_object('dependency-spinner'))
+
         if self._readme is None:
             await self._fetch_readme(uri)
         uuids = enumerate_uuids([self._readme])
 
-        try:
-            self._dependency_graph = graph_tool.Graph(directed=True)
-            self._vertex_uuid = \
-                self._dependency_graph.new_vertex_property('string')
-            self._vertex_name = \
-                self._dependency_graph.new_vertex_property('string')
-            self._vertex_shape = \
-                self._dependency_graph.new_vertex_property('string')
+        self._dependency_graph = graph_tool.Graph(directed=True)
+        self._vertex_uuid = \
+            self._dependency_graph.new_vertex_property('string')
+        self._vertex_name = \
+            self._dependency_graph.new_vertex_property('string')
+        self._vertex_shape = \
+            self._dependency_graph.new_vertex_property('string')
 
-            # Compute dependency graph
-            await _trace_dependency(self._selected_dataset['uuid'])
+        # Compute dependency graph
+        await _trace_dependency(self._selected_dataset['uuid'])
 
-            # Create graph widget
-            pos = graph_tool.draw.sfdp_layout(self._dependency_graph)
-            graph_widget = graph_tool.draw.GraphWidget(
-                self._dependency_graph, pos, vertex_size=20, vertex_pen_width=0,
-                vertex_shape=self._vertex_shape,
-                display_props=[self._vertex_uuid, self._vertex_name])
-            for child in page:
-                child.destroy()
-            page.pack_start(graph_widget, True, True, 0)
-            graph_widget.show()
+        # Create graph widget
+        pos = graph_tool.draw.sfdp_layout(self._dependency_graph)
+        graph_widget = graph_tool.draw.GraphWidget(
+            self._dependency_graph, pos, vertex_size=20, vertex_pen_width=0,
+            vertex_shape=self._vertex_shape,
+            display_props=[self._vertex_uuid, self._vertex_name])
+        dependency_view = self.builder.get_object('dependency-view')
+        for child in dependency_view:
+            child.destroy()
+        dependency_view.pack_start(graph_widget, True, True, 0)
+        graph_widget.fit_to_window()
+        graph_widget.show()
 
-        except Exception as e:
-            print('Exception:', e)
+        self.dependency_stack.set_visible_child(dependency_view)
 
         print('Finalized computing dependencies')
 
@@ -374,6 +375,9 @@ class SignalHandler:
         elif page == 1:
             self._manifest_task = asyncio.create_task(
                 self._fetch_manifest(self._selected_dataset['uri']))
+        elif page == 2:
+            self._dependency_task = asyncio.create_task(
+                self._compute_dependencies(self._selected_dataset['uri']))
 
     def on_search(self, search_entry):
         self.main_stack.set_visible_child(
@@ -413,8 +417,7 @@ class SignalHandler:
                     self._fetch_manifest(self._selected_dataset['uri']))
             elif page_num == 2 and self._dependency_graph is None:
                 self._dependency_task = asyncio.create_task(
-                    self._compute_dependencies(notebook, page,
-                                               self._selected_dataset['uri']))
+                    self._compute_dependencies(self._selected_dataset['uri']))
 
     def on_readme_row_activated(self, tree_view, path, column):
         store = tree_view.get_model()
