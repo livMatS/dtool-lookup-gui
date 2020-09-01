@@ -1,5 +1,6 @@
 aiohttp
 dtoolcore
 gbulb
+matplolib
 pyyaml
 PyGObject
