@@ -23,9 +23,6 @@
 #
 
 import asyncio
-import graph_tool
-import graph_tool.draw
-import graph_tool.collection
 import locale
 import math
 import os
@@ -43,6 +40,14 @@ from gi.repository import Gtk, Gio
 import gbulb
 
 gbulb.install(gtk=True)
+
+try:
+    import graph_tool
+    import graph_tool.draw
+    import graph_tool.collection
+    graph_tool_found = True
+except ImportError:
+    graph_tool_found = False
 
 from .LookupClient import LookupClient
 
@@ -417,7 +422,7 @@ class SignalHandler:
         elif page == 1:
             self._manifest_task = asyncio.create_task(
                 self._fetch_manifest(self._selected_dataset['uri']))
-        elif page == 2:
+        elif page == 2 and graph_tool_found:
             self._dependency_task = asyncio.create_task(
                 self._compute_dependencies(self._selected_dataset['uri']))
 
@@ -457,7 +462,7 @@ class SignalHandler:
             elif page_num == 1 and self._manifest is None:
                 self._manifest_task = asyncio.create_task(
                     self._fetch_manifest(self._selected_dataset['uri']))
-            elif page_num == 2 and self._dependency_graph is None:
+            elif page_num == 2 and self._dependency_graph is None and graph_tool_found:
                 self._dependency_task = asyncio.create_task(
                     self._compute_dependencies(self._selected_dataset['uri']))
 
