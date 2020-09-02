@@ -51,8 +51,15 @@ username and a password. To do this, click on the "Burger" symbol and select
 Installation on MacOS
 ---------------------
 
+
+
 The pip package for PyGObject has another name for macos. So comment it out in setup.py, install it following the instructions_ and then run `pip install /path/to/dtool-gui` 
 
 
 .. _instructions: https://pygobject.readthedocs.io/en/latest/getting_started.html 
 
+You also need to install the gnome icons in order for them to be displayed properly: 
+
+```
+ brew install gnome-icon-theme
+```
