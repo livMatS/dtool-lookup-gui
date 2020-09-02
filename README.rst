@@ -13,7 +13,7 @@ The application uses setuptools_. It can be installed with pip_:
 
 .. code:: bash
 
-    pip install https://github.com/IMTEK-Simulation/dtool-gui.git
+    pip install git+https://github.com/IMTEK-Simulation/dtool-gui.git
 
 When checked out, either use pip_ or install via the standard route
 

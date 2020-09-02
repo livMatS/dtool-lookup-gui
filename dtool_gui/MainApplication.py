@@ -417,13 +417,13 @@ class SignalHandler:
 
         page = self.builder.get_object('dataset-notebook').get_property('page')
         if page == 0:
-            self._readme_task = asyncio.create_task(
+            self._readme_task = asyncio.ensure_future(
                 self._fetch_readme(self._selected_dataset['uri']))
         elif page == 1:
-            self._manifest_task = asyncio.create_task(
+            self._manifest_task = asyncio.ensure_future(
                 self._fetch_manifest(self._selected_dataset['uri']))
         elif page == 2 and graph_tool_found:
-            self._dependency_task = asyncio.create_task(
+            self._dependency_task = asyncio.ensure_future(
                 self._compute_dependencies(self._selected_dataset['uri']))
 
     def on_search(self, search_entry):
@@ -442,7 +442,7 @@ class SignalHandler:
 
         if self._search_task is not None:
             self._search_task.cancel()
-        self._search_task = asyncio.create_task(
+        self._search_task = asyncio.ensure_future(
             fetch_search_result(search_entry.get_text()))
 
     def on_settings_clicked(self, user_data):
@@ -451,19 +451,19 @@ class SignalHandler:
     def on_delete_settings(self, event, user_data):
         self.settings_window.hide()
         # Reconnect since settings may have been changed
-        asyncio.create_task(self.connect())
+        asyncio.ensure_future(self.connect())
         return True
 
     def on_switch_page(self, notebook, page, page_num):
         if self._selected_dataset is not None:
             if page_num == 0 and self._readme is None:
-                self._readme_task = asyncio.create_task(
+                self._readme_task = asyncio.ensure_future(
                     self._fetch_readme(self._selected_dataset['uri']))
             elif page_num == 1 and self._manifest is None:
-                self._manifest_task = asyncio.create_task(
+                self._manifest_task = asyncio.ensure_future(
                     self._fetch_manifest(self._selected_dataset['uri']))
             elif page_num == 2 and self._dependency_graph is None and graph_tool_found:
-                self._dependency_task = asyncio.create_task(
+                self._dependency_task = asyncio.ensure_future(
                     self._compute_dependencies(self._selected_dataset['uri']))
 
     def on_readme_row_activated(self, tree_view, path, column):
