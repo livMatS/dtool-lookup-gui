@@ -95,52 +95,82 @@ def human_readable_file_size(num, suffix='B'):
                                     magnitude], suffix)
 
 
+def is_uuid(value):
+    '''Check whether the data is a UUID.'''
+    value = str(value)
+    try:
+        uuid.UUID(value)
+        return True
+    except ValueError:
+        return False
+
+
 def fill_readme_tree_store(store, data, parent=None):
-    for i, current_data in enumerate(data):
-        if len(data) != 1:
-            current_parent = store.append(parent,
-                                          [f'{i + 1}', None, False, None])
+    def append_entry(store, entry, value, parent):
+        # Check whether the data is a UUID. We then enable a
+        # hyperlink-like navigation between datasets
+        is_u = is_uuid(value)
+        if is_u:
+            markup = '<span foreground="blue" underline="single">' \
+                     f'{str(value)}</span>'
         else:
-            current_parent = parent
-        for entry, value in current_data.items():
-            if type(value) is list:
-                current = store.append(current_parent,
-                                       [entry, None, False, None])
-                fill_readme_tree_store(store, value, parent=current)
+            markup = f'<span>{str(value)}</span>'
+        store.append(parent,
+                     [entry, str(value), is_u, markup])
+
+    def fill_readme_tree_store_from_list(store, list_data, parent=None):
+        for i, current_data in enumerate(list_data):
+            entry = f'{i + 1}'
+            if type(current_data) is list:
+                current_parent = store.append(parent,
+                                              [entry, None, False, None])
+                fill_readme_tree_store_from_list(store, current_data,
+                                                 parent=current_parent)
+            elif type(current_data) is dict:
+                current_parent = store.append(parent,
+                                              [entry, None, False, None])
+                fill_readme_tree_store(store, current_data,
+                                       parent=current_parent)
             else:
-                # Check whether the data is a UUID. We then enable a
-                # hyperlink-like navigation between datasets
-                is_uuid = True
-                try:
-                    uuid.UUID(str(value))
-                except ValueError:
-                    is_uuid = False
-                if is_uuid:
-                    markup = '<span foreground="blue" underline="single">' \
-                             f'{str(value)}</span>'
-                else:
-                    markup = f'<span>{str(value)}</span>'
-                store.append(current_parent,
-                             [entry, str(value), is_uuid, markup])
+                append_entry(store, entry, current_data, parent)
+
+    for entry, value in data.items():
+        if type(value) is list:
+            current = store.append(parent,
+                                   [entry, None, False, None])
+            fill_readme_tree_store_from_list(store, value, parent=current)
+        elif type(value) is dict:
+            current = store.append(parent,
+                                   [entry, None, False, None])
+            fill_readme_tree_store(store, value, parent=current)
+        else:
+            append_entry(store, entry, value, parent)
 
 
 def enumerate_uuids(data, key=[]):
-    result = []
-    for i, current_data in enumerate(data):
-        for entry, value in current_data.items():
-            if type(value) is list:
-                result += enumerate_uuids(value, key=key + [entry])
+    def enumerate_uuids_from_list(list_data, key):
+        result = []
+        for i, current_data in enumerate(list_data):
+            entry = f'{i + 1}'
+            if type(current_data) is list:
+                result += enumerate_uuids_from_list(current_data,
+                                                    key=key + [entry])
+            elif type(current_data) is dict:
+                result += enumerate_uuids(current_data, key=key + [entry])
             else:
-                # Check whether the data is a UUID. We then enable a
-                # hyperlink-like navigation between datasets
-                value = str(value)
-                is_uuid = True
-                try:
-                    uuid.UUID(value)
-                except ValueError:
-                    is_uuid = False
-                if is_uuid:
-                    result += [(key + [entry], value)]
+                if is_uuid(current_data):
+                    result += [(key + [entry], current_data)]
+        return result
+
+    result = []
+    for entry, value in data.items():
+        if type(value) is list:
+            result += enumerate_uuids_from_list(value, key=key + [entry])
+        elif type(value) is dict:
+            result += enumerate_uuids(value, key=key + [entry])
+        else:
+            if is_uuid(value):
+                result += [(key + [entry], value)]
     return result
 
 
@@ -252,7 +282,7 @@ class SignalHandler:
         store = readme_view.get_model()
         store.clear()
         self._readme = await self.lookup.readme(uri)
-        fill_readme_tree_store(store, [self._readme])
+        fill_readme_tree_store(store, self._readme)
         readme_view.columns_autosize()
         readme_view.show_all()
 
@@ -275,13 +305,15 @@ class SignalHandler:
             self.builder.get_object('manifest-view'))
 
     async def _compute_dependencies(self, uri):
+        uuid_to_vertex = {}
+
         async def _trace_dependency(uuid, shape='square'):
-            print('trace:', uuid)
             v = self._dependency_graph.add_vertex()
             self._vertex_uuid[v] = uuid
             datasets = await self.lookup.by_uuid(uuid)
             if len(datasets) == 0:
                 # This UUID does not exist in the database
+                print(f'trace: UUID {uuid} does not exist')
                 self._vertex_shape[v] = 'triangle'
                 self._vertex_name[v] = 'Dataset does not exist in database.'
             else:
@@ -290,19 +322,29 @@ class SignalHandler:
                 self._vertex_shape[v] = shape
                 dataset = datasets[0]
                 self._vertex_name[v] = dataset['name']
+                visited_uuids = set([])
                 for path, uuid in enumerate_uuids(
-                        [await self.lookup.readme(dataset['uri'])]):
-                    v2 = await _trace_dependency(uuid, shape='circle')
-                    self._dependency_graph.add_edge(v2, v)
+                        await self.lookup.readme(dataset['uri'])):
+                    if uuid not in visited_uuids:
+                        if uuid in uuid_to_vertex:
+                            # We have a Vertex for this UUID, simple add an
+                            # edge
+                            self._dependency_graph.add_edge(
+                                uuid_to_vertex[uuid], v)
+                        else:
+                            # Create a new Vertex and continue tracing
+                            visited_uuids.add(uuid)
+                            uuid_to_vertex[uuid] = None
+                            print('trace:', dataset['uuid'], '<-', uuid,
+                                  'via README entry', path)
+                            v2 = await _trace_dependency(uuid, shape='circle')
+                            uuid_to_vertex[uuid] = v2
+                            self._dependency_graph.add_edge(v2, v)
             return v
 
         print('Start computing dependencies')
         self.dependency_stack.set_visible_child(
             self.builder.get_object('dependency-spinner'))
-
-        if self._readme is None:
-            await self._fetch_readme(uri)
-        uuids = enumerate_uuids([self._readme])
 
         self._dependency_graph = graph_tool.Graph(directed=True)
         self._vertex_uuid = \
