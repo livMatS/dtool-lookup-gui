@@ -23,6 +23,7 @@
 #
 
 import asyncio
+import json
 import locale
 import math
 import os
@@ -434,6 +435,9 @@ class SignalHandler:
             if keyword:
                 if keyword.startswith('uuid:'):
                     self.datasets = await self.lookup.by_uuid(keyword[5:])
+                # TODO: replace with proper syntax check on mongo query:
+                elif keyword.startswith('{') and keyword.endswith('}'):
+                    self.datasets = await self.lookup.by_query(keyword)
                 else:
                     self.datasets = await self.lookup.search(keyword)
             else:

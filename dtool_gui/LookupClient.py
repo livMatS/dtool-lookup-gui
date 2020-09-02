@@ -24,6 +24,7 @@
 
 import aiohttp
 import yaml
+import json
 
 
 class LookupClient:
@@ -73,6 +74,14 @@ class LookupClient:
                 f'{self.lookup_url}/dataset/lookup/{uuid}',
                 headers=self.header,
                 verify_ssl=False) as r:
+            return await r.json()
+
+    async def by_query(self, query):
+        """Search by arbitrary NoSQL mongo query."""
+        async with self.session.post(
+                f'{self.lookup_url}/dataset/search',
+                headers=self.header,
+                json=json.loads(query), verify_ssl=False) as r:
             return await r.json()
 
     async def readme(self, uri):
