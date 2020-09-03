@@ -79,8 +79,34 @@ class GraphWidget(Gtk.DrawingArea):
         context.set_source_rgb(1, 1, 1)
         context.paint()
 
+        # Set scale transformation
         self._cairo_scale(area, context)
 
+        # Draw edges
+        context.set_source_rgb(0, 0, 0)
+        context.set_line_width(0.1)
+        for i, j in self.graph.edges():
+            # Start and end position of arrow
+            i_pos = self.pos[int(i)].copy()
+            j_pos = self.pos[int(j)].copy()
+            # Adjust to radius of circle
+            ij = i_pos - j_pos
+            normal = ij / np.linalg.norm(ij)
+            perpendicular = np.array([normal[1], -normal[0]])
+            i_pos -= 0.5 * normal
+            j_pos += 0.5 * normal
+            # Draw line
+            context.move_to(*i_pos)
+            context.line_to(*j_pos)
+            context.stroke()
+            # Draw arrow head
+            context.move_to(*j_pos)
+            context.line_to(*(j_pos + 0.2 * normal + 0.2 * perpendicular))
+            context.line_to(*(j_pos + 0.2 * normal - 0.2 * perpendicular))
+            context.close_path()
+            context.fill()
+
+        # Draw vertices
         for (x, y), s in zip(self.pos, self.state):
             context.set_source_rgb(0.5, 0.5, 0.7)
             circle(context, x, y)
