@@ -85,7 +85,7 @@
           </packing>
         </child>
         <child>
-          <object class="GtkButton" id="dependency-show-dataset">
+          <object class="GtkButton" id="dependency-show-dataset-button">
             <property name="label" translatable="yes">Show dataset</property>
             <property name="visible">True</property>
             <property name="can_focus">True</property>

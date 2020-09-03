@@ -52,6 +52,9 @@ class GraphWidget(Gtk.DrawingArea):
         self.popover.set_relative_to(self)
         self.uuid_label = builder.get_object('dependency-uuid')
         self.name_label = builder.get_object('dependency-name')
+        self.search_entry = builder.get_object('search-entry')
+
+        self._current_uuid = None
 
         # Event signals
         self.connect('motion-notify-event', self.on_motion_notify)
@@ -60,6 +63,9 @@ class GraphWidget(Gtk.DrawingArea):
 
         self.connect('realize', self.on_realize)
         self.connect('draw', self.on_draw)
+
+        builder.get_object('dependency-show-dataset-button').connect(
+            'clicked', self.on_show_clicked)
 
     def _cairo_scale(self, area, context):
         w, h = area.get_allocated_width(), area.get_allocated_height()
@@ -135,10 +141,15 @@ class GraphWidget(Gtk.DrawingArea):
                 rect = Gdk.Rectangle()
                 rect.x, rect.y = context.user_to_device(x, y + 0.5)
                 self.popover.set_pointing_to(rect)
-                self.uuid_label.set_text(self.uuids[self.state][0])
+                self._current_uuid = self.uuids[self.state][0]
+                self.uuid_label.set_text(self._current_uuid)
                 self.name_label.set_text(self.names[self.state][0])
                 self.popover.show()
 
         if not np.any(self.state):
             # Hide popover if no node is active
             self.popover.hide()
+
+    def on_show_clicked(self, user_data):
+        self.popover.hide()
+        self.search_entry.set_text(f'uuid:{self._current_uuid}')
