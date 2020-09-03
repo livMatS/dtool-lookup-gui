@@ -123,6 +123,7 @@ class DependencyGraph:
                     self.uuid_to_vertex[parent_uuid] = None
                     print('trace child:', parent_uuid, '<-', dataset['uuid'])
                     v2 = await self._trace_children(lookup, dataset['uuid'])
+                    self.name[v2] = dataset['name']
                     self.uuid_to_vertex[parent_uuid] = v2
                     self.graph.add_edge(v, v2)
         return v
