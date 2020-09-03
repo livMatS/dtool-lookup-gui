@@ -74,13 +74,13 @@ class DependencyGraph:
         self.name = self.graph.new_vertex_property('string')
         self.uuid_to_vertex = {}
 
-    async def _trace_dependencies(self, lookup, uuid):
+    async def _trace_parent(self, lookup, parent_uuid):
         v = self.graph.add_vertex()
-        self.uuid[v] = uuid
-        datasets = await lookup.by_uuid(uuid)
+        self.uuid[v] = parent_uuid
+        datasets = await lookup.by_uuid(parent_uuid)
         if len(datasets) == 0:
             # This UUID does not exist in the database
-            print(f'trace: UUID {uuid} does not exist')
+            print(f'trace: UUID {parent_uuid} does not exist')
             self.name[v] = 'Dataset does not exist in database.'
         else:
             # There may be the same dataset in multiple storage locations,
@@ -88,24 +88,46 @@ class DependencyGraph:
             dataset = datasets[0]
             self.name[v] = dataset['name']
             visited_uuids = set([])
-            for path, uuid in enumerate_uuids(
+            for path, parent_uuid in enumerate_uuids(
                     await lookup.readme(dataset['uri'])):
-                if uuid not in visited_uuids:
-                    if uuid in self.uuid_to_vertex:
+                if parent_uuid not in visited_uuids:
+                    if parent_uuid in self.uuid_to_vertex:
                         # We have a Vertex for this UUID, simple add an
                         # edge
-                        self.graph.add_edge(self.uuid_to_vertex[uuid], v)
+                        self.graph.add_edge(self.uuid_to_vertex[parent_uuid], v)
                     else:
                         # Create a new Vertex and continue tracing
-                        visited_uuids.add(uuid)
-                        self.uuid_to_vertex[uuid] = None
-                        print('trace:', dataset['uuid'], '<-', uuid,
-                              'via README entry', path)
-                        v2 = await self._trace_dependencies(lookup, uuid)
-                        self.uuid_to_vertex[uuid] = v2
+                        visited_uuids.add(parent_uuid)
+                        self.uuid_to_vertex[parent_uuid] = None
+                        print('trace parent:', dataset['uuid'], '<-',
+                              parent_uuid, 'via README entry', path)
+                        v2 = await self._trace_parent(lookup, parent_uuid)
+                        self.uuid_to_vertex[parent_uuid] = v2
                         self.graph.add_edge(v2, v)
+        return v
+
+    async def _trace_children(self, lookup, parent_uuid, v=None):
+        if v is None:
+            v = self.graph.add_vertex()
+            self.uuid[v] = parent_uuid
+        datasets = await lookup.search(parent_uuid)
+        for dataset in datasets:
+            readme = await lookup.readme(dataset['uri'])
+            uuids = enumerate_uuids(readme)
+            if parent_uuid in [x[1] for x in uuids]:
+                if parent_uuid in self.uuid_to_vertex:
+                    # We have a Vertex for this UUID, simple add an edge
+                    self.graph.add_edge(v, self.uuid_to_vertex[parent_uuid])
+                else:
+                    # Create a new Vertex and continue tracing
+                    self.uuid_to_vertex[parent_uuid] = None
+                    print('trace child:', parent_uuid, '<-', dataset['uuid'])
+                    v2 = await self._trace_children(lookup, dataset['uuid'])
+                    self.uuid_to_vertex[parent_uuid] = v2
+                    self.graph.add_edge(v, v2)
         return v
 
     async def trace_dependencies(self, lookup, uuid):
         self._reset_graph()
-        await self._trace_dependencies(lookup, uuid)
+        root_vertex = await self._trace_parent(lookup, uuid)
+        await self._trace_children(lookup, uuid, root_vertex)

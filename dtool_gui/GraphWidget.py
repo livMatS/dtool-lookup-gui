@@ -35,7 +35,7 @@ def circle(context, x, y):
 
 
 def square(context, x, y):
-    context.rectangle(x - 0.5, y - 0.5, 1.0, 1.0)
+    context.rectangle(x - 0.4, y - 0.4, 0.8, 0.8)
 
 
 class GraphWidget(Gtk.DrawingArea):
@@ -88,6 +88,21 @@ class GraphWidget(Gtk.DrawingArea):
         # Set scale transformation
         self._cairo_scale(area, context)
 
+        # Draw vertices
+        for i, ((x, y), s) in enumerate(zip(self.pos, self.state)):
+            context.set_source_rgb(0.5, 0.5, 0.7)
+            if i == 0:
+                square(context, x, y)
+            else:
+                circle(context, x, y)
+            if s:
+                context.fill_preserve()
+                context.set_source_rgb(0, 0, 0)
+                context.set_line_width(0.1)
+                context.stroke()
+            else:
+                context.fill()
+
         # Draw edges
         context.set_source_rgb(0, 0, 0)
         context.set_line_width(0.1)
@@ -111,18 +126,6 @@ class GraphWidget(Gtk.DrawingArea):
             context.line_to(*(j_pos + 0.2 * normal - 0.2 * perpendicular))
             context.close_path()
             context.fill()
-
-        # Draw vertices
-        for (x, y), s in zip(self.pos, self.state):
-            context.set_source_rgb(0.5, 0.5, 0.7)
-            circle(context, x, y)
-            if s:
-                context.fill_preserve()
-                context.set_source_rgb(0, 0, 0)
-                context.set_line_width(0.1)
-                context.stroke()
-            else:
-                context.fill()
 
     def on_motion_notify(self, area, event):
         context = area.get_window().cairo_create()
