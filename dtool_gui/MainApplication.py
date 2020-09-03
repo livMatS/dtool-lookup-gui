@@ -366,16 +366,10 @@ class SignalHandler:
         try:
             # Create graph widget
             pos = graph_tool.draw.sfdp_layout(self._dependency_graph)
-            if True:
-                graph_widget = GraphWidget(self.builder, self._dependency_graph,
-                                           [x for x in pos],
-                                           [x for x in self._vertex_uuid],
-                                           [x for x in self._vertex_name])
-            else:
-                graph_widget = graph_tool.draw.GraphWidget(
-                    self._dependency_graph, pos, vertex_size=20, vertex_pen_width=0,
-                    vertex_shape=self._vertex_shape,
-                    display_props=[self._vertex_uuid, self._vertex_name])
+            graph_widget = GraphWidget(self.builder, self._dependency_graph,
+                                       [x for x in pos],
+                                       [x for x in self._vertex_uuid],
+                                       [x for x in self._vertex_name])
             dependency_view = self.builder.get_object('dependency-view')
             for child in dependency_view:
                 child.destroy()
