@@ -76,15 +76,12 @@ class GraphWidget(Gtk.DrawingArea):
         pass
 
     def on_draw(self, area, context):
-        print(context)
-
         context.set_source_rgb(1, 1, 1)
         context.paint()
 
         self._cairo_scale(area, context)
 
         for (x, y), s in zip(self.pos, self.state):
-            print(x, y, s)
             context.set_source_rgb(0.5, 0.5, 0.7)
             circle(context, x, y)
             if s:
