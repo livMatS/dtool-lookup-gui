@@ -96,8 +96,8 @@ class GraphWidget(Gtk.DrawingArea):
             i_pos -= 0.5 * normal
             j_pos += 0.5 * normal
             # Draw line
-            context.move_to(*i_pos)
-            context.line_to(*j_pos)
+            context.move_to(*(i_pos - 0.05 * normal))
+            context.line_to(*(j_pos + 0.1 * normal))
             context.stroke()
             # Draw arrow head
             context.move_to(*j_pos)

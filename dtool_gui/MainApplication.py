@@ -45,6 +45,7 @@ try:
     import graph_tool
     import graph_tool.draw
     import graph_tool.collection
+
     graph_tool_found = True
 except ImportError:
     graph_tool_found = False
@@ -363,24 +364,19 @@ class SignalHandler:
         # Compute dependency graph
         await _trace_dependency(self._selected_dataset['uuid'])
 
-        try:
-            # Create graph widget
-            pos = graph_tool.draw.sfdp_layout(self._dependency_graph)
-            graph_widget = GraphWidget(self.builder, self._dependency_graph,
-                                       [x for x in pos],
-                                       [x for x in self._vertex_uuid],
-                                       [x for x in self._vertex_name])
-            dependency_view = self.builder.get_object('dependency-view')
-            for child in dependency_view:
-                child.destroy()
-            dependency_view.pack_start(graph_widget, True, True, 0)
-            if False:
-                graph_widget.fit_to_window()
-            graph_widget.show()
+        # Create graph widget
+        pos = graph_tool.draw.sfdp_layout(self._dependency_graph, K=2)
+        graph_widget = GraphWidget(self.builder, self._dependency_graph,
+                                   [x for x in pos],
+                                   [x for x in self._vertex_uuid],
+                                   [x for x in self._vertex_name])
+        dependency_view = self.builder.get_object('dependency-view')
+        for child in dependency_view:
+            child.destroy()
+        dependency_view.pack_start(graph_widget, True, True, 0)
+        graph_widget.show()
 
-            self.dependency_stack.set_visible_child(dependency_view)
-        except Exception as e:
-            print(e)
+        self.dependency_stack.set_visible_child(dependency_view)
 
         print('Finalized computing dependencies')
 
