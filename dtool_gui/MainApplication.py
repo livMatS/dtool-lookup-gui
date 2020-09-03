@@ -26,7 +26,6 @@ import asyncio
 import locale
 import math
 import os
-import uuid
 from contextlib import contextmanager
 from datetime import date, datetime
 
@@ -50,6 +49,7 @@ try:
 except ImportError:
     graph_tool_found = False
 
+from .Dependencies import DependencyGraph, is_uuid
 from .GraphWidget import GraphWidget
 from .LookupClient import LookupClient
 
@@ -102,16 +102,6 @@ def human_readable_file_size(num, suffix='B'):
                                     magnitude], suffix)
 
 
-def is_uuid(value):
-    '''Check whether the data is a UUID.'''
-    value = str(value)
-    try:
-        uuid.UUID(value)
-        return True
-    except ValueError:
-        return False
-
-
 def fill_readme_tree_store(store, data, parent=None):
     def append_entry(store, entry, value, parent):
         # Check whether the data is a UUID. We then enable a
@@ -152,33 +142,6 @@ def fill_readme_tree_store(store, data, parent=None):
             fill_readme_tree_store(store, value, parent=current)
         else:
             append_entry(store, entry, value, parent)
-
-
-def enumerate_uuids(data, key=[]):
-    def enumerate_uuids_from_list(list_data, key):
-        result = []
-        for i, current_data in enumerate(list_data):
-            entry = f'{i + 1}'
-            if type(current_data) is list:
-                result += enumerate_uuids_from_list(current_data,
-                                                    key=key + [entry])
-            elif type(current_data) is dict:
-                result += enumerate_uuids(current_data, key=key + [entry])
-            else:
-                if is_uuid(current_data):
-                    result += [(key + [entry], current_data)]
-        return result
-
-    result = []
-    for entry, value in data.items():
-        if type(value) is list:
-            result += enumerate_uuids_from_list(value, key=key + [entry])
-        elif type(value) is dict:
-            result += enumerate_uuids(value, key=key + [entry])
-        else:
-            if is_uuid(value):
-                result += [(key + [entry], value)]
-    return result
 
 
 def fill_manifest_tree_store(store, data, parent=None):
@@ -236,7 +199,6 @@ class SignalHandler:
         self._selected_dataset = None
         self._readme = None
         self._manifest = None
-        self._dependency_graph = None
 
         self.main_stack.set_visible_child(
             self.builder.get_object('main-spinner'))
@@ -312,64 +274,25 @@ class SignalHandler:
             self.builder.get_object('manifest-view'))
 
     async def _compute_dependencies(self, uri):
-        uuid_to_vertex = {}
-
-        async def _trace_dependency(uuid, shape='square'):
-            v = self._dependency_graph.add_vertex()
-            self._vertex_uuid[v] = uuid
-            datasets = await self.lookup.by_uuid(uuid)
-            if len(datasets) == 0:
-                # This UUID does not exist in the database
-                print(f'trace: UUID {uuid} does not exist')
-                self._vertex_shape[v] = 'triangle'
-                self._vertex_name[v] = 'Dataset does not exist in database.'
-            else:
-                # There may be the same dataset in multiple storage locations,
-                # we just use the first
-                self._vertex_shape[v] = shape
-                dataset = datasets[0]
-                self._vertex_name[v] = dataset['name']
-                visited_uuids = set([])
-                for path, uuid in enumerate_uuids(
-                        await self.lookup.readme(dataset['uri'])):
-                    if uuid not in visited_uuids:
-                        if uuid in uuid_to_vertex:
-                            # We have a Vertex for this UUID, simple add an
-                            # edge
-                            self._dependency_graph.add_edge(
-                                uuid_to_vertex[uuid], v)
-                        else:
-                            # Create a new Vertex and continue tracing
-                            visited_uuids.add(uuid)
-                            uuid_to_vertex[uuid] = None
-                            print('trace:', dataset['uuid'], '<-', uuid,
-                                  'via README entry', path)
-                            v2 = await _trace_dependency(uuid, shape='circle')
-                            uuid_to_vertex[uuid] = v2
-                            self._dependency_graph.add_edge(v2, v)
-            return v
-
         print('Start computing dependencies')
         self.dependency_stack.set_visible_child(
             self.builder.get_object('dependency-spinner'))
 
-        self._dependency_graph = graph_tool.Graph(directed=True)
-        self._vertex_uuid = \
-            self._dependency_graph.new_vertex_property('string')
-        self._vertex_name = \
-            self._dependency_graph.new_vertex_property('string')
-        self._vertex_shape = \
-            self._dependency_graph.new_vertex_property('string')
+        try:
+            dependency_graph = DependencyGraph()
 
-        # Compute dependency graph
-        await _trace_dependency(self._selected_dataset['uuid'])
+            # Compute dependency graph
+            await dependency_graph.trace_dependencies(
+                self.lookup, self._selected_dataset['uuid'])
+        except Exception as e:
+            print(e)
 
         # Create graph widget
-        pos = graph_tool.draw.sfdp_layout(self._dependency_graph, K=2)
-        graph_widget = GraphWidget(self.builder, self._dependency_graph,
+        pos = graph_tool.draw.sfdp_layout(dependency_graph.graph, K=2)
+        graph_widget = GraphWidget(self.builder, dependency_graph.graph,
                                    [x for x in pos],
-                                   [x for x in self._vertex_uuid],
-                                   [x for x in self._vertex_name])
+                                   [x for x in dependency_graph.uuid],
+                                   [x for x in dependency_graph.name])
         dependency_view = self.builder.get_object('dependency-view')
         for child in dependency_view:
             child.destroy()
