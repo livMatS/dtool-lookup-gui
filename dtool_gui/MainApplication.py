@@ -49,6 +49,7 @@ try:
 except ImportError:
     graph_tool_found = False
 
+from .GraphWidget import GraphWidget
 from .LookupClient import LookupClient
 
 
@@ -362,20 +363,30 @@ class SignalHandler:
         # Compute dependency graph
         await _trace_dependency(self._selected_dataset['uuid'])
 
-        # Create graph widget
-        pos = graph_tool.draw.sfdp_layout(self._dependency_graph)
-        graph_widget = graph_tool.draw.GraphWidget(
-            self._dependency_graph, pos, vertex_size=20, vertex_pen_width=0,
-            vertex_shape=self._vertex_shape,
-            display_props=[self._vertex_uuid, self._vertex_name])
-        dependency_view = self.builder.get_object('dependency-view')
-        for child in dependency_view:
-            child.destroy()
-        dependency_view.pack_start(graph_widget, True, True, 0)
-        graph_widget.fit_to_window()
-        graph_widget.show()
+        try:
+            # Create graph widget
+            pos = graph_tool.draw.sfdp_layout(self._dependency_graph)
+            if True:
+                graph_widget = GraphWidget(self.builder, self._dependency_graph,
+                                           [x for x in pos],
+                                           [x for x in self._vertex_uuid],
+                                           [x for x in self._vertex_name])
+            else:
+                graph_widget = graph_tool.draw.GraphWidget(
+                    self._dependency_graph, pos, vertex_size=20, vertex_pen_width=0,
+                    vertex_shape=self._vertex_shape,
+                    display_props=[self._vertex_uuid, self._vertex_name])
+            dependency_view = self.builder.get_object('dependency-view')
+            for child in dependency_view:
+                child.destroy()
+            dependency_view.pack_start(graph_widget, True, True, 0)
+            if False:
+                graph_widget.fit_to_window()
+            graph_widget.show()
 
-        self.dependency_stack.set_visible_child(dependency_view)
+            self.dependency_stack.set_visible_child(dependency_view)
+        except Exception as e:
+            print(e)
 
         print('Finalized computing dependencies')
 
