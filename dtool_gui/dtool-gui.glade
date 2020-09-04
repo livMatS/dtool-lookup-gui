@@ -146,30 +146,6 @@
       </packing>
     </child>
   </object>
-  <object class="GtkTreeStore" id="manifest-treestore">
-    <columns>
-      <!-- column-name name -->
-      <column type="gchararray"/>
-      <!-- column-name size -->
-      <column type="gchararray"/>
-      <!-- column-name date -->
-      <column type="gchararray"/>
-      <!-- column-name uuid -->
-      <column type="gchararray"/>
-    </columns>
-  </object>
-  <object class="GtkTreeStore" id="readme-treestore">
-    <columns>
-      <!-- column-name key -->
-      <column type="gchararray"/>
-      <!-- column-name value -->
-      <column type="gchararray"/>
-      <!-- column-name is_uuid -->
-      <column type="gboolean"/>
-      <!-- column-name markup -->
-      <column type="gchararray"/>
-    </columns>
-  </object>
   <object class="GtkApplicationWindow" id="main-window">
     <property name="width_request">1000</property>
     <property name="height_request">700</property>
@@ -186,9 +162,10 @@
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <child>
-              <object class="GtkBox" id="main-view">
+              <object class="GtkPaned" id="main-view">
                 <property name="visible">True</property>
-                <property name="can_focus">False</property>
+                <property name="can_focus">True</property>
+                <property name="position">400</property>
                 <child>
                   <object class="GtkScrolledWindow">
                     <property name="visible">True</property>
@@ -211,9 +188,8 @@
                     </child>
                   </object>
                   <packing>
-                    <property name="expand">False</property>
-                    <property name="fill">True</property>
-                    <property name="position">0</property>
+                    <property name="resize">False</property>
+                    <property name="shrink">True</property>
                   </packing>
                 </child>
                 <child>
@@ -230,6 +206,8 @@
                           <object class="GtkGrid">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
+                            <property name="margin_left">5</property>
+                            <property name="margin_right">5</property>
                             <property name="margin_start">5</property>
                             <property name="margin_end">5</property>
                             <property name="margin_top">5</property>
@@ -432,6 +410,7 @@
                                         <property name="visible">True</property>
                                         <property name="can_focus">True</property>
                                         <property name="model">readme-treestore</property>
+                                        <property name="search_column">0</property>
                                         <property name="enable_tree_lines">True</property>
                                         <signal name="row-activated" handler="on_readme_row_activated" swapped="no"/>
                                         <child internal-child="selection">
@@ -525,6 +504,7 @@
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="model">manifest-treestore</property>
+                                    <property name="search_column">0</property>
                                     <child internal-child="selection">
                                       <object class="GtkTreeSelection"/>
                                     </child>
@@ -662,15 +642,14 @@
                     </child>
                   </object>
                   <packing>
-                    <property name="expand">True</property>
-                    <property name="fill">True</property>
-                    <property name="position">1</property>
+                    <property name="resize">True</property>
+                    <property name="shrink">True</property>
                   </packing>
                 </child>
               </object>
               <packing>
-                <property name="name">page0</property>
-                <property name="title" translatable="yes">page0</property>
+                <property name="name">page3</property>
+                <property name="title" translatable="yes">page3</property>
               </packing>
             </child>
             <child>
@@ -744,6 +723,7 @@
             <property name="primary_icon_name">edit-find-symbolic</property>
             <property name="primary_icon_activatable">False</property>
             <property name="primary_icon_sensitive">False</property>
+            <property name="placeholder_text" translatable="yes">Type to search...</property>
             <signal name="search-changed" handler="on_search" swapped="no"/>
           </object>
         </child>
@@ -919,5 +899,29 @@
         <property name="show_close_button">True</property>
       </object>
     </child>
+  </object>
+  <object class="GtkTreeStore" id="manifest-treestore">
+    <columns>
+      <!-- column-name name -->
+      <column type="gchararray"/>
+      <!-- column-name size -->
+      <column type="gchararray"/>
+      <!-- column-name date -->
+      <column type="gchararray"/>
+      <!-- column-name uuid -->
+      <column type="gchararray"/>
+    </columns>
+  </object>
+  <object class="GtkTreeStore" id="readme-treestore">
+    <columns>
+      <!-- column-name key -->
+      <column type="gchararray"/>
+      <!-- column-name value -->
+      <column type="gchararray"/>
+      <!-- column-name is_uuid -->
+      <column type="gboolean"/>
+      <!-- column-name markup -->
+      <column type="gchararray"/>
+    </columns>
   </object>
 </interface>
