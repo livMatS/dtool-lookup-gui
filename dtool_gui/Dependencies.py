@@ -24,7 +24,7 @@
 
 import uuid
 
-import graph_tool
+from .SimpleGraph import SimpleGraph
 
 
 def is_uuid(value):
@@ -69,27 +69,26 @@ class DependencyGraph:
         self._reset_graph()
 
     def _reset_graph(self):
-        self.graph = graph_tool.Graph(directed=True)
-        self.uuid = self.graph.new_vertex_property('string')
-        self.name = self.graph.new_vertex_property('string')
+        self.graph = SimpleGraph()
         self.uuid_to_vertex = {}
 
-    async def _trace_parent(self, lookup, parent_uuid):
-        v = self.graph.add_vertex()
-        self.uuid[v] = parent_uuid
+    async def _trace_parents(self, lookup, parent_uuid):
         datasets = await lookup.by_uuid(parent_uuid)
         if len(datasets) == 0:
             # This UUID does not exist in the database
             print(f'trace: UUID {parent_uuid} does not exist')
-            self.name[v] = 'Dataset does not exist in database.'
+            v = self.graph.add_vertex(
+                uuid=parent_uuid,
+                name='Dataset does not exist in database.')
         else:
             # There may be the same dataset in multiple storage locations,
             # we just use the first
             dataset = datasets[0]
-            self.name[v] = dataset['name']
+            v = self.graph.add_vertex(uuid=parent_uuid, name=dataset['name'])
             visited_uuids = set([])
-            for path, parent_uuid in enumerate_uuids(
-                    await lookup.readme(dataset['uri'])):
+            readme = await lookup.readme(dataset['uri'])
+            uuids_in_readme = enumerate_uuids(readme)
+            for path, parent_uuid in uuids_in_readme:
                 if parent_uuid not in visited_uuids:
                     if parent_uuid in self.uuid_to_vertex:
                         # We have a Vertex for this UUID, simple add an
@@ -101,7 +100,7 @@ class DependencyGraph:
                         self.uuid_to_vertex[parent_uuid] = None
                         print('trace parent:', dataset['uuid'], '<-',
                               parent_uuid, 'via README entry', path)
-                        v2 = await self._trace_parent(lookup, parent_uuid)
+                        v2 = await self._trace_parents(lookup, parent_uuid)
                         self.uuid_to_vertex[parent_uuid] = v2
                         self.graph.add_edge(v2, v)
         return v
@@ -113,15 +112,21 @@ class DependencyGraph:
         datasets = await lookup.search(parent_uuid)
         for dataset in datasets:
             readme = await lookup.readme(dataset['uri'])
-            uuids = enumerate_uuids(readme)
-            if parent_uuid in [x[1] for x in uuids]:
+            uuids_in_readme = enumerate_uuids(readme)
+            print(parent_uuid, dataset['uuid'])
+            print(readme)
+            print(uuids_in_readme)
+            if parent_uuid in [x[1] for x in uuids_in_readme]:
                 if parent_uuid in self.uuid_to_vertex:
                     # We have a Vertex for this UUID, simple add an edge
+                    print('trace child:', parent_uuid, '<-', dataset['uuid'],
+                          '(vertex already existed)')
                     self.graph.add_edge(v, self.uuid_to_vertex[parent_uuid])
                 else:
                     # Create a new Vertex and continue tracing
                     self.uuid_to_vertex[parent_uuid] = None
-                    print('trace child:', parent_uuid, '<-', dataset['uuid'])
+                    print('trace child:', parent_uuid, '<-', dataset['uuid'],
+                          '(new vertex)')
                     v2 = await self._trace_children(lookup, dataset['uuid'])
                     self.name[v2] = dataset['name']
                     self.uuid_to_vertex[parent_uuid] = v2
@@ -130,5 +135,5 @@ class DependencyGraph:
 
     async def trace_dependencies(self, lookup, uuid):
         self._reset_graph()
-        root_vertex = await self._trace_parent(lookup, uuid)
+        root_vertex = await self._trace_parents(lookup, uuid)
         await self._trace_children(lookup, uuid, root_vertex)
