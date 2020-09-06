@@ -28,6 +28,8 @@ import numpy as np
 
 from gi.repository import Gdk, Gtk
 
+from .SimpleGraph import GraphLayout
+
 
 def circle(context, x, y):
     context.arc(x, y, 0.5, 0, 2 * pi)
@@ -39,13 +41,14 @@ def square(context, x, y):
 
 
 class GraphWidget(Gtk.DrawingArea):
-    def __init__(self, builder, graph, pos, uuids, names):
+    def __init__(self, builder, graph):
         super().__init__()
         self.graph = graph
-        self.pos = np.array(pos)
-        self.uuids = np.array(uuids)
-        self.names = np.array(names)
-        self.state = np.zeros(len(self.pos), dtype=bool)
+        self.graph.set_vertex_properties('state',
+                                         np.zeros(self.graph.nb_vertices,
+                                                  dtype=bool))
+        self.layout = GraphLayout(self.graph,
+                                  equilibrium_distance=3)
 
         # Popover widget
         self.popover = builder.get_object('dependency-popover')
@@ -69,10 +72,11 @@ class GraphWidget(Gtk.DrawingArea):
 
     def _cairo_scale(self, area, context):
         w, h = area.get_allocated_width(), area.get_allocated_height()
-        min_x = np.min(self.pos[:, 0]) - 1
-        max_x = np.max(self.pos[:, 0]) + 1
-        min_y = np.min(self.pos[:, 1]) - 1
-        max_y = np.max(self.pos[:, 1]) + 1
+        positions = self.layout.positions
+        min_x = np.min(positions[:, 0]) - 1
+        max_x = np.max(positions[:, 0]) + 1
+        min_y = np.min(positions[:, 1]) - 1
+        max_y = np.max(positions[:, 1]) + 1
         s = min(w / (max_x - min_x), h / (max_y - min_y))
         context.scale(s, s)
         context.translate((w / s - min_x - max_x) / 2,
@@ -88,8 +92,12 @@ class GraphWidget(Gtk.DrawingArea):
         # Set scale transformation
         self._cairo_scale(area, context)
 
+        # Get positions from layouter
+        positions = self.layout.positions
+        state = self.graph.get_vertex_properties('state')
+
         # Draw vertices
-        for i, ((x, y), s) in enumerate(zip(self.pos, self.state)):
+        for i, ((x, y), s) in enumerate(zip(positions, state)):
             context.set_source_rgb(0.5, 0.5, 0.7)
             if i == 0:
                 square(context, x, y)
@@ -106,10 +114,10 @@ class GraphWidget(Gtk.DrawingArea):
         # Draw edges
         context.set_source_rgb(0, 0, 0)
         context.set_line_width(0.1)
-        for i, j in self.graph.edges():
+        for i, j in self.graph.edges:
             # Start and end position of arrow
-            i_pos = self.pos[int(i)].copy()
-            j_pos = self.pos[int(j)].copy()
+            i_pos = positions[i].copy()
+            j_pos = positions[j].copy()
             # Adjust to radius of circle
             ij = i_pos - j_pos
             normal = ij / np.linalg.norm(ij)
@@ -124,32 +132,41 @@ class GraphWidget(Gtk.DrawingArea):
             context.move_to(*j_pos)
             context.line_to(*(j_pos + 0.2 * normal + 0.2 * perpendicular))
             context.line_to(*(j_pos + 0.2 * normal - 0.2 * perpendicular))
-            context.close_path()
             context.fill()
+            context.close_path()
 
     def on_motion_notify(self, area, event):
         context = area.get_window().cairo_create()
         self._cairo_scale(area, context)
+
+        positions = self.layout.positions
+        state = np.array(self.graph.get_vertex_properties('state'))
+        uuids = np.array(self.graph.get_vertex_properties('uuid'))
+        names = np.array(self.graph.get_vertex_properties('name'))
+
         cursor_pos = np.array(context.device_to_user(event.x, event.y))
-        dist_sq = np.sum((self.pos - cursor_pos) ** 2, axis=1)
+        dist_sq = np.sum((positions - cursor_pos) ** 2, axis=1)
 
         new_state = dist_sq < 0.25
-        if np.any(new_state != self.state):
-            self.state = new_state
+        if np.any(new_state != state):
+            state = new_state
+            self.graph.set_vertex_properties('state', state)
+
             self.queue_draw()
 
-            if np.any(self.state):
+            if np.any(state):
                 # Show popover
-                x, y = self.pos[self.state][0]
+                positions = self.layout.positions
+                x, y = positions[state][0]
                 rect = Gdk.Rectangle()
                 rect.x, rect.y = context.user_to_device(x, y + 0.5)
                 self.popover.set_pointing_to(rect)
-                self._current_uuid = self.uuids[self.state][0]
+                self._current_uuid = uuids[state][0]
                 self.uuid_label.set_text(self._current_uuid)
-                self.name_label.set_text(self.names[self.state][0])
+                self.name_label.set_text(names[state][0])
                 self.popover.show()
 
-        if not np.any(self.state):
+        if not np.any(state):
             # Hide popover if no node is active
             self.popover.hide()
 

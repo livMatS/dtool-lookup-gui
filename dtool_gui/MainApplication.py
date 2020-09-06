@@ -40,15 +40,6 @@ import gbulb
 
 gbulb.install(gtk=True)
 
-try:
-    import graph_tool
-    import graph_tool.draw
-    import graph_tool.collection
-
-    graph_tool_found = True
-except ImportError:
-    graph_tool_found = False
-
 from .Dependencies import DependencyGraph, is_uuid
 from .GraphWidget import GraphWidget
 from .LookupClient import LookupClient
@@ -288,11 +279,7 @@ class SignalHandler:
             print(e)
 
         # Create graph widget
-        pos = graph_tool.draw.sfdp_layout(dependency_graph.graph, K=2)
-        graph_widget = GraphWidget(self.builder, dependency_graph.graph,
-                                   [x for x in pos],
-                                   [x for x in dependency_graph.uuid],
-                                   [x for x in dependency_graph.name])
+        graph_widget = GraphWidget(self.builder, dependency_graph.graph)
         dependency_view = self.builder.get_object('dependency-view')
         for child in dependency_view:
             child.destroy()
@@ -346,7 +333,7 @@ class SignalHandler:
         elif page == 1:
             self._manifest_task = asyncio.ensure_future(
                 self._fetch_manifest(self._selected_dataset['uri']))
-        elif page == 2 and graph_tool_found:
+        elif page == 2:
             self._dependency_task = asyncio.ensure_future(
                 self._compute_dependencies(self._selected_dataset['uri']))
 
@@ -386,7 +373,7 @@ class SignalHandler:
             elif page_num == 1 and self._manifest is None:
                 self._manifest_task = asyncio.ensure_future(
                     self._fetch_manifest(self._selected_dataset['uri']))
-            elif page_num == 2 and self._dependency_graph is None and graph_tool_found:
+            elif page_num == 2 and self._dependency_graph is None:
                 self._dependency_task = asyncio.ensure_future(
                     self._compute_dependencies(self._selected_dataset['uri']))
 
