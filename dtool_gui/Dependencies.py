@@ -107,8 +107,7 @@ class DependencyGraph:
 
     async def _trace_children(self, lookup, parent_uuid, v=None):
         if v is None:
-            v = self.graph.add_vertex()
-            self.uuid[v] = parent_uuid
+            v = self.graph.add_vertex(uuid=parent_uuid, name='XXX')
         datasets = await lookup.search(parent_uuid)
         for dataset in datasets:
             readme = await lookup.readme(dataset['uri'])
@@ -136,4 +135,4 @@ class DependencyGraph:
     async def trace_dependencies(self, lookup, uuid):
         self._reset_graph()
         root_vertex = await self._trace_parents(lookup, uuid)
-        await self._trace_children(lookup, uuid, root_vertex)
+        #await self._trace_children(lookup, uuid, root_vertex)
