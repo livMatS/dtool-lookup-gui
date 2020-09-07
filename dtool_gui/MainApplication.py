@@ -269,17 +269,13 @@ class SignalHandler:
         self.dependency_stack.set_visible_child(
             self.builder.get_object('dependency-spinner'))
 
-        try:
-            dependency_graph = DependencyGraph()
-
-            # Compute dependency graph
-            await dependency_graph.trace_dependencies(
-                self.lookup, self._selected_dataset['uuid'])
-        except Exception as e:
-            print(e)
+        # Compute dependency graph
+        self._dependency_graph = DependencyGraph()
+        await self._dependency_graph.trace_dependencies(
+            self.lookup, self._selected_dataset['uuid'])
 
         # Create graph widget
-        graph_widget = GraphWidget(self.builder, dependency_graph.graph)
+        graph_widget = GraphWidget(self.builder, self._dependency_graph.graph)
         dependency_view = self.builder.get_object('dependency-view')
         for child in dependency_view:
             child.destroy()
