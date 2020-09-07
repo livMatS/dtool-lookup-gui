@@ -84,12 +84,13 @@ class SimpleGraph:
 
 class GraphLayout:
     def __init__(self, graph, spring_constant=1, equilibrium_distance=1,
-                 coulomb=1, damping_constant=1, timestep=0.1,
+                 coulomb=1, attenuation=0.5, damping_constant=1, timestep=0.1,
                  mass=1):
         self.graph = graph
         self.spring_constant = spring_constant
         self.equilibrium_distance = equilibrium_distance
         self.coulomb = coulomb
+        self.attenuation = attenuation
         self.damping_constant = damping_constant
         self.timestep = timestep
         self.mass = mass
@@ -152,10 +153,12 @@ class GraphLayout:
         abs_dr_n = np.sqrt(np.sum(dr_nc ** 2, axis=1))
 
         # Energies (per pair)
-        e_n = self.coulomb / abs_dr_n
+        e_n = self.coulomb * erf(self.attenuation * abs_dr_n) / abs_dr_n
 
         # Forces (per pair)
-        de_n = - self.coulomb / abs_dr_n ** 2
+        de_n = self.coulomb * (
+                -erf(self.attenuation * abs_dr_n) / abs_dr_n ** 2
+                + 2 * self.attenuation * np.exp(-(self.attenuation * abs_dr_n) ** 2) / np.sqrt(np.pi))
         df_nc = 0.5 * de_n.reshape(-1, 1) * dr_nc / abs_dr_n.reshape(-1, 1)
 
         # Sum for each vertex
