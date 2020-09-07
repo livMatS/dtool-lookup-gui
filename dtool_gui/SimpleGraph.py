@@ -23,6 +23,7 @@
 #
 
 import numpy as np
+from scipy.special import erf
 
 
 class SimpleGraph:
@@ -82,10 +83,16 @@ class SimpleGraph:
 
 
 class GraphLayout:
-    def __init__(self, graph, spring_constant=1, equilibrium_distance=1):
+    def __init__(self, graph, spring_constant=1, equilibrium_distance=1,
+                 coulomb=1, damping_constant=1, timestep=0.1,
+                 mass=1):
         self.graph = graph
         self.spring_constant = spring_constant
         self.equilibrium_distance = equilibrium_distance
+        self.coulomb = coulomb
+        self.damping_constant = damping_constant
+        self.timestep = timestep
+        self.mass = mass
 
         self._initialize_positions()
 
@@ -98,19 +105,84 @@ class GraphLayout:
         n = int(np.sqrt(nb_vertices)) + 1
         grid = (np.mgrid[:n, :n].T).reshape(-1, 2)[:nb_vertices]
         self._positions = grid.astype(float) * self.equilibrium_distance
+        self._velocities = np.zeros_like(self._positions)
+        self._forces = np.zeros_like(self._positions)
 
-    def _energy(self, pos):
-        i = np.array(self.graph.vertex1)
-        j = np.array(self.graph.vertex2)
-        distance = np.sqrt(np.sum((pos[i] - pos[j]) ** 2, axis=1))
-        return 0.5 * self.spring_constant * (
-                distance - self.equilibrium_distance) ** 2
+    def _compute_spring_energy_and_forces(self, pos):
+        nb_vertices = self.graph.nb_vertices
 
-    def _forces(self, pos):
-        i = np.array(self.graph.vertex1)
-        j = np.array(self.graph.vertex2)
-        distance = np.sqrt(np.sum((pos[i] - pos[j]) ** 2, axis=1))
-        forces = self.spring_constant * (
-                distance - self.equilibrium_distance) / distance * (
-                         pos[i] - pos[j])
-        return np.bincount(fo)
+        # Neighbor list (edge list)
+        i_n = np.array(self.graph.vertex1)
+        j_n = np.array(self.graph.vertex2)
+
+        # Vertex distances
+        dr_nc = pos[i_n] - pos[j_n]
+        abs_dr_n = np.sqrt(np.sum(dr_nc ** 2, axis=1))
+
+        # Energies (per pair)
+        e_n = 0.5 * self.spring_constant * (
+                abs_dr_n - self.equilibrium_distance) ** 2
+
+        # Forces (per pair)
+        de_n = self.spring_constant * (abs_dr_n - self.equilibrium_distance)
+        df_nc = 0.5 * de_n.reshape(-1, 1) * dr_nc / abs_dr_n.reshape(-1, 1)
+
+        # Sum for each vertex
+        fx_i = np.bincount(j_n, weights=df_nc[:, 0], minlength=nb_vertices) - \
+               np.bincount(i_n, weights=df_nc[:, 0], minlength=nb_vertices)
+        fy_i = np.bincount(j_n, weights=df_nc[:, 1], minlength=nb_vertices) - \
+               np.bincount(i_n, weights=df_nc[:, 1], minlength=nb_vertices)
+
+        # Return energy and forces
+        return np.sum(e_n), np.transpose([fx_i, fy_i])
+
+    def _compute_coulomb_energy_and_forces(self, pos):
+        nb_vertices = self.graph.nb_vertices
+
+        # Neighbor list (between all atoms)
+        i_n, j_n = np.mgrid[:nb_vertices, :nb_vertices]
+        i_n.shape = (-1,)
+        j_n.shape = (-1,)
+        m = i_n != j_n
+        i_n = i_n[m]
+        j_n = j_n[m]
+
+        # Vertex distances
+        dr_nc = pos[i_n] - pos[j_n]
+        abs_dr_n = np.sqrt(np.sum(dr_nc ** 2, axis=1))
+
+        # Energies (per pair)
+        e_n = self.coulomb / abs_dr_n
+
+        # Forces (per pair)
+        de_n = - self.coulomb / abs_dr_n ** 2
+        df_nc = 0.5 * de_n.reshape(-1, 1) * dr_nc / abs_dr_n.reshape(-1, 1)
+
+        # Sum for each vertex
+        fx_i = np.bincount(j_n, weights=df_nc[:, 0], minlength=nb_vertices) - \
+               np.bincount(i_n, weights=df_nc[:, 0], minlength=nb_vertices)
+        fy_i = np.bincount(j_n, weights=df_nc[:, 1], minlength=nb_vertices) - \
+               np.bincount(i_n, weights=df_nc[:, 1], minlength=nb_vertices)
+
+        # Return energy and forces
+        return np.sum(e_n), np.transpose([fx_i, fy_i])
+
+    def iterate(self):
+        """Carry out a single step of the graph layout optimization"""
+
+        # Verlet step 1
+        self._velocities += 0.5 * self._forces * self.timestep / self.mass
+        self._positions += self._velocities * self.timestep
+
+        # Recompute forces
+        self._energy, self._forces = self._compute_spring_energy_and_forces(
+            self._positions)
+        e, f = self._compute_coulomb_energy_and_forces(self._positions)
+        self._energy += e
+        self._forces += f
+
+        # Add damping force
+        self._forces += -self.damping_constant * self._velocities
+
+        # Verlet step 2
+        self._velocities += 0.5 * self._forces * self.timestep / self.mass

@@ -26,7 +26,7 @@ from math import pi
 
 import numpy as np
 
-from gi.repository import Gdk, Gtk
+from gi.repository import GObject, Gdk, Gtk
 
 from .SimpleGraph import GraphLayout
 
@@ -69,6 +69,11 @@ class GraphWidget(Gtk.DrawingArea):
 
         builder.get_object('dependency-show-dataset-button').connect(
             'clicked', self.on_show_clicked)
+
+        self._timer = GObject.timeout_add(50, self.on_timeout, self)
+
+    def __del__(self):
+        GObject.source_remove(self._timer)
 
     def _cairo_scale(self, area, context):
         w, h = area.get_allocated_width(), area.get_allocated_height()
@@ -173,3 +178,8 @@ class GraphWidget(Gtk.DrawingArea):
     def on_show_clicked(self, user_data):
         self.popover.hide()
         self.search_entry.set_text(f'uuid:{self._current_uuid}')
+
+    def on_timeout(self, user_data):
+        self.layout.iterate()
+        self.queue_draw()
+        return True
