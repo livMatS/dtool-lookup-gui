@@ -83,8 +83,8 @@ class SimpleGraph:
 
 
 class GraphLayout:
-    def __init__(self, graph, spring_constant=1, equilibrium_distance=1,
-                 coulomb=1, attenuation=0.5, damping_constant=1, timestep=0.1,
+    def __init__(self, graph, spring_constant=1, equilibrium_distance=2,
+                 coulomb=1, attenuation=0.5, damping_constant=1, timestep=0.5,
                  mass=1):
         self.graph = graph
         self.spring_constant = spring_constant

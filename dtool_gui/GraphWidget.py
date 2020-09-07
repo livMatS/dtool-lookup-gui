@@ -47,8 +47,7 @@ class GraphWidget(Gtk.DrawingArea):
         self.graph.set_vertex_properties('state',
                                          np.zeros(self.graph.nb_vertices,
                                                   dtype=bool))
-        self.layout = GraphLayout(self.graph,
-                                  equilibrium_distance=3)
+        self.layout = GraphLayout(self.graph)
 
         # Popover widget
         self.popover = builder.get_object('dependency-popover')
