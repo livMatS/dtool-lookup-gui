@@ -83,17 +83,32 @@ class SimpleGraph:
 
 
 class GraphLayout:
+    """
+    Simple graph layouter that uses spring and electrostatic forces between
+    vertices and the Fast Intertial Relaxation Engine (FIRE) for optimization.
+    """
     def __init__(self, graph, spring_constant=1, equilibrium_distance=2,
-                 coulomb=1, attenuation=0.5, damping_constant=1, timestep=0.5,
-                 mass=1):
+                 coulomb=1, attenuation=0.5, mass=1, max_timestep=1,
+                 minsteps=10, inc_timestep=1.2, dec_timestep=0.5, mix=0.1,
+                 dec_mix=0.99):
         self.graph = graph
         self.spring_constant = spring_constant
         self.equilibrium_distance = equilibrium_distance
         self.coulomb = coulomb
         self.attenuation = attenuation
-        self.damping_constant = damping_constant
-        self.timestep = timestep
         self.mass = mass
+        self.max_timestep = max_timestep
+        self.minsteps = minsteps
+        self.inc_timestep = inc_timestep
+        self.dec_timestep = dec_timestep
+        self.initial_mix = mix
+        self.dec_mix = dec_mix
+
+        self.timestep = max_timestep
+        self.mix = mix
+        self.cut = minsteps
+
+        self._energy = None
 
         self._initialize_positions()
 
@@ -158,7 +173,8 @@ class GraphLayout:
         # Forces (per pair)
         de_n = self.coulomb * (
                 -erf(self.attenuation * abs_dr_n) / abs_dr_n ** 2
-                + 2 * self.attenuation * np.exp(-(self.attenuation * abs_dr_n) ** 2) / np.sqrt(np.pi))
+                + 2 * self.attenuation * np.exp(
+            -(self.attenuation * abs_dr_n) ** 2) / (np.sqrt(np.pi) * abs_dr_n))
         df_nc = 0.5 * de_n.reshape(-1, 1) * dr_nc / abs_dr_n.reshape(-1, 1)
 
         # Sum for each vertex
@@ -173,6 +189,10 @@ class GraphLayout:
     def iterate(self):
         """Carry out a single step of the graph layout optimization"""
 
+        old_energy = self._energy
+        old_positions = self._positions.copy()
+        old_velocities = self._velocities.copy()
+
         # Verlet step 1
         self._velocities += 0.5 * self._forces * self.timestep / self.mass
         self._positions += self._velocities * self.timestep
@@ -184,8 +204,39 @@ class GraphLayout:
         self._energy += e
         self._forces += f
 
-        # Add damping force
-        self._forces += -self.damping_constant * self._velocities
-
         # Verlet step 2
         self._velocities += 0.5 * self._forces * self.timestep / self.mass
+
+        if old_energy is not None and self._energy is not None:
+            if old_energy < self._energy:
+                # The energy did not decrease, decrease time step and retry!
+                self._positions = old_positions
+                self._velocities = old_velocities
+                self.timestep *= self.dec_timestep
+                return
+
+        # Adjust velocities accordings to the FIRE algorithm
+        v_dot_f = np.sum(self._velocities * self._forces)
+        if v_dot_f < 0:
+            self._velocities = np.zeros_like(self._velocities)
+            self.cut = self.minsteps
+            self.timestep = self.timestep * self.dec_timestep
+            self.mix = self.initial_mix
+        else:
+            v_dot_v = np.sum(self._velocities ** 2)
+            f_dot_f = np.sum(self._forces ** 2)
+
+            help = self.mix * np.sqrt(v_dot_v / f_dot_f)
+
+            self._velocities = (1 - self.mix) * self._velocities + \
+                               help * self._forces
+
+            if self.cut < 0:
+                self.timestep = min(self.timestep * self.inc_timestep,
+                                    self.max_timestep)
+                self.mix = self.mix * self.dec_mix
+            else:
+                self.cut -= 1
+
+        print(self._energy, np.sqrt(np.max(np.sum(self._forces ** 2, axis=1))),
+              self.timestep)
