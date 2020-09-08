@@ -1,5 +1,5 @@
 #
-# Copyright 2020 Lars Pastewka
+# Copyright 2020 Lars Pastewka, Johannes Hoermann
 #
 # ### MIT license
 #
@@ -71,6 +71,14 @@ class LookupClient:
         """Search for a specific uuid"""
         async with self.session.get(
                 f'{self.lookup_url}/dataset/lookup/{uuid}',
+                headers=self.header,
+                verify_ssl=False) as r:
+            return await r.json()
+
+    async def graph(self, uuid):
+        """Request dependency graph for specific uuid"""
+        async with self.session.get(
+                f'{self.lookup_url}/dataset/graph/{uuid}',
                 headers=self.header,
                 verify_ssl=False) as r:
             return await r.json()

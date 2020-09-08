@@ -1,5 +1,5 @@
 #
-# Copyright 2020 Lars Pastewka
+# Copyright 2020 Lars Pastewka, Johannes Hoermann
 #
 # ### MIT license
 #
@@ -22,9 +22,19 @@
 # SOFTWARE.
 #
 
+import json
+import logging
 import uuid
 
+
 from .SimpleGraph import SimpleGraph
+
+logger = logging.getLogger(__name__)
+
+
+def _log_nested(log_func, dct):
+    for l in json.dumps(dct, indent=2, default=str).splitlines():
+        log_func(l)
 
 
 def is_uuid(value):
@@ -37,33 +47,6 @@ def is_uuid(value):
         return False
 
 
-def enumerate_uuids(data, key=[]):
-    def enumerate_uuids_from_list(list_data, key):
-        result = []
-        for i, current_data in enumerate(list_data):
-            entry = f'{i + 1}'
-            if type(current_data) is list:
-                result += enumerate_uuids_from_list(current_data,
-                                                    key=key + [entry])
-            elif type(current_data) is dict:
-                result += enumerate_uuids(current_data, key=key + [entry])
-            else:
-                if is_uuid(current_data):
-                    result += [(key + [entry], current_data)]
-        return result
-
-    result = []
-    for entry, value in data.items():
-        if type(value) is list:
-            result += enumerate_uuids_from_list(value, key=key + [entry])
-        elif type(value) is dict:
-            result += enumerate_uuids(value, key=key + [entry])
-        else:
-            if is_uuid(value):
-                result += [(key + [entry], value)]
-    return result
-
-
 class DependencyGraph:
     def __init__(self):
         self._reset_graph()
@@ -72,67 +55,45 @@ class DependencyGraph:
         self.graph = SimpleGraph()
         self.uuid_to_vertex = {}
 
-    async def _trace_parents(self, lookup, parent_uuid):
-        datasets = await lookup.by_uuid(parent_uuid)
-        if len(datasets) == 0:
-            # This UUID does not exist in the database
-            print(f'trace: UUID {parent_uuid} does not exist')
-            v = self.graph.add_vertex(
-                uuid=parent_uuid,
-                name='Dataset does not exist in database.')
-        else:
-            # There may be the same dataset in multiple storage locations,
-            # we just use the first
-            dataset = datasets[0]
-            v = self.graph.add_vertex(uuid=parent_uuid, name=dataset['name'])
-            visited_uuids = set([])
-            readme = await lookup.readme(dataset['uri'])
-            uuids_in_readme = enumerate_uuids(readme)
-            for path, parent_uuid in uuids_in_readme:
-                if parent_uuid not in visited_uuids:
-                    if parent_uuid in self.uuid_to_vertex:
-                        # We have a Vertex for this UUID, simple add an
-                        # edge
-                        self.graph.add_edge(self.uuid_to_vertex[parent_uuid], v)
-                    else:
-                        # Create a new Vertex and continue tracing
-                        visited_uuids.add(parent_uuid)
-                        self.uuid_to_vertex[parent_uuid] = None
-                        print('trace parent:', dataset['uuid'], '<-',
-                              parent_uuid, 'via README entry', path)
-                        v2 = await self._trace_parents(lookup, parent_uuid)
-                        self.uuid_to_vertex[parent_uuid] = v2
-                        self.graph.add_edge(v2, v)
-        return v
-
-    async def _trace_children(self, lookup, parent_uuid, v=None):
-        if v is None:
-            v = self.graph.add_vertex(uuid=parent_uuid, name='XXX')
-        datasets = await lookup.search(parent_uuid)
-        for dataset in datasets:
-            readme = await lookup.readme(dataset['uri'])
-            uuids_in_readme = enumerate_uuids(readme)
-            print(parent_uuid, dataset['uuid'])
-            print(readme)
-            print(uuids_in_readme)
-            if parent_uuid in [x[1] for x in uuids_in_readme]:
-                if parent_uuid in self.uuid_to_vertex:
-                    # We have a Vertex for this UUID, simple add an edge
-                    print('trace child:', parent_uuid, '<-', dataset['uuid'],
-                          '(vertex already existed)')
-                    self.graph.add_edge(v, self.uuid_to_vertex[parent_uuid])
-                else:
-                    # Create a new Vertex and continue tracing
-                    self.uuid_to_vertex[parent_uuid] = None
-                    print('trace child:', parent_uuid, '<-', dataset['uuid'],
-                          '(new vertex)')
-                    v2 = await self._trace_children(lookup, dataset['uuid'])
-                    self.name[v2] = dataset['name']
-                    self.uuid_to_vertex[parent_uuid] = v2
-                    self.graph.add_edge(v, v2)
-        return v
-
     async def trace_dependencies(self, lookup, uuid):
+        """Build dependency graph by UUID."""
         self._reset_graph()
-        root_vertex = await self._trace_parents(lookup, uuid)
-        #await self._trace_children(lookup, uuid, root_vertex)
+
+        datasets = await lookup.graph(uuid)
+        logger.debug("Server response on querying dependency graph for UUID = {}.".format(uuid))
+        _log_nested(logger.debug, datasets)
+
+        for dataset in datasets:
+            # this ceck should be redundant, as all documents have field 'uuid' and this field is unique:
+            if 'uuid' in dataset and dataset['uuid'] not in self.uuid_to_vertex:
+                # special treatment for currently selected node
+                if dataset['uuid'] == uuid:
+                    v = self.graph.add_vertex(uuid=dataset['uuid'], name='XXX')
+                    logger.debug("Create vertex {} for currently selected dataset '{}': '{}'".format(
+                                 v, dataset['uuid'], dataset['name']))
+                else:
+                    v = self.graph.add_vertex(uuid=dataset['uuid'], name=dataset['name'])
+                    logger.debug("Create vertex {} for dataset '{}': '{}'".format(
+                                 v, dataset['uuid'], dataset['name']))
+                self.uuid_to_vertex[dataset['uuid']] = v
+
+        for dataset in datasets:
+            if 'uuid' in dataset and 'derived_from' in dataset:
+                for parent_uuid in dataset['derived_from']:
+                    if is_uuid(parent_uuid):
+                        if parent_uuid not in self.uuid_to_vertex:
+                            v = self.graph.add_vertex(
+                                uuid=parent_uuid,
+                                name='Dataset does not exist in database.')
+                            logger.warning(
+                                "Create vertex {} for missing parent dataset '{}' of child '{}': '{}'".format(
+                                    v, parent_uuid, dataset['uuid'], dataset['name']))
+                            self.uuid_to_vertex[parent_uuid] = v
+
+                        logger.debug("Create edge from child '{}':'{}' to parent '{}'.".format(
+                                     dataset['uuid'], dataset['name'], parent_uuid))
+                        self.graph.add_edge(self.uuid_to_vertex[dataset['uuid']],
+                                            self.uuid_to_vertex[parent_uuid])
+                    else:
+                        logger.warning("Parent dataset '{}' of child '{}': '{}' is no valid UUID, ignored.".format(
+                                     parent_uuid, dataset['uuid'], dataset['name']))
