@@ -22,8 +22,12 @@
 # SOFTWARE.
 #
 
+import logging
+
 import numpy as np
 from scipy.special import erf
+
+logger = logging.getLogger(__name__)
 
 
 class SimpleGraph:
@@ -87,6 +91,7 @@ class GraphLayout:
     Simple graph layouter that uses spring and electrostatic forces between
     vertices and the Fast Intertial Relaxation Engine (FIRE) for optimization.
     """
+
     def __init__(self, graph, spring_constant=1, equilibrium_distance=2,
                  coulomb=1, attenuation=0.5, mass=1, max_timestep=1,
                  minsteps=10, inc_timestep=1.2, dec_timestep=0.5, mix=0.1,
@@ -193,50 +198,63 @@ class GraphLayout:
         old_positions = self._positions.copy()
         old_velocities = self._velocities.copy()
 
-        # Verlet step 1
-        self._velocities += 0.5 * self._forces * self.timestep / self.mass
-        self._positions += self._velocities * self.timestep
+        it = 0
 
-        # Recompute forces
-        self._energy, self._forces = self._compute_spring_energy_and_forces(
-            self._positions)
-        e, f = self._compute_coulomb_energy_and_forces(self._positions)
-        self._energy += e
-        self._forces += f
+        action = 'uphill e'
+        while action == 'uphill e' and it < 5:
+            # Verlet step 1
+            self._velocities += 0.5 * self._forces * self.timestep / self.mass
+            self._positions += self._velocities * self.timestep
 
-        # Verlet step 2
-        self._velocities += 0.5 * self._forces * self.timestep / self.mass
+            # Recompute forces
+            self._energy, self._forces = self._compute_spring_energy_and_forces(
+                self._positions)
+            e, f = self._compute_coulomb_energy_and_forces(self._positions)
+            self._energy += e
+            self._forces += f
 
-        if old_energy is not None and self._energy is not None:
-            if old_energy < self._energy:
+            # Verlet step 2
+            self._velocities += 0.5 * self._forces * self.timestep / self.mass
+
+            if self._energy is not None and old_energy is not None and \
+                    self._energy > old_energy:
                 # The energy did not decrease, decrease time step and retry!
-                self._positions = old_positions
-                self._velocities = old_velocities
+                self._positions = old_positions.copy()
+                self._velocities = old_velocities.copy()
                 self.timestep *= self.dec_timestep
-                return
 
-        # Adjust velocities accordings to the FIRE algorithm
-        v_dot_f = np.sum(self._velocities * self._forces)
-        if v_dot_f < 0:
-            self._velocities = np.zeros_like(self._velocities)
-            self.cut = self.minsteps
-            self.timestep = self.timestep * self.dec_timestep
-            self.mix = self.initial_mix
-        else:
-            v_dot_v = np.sum(self._velocities ** 2)
-            f_dot_f = np.sum(self._forces ** 2)
-
-            help = self.mix * np.sqrt(v_dot_v / f_dot_f)
-
-            self._velocities = (1 - self.mix) * self._velocities + \
-                               help * self._forces
-
-            if self.cut < 0:
-                self.timestep = min(self.timestep * self.inc_timestep,
-                                    self.max_timestep)
-                self.mix = self.mix * self.dec_mix
+                action = 'uphill e'
             else:
-                self.cut -= 1
+                # Adjust velocities according to the FIRE algorithm
+                v_dot_f = np.sum(self._velocities * self._forces)
+                if v_dot_f < 0:
+                    self._velocities = np.zeros_like(self._velocities)
+                    self.cut = self.minsteps
+                    self.timestep = self.timestep * self.dec_timestep
+                    self.mix = self.initial_mix
 
-        print(self._energy, np.sqrt(np.max(np.sum(self._forces ** 2, axis=1))),
-              self.timestep)
+                    action = 'uphill v*f'
+                else:
+                    v_dot_v = np.sum(self._velocities ** 2)
+                    f_dot_f = np.sum(self._forces ** 2)
+
+                    help = self.mix * np.sqrt(v_dot_v / f_dot_f)
+
+                    self._velocities = (1 - self.mix) * self._velocities + \
+                                       help * self._forces
+
+                    if self.cut < 0:
+                        self.timestep = min(self.timestep * self.inc_timestep,
+                                            self.max_timestep)
+                        self.mix = self.mix * self.dec_mix
+                    else:
+                        self.cut -= 1
+
+                    action = 'mix'
+
+            it += 1
+            logger.debug(f'FIRE: {action}, '
+                         f'energy: {self._energy}, '
+                         f'(old energy: {old_energy}, '
+                         f'max |force|: {np.sqrt(np.max(np.sum(self._forces ** 2, axis=1)))},'
+                         f' timestep: {self.timestep}')

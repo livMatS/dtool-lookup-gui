@@ -179,6 +179,9 @@ class GraphWidget(Gtk.DrawingArea):
         self.search_entry.set_text(f'uuid:{self._current_uuid}')
 
     def on_timeout(self, user_data):
-        self.layout.iterate()
+        try:
+            self.layout.iterate()
+        except Exception as e:
+            print(e)
         self.queue_draw()
         return True

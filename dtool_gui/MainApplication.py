@@ -265,7 +265,6 @@ class SignalHandler:
             self.builder.get_object('manifest-view'))
 
     async def _compute_dependencies(self, uri):
-        print('Start computing dependencies')
         self.dependency_stack.set_visible_child(
             self.builder.get_object('dependency-spinner'))
 
@@ -283,8 +282,6 @@ class SignalHandler:
         graph_widget.show()
 
         self.dependency_stack.set_visible_child(dependency_view)
-
-        print('Finalized computing dependencies')
 
     async def connect(self):
         self.main_stack.set_visible_child(
