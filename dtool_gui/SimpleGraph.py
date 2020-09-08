@@ -93,14 +93,15 @@ class GraphLayout:
     """
 
     def __init__(self, graph, spring_constant=1, equilibrium_distance=2,
-                 coulomb=1, attenuation=0.5, mass=1, max_timestep=1,
-                 minsteps=10, inc_timestep=1.2, dec_timestep=0.5, mix=0.1,
-                 dec_mix=0.99):
+                 coulomb=1, core_length=2, coulomb_exponent=1, mass=1,
+                 max_timestep=1, minsteps=10, inc_timestep=1.2,
+                 dec_timestep=0.5, mix=0.1, dec_mix=0.99):
         self.graph = graph
         self.spring_constant = spring_constant
         self.equilibrium_distance = equilibrium_distance
         self.coulomb = coulomb
-        self.attenuation = attenuation
+        self.core_length = core_length
+        self.coulomb_exponent = coulomb_exponent
         self.mass = mass
         self.max_timestep = max_timestep
         self.minsteps = minsteps
@@ -173,13 +174,17 @@ class GraphLayout:
         abs_dr_n = np.sqrt(np.sum(dr_nc ** 2, axis=1))
 
         # Energies (per pair)
-        e_n = self.coulomb * erf(self.attenuation * abs_dr_n) / abs_dr_n
+        drnorm_n = abs_dr_n / self.core_length
+        e_n = self.coulomb * erf(drnorm_n ** self.coulomb_exponent) / \
+              (abs_dr_n ** self.coulomb_exponent)
 
         # Forces (per pair)
-        de_n = self.coulomb * (
-                -erf(self.attenuation * abs_dr_n) / abs_dr_n ** 2
-                + 2 * self.attenuation * np.exp(
-            -(self.attenuation * abs_dr_n) ** 2) / (np.sqrt(np.pi) * abs_dr_n))
+        de_n = self.coulomb * self.coulomb_exponent * (
+                -erf(drnorm_n ** self.coulomb_exponent)
+                + 2 * np.exp(-drnorm_n ** (2 * self.coulomb_exponent))
+                * drnorm_n ** self.coulomb_exponent / np.sqrt(np.pi)) / \
+               abs_dr_n ** (self.coulomb_exponent + 1)
+
         df_nc = 0.5 * de_n.reshape(-1, 1) * dr_nc / abs_dr_n.reshape(-1, 1)
 
         # Sum for each vertex
