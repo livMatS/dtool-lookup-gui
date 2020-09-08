@@ -95,7 +95,8 @@ class GraphLayout:
     def __init__(self, graph, spring_constant=1, equilibrium_distance=2,
                  coulomb=1, core_length=2, coulomb_exponent=1, mass=1,
                  max_timestep=1, minsteps=10, inc_timestep=1.2,
-                 dec_timestep=0.5, mix=0.1, dec_mix=0.99):
+                 dec_timestep=0.5, mix=0.1, dec_mix=0.99,
+                 init_iter=100):
         self.graph = graph
         self.spring_constant = spring_constant
         self.equilibrium_distance = equilibrium_distance
@@ -109,6 +110,7 @@ class GraphLayout:
         self.dec_timestep = dec_timestep
         self.initial_mix = mix
         self.dec_mix = dec_mix
+        self.init_iter = init_iter
 
         self.timestep = max_timestep
         self.mix = mix
@@ -129,9 +131,13 @@ class GraphLayout:
         self._positions = grid.astype(float) * self.equilibrium_distance
         self._velocities = np.zeros_like(self._positions)
         self._forces = np.zeros_like(self._positions)
+        for i in range(self.init_iter):
+            self.iterate()
 
     def _compute_spring_energy_and_forces(self, pos):
         nb_vertices = self.graph.nb_vertices
+        if nb_vertices <= 1:
+            return 0, np.zeros_like(pos)
 
         # Neighbor list (edge list)
         i_n = np.array(self.graph.vertex1)
@@ -160,6 +166,8 @@ class GraphLayout:
 
     def _compute_coulomb_energy_and_forces(self, pos):
         nb_vertices = self.graph.nb_vertices
+        if nb_vertices <= 1:
+            return 0, np.zeros_like(pos)
 
         # Neighbor list (between all atoms)
         i_n, j_n = np.mgrid[:nb_vertices, :nb_vertices]
@@ -243,7 +251,9 @@ class GraphLayout:
                     v_dot_v = np.sum(self._velocities ** 2)
                     f_dot_f = np.sum(self._forces ** 2)
 
-                    help = self.mix * np.sqrt(v_dot_v / f_dot_f)
+                    help = 0.0
+                    if f_dot_f > 0:
+                        help = self.mix * np.sqrt(v_dot_v / f_dot_f)
 
                     self._velocities = (1 - self.mix) * self._velocities + \
                                        help * self._forces
