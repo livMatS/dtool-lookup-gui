@@ -98,14 +98,18 @@ class GraphWidget(Gtk.DrawingArea):
 
         # Get positions from layouter
         positions = self.layout.positions
+        kind = self.graph.get_vertex_properties('kind')
         state = self.graph.get_vertex_properties('state')
 
         # Draw vertices
-        for i, ((x, y), s) in enumerate(zip(positions, state)):
-            context.set_source_rgb(0.5, 0.5, 0.7)
-            if i == 0:
+        root_color = Gdk.color_parse('red')
+        dependency_color = Gdk.color_parse('lightblue')
+        for i, ((x, y), k, s) in enumerate(zip(positions, kind, state)):
+            if k == 'root':
+                context.set_source_rgb(*root_color.to_floats())
                 square(context, x, y)
             else:
+                context.set_source_rgb(*dependency_color.to_floats())
                 circle(context, x, y)
             if s:
                 context.fill_preserve()

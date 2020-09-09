@@ -68,8 +68,10 @@ class DependencyGraph:
             # this ceck should be redundant, as all documents have field 'uuid'
             # and this field is unique:
             if 'uuid' in dataset and dataset['uuid'] not in self.uuid_to_vertex:
-                v = self.graph.add_vertex(uuid=dataset['uuid'],
-                                          name=dataset['name'])
+                v = self.graph.add_vertex(
+                    uuid=dataset['uuid'],
+                    name=dataset['name'],
+                    kind='root' if dataset['uuid'] == uuid else 'dependent')
                 logger.debug("Create vertex {} for dataset '{}': '{}'".format(
                     v, dataset['uuid'], dataset['name']))
                 self.uuid_to_vertex[dataset['uuid']] = v
@@ -81,7 +83,8 @@ class DependencyGraph:
                         if parent_uuid not in self.uuid_to_vertex:
                             v = self.graph.add_vertex(
                                 uuid=parent_uuid,
-                                name='Dataset does not exist in database.')
+                                name='Dataset does not exist in database.',
+                                kind='does-not-exist')
                             logger.warning(
                                 "Create vertex {} for missing parent dataset "
                                 "'{}' of child '{}': '{}'".format(
