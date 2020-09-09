@@ -92,7 +92,7 @@ class GraphLayout:
     vertices and the Fast Intertial Relaxation Engine (FIRE) for optimization.
     """
 
-    def __init__(self, graph, spring_constant=1, equilibrium_distance=2,
+    def __init__(self, graph, spring_constant=10, equilibrium_distance=2,
                  coulomb=1, core_length=2, coulomb_exponent=1, mass=1,
                  max_timestep=1, minsteps=10, inc_timestep=1.2,
                  dec_timestep=0.5, mix=0.1, dec_mix=0.99,
