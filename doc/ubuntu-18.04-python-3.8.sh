@@ -65,5 +65,5 @@ cd graph-tool
 make
 make install
 
-# dtool-gui
+# dtool-lookup-gui
 pip install git+https://github.com/IMTEK-Simulation/dtool-gui.git

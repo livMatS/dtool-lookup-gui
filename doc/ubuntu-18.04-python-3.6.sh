@@ -7,5 +7,5 @@ sudo apt-get install python3-graph-tool
 python3.6 -m venv --system-site-packages ~/venv/dtool-python-3.6
 source ~/venv/dtool-python-3.6/bin/activate
 
-# dtool_gui
+# dtool_lookup_gui
 pip install git+https://github.com/IMTEK-Simulation/dtool-gui.git

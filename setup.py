@@ -31,7 +31,7 @@ from setuptools.command.install import install
 class CustomInstallCommand(install):
     def run(self):
         install.run(self)
-        Popen("glib-compile-schemas " + self.install_lib + "/dtool_gui/",
+        Popen("glib-compile-schemas " + self.install_lib + "/dtool_lookup_gui/",
               shell=True).wait()
 
 
@@ -43,8 +43,8 @@ setup(
     cmdclass={
         'install': CustomInstallCommand,
     },
-    name='dtool-gui',
-    packages=['dtool_gui'],
+    name='dtool-lookup-gui',
+    packages=['dtool_lookup_gui'],
     version=version,
     description='Graphical user interface for dtool',
     long_description=readme,

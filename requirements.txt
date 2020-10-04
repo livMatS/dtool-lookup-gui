@@ -3,3 +3,4 @@ dtoolcore
 gbulb
 pyyaml
 PyGObject
+scipy
