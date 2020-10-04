@@ -1,2 +1,2 @@
-include dtool_gui/dtool-gui.glade
-include dtool_gui/de.uni-freiburg.dtool-gui.gschema.xml
+include dtool_gui/dtool-lookup-gui.glade
+include dtool_gui/de.uni-freiburg.dtool-lookup-gui.gschema.xml
