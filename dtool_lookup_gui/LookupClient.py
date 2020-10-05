@@ -82,7 +82,7 @@ class LookupClient:
     async def graph(self, uuid):
         """Request dependency graph for specific uuid"""
         async with self.session.get(
-                f'{self.lookup_url}/dataset/graph/{uuid}',
+                f'{self.lookup_url}/graph/lookup/{uuid}',
                 headers=self.header,
                 verify_ssl=False) as r:
             return await r.json()
