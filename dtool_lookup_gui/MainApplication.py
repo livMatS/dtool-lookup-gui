@@ -338,7 +338,17 @@ class SignalHandler:
             if keyword:
                 if keyword.startswith('uuid:'):
                     self.datasets = await self.lookup.by_uuid(keyword[5:])
+                elif keyword.startswith('{') and keyword.endswith('}'):
+                    # TODO: replace with proper syntax check on mongo query
+                    self.datasets = await self.lookup.by_query(keyword)
                 else:
+                    # NOTE: server side allows a dict with the key-value pairs
+                    # "free_text", "creator_usernames", "base_uris", "uuids", "tags",
+                    # via route '/dataset/search', where all except "free_text"
+                    # can be lists and are translated to logical "and" or "or"
+                    # constructs on the server side. With the special treatment
+                    # of the 'uuid' keyword above, should we introduce similar
+                    # options for the other available keywords?
                     self.datasets = await self.lookup.search(keyword)
             else:
                 self.datasets = await self.lookup.all()

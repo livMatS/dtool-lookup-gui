@@ -24,6 +24,7 @@
 
 import aiohttp
 import yaml
+import json
 
 
 class LookupClient:
@@ -68,6 +69,21 @@ class LookupClient:
                 headers=self.header,
                 json={
                     'free_text': keyword
+                }, verify_ssl=False) as r:
+            return await r.json()
+
+    # The direct-mongo plugin offers the same functionality as /dataset/search
+    # plus an extra keyword "query" to contain plain mongo on the /mongo/query
+    # route.
+    async def by_query(self, query):
+        """Direct mongo query"""
+        if isinstance(query, str):
+            query = json.loads(query)
+        async with self.session.post(
+                f'{self.lookup_url}/mongo/query',
+                headers=self.header,
+                json={
+                    'query': query
                 }, verify_ssl=False) as r:
             return await r.json()
 
