@@ -169,6 +169,10 @@ class Settings:
     def password(self):
         return self.settings.get_string('lookup-password')
 
+    @property
+    def dependency_keys(self):
+        return self.settings.get_string('dependency-keys')
+
 
 class SignalHandler:
     def __init__(self, event_loop, builder, settings):
@@ -271,7 +275,8 @@ class SignalHandler:
         # Compute dependency graph
         self._dependency_graph = DependencyGraph()
         await self._dependency_graph.trace_dependencies(
-            self.lookup, self._selected_dataset['uuid'])
+            self.lookup, self._selected_dataset['uuid'],
+            dependency_keys=self.settings.dependency_keys)
 
         # Create graph widget
         graph_widget = GraphWidget(self.builder, self._dependency_graph.graph)
@@ -414,6 +419,9 @@ def run_gui():
                            Gio.SettingsBindFlags.DEFAULT)
     settings.settings.bind("lookup-password",
                            builder.get_object('password-entry'), 'text',
+                           Gio.SettingsBindFlags.DEFAULT)
+    settings.settings.bind("dependency-keys",
+                           builder.get_object('dependency-keys'), 'text',
                            Gio.SettingsBindFlags.DEFAULT)
 
     # Connect to the lookup server upon startup

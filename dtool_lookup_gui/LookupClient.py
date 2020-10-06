@@ -95,13 +95,21 @@ class LookupClient:
                 verify_ssl=False) as r:
             return await r.json()
 
-    async def graph(self, uuid):
+    async def graph(self, uuid, dependency_keys=None):
         """Request dependency graph for specific uuid"""
-        async with self.session.get(
-                f'{self.lookup_url}/graph/lookup/{uuid}',
-                headers=self.header,
-                verify_ssl=False) as r:
-            return await r.json()
+        if dependency_keys is None:
+            async with self.session.get(
+                    f'{self.lookup_url}/graph/lookup/{uuid}',
+                    headers=self.header,
+                    verify_ssl=False) as r:
+                return await r.json()
+        else:  # TODO: validity check on dependency key list
+            async with self.session.post(
+                    f'{self.lookup_url}/graph/lookup/{uuid}',
+                    headers=self.header,
+                    json=dependency_keys,
+                    verify_ssl=False) as r:
+                return await r.json()
 
     async def readme(self, uri):
         async with self.session.post(

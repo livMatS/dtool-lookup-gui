@@ -24,6 +24,11 @@
             <summary>Password for dtool lookup server</summary>
         </key>
 
+        <key name='dependency-keys' type='s'>
+            <default>'["readme.derived_from.uuid","annotations.source_dataset_uuid"]'</default>
+            <summary>Fields that may identify source datasets for querying dependency graphs.</summary>
+        </key>
+
     </schema>
 
 </schemalist>

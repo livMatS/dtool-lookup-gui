@@ -54,11 +54,18 @@ class DependencyGraph:
         self.graph = SimpleGraph()
         self.uuid_to_vertex = {}
 
-    async def trace_dependencies(self, lookup, uuid):
+    async def trace_dependencies(self, lookup, uuid, dependency_keys=None):
         """Build dependency graph by UUID."""
         self._reset_graph()
 
-        datasets = await lookup.graph(uuid)
+        if isinstance(dependency_keys, str):
+            dependency_keys = json.loads(dependency_keys)
+
+        if (dependency_keys is not None) and (not isinstance(dependency_keys, list)):
+            logger.warn("Dependency keys not valid. Ignored.")
+            dependency_keys = None
+
+        datasets = await lookup.graph(uuid, dependency_keys)
         logger.debug(
             "Server response on querying dependency graph for UUID = {}.".format(
                 uuid))
