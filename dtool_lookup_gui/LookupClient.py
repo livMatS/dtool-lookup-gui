@@ -24,6 +24,7 @@
 
 import aiohttp
 import yaml
+import json
 
 
 class LookupClient:
@@ -71,6 +72,21 @@ class LookupClient:
                 }, verify_ssl=False) as r:
             return await r.json()
 
+    # The direct-mongo plugin offers the same functionality as /dataset/search
+    # plus an extra keyword "query" to contain plain mongo on the /mongo/query
+    # route.
+    async def by_query(self, query):
+        """Direct mongo query"""
+        if isinstance(query, str):
+            query = json.loads(query)
+        async with self.session.post(
+                f'{self.lookup_url}/mongo/query',
+                headers=self.header,
+                json={
+                    'query': query
+                }, verify_ssl=False) as r:
+            return await r.json()
+
     async def by_uuid(self, uuid):
         """Search for a specific uuid"""
         async with self.session.get(
@@ -79,13 +95,21 @@ class LookupClient:
                 verify_ssl=False) as r:
             return await r.json()
 
-    async def graph(self, uuid):
+    async def graph(self, uuid, dependency_keys=None):
         """Request dependency graph for specific uuid"""
-        async with self.session.get(
-                f'{self.lookup_url}/graph/lookup/{uuid}',
-                headers=self.header,
-                verify_ssl=False) as r:
-            return await r.json()
+        if dependency_keys is None:
+            async with self.session.get(
+                    f'{self.lookup_url}/graph/lookup/{uuid}',
+                    headers=self.header,
+                    verify_ssl=False) as r:
+                return await r.json()
+        else:  # TODO: validity check on dependency key list
+            async with self.session.post(
+                    f'{self.lookup_url}/graph/lookup/{uuid}',
+                    headers=self.header,
+                    json=dependency_keys,
+                    verify_ssl=False) as r:
+                return await r.json()
 
     async def readme(self, uri):
         async with self.session.post(

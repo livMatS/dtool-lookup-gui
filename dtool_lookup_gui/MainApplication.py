@@ -169,6 +169,10 @@ class Settings:
     def password(self):
         return self.settings.get_string('lookup-password')
 
+    @property
+    def dependency_keys(self):
+        return self.settings.get_string('dependency-keys')
+
 
 class SignalHandler:
     def __init__(self, event_loop, builder, settings):
@@ -271,7 +275,8 @@ class SignalHandler:
         # Compute dependency graph
         self._dependency_graph = DependencyGraph()
         await self._dependency_graph.trace_dependencies(
-            self.lookup, self._selected_dataset['uuid'])
+            self.lookup, self._selected_dataset['uuid'],
+            dependency_keys=self.settings.dependency_keys)
 
         # Create graph widget
         graph_widget = GraphWidget(self.builder, self._dependency_graph.graph)
@@ -338,7 +343,17 @@ class SignalHandler:
             if keyword:
                 if keyword.startswith('uuid:'):
                     self.datasets = await self.lookup.by_uuid(keyword[5:])
+                elif keyword.startswith('{') and keyword.endswith('}'):
+                    # TODO: replace with proper syntax check on mongo query
+                    self.datasets = await self.lookup.by_query(keyword)
                 else:
+                    # NOTE: server side allows a dict with the key-value pairs
+                    # "free_text", "creator_usernames", "base_uris", "uuids", "tags",
+                    # via route '/dataset/search', where all except "free_text"
+                    # can be lists and are translated to logical "and" or "or"
+                    # constructs on the server side. With the special treatment
+                    # of the 'uuid' keyword above, should we introduce similar
+                    # options for the other available keywords?
                     self.datasets = await self.lookup.search(keyword)
             else:
                 self.datasets = await self.lookup.all()
@@ -404,6 +419,9 @@ def run_gui():
                            Gio.SettingsBindFlags.DEFAULT)
     settings.settings.bind("lookup-password",
                            builder.get_object('password-entry'), 'text',
+                           Gio.SettingsBindFlags.DEFAULT)
+    settings.settings.bind("dependency-keys",
+                           builder.get_object('dependency-keys'), 'text',
                            Gio.SettingsBindFlags.DEFAULT)
 
     # Connect to the lookup server upon startup
