@@ -1,8 +1,8 @@
-dtool-gui
-=========
+dtool-lookup-gui
+================
 
-dtool-gui is a graphical user interface for dtool_ and dtool-lookup-server_
-written in Python_ and GTK_.
+dtool-lookup-gui is a graphical user interface for dtool_, dtool-lookup-server_ and
+dtool-lookup-server-dependency-graph-plugin_ written in Python_ and GTK_.
 
 .. image:: data/screenshots/screenshot1.png
 
@@ -38,6 +38,8 @@ username and a password. To do this, click on the "Burger" symbol and select
 .. _dtool: https://github.com/jic-dtool/dtool
 
 .. _dtool-lookup-server: https://github.com/jic-dtool/dtool-lookup-server
+
+.. _dtool-lookup-server-dependency-graph-plugin: https://github.com/IMTEK-Simulation/dtool-lookup-server-dependency-graph-plugin
 
 .. _Python: https://www.python.org/
 
