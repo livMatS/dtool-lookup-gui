@@ -189,6 +189,11 @@ class SignalHandler:
         self.manifest_stack = self.builder.get_object('manifest-stack')
         self.dependency_stack = self.builder.get_object('dependency-stack')
 
+        self.error_bar = self.builder.get_object('error-bar')
+        self.error_label = self.builder.get_object('error-label')
+
+        self.error_bar.set_revealed(False)
+
         self._search_task = None
 
         self._selected_dataset = None
@@ -239,6 +244,7 @@ class SignalHandler:
             self.builder.get_object('main-view'))
 
     async def _fetch_readme(self, uri):
+        self.error_bar.set_revealed(False)
         self.readme_stack.set_visible_child(
             self.builder.get_object('readme-spinner'))
 
@@ -254,6 +260,7 @@ class SignalHandler:
             self.builder.get_object('readme-view'))
 
     async def _fetch_manifest(self, uri):
+        self.error_bar.set_revealed(False)
         self.manifest_stack.set_visible_child(
             self.builder.get_object('manifest-spinner'))
 
@@ -269,6 +276,7 @@ class SignalHandler:
             self.builder.get_object('manifest-view'))
 
     async def _compute_dependencies(self, uri):
+        self.error_bar.set_revealed(False)
         self.dependency_stack.set_visible_child(
             self.builder.get_object('dependency-spinner'))
 
@@ -289,6 +297,7 @@ class SignalHandler:
         self.dependency_stack.set_visible_child(dependency_view)
 
     async def connect(self):
+        self.error_bar.set_revealed(False)
         self.main_stack.set_visible_child(
             self.builder.get_object('main-spinner'))
 
@@ -296,8 +305,14 @@ class SignalHandler:
                                    self.settings.authenticator_url,
                                    self.settings.username,
                                    self.settings.password)
-        await self.lookup.connect()
-        self.datasets = await self.lookup.all()
+        try:
+            await self.lookup.connect()
+            self.datasets = await self.lookup.all()
+        except Exception as e:
+            self.error_label.set_text(str(e))
+            self.error_bar.show()
+            self.error_bar.set_revealed(True)
+            self.datasets = []
         self._refresh_results()
 
     def on_window_destroy(self, *args):
@@ -394,7 +409,6 @@ class SignalHandler:
             self.builder.get_object('search-entry').set_text(f'uuid:{uuid}')
             return True
         return False
-
 
 def run_gui():
     builder = Gtk.Builder()
