@@ -62,6 +62,7 @@ The pip package for PyGObject has another name for macos. So comment it out in s
 
 You also need to install the gnome icons in order for them to be displayed properly: 
 
-```
- brew install gnome-icon-theme
-```
+.. code:: bash
+
+   brew install gnome-icon-theme
+
