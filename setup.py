@@ -36,7 +36,6 @@ class CustomInstallCommand(install):
 
 
 url = 'https://github.com/IMTEK-Simulation/dtool-lookup-gui'
-version = '0.1.0'
 readme = open('README.rst').read()
 
 setup(
@@ -45,13 +44,13 @@ setup(
     },
     name='dtool-lookup-gui',
     packages=['dtool_lookup_gui'],
-    version=version,
     description='Graphical user interface for dtool',
     long_description=readme,
     include_package_data=True,
     author='Lars Pastewka',
     author_email='lars.pastewka@imtek.uni-freiburg.de',
     url=url,
+    use_scm_version=True,
     install_requires=[
         'dtoolcore>=3.17',
         'aiohttp>=3.6',
@@ -59,6 +58,5 @@ setup(
         'pyyaml>=5.3',
         'PyGObject>=3.36'
     ],
-    download_url='{}/tarball/{}'.format(url, version),
     license='MIT'
 )
