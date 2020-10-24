@@ -317,7 +317,6 @@ class SignalHandler:
             self.error_bar.set_revealed(True)
             self.datasets = []
         self._refresh_results()
-        print(self.server_config)
 
     def on_window_destroy(self, *args):
         self.event_loop.stop()
