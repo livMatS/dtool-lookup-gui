@@ -13,9 +13,15 @@ The application uses setuptools_. It can be installed with pip_:
 
 .. code:: bash
 
-    pip install git+https://github.com/IMTEK-Simulation/dtool-gui.git
+    pip install dtool-lookup-gui
 
-When checked out, either use pip_ or install via the standard route
+If you want the latest development release, then use:
+
+.. code:: bash
+
+    pip install git+https://github.com/IMTEK-Simulation/dtool-lookup-gui.git
+
+When already clone into a local directly via `git`, either use pip_ or install via the standard route
 
 .. code:: bash
 
@@ -28,7 +34,7 @@ After installation, run the GUI with:
 
 .. code:: bash
 
-   python -m dtool_gui
+   python -m dtool_lookup_gui
 
 Note that when you run the GUI for the first time, you will need to configure
 the URL of the lookup and the authentication server as well as provide a
@@ -53,10 +59,7 @@ username and a password. To do this, click on the "Burger" symbol and select
 Installation on MacOS
 ---------------------
 
-
-
 The pip package for PyGObject has another name for macos. So comment it out in setup.py, install it following the instructions_ and then run `pip install /path/to/dtool-gui` 
-
 
 .. _instructions: https://pygobject.readthedocs.io/en/latest/getting_started.html 
 
