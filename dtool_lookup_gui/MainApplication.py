@@ -62,7 +62,6 @@ def to_timestamp(d):
     because the /dataset/list route return timestamps but /dataset/search
     returns strings in older versions of the lookup server (before 0.15.0).
     """
-    print(d)
     if type(d) is str:
         try:
             with time_locale('C'):
