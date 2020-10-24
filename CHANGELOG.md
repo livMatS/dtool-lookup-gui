@@ -1,5 +1,10 @@
 Change log for dtool-lookup-gui
 
+0.1.2 (24Oct20)
+---------------
+
+- Removed debug print
+
 0.1.1 (24Oct20)
 ---------------
 
