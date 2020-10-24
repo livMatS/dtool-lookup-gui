@@ -119,7 +119,7 @@ class LookupClient:
                     'uri': uri
                 }, verify_ssl=False) as r:
             text = await r.text()
-            return yaml.load(text)
+            return yaml.safe_load(text)
 
     async def manifest(self, uri):
         async with self.session.post(
@@ -129,4 +129,4 @@ class LookupClient:
                     'uri': uri
                 }, verify_ssl=False) as r:
             text = await r.text()
-            return yaml.load(text)
+            return yaml.safe_load(text)
