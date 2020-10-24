@@ -207,7 +207,7 @@ class SignalHandler:
         results_widget = self.builder.get_object('search-results')
         statusbar_widget = self.builder.get_object('main-statusbar')
         statusbar_widget.push(0, f'{len(self.datasets)} datasets - '
-                                 f'Connect to lookup server version '
+                                 f'Connected to lookup server version '
                                  f"{self.server_config['version']}")
 
         if len(self.datasets) == 0:
