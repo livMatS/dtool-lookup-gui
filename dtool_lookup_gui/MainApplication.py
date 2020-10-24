@@ -206,7 +206,9 @@ class SignalHandler:
     def _refresh_results(self):
         results_widget = self.builder.get_object('search-results')
         statusbar_widget = self.builder.get_object('main-statusbar')
-        statusbar_widget.push(0, f'{len(self.datasets)} datasets')
+        statusbar_widget.push(0, f'{len(self.datasets)} datasets - '
+                                 f'Connect to lookup server version '
+                                 f"{self.server_config['version']}")
 
         if len(self.datasets) == 0:
             self.main_stack.set_visible_child(
@@ -307,6 +309,7 @@ class SignalHandler:
                                    self.settings.password)
         try:
             await self.lookup.connect()
+            self.server_config = await self.lookup.config()
             self.datasets = await self.lookup.all()
         except Exception as e:
             self.error_label.set_text(str(e))
@@ -314,6 +317,7 @@ class SignalHandler:
             self.error_bar.set_revealed(True)
             self.datasets = []
         self._refresh_results()
+        print(self.server_config)
 
     def on_window_destroy(self, *args):
         self.event_loop.stop()

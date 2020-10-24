@@ -130,3 +130,11 @@ class LookupClient:
                 }, verify_ssl=False) as r:
             text = await r.text()
             return yaml.safe_load(text)
+
+    async def config(self):
+        async with self.session.get(
+                f'{self.lookup_url}/config/info',
+                headers=self.header,
+                verify_ssl=False) as r:
+            text = await r.text()
+            return yaml.safe_load(text)

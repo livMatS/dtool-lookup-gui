@@ -522,6 +522,9 @@
                                             <property name="search-column">0</property>
                                             <property name="enable-tree-lines">True</property>
                                             <signal name="row-activated" handler="on_readme_row_activated" swapped="no"/>
+                                            <child internal-child="selection">
+                                              <object class="GtkTreeSelection"/>
+                                            </child>
                                             <child>
                                               <object class="GtkTreeViewColumn" id="readme-column1">
                                                 <property name="title" translatable="yes">Key</property>
@@ -611,6 +614,9 @@
                                         <property name="can-focus">True</property>
                                         <property name="model">manifest-treestore</property>
                                         <property name="search-column">0</property>
+                                        <child internal-child="selection">
+                                          <object class="GtkTreeSelection"/>
+                                        </child>
                                         <child>
                                           <object class="GtkTreeViewColumn" id="manifest-column1">
                                             <property name="title" translatable="yes">Name</property>
@@ -807,7 +813,6 @@
             <property name="margin-end">10</property>
             <property name="margin-top">6</property>
             <property name="margin-bottom">6</property>
-            <property name="orientation">vertical</property>
             <property name="spacing">2</property>
           </object>
           <packing>
