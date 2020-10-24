@@ -60,8 +60,9 @@ def to_timestamp(d):
     """
     Convert a sting or a timestamp to a timestamp. This is a dirty fix necessary
     because the /dataset/list route return timestamps but /dataset/search
-    returns strings.
+    returns strings in older versions of the lookup server (before 0.15.0).
     """
+    print(d)
     if type(d) is str:
         try:
             with time_locale('C'):
