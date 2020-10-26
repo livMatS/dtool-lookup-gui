@@ -22,7 +22,8 @@
 # SOFTWARE.
 #
 
-from math import pi
+from math import pi, sqrt
+_sqrt3 = sqrt(3)
 
 import numpy as np
 
@@ -39,6 +40,13 @@ def circle(context, x, y):
 def square(context, x, y):
     context.rectangle(x - 0.4, y - 0.4, 0.8, 0.8)
 
+
+def triangle(context, x, y):
+    height = 0.5*_sqrt3
+    context.move_to(x, y - 0.5*height)
+    context.line_to(x + 0.5, y + 0.5*height)
+    context.line_to(x - 0.5, y + 0.5*height)
+    context.close_path()
 
 class GraphWidget(Gtk.DrawingArea):
     def __init__(self, builder, graph):
@@ -102,12 +110,16 @@ class GraphWidget(Gtk.DrawingArea):
         state = self.graph.get_vertex_properties('state')
 
         # Draw vertices
-        root_color = Gdk.color_parse('red')
+        root_color = Gdk.color_parse('lightgreen')
+        does_not_exist_color = Gdk.color_parse('red')
         dependency_color = Gdk.color_parse('lightblue')
         for i, ((x, y), k, s) in enumerate(zip(positions, kind, state)):
             if k == 'root':
                 context.set_source_rgb(*root_color.to_floats())
                 square(context, x, y)
+            elif k == 'does-not-exist':
+                context.set_source_rgb(*does_not_exist_color.to_floats())
+                triangle(context, x, y)
             else:
                 context.set_source_rgb(*dependency_color.to_floats())
                 circle(context, x, y)
