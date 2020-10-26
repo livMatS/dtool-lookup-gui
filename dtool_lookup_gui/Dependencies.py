@@ -81,8 +81,6 @@ class DependencyGraph:
                     uuid=uuid,
                     name=dataset['name'],
                     kind='root' if dataset['uuid'] == uuid else 'dependent')
-                logger.debug("Create vertex {} for dataset '{}': '{}'".format(
-                    v, uuid, dataset['name']))
                 self._uuid_to_vertex[uuid] = v
                 self._missing_uuids += [uuid]
 
@@ -95,11 +93,6 @@ class DependencyGraph:
                                 uuid=parent_uuid,
                                 name='Dataset does not exist in database.',
                                 kind='does-not-exist')
-                            logger.warning(
-                                "Create vertex {} for missing parent dataset "
-                                "'{}' of child '{}': '{}'".format(
-                                    v, parent_uuid, dataset['uuid'],
-                                    dataset['name']))
                             self._uuid_to_vertex[parent_uuid] = v
 
                         logger.debug(
