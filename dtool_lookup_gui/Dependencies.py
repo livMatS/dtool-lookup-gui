@@ -92,7 +92,7 @@ class DependencyGraph:
                                 name='Dataset does not exist in database.',
                                 kind='does-not-exist')
                             self._uuid_to_vertex[parent_uuid] = v
-                            self._missing_uuids += [uuid]
+                            self._missing_uuids += [parent_uuid]
 
                         self.graph.add_edge(
                             self._uuid_to_vertex[dataset['uuid']],
