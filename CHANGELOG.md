@@ -1,5 +1,12 @@
 Change log for dtool-lookup-gui
 
+0.2.1 (26Oct20)
+---------------
+
+- Show missing datasets with triangles
+- Bug: Missing datasets
+- Bug: Symbols in graph view
+
 0.2.0 (26Oct20)
 ---------------
 
