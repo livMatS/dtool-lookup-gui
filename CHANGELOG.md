@@ -1,5 +1,11 @@
 Change log for dtool-lookup-gui
 
+0.2.0 (26Oct20)
+---------------
+
+- Warn about missing UUIDs
+- Tree view for manifest (#2)
+
 0.1.2 (24Oct20)
 ---------------
 
