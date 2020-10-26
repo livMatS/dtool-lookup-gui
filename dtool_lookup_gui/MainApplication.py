@@ -89,9 +89,7 @@ def human_readable_file_size(num, suffix='B'):
     val = num / math.pow(1024, magnitude)
     if magnitude > 7:
         return '{:.1f}{}{}'.format(val, 'Yi', suffix)
-    return '{:3.1f}{}{}'.format(val,
-                                ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi'][
-                                    magnitude], suffix)
+    return '{:3.1f}{}{}'.format(val, ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi'][magnitude], suffix)
 
 
 def fill_readme_tree_store(store, data, parent=None):
@@ -137,9 +135,24 @@ def fill_readme_tree_store(store, data, parent=None):
 
 
 def fill_manifest_tree_store(store, data, parent=None):
-    for uuid, values in data.items():
-        store.append(parent,
-                     [values['relpath'],
+    nodes = {}
+
+    def find_or_create_parent_node(path, top_parent):
+        if not path:
+            return top_parent
+        try:
+            return nodes[path]
+        except KeyError:
+            head, tail = os.path.split(path)
+            parent = find_or_create_parent_node(head, top_parent)
+            new_node = store.append(parent, [tail, '', '', ''])
+            nodes[path] = new_node
+            return new_node
+
+    for uuid, values in sorted(data.items(), key=lambda kv: kv[1]['relpath']):
+        head, tail = os.path.split(values['relpath'])
+        store.append(find_or_create_parent_node(head, parent),
+                     [tail,
                       human_readable_file_size(values['size_in_bytes']),
                       f'{date_to_string(values["utc_timestamp"])}',
                       uuid])
@@ -271,7 +284,10 @@ class SignalHandler:
         store = manifest_view.get_model()
         store.clear()
         self._manifest = await self.lookup.manifest(uri)
-        fill_manifest_tree_store(store, self._manifest['items'])
+        try:
+            fill_manifest_tree_store(store, self._manifest['items'])
+        except Exception as e:
+            print(e)
         manifest_view.columns_autosize()
         manifest_view.show_all()
 
