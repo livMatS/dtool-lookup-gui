@@ -28,6 +28,7 @@ import math
 import os
 from contextlib import contextmanager
 from datetime import date, datetime
+from functools import reduce
 
 import dtoolcore
 
@@ -288,6 +289,13 @@ class SignalHandler:
             self.lookup, self._selected_dataset['uuid'],
             dependency_keys=self.settings.dependency_keys)
 
+        # Show message if uuids are missing
+        missing_uuids = self._dependency_graph.missing_uuids
+        print(missing_uuids)
+        if missing_uuids:
+            self.show_error('The following UUIDs were found during dependency graph calculation but are not present '
+                            'in the database: {}'.format(reduce(lambda a, b: a+', '+b, missing_uuids)))
+
         # Create graph widget
         graph_widget = GraphWidget(self.builder, self._dependency_graph.graph)
         dependency_view = self.builder.get_object('dependency-view')
@@ -312,11 +320,14 @@ class SignalHandler:
             self.server_config = await self.lookup.config()
             self.datasets = await self.lookup.all()
         except Exception as e:
-            self.error_label.set_text(str(e))
-            self.error_bar.show()
-            self.error_bar.set_revealed(True)
+            self.show_error(str(e))
             self.datasets = []
         self._refresh_results()
+
+    def show_error(self, msg):
+        self.error_label.set_text(msg)
+        self.error_bar.show()
+        self.error_bar.set_revealed(True)
 
     def on_window_destroy(self, *args):
         self.event_loop.stop()

@@ -52,7 +52,8 @@ class DependencyGraph:
 
     def _reset_graph(self):
         self.graph = SimpleGraph()
-        self.uuid_to_vertex = {}
+        self._uuid_to_vertex = {}
+        self._missing_uuids = []
 
     async def trace_dependencies(self, lookup, uuid, dependency_keys=None):
         """Build dependency graph by UUID."""
@@ -74,20 +75,22 @@ class DependencyGraph:
         for dataset in datasets:
             # this ceck should be redundant, as all documents have field 'uuid'
             # and this field is unique:
-            if 'uuid' in dataset and dataset['uuid'] not in self.uuid_to_vertex:
+            uuid = dataset['uuid']
+            if 'uuid' in dataset and uuid not in self._uuid_to_vertex:
                 v = self.graph.add_vertex(
-                    uuid=dataset['uuid'],
+                    uuid=uuid,
                     name=dataset['name'],
                     kind='root' if dataset['uuid'] == uuid else 'dependent')
                 logger.debug("Create vertex {} for dataset '{}': '{}'".format(
-                    v, dataset['uuid'], dataset['name']))
-                self.uuid_to_vertex[dataset['uuid']] = v
+                    v, uuid, dataset['name']))
+                self._uuid_to_vertex[uuid] = v
+                self._missing_uuids += [uuid]
 
         for dataset in datasets:
             if 'uuid' in dataset and 'derived_from' in dataset:
                 for parent_uuid in dataset['derived_from']:
                     if is_uuid(parent_uuid):
-                        if parent_uuid not in self.uuid_to_vertex:
+                        if parent_uuid not in self._uuid_to_vertex:
                             v = self.graph.add_vertex(
                                 uuid=parent_uuid,
                                 name='Dataset does not exist in database.',
@@ -97,18 +100,22 @@ class DependencyGraph:
                                 "'{}' of child '{}': '{}'".format(
                                     v, parent_uuid, dataset['uuid'],
                                     dataset['name']))
-                            self.uuid_to_vertex[parent_uuid] = v
+                            self._uuid_to_vertex[parent_uuid] = v
 
                         logger.debug(
                             "Create edge from child '{}':'{}' to parent "
                             "'{}'.".format(dataset['uuid'], dataset['name'],
                                            parent_uuid))
                         self.graph.add_edge(
-                            self.uuid_to_vertex[dataset['uuid']],
-                            self.uuid_to_vertex[parent_uuid])
+                            self._uuid_to_vertex[dataset['uuid']],
+                            self._uuid_to_vertex[parent_uuid])
                     else:
                         logger.warning(
                             "Parent dataset '{}' of child '{}': '{}' is no "
                             "valid UUID, ignored.".format(parent_uuid,
                                                           dataset['uuid'],
                                                           dataset['name']))
+
+    @property
+    def missing_uuids(self):
+        return self._missing_uuids
