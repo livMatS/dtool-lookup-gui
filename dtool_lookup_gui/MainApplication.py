@@ -291,7 +291,6 @@ class SignalHandler:
 
         # Show message if uuids are missing
         missing_uuids = self._dependency_graph.missing_uuids
-        print(missing_uuids)
         if missing_uuids:
             self.show_error('The following UUIDs were found during dependency graph calculation but are not present '
                             'in the database: {}'.format(reduce(lambda a, b: a+', '+b, missing_uuids)))
