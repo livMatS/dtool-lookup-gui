@@ -53,6 +53,7 @@ setup(
     use_scm_version=True,
     install_requires=[
         'dtoolcore>=3.17',
+        'dtool_lookup_api>=0.1',
         'aiohttp>=3.6',
         'gbulb>=0.6',
         'pyyaml>=5.3',

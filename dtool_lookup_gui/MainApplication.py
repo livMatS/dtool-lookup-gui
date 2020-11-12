@@ -31,6 +31,9 @@ from datetime import date, datetime
 from functools import reduce
 
 import dtoolcore
+import dtool_lookup_api.core.config
+from dtool_lookup_api.core.LookupClient import ConfigurationBasedLookupClient as LookupClient
+dtool_lookup_api.core.config.Config.interactive = False
 
 import gi
 
@@ -43,8 +46,6 @@ gbulb.install(gtk=True)
 
 from .Dependencies import DependencyGraph, is_uuid
 from .GraphWidget import GraphWidget
-from .LookupClient import LookupClient
-
 
 @contextmanager
 def time_locale(name):
@@ -326,10 +327,10 @@ class SignalHandler:
         self.main_stack.set_visible_child(
             self.builder.get_object('main-spinner'))
 
-        self.lookup = LookupClient(self.settings.lookup_url,
-                                   self.settings.authenticator_url,
-                                   self.settings.username,
-                                   self.settings.password)
+        self.lookup = LookupClient(lookup_url=self.settings.lookup_url,
+                                   auth_url=self.settings.authenticator_url,
+                                   username=self.settings.username,
+                                   password=self.settings.password)
         try:
             await self.lookup.connect()
             self.server_config = await self.lookup.config()
