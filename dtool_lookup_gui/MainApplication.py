@@ -217,14 +217,22 @@ class SignalHandler:
         self.main_stack.set_visible_child(
             self.builder.get_object('main-spinner'))
 
+        self.datasets = None
+        self.server_config = None
+
     def _refresh_results(self):
         results_widget = self.builder.get_object('search-results')
         statusbar_widget = self.builder.get_object('main-statusbar')
-        statusbar_widget.push(0, f'{len(self.datasets)} datasets - '
-                                 f'Connected to lookup server version '
-                                 f"{self.server_config['version']}")
-
-        if len(self.datasets) == 0:
+        if self.datasets and self.server_config:
+            statusbar_widget.push(0, f'{len(self.datasets)} datasets - '
+                                     f'Connected to lookup server version '
+                                     f"{self.server_config['version']}")
+            if len(self.datasets) == 0:
+                self.main_stack.set_visible_child(
+                    self.builder.get_object('main-not-found'))
+                return
+        else:
+            statusbar_widget.push(0, 'Server connection failed')
             self.main_stack.set_visible_child(
                 self.builder.get_object('main-not-found'))
             return
@@ -309,7 +317,7 @@ class SignalHandler:
         missing_uuids = self._dependency_graph.missing_uuids
         if missing_uuids:
             self.show_error('The following UUIDs were found during dependency graph calculation but are not present '
-                            'in the database: {}'.format(reduce(lambda a, b: a+', '+b, missing_uuids)))
+                            'in the database: {}'.format(reduce(lambda a, b: a + ', ' + b, missing_uuids)))
 
         # Create graph widget
         graph_widget = GraphWidget(self.builder, self._dependency_graph.graph)
@@ -438,6 +446,7 @@ class SignalHandler:
             self.builder.get_object('search-entry').set_text(f'uuid:{uuid}')
             return True
         return False
+
 
 def run_gui():
     builder = Gtk.Builder()
