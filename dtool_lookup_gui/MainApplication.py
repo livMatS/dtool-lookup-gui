@@ -26,6 +26,7 @@ import asyncio
 import locale
 import math
 import os
+import subprocess
 from contextlib import contextmanager
 from datetime import date, datetime
 from functools import reduce
@@ -44,6 +45,10 @@ gbulb.install(gtk=True)
 from .Dependencies import DependencyGraph, is_uuid
 from .GraphWidget import GraphWidget
 from .LookupClient import LookupClient
+
+
+def open(filename):
+    """Open file in system-default application"""
 
 
 @contextmanager
@@ -223,6 +228,7 @@ class SignalHandler:
     def _refresh_results(self):
         results_widget = self.builder.get_object('search-results')
         statusbar_widget = self.builder.get_object('main-statusbar')
+        print(self.server_config)
         if self.datasets and self.server_config:
             statusbar_widget.push(0, f'{len(self.datasets)} datasets - '
                                      f'Connected to lookup server version '
@@ -446,6 +452,21 @@ class SignalHandler:
             self.builder.get_object('search-entry').set_text(f'uuid:{uuid}')
             return True
         return False
+
+    def on_manifest_row_activated(self, tree_view, path, column):
+        dataset = dtoolcore.DataSet.from_uri(self._selected_dataset['uri'])
+        store = tree_view.get_model()
+        iter = store.get_iter(path)
+        item = store.get_value(iter, 0)
+        uuid = store.get_value(iter, 3)
+        if uuid in dataset.identifiers:
+            subprocess.run(["xdg-open", dataset.item_content_abspath(uuid)])
+            # The following lines should be more portable but don't run
+            #Gio.AppInfo.launch_default_for_uri(
+            #    dataset.item_content_abspath(uuid))
+        else:
+            self.show_error(f'Cannot open item {item}, since the UUID {uuid} '
+                            'appears to exist in the lookup server only.')
 
 
 def run_gui():
