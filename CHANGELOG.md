@@ -1,5 +1,10 @@
 Change log for dtool-lookup-gui
 
+0.3.0 (15May21)
+---------------
+
+- Download files from manifest
+
 0.2.1 (26Oct20)
 ---------------
 
