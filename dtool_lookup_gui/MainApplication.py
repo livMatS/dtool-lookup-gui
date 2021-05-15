@@ -23,9 +23,12 @@
 #
 
 import asyncio
+import concurrent.futures
 import locale
 import math
 import os
+import shutil
+import subprocess
 from contextlib import contextmanager
 from datetime import date, datetime
 from functools import reduce
@@ -46,6 +49,10 @@ gbulb.install(gtk=True)
 
 from .Dependencies import DependencyGraph, is_uuid
 from .GraphWidget import GraphWidget
+
+def open(filename):
+    """Open file in system-default application"""
+
 
 @contextmanager
 def time_locale(name):
@@ -122,17 +129,18 @@ def fill_readme_tree_store(store, data, parent=None):
             else:
                 append_entry(store, entry, current_data, parent)
 
-    for entry, value in data.items():
-        if type(value) is list:
-            current = store.append(parent,
-                                   [entry, None, False, None])
-            fill_readme_tree_store_from_list(store, value, parent=current)
-        elif type(value) is dict:
-            current = store.append(parent,
-                                   [entry, None, False, None])
-            fill_readme_tree_store(store, value, parent=current)
-        else:
-            append_entry(store, entry, value, parent)
+    if data is not None:
+        for entry, value in data.items():
+            if type(value) is list:
+                current = store.append(parent,
+                                       [entry, None, False, None])
+                fill_readme_tree_store_from_list(store, value, parent=current)
+            elif type(value) is dict:
+                current = store.append(parent,
+                                       [entry, None, False, None])
+                fill_readme_tree_store(store, value, parent=current)
+            else:
+                append_entry(store, entry, value, parent)
 
 
 def fill_manifest_tree_store(store, data, parent=None):
@@ -221,10 +229,12 @@ class SignalHandler:
         self.datasets = None
         self.server_config = None
 
+        self.thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=2)
+
     def _refresh_results(self):
         results_widget = self.builder.get_object('search-results')
         statusbar_widget = self.builder.get_object('main-statusbar')
-        if self.datasets and self.server_config:
+        if self.datasets is not None and self.server_config:
             statusbar_widget.push(0, f'{len(self.datasets)} datasets - '
                                      f'Connected to lookup server version '
                                      f"{self.server_config['version']}")
@@ -338,10 +348,13 @@ class SignalHandler:
         self.lookup = LookupClient(lookup_url=self.settings.lookup_url,
                                    auth_url=self.settings.authenticator_url,
                                    username=self.settings.username,
-                                   password=self.settings.password)
+                                   password=self.settings.password,
+                                   verify_ssl=False)
         try:
             await self.lookup.connect()
             self.server_config = await self.lookup.config()
+            if 'msg' in self.server_config:
+                self.show_error(self.server_config['msg'])
             self.datasets = await self.lookup.all()
         except Exception as e:
             self.show_error(str(e))
@@ -448,6 +461,32 @@ class SignalHandler:
             return True
         return False
 
+    def dtool_retrieve_item(self, uri, item_name, item_uuid):
+        dataset = dtoolcore.DataSet.from_uri(uri)
+        if item_uuid in dataset.identifiers:
+            shutil.copyfile(dataset.item_content_abspath(item_uuid),
+                            f'/home/pastewka/Downloads/{item_name}')
+            subprocess.run(["xdg-open", f'/home/pastewka/Downloads/{item_name}'])
+            # The following lines should be more portable but don't run
+            #Gio.AppInfo.launch_default_for_uri(
+            #    dataset.item_content_abspath(uuid))
+        else:
+            self.show_error(f'Cannot open item {item_name}, since the UUID {uuid_name} '
+                            'appears to exist in the lookup server only.')
+
+    async def retrieve_item(self, uri, item_name, item_uuid):
+        loop = asyncio.get_event_loop()
+        await asyncio.wait([
+            loop.run_in_executor(self.thread_pool, self.dtool_retrieve_item,
+                                 uri, item_name, item_uuid)])
+
+    def on_manifest_row_activated(self, tree_view, path, column):
+        store = tree_view.get_model()
+        iter = store.get_iter(path)
+        item = store.get_value(iter, 0)
+        uuid = store.get_value(iter, 3)
+        asyncio.ensure_future(
+            self.retrieve_item(self._selected_dataset['uri'], item, uuid))
 
 def run_gui():
     builder = Gtk.Builder()

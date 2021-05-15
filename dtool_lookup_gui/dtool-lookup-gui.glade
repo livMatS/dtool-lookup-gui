@@ -1,7 +1,75 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.38.1 -->
+<!-- Generated with glade 3.38.2 -->
 <interface>
   <requires lib="gtk+" version="3.22"/>
+  <object class="GtkWindow">
+    <property name="can-focus">False</property>
+    <child>
+      <object class="GtkBox">
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <property name="orientation">vertical</property>
+        <child>
+          <object class="GtkHeaderBar">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+            <property name="title" translatable="yes">Server configuration</property>
+            <property name="show-close-button">True</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkNotebook">
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="vexpand">True</property>
+            <child>
+              <object class="GtkTreeView">
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <child internal-child="selection">
+                  <object class="GtkTreeSelection"/>
+                </child>
+              </object>
+            </child>
+            <child type="tab">
+              <object class="GtkLabel">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">Users</property>
+              </object>
+              <packing>
+                <property name="tab-fill">False</property>
+              </packing>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+            <child type="tab">
+              <object class="GtkLabel">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="label" translatable="yes">Storage</property>
+              </object>
+              <packing>
+                <property name="position">1</property>
+                <property name="tab-fill">False</property>
+              </packing>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+  </object>
   <object class="GtkPopover" id="dependency-popover">
     <property name="can-focus">False</property>
     <property name="position">bottom</property>
@@ -147,7 +215,8 @@
             <property name="visible">True</property>
             <property name="can-focus">True</property>
             <property name="receives-default">True</property>
-            <property name="text" translatable="yes">About dtool-gui</property>
+            <property name="text" translatable="yes">Configure server</property>
+            <signal name="clicked" handler="on_configure_server_clicked" swapped="no"/>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -155,11 +224,44 @@
             <property name="position">1</property>
           </packing>
         </child>
+        <child>
+          <object class="GtkModelButton">
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
+            <property name="text" translatable="yes">About dtool-lookup-gui</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">2</property>
+          </packing>
+        </child>
       </object>
       <packing>
         <property name="submenu">submenu0</property>
         <property name="position">1</property>
       </packing>
+    </child>
+  </object>
+  <object class="GtkMenu" id="manifest-menu">
+    <property name="visible">True</property>
+    <property name="can-focus">False</property>
+    <child>
+      <object class="GtkMenuItem" id="manifest-open">
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <property name="label" translatable="yes">Open</property>
+        <property name="use-underline">True</property>
+      </object>
+    </child>
+    <child>
+      <object class="GtkMenuItem" id="manifest-show-in-files">
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <property name="label" translatable="yes">Show in file manager</property>
+        <property name="use-underline">True</property>
+      </object>
     </child>
   </object>
   <object class="GtkTreeStore" id="manifest-treestore">
@@ -615,6 +717,7 @@
                                         <property name="can-focus">True</property>
                                         <property name="model">manifest-treestore</property>
                                         <property name="search-column">0</property>
+                                        <signal name="row-activated" handler="on_manifest_row_activated" swapped="no"/>
                                         <child internal-child="selection">
                                           <object class="GtkTreeSelection"/>
                                         </child>
@@ -622,9 +725,7 @@
                                           <object class="GtkTreeViewColumn" id="manifest-column1">
                                             <property name="title" translatable="yes">Name</property>
                                             <child>
-                                              <object class="GtkCellRendererText" id="manifest-renderer1">
-                                                <property name="editable">True</property>
-                                              </object>
+                                              <object class="GtkCellRendererText" id="manifest-renderer1"/>
                                               <attributes>
                                                 <attribute name="text">0</attribute>
                                               </attributes>

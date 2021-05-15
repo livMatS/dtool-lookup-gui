@@ -4,3 +4,4 @@ gbulb
 pyyaml
 PyGObject
 scipy
+dtool-lookup-api
