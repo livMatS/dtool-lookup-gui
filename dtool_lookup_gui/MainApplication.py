@@ -129,17 +129,18 @@ def fill_readme_tree_store(store, data, parent=None):
             else:
                 append_entry(store, entry, current_data, parent)
 
-    for entry, value in data.items():
-        if type(value) is list:
-            current = store.append(parent,
-                                   [entry, None, False, None])
-            fill_readme_tree_store_from_list(store, value, parent=current)
-        elif type(value) is dict:
-            current = store.append(parent,
-                                   [entry, None, False, None])
-            fill_readme_tree_store(store, value, parent=current)
-        else:
-            append_entry(store, entry, value, parent)
+    if data is not None:
+        for entry, value in data.items():
+            if type(value) is list:
+                current = store.append(parent,
+                                       [entry, None, False, None])
+                fill_readme_tree_store_from_list(store, value, parent=current)
+            elif type(value) is dict:
+                current = store.append(parent,
+                                       [entry, None, False, None])
+                fill_readme_tree_store(store, value, parent=current)
+            else:
+                append_entry(store, entry, value, parent)
 
 
 def fill_manifest_tree_store(store, data, parent=None):
