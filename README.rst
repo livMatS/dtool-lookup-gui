@@ -1,6 +1,10 @@
 dtool-lookup-gui
 ================
 
+.. image:: https://badge.fury.io/py/dtool-lookup-gui.svg
+    :target: https://badge.fury.io/py/dtool-lookup-gui
+    :alt: PyPI package
+
 dtool-lookup-gui is a graphical user interface for dtool_, dtool-lookup-server_ and
 dtool-lookup-server-dependency-graph-plugin_ written in Python_ and GTK_.
 
