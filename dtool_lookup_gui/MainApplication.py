@@ -233,8 +233,7 @@ class SignalHandler:
     def _refresh_results(self):
         results_widget = self.builder.get_object('search-results')
         statusbar_widget = self.builder.get_object('main-statusbar')
-        print(self.server_config)
-        if self.datasets and self.server_config:
+        if self.datasets is not None and self.server_config:
             statusbar_widget.push(0, f'{len(self.datasets)} datasets - '
                                      f'Connected to lookup server version '
                                      f"{self.server_config['version']}")
@@ -348,10 +347,13 @@ class SignalHandler:
         self.lookup = LookupClient(lookup_url=self.settings.lookup_url,
                                    auth_url=self.settings.authenticator_url,
                                    username=self.settings.username,
-                                   password=self.settings.password)
+                                   password=self.settings.password,
+                                   verify_ssl=False)
         try:
             await self.lookup.connect()
             self.server_config = await self.lookup.config()
+            if 'msg' in self.server_config:
+                self.show_error(self.server_config['msg'])
             self.datasets = await self.lookup.all()
         except Exception as e:
             self.show_error(str(e))
