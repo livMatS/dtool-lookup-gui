@@ -389,6 +389,11 @@ class SignalHandler:
             f'{datetime_to_string(self._selected_dataset["created_at"])}')
         self.builder.get_object('dataset-frozen-at').set_text(
             f'{datetime_to_string(self._selected_dataset["frozen_at"])}')
+        if 'size_in_bytes' in self._selected_dataset and self._selected_dataset['size_in_bytes'] is not None:
+            self.builder.get_object('dataset-size-in-bytes').set_text(
+                f'{human_readable_file_size(self._selected_dataset["size_in_bytes"])}')
+        else:
+            self.builder.get_object('dataset-size-in-bytes').set_text('N/A')
 
         page = self.builder.get_object('dataset-notebook').get_property('page')
         if page == 0:
