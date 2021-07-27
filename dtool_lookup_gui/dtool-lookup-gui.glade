@@ -216,7 +216,7 @@
             <property name="can-focus">True</property>
             <property name="receives-default">True</property>
             <property name="text" translatable="yes">Configure server</property>
-            <signal name="clicked" handler="on_configure_server_clicked" swapped="no"/>
+            <signal name="clicked" handler="on_settings_clicked" swapped="no"/>
           </object>
           <packing>
             <property name="expand">False</property>
