@@ -77,7 +77,7 @@ class GraphWidget(Gtk.DrawingArea):
         builder.get_object('dependency-show-dataset-button').connect(
             'clicked', self.on_show_clicked)
 
-        self._timer = GObject.timeout_add(50, self.on_timeout, self)
+        self._timer = GObject.timeout_add(10, self.on_timeout, self)
 
     def __del__(self):
         GObject.source_remove(self._timer)
