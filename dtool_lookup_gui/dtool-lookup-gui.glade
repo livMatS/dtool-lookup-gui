@@ -915,6 +915,14 @@
       </object>
     </child>
   </object>
+  <object class="GtkTreeStore" id="users-treestore">
+    <columns>
+      <!-- column-name Name -->
+      <column type="gchararray"/>
+      <!-- column-name Administrator? -->
+      <column type="gboolean"/>
+    </columns>
+  </object>
   <object class="GtkWindow" id="settings-window">
     <property name="width-request">800</property>
     <property name="height-request">600</property>
@@ -1087,7 +1095,39 @@
               </packing>
             </child>
             <child>
-              <placeholder/>
+              <object class="GtkTreeView" id="settings-users">
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="model">users-treestore</property>
+                <child internal-child="selection">
+                  <object class="GtkTreeSelection"/>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn">
+                    <property name="title" translatable="yes">Name</property>
+                    <child>
+                      <object class="GtkCellRendererText" id="users-renderer1"/>
+                      <attributes>
+                        <attribute name="text">0</attribute>
+                      </attributes>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn">
+                    <property name="title" translatable="yes">Administrator?</property>
+                    <child>
+                      <object class="GtkCellRendererToggle" id="users-renderer2"/>
+                      <attributes>
+                        <attribute name="active">1</attribute>
+                      </attributes>
+                    </child>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="position">1</property>
+              </packing>
             </child>
             <child type="tab">
               <object class="GtkLabel">

@@ -313,6 +313,30 @@ class SignalHandler:
         self.manifest_stack.set_visible_child(
             self.builder.get_object('manifest-view'))
 
+    async def _fetch_users(self):
+        #self.error_bar.set_revealed(False)
+        #self.manifest_stack.set_visible_child(
+        #    self.builder.get_object('manifest-spinner'))
+
+        users_view = self.builder.get_object('settings-users')
+        store = users_view.get_model()
+        store.clear()
+        self._users = await self.lookup.permission_info('ecs://frct-simdata')
+        print(self._users)
+
+        users = sorted(set(self._users['users_with_register_permissions']).union(
+            self._users['users_with_search_permissions']))
+
+        for user in users:
+            store.append(None, [user, False])
+
+        #try:
+        #    fill_manifest_tree_store(store, self._manifest['items'])
+        #except Exception as e:
+        #    print(e)
+        users_view.columns_autosize()
+        users_view.show_all()
+
     async def _compute_dependencies(self, uri):
         self.error_bar.set_revealed(False)
         self.dependency_stack.set_visible_child(
@@ -397,13 +421,13 @@ class SignalHandler:
 
         page = self.builder.get_object('dataset-notebook').get_property('page')
         if page == 0:
-            self._readme_task = asyncio.ensure_future(
+            self._readme_task = asyncio.create_task(
                 self._fetch_readme(self._selected_dataset['uri']))
         elif page == 1:
-            self._manifest_task = asyncio.ensure_future(
+            self._manifest_task = asyncio.create_task(
                 self._fetch_manifest(self._selected_dataset['uri']))
         elif page == 2:
-            self._dependency_task = asyncio.ensure_future(
+            self._dependency_task = asyncio.create_task(
                 self._compute_dependencies(self._selected_dataset['uri']))
 
     def on_search(self, search_entry):
@@ -432,28 +456,29 @@ class SignalHandler:
 
         if self._search_task is not None:
             self._search_task.cancel()
-        self._search_task = asyncio.ensure_future(
+        self._search_task = asyncio.create_task(
             fetch_search_result(search_entry.get_text()))
 
     def on_settings_clicked(self, user_data):
+        asyncio.create_task(self._fetch_users())
         self.settings_window.show()
 
     def on_delete_settings(self, event, user_data):
         self.settings_window.hide()
         # Reconnect since settings may have been changed
-        asyncio.ensure_future(self.connect())
+        asyncio.create_task(self.connect())
         return True
 
     def on_switch_page(self, notebook, page, page_num):
         if self._selected_dataset is not None:
             if page_num == 0 and self._readme is None:
-                self._readme_task = asyncio.ensure_future(
+                self._readme_task = asyncio.create_task(
                     self._fetch_readme(self._selected_dataset['uri']))
             elif page_num == 1 and self._manifest is None:
-                self._manifest_task = asyncio.ensure_future(
+                self._manifest_task = asyncio.create_task(
                     self._fetch_manifest(self._selected_dataset['uri']))
             elif page_num == 2 and self._dependency_graph is None:
-                self._dependency_task = asyncio.ensure_future(
+                self._dependency_task = asyncio.create_task(
                     self._compute_dependencies(self._selected_dataset['uri']))
 
     def on_readme_row_activated(self, tree_view, path, column):
@@ -490,7 +515,7 @@ class SignalHandler:
         iter = store.get_iter(path)
         item = store.get_value(iter, 0)
         uuid = store.get_value(iter, 3)
-        asyncio.ensure_future(
+        asyncio.create_task(
             self.retrieve_item(self._selected_dataset['uri'], item, uuid))
 
 def run_gui():
