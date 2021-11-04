@@ -1,6 +1,7 @@
 *~
 *.pyc
 *.cpython*.so
+.idea
 __pycache__
 ../build
 dist

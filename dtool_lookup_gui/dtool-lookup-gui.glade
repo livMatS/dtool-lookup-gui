@@ -185,6 +185,7 @@
       </object>
     </child>
   </object>
+  <object class="GtkEntryCompletion" id="entrycompletion1"/>
   <object class="GtkPopoverMenu" id="main-menu">
     <property name="can-focus">False</property>
     <child>
@@ -288,6 +289,7 @@
       <column type="gchararray"/>
     </columns>
   </object>
+  <object class="GtkEntryBuffer" id="search-entry-buffer"/>
   <object class="GtkApplicationWindow" id="main-window">
     <property name="width-request">1000</property>
     <property name="height-request">700</property>
@@ -936,11 +938,14 @@
           <object class="GtkSearchEntry" id="search-entry">
             <property name="visible">True</property>
             <property name="can-focus">True</property>
-            <property name="width-chars">50</property>
+            <property name="tooltip-text" translatable="yes">Plain text or mongo query.</property>
+            <property name="buffer">search-entry-buffer</property>
+            <property name="width-chars">80</property>
             <property name="primary-icon-name">edit-find-symbolic</property>
             <property name="primary-icon-activatable">False</property>
             <property name="primary-icon-sensitive">False</property>
-            <property name="placeholder-text" translatable="yes">Type to search...</property>
+            <property name="placeholder-text" translatable="yes">Type to search, double-click to expand...</property>
+            <signal name="button-press-event" handler="on_search_entry_button_press" swapped="no"/>
             <signal name="search-changed" handler="on_search" swapped="no"/>
           </object>
         </child>
@@ -1153,6 +1158,67 @@
         <property name="can-focus">False</property>
         <property name="title" translatable="yes">Settings</property>
         <property name="show-close-button">True</property>
+      </object>
+    </child>
+  </object>
+  <object class="GtkTextBuffer" id="search-text-buffer"/>
+  <object class="GtkPopover" id="search-popover">
+    <property name="can-focus">False</property>
+    <property name="relative-to">search-entry</property>
+    <property name="position">bottom</property>
+    <property name="modal">False</property>
+    <child>
+      <object class="GtkBox">
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <property name="margin-left">10</property>
+        <property name="margin-right">10</property>
+        <property name="margin-start">10</property>
+        <property name="margin-end">10</property>
+        <property name="margin-top">10</property>
+        <property name="margin-bottom">10</property>
+        <property name="orientation">vertical</property>
+        <child>
+          <object class="GtkScrolledWindow">
+            <property name="width-request">800</property>
+            <property name="height-request">200</property>
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="hexpand">True</property>
+            <property name="vexpand">True</property>
+            <property name="shadow-type">in</property>
+            <child>
+              <object class="GtkTextView">
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="hexpand">True</property>
+                <property name="vexpand">True</property>
+                <property name="buffer">search-text-buffer</property>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="search-button">
+            <property name="label" translatable="yes">Search</property>
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
+            <property name="margin-top">10</property>
+            <signal name="clicked" handler="on_search_button_clicked" swapped="no"/>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="pack-type">end</property>
+            <property name="position">2</property>
+          </packing>
+        </child>
       </object>
     </child>
   </object>
