@@ -41,7 +41,7 @@ dtool_lookup_api.core.config.Config.interactive = False
 import gi
 
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gio
+from gi.repository import Gtk, Gdk, Gio
 
 import gbulb
 
@@ -214,6 +214,8 @@ class SignalHandler:
 
         self.error_bar = self.builder.get_object('error-bar')
         self.error_label = self.builder.get_object('error-label')
+
+        self.search_popover = self.builder.get_object('search-popover')
 
         self.error_bar.set_revealed(False)
 
@@ -429,6 +431,30 @@ class SignalHandler:
         elif page == 2:
             self._dependency_task = asyncio.create_task(
                 self._compute_dependencies(self._selected_dataset['uri']))
+
+    def on_search_entry_button_press(self, search_entry, event):
+        """"Display larger text box popover for multiline search queries on double-click in search bar."""
+        if event.button == 1:
+            if event.type == Gdk.EventType._2BUTTON_PRESS:
+                search_text_buffer = self.builder.get_object('search-text-buffer')
+                search_entry_buffer = self.builder.get_object('search-entry-buffer')
+                search_text = search_entry_buffer.get_text()
+                search_text_buffer.set_text(search_text, -1)
+
+                rect = Gdk.Rectangle()
+                rect.x, rect.y = event.x, event.y
+                self.search_popover.set_pointing_to(rect)
+                self.search_popover.popup()
+
+    def on_search_button_clicked(self, button):
+        """"Update search bar text when clicking search button in search popover."""
+        search_text_buffer = self.builder.get_object('search-text-buffer')
+        search_entry_buffer = self.builder.get_object('search-entry-buffer')
+        start_iter = search_text_buffer.get_start_iter()
+        end_iter = search_text_buffer.get_end_iter()
+        search_text = search_text_buffer.get_text(start_iter, end_iter, True)
+        search_entry_buffer.set_text(search_text, -1)
+        self.search_popover.popdown()
 
     def on_search(self, search_entry):
         self.main_stack.set_visible_child(
