@@ -31,6 +31,26 @@ When already clone into a local directly via `git`, either use pip_ or install v
 
    python setup.py install
 
+For an editable install,
+
+
+..code:: bash
+
+   pip install -e .
+
+also run
+
+..code:: bash
+
+   glib-compile-schemas .
+
+from within subdirectory `dtool_lookup_gui`. Otherwise, GUI launch fails with
+
+..code::
+
+   gi.repository.GLib.Error: g-file-error-quark: Failed to open file “/path/to/repository/dtool_lookup_gui/gschemas.compiled”: open() failed: No such file or directory (4)
+
+
 Running the GUI
 ---------------
 
