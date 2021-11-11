@@ -149,9 +149,9 @@ class GraphWidget(Gtk.DrawingArea):
             context.line_to(*(j_pos + 0.1 * normal))
             context.stroke()
             # Draw arrow head
-            context.move_to(*j_pos)
-            context.line_to(*(j_pos + 0.2 * normal + 0.2 * perpendicular))
-            context.line_to(*(j_pos + 0.2 * normal - 0.2 * perpendicular))
+            context.move_to(*i_pos)
+            context.line_to(*(i_pos - 0.2 * normal - 0.2 * perpendicular))
+            context.line_to(*(i_pos - 0.2 * normal + 0.2 * perpendicular))
             context.fill()
             context.close_path()
 
