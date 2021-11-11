@@ -44,14 +44,16 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, Gio
 
 import gbulb
-
 gbulb.install(gtk=True)
+#import asyncio_glib
+#asyncio.set_event_loop_policy(asyncio_glib.GLibEventLoopPolicy())
 
 from .Dependencies import DependencyGraph, is_uuid
 from .GraphWidget import GraphWidget
 
 def open(filename):
     """Open file in system-default application"""
+    pass
 
 
 @contextmanager
