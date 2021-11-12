@@ -136,13 +136,11 @@ class SignalHandler:
                 else:
                     self.handlers[method_name] = Trampoline([method])
 
-        # for method_name, methods in list(self.handlers.items())
-        #    if isinstance(methods, Trampoline):
-        #        self.handlers[method_name] = Trampoline
-        #    if len(methods) == 1:
-        #        self.handlers[method_name] = methods[0]
-        #    else:
-        #        self.handlers[method_name] = Trampoline(methods)
+    def on_main_switch_page(self, notebook, page, page_num):
+        if page_num == 0:
+            self.lookup_tab.refresh()
+        elif page_num == 1:
+            self.direct_tab.refresh()
 
     def on_settings_clicked(self, user_data):
         asyncio.create_task(self._fetch_users())

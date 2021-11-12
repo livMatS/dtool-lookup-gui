@@ -38,7 +38,6 @@ def _log_nested(log_func, dct):
         log_func(l)
 
 
-
 class DependencyGraph:
     def __init__(self):
         self._reset_graph()

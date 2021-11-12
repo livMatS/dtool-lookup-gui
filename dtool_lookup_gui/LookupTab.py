@@ -60,6 +60,8 @@ class SignalHandler:
         self.lookup = None
 
         self.error_bar = self.builder.get_object('error-bar')
+        self.error_label = self.builder.get_object('error-label')
+
         self.main_stack = self.builder.get_object('main-stack')
         self.readme_stack = self.builder.get_object('readme-stack')
         self.manifest_stack = self.builder.get_object('manifest-stack')
@@ -126,6 +128,9 @@ class SignalHandler:
 
         self.main_stack.set_visible_child(
             self.builder.get_object('main-view'))
+
+    def refresh(self):
+        self._refresh_results()
 
     async def _fetch_readme(self, uri):
         self.error_bar.set_revealed(False)
@@ -343,3 +348,8 @@ class SignalHandler:
         uuid = store.get_value(iter, 3)
         asyncio.ensure_future(
             self.retrieve_item(self._selected_dataset['uri'], item, uuid))
+
+    def show_error(self, msg):
+        self.error_label.set_text(msg)
+        self.error_bar.show()
+        self.error_bar.set_revealed(True)
