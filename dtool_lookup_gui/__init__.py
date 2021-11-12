@@ -29,6 +29,11 @@ import uuid
 from contextlib import contextmanager
 from datetime import date, datetime
 
+from ruamel.yaml import YAML
+from ruamel.yaml.parser import ParserError
+from ruamel.yaml.constructor import DuplicateKeyError
+from ruamel.yaml.scanner import ScannerError
+
 import dtoolcore
 
 
@@ -153,3 +158,14 @@ def fill_manifest_tree_store(store, data, parent=None):
                       human_readable_file_size(values['size_in_bytes']),
                       f'{date_to_string(values["utc_timestamp"])}',
                       uuid])
+
+
+def _validate_readme(readme_content):
+    """Return (YAML string, error message)."""
+    yaml = YAML()
+    # Ensure that the content is valid YAML.
+    try:
+        readme_formatted = yaml.load(readme_content)
+        return readme_formatted, None
+    except (ParserError, DuplicateKeyError, ScannerError) as message:
+        return None, str(message)
