@@ -34,6 +34,26 @@ from dtool_gui_tk.models import (
     UnsupportedTypeError,
 )
 
+from dtool_info.inventory import _dataset_info
+
+
+def _proto_dataset_info(dataset):
+    """Return information about proto dataset as a dict."""
+    # Analogous to dtool_info.inventory._dataset_info
+    info = {}
+
+    info["uri"] = dataset.uri
+    info["uuid"] = dataset.uuid
+
+    # Computer and human readable size of dataset.
+
+    info["creator"] = dataset._admin_metadata["creator_username"]
+    info["name"] = dataset._admin_metadata["name"]
+
+    info["readme_content"] = dataset.get_readme_content()
+
+    return info
+
 
 class BaseURIModel():
     "Model for managing base URI."
@@ -55,3 +75,29 @@ class BaseURIModel():
         """
         value = dtoolcore.utils.sanitise_uri(base_uri)
         self._base_uri = value
+
+
+class ProtoDataSetListModel(DataSetListModel):
+    def reindex(self):
+        """Index the base URI."""
+        self._datasets = []
+        self._datasets_info = []
+        self._active_index = None
+        self._all_tags = set()
+        base_uri = self._base_uri_model.get_base_uri()
+        if base_uri is None:
+            return
+        for ds in dtoolcore.iter_proto_datasets_in_base_uri(base_uri):
+            append_okay = True
+            ds_tags = set(ds.list_tags())
+            self._all_tags.update(ds_tags)
+            if self.tag_filter is not None and self.tag_filter not in ds_tags:
+                append_okay = False
+            if append_okay:
+                self._datasets.append(ds)
+
+                self._datasets_info.append(_proto_dataset_info(ds))
+
+        # The initial active index is 0 if there are datasets in the model.
+        if len(self._datasets) > 0:
+            self._active_index = 0
