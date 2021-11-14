@@ -147,7 +147,7 @@ class SignalHandler:
     def on_delete_settings(self, event, user_data):
         self.settings_window.hide()
         # Reconnect since settings may have been changed
-        asyncio.ensure_future(self.connect())
+        asyncio.ensure_future(self.lookup_tab.connect())
         return True
 
     def show_error(self, msg):

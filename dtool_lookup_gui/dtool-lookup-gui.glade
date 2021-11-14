@@ -71,6 +71,7 @@
     </child>
   </object>
   <object class="GtkEntryBuffer" id="base-uri-entry-buffer"/>
+  <object class="GtkEntryBuffer" id="dataset-uri-entry-buffer"/>
   <object class="GtkPopover" id="dependency-popover">
     <property name="can-focus">False</property>
     <property name="position">bottom</property>
@@ -930,7 +931,7 @@
                   <object class="GtkLabel">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <property name="label" translatable="yes">Lookup</property>
+                    <property name="label" translatable="yes">Search</property>
                   </object>
                   <packing>
                     <property name="tab-fill">False</property>
@@ -954,7 +955,7 @@
                               <object class="GtkListBox" id="dtool-ls-results">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <signal name="row-selected" handler="on_direct_dataset_selected" swapped="no"/>
+                                <signal name="row-selected" handler="on_direct_dataset_selected_from_list" swapped="no"/>
                               </object>
                             </child>
                           </object>
@@ -1002,7 +1003,7 @@
                               <object class="GtkLabel">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">Base URI</property>
+                                <property name="label" translatable="yes">Base URI: </property>
                                 <attributes>
                                   <attribute name="weight" value="bold"/>
                                 </attributes>
@@ -1025,12 +1026,13 @@
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkButton">
-                                <property name="label">gtk-open</property>
+                              <object class="GtkButton" id="base-uri-apply-button">
+                                <property name="label">gtk-apply</property>
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="receives-default">True</property>
                                 <property name="use-stock">True</property>
+                                <property name="always-show-image">True</property>
                                 <signal name="clicked" handler="on_base_uri_open" swapped="no"/>
                               </object>
                               <packing>
@@ -1043,6 +1045,156 @@
                             <property name="expand">False</property>
                             <property name="fill">True</property>
                             <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <!-- n-columns=4 n-rows=1 -->
+                          <object class="GtkGrid">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="margin-left">5</property>
+                            <property name="margin-right">5</property>
+                            <property name="margin-start">5</property>
+                            <property name="margin-end">5</property>
+                            <property name="margin-top">5</property>
+                            <property name="margin-bottom">5</property>
+                            <property name="row-spacing">5</property>
+                            <property name="column-spacing">5</property>
+                            <child>
+                              <object class="GtkFileChooserButton" id="dataset-uri-chooser-button">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="action">select-folder</property>
+                                <property name="create-folders">False</property>
+                                <property name="local-only">False</property>
+                                <property name="title" translatable="yes"/>
+                                <signal name="file-set" handler="on_dataset_uri_set" swapped="no"/>
+                              </object>
+                              <packing>
+                                <property name="left-attach">2</property>
+                                <property name="top-attach">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="label" translatable="yes">Dataset URI: </property>
+                                <attributes>
+                                  <attribute name="weight" value="bold"/>
+                                </attributes>
+                              </object>
+                              <packing>
+                                <property name="left-attach">0</property>
+                                <property name="top-attach">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkEntry" id="dataset-uri-entry">
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="hexpand">True</property>
+                                <property name="buffer">dataset-uri-entry-buffer</property>
+                              </object>
+                              <packing>
+                                <property name="left-attach">1</property>
+                                <property name="top-attach">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="dataset-uri-apply-button">
+                                <property name="label">gtk-open</property>
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="receives-default">True</property>
+                                <property name="use-stock">True</property>
+                                <property name="always-show-image">True</property>
+                                <signal name="clicked" handler="on_dataset_uri_open" swapped="no"/>
+                              </object>
+                              <packing>
+                                <property name="left-attach">3</property>
+                                <property name="top-attach">0</property>
+                              </packing>
+                            </child>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <!-- n-columns=4 n-rows=1 -->
+                          <object class="GtkGrid">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="margin-left">5</property>
+                            <property name="margin-right">5</property>
+                            <property name="margin-start">5</property>
+                            <property name="margin-end">5</property>
+                            <property name="margin-top">5</property>
+                            <property name="margin-bottom">5</property>
+                            <property name="row-spacing">5</property>
+                            <property name="column-spacing">5</property>
+                            <property name="column-homogeneous">True</property>
+                            <child>
+                              <object class="GtkButton" id="dtool-create">
+                                <property name="label" translatable="yes">Create dataset</property>
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="receives-default">True</property>
+                                <property name="tooltip-text" translatable="yes">Create new proto dataset at the current base URI, e.g. current local folder.</property>
+                                <property name="always-show-image">True</property>
+                                <signal name="clicked" handler="on_dtool_create" swapped="no"/>
+                              </object>
+                              <packing>
+                                <property name="left-attach">0</property>
+                                <property name="top-attach">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="dtool-add-items">
+                                <property name="label" translatable="yes">Add items</property>
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="receives-default">True</property>
+                              </object>
+                              <packing>
+                                <property name="left-attach">1</property>
+                                <property name="top-attach">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="dtool-edit-metadata">
+                                <property name="label" translatable="yes">Edit metadata</property>
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="receives-default">True</property>
+                              </object>
+                              <packing>
+                                <property name="left-attach">2</property>
+                                <property name="top-attach">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="Freeze dataset">
+                                <property name="label" translatable="yes">Freeze dataset</property>
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="receives-default">True</property>
+                                <property name="tooltip-text" translatable="yes">Freeze the currently selected proto dataset.</property>
+                                <signal name="clicked" handler="on_dtool_freeze" swapped="no"/>
+                              </object>
+                              <packing>
+                                <property name="left-attach">3</property>
+                                <property name="top-attach">0</property>
+                              </packing>
+                            </child>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">2</property>
                           </packing>
                         </child>
                         <child>
@@ -1353,6 +1505,9 @@
                                 <property name="can-focus">False</property>
                                 <property name="label" translatable="yes">Details</property>
                               </object>
+                              <packing>
+                                <property name="tab-fill">False</property>
+                              </packing>
                             </child>
                             <child>
                               <object class="GtkStack" id="direct-manifest-stack">
@@ -1457,6 +1612,7 @@
                               </object>
                               <packing>
                                 <property name="position">1</property>
+                                <property name="tab-fill">False</property>
                               </packing>
                             </child>
                             <child>
@@ -1469,7 +1625,7 @@
                           <packing>
                             <property name="expand">True</property>
                             <property name="fill">True</property>
-                            <property name="position">1</property>
+                            <property name="position">3</property>
                           </packing>
                         </child>
                       </object>
@@ -1487,7 +1643,7 @@
                   <object class="GtkLabel">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <property name="label" translatable="yes">Direct</property>
+                    <property name="label" translatable="yes">Manage</property>
                   </object>
                   <packing>
                     <property name="position">1</property>
@@ -1513,7 +1669,7 @@
                   <object class="GtkLabel">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <property name="label" translatable="yes">Compare</property>
+                    <property name="label" translatable="yes">Transfer</property>
                   </object>
                   <packing>
                     <property name="position">2</property>

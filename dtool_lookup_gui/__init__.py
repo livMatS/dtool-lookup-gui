@@ -109,12 +109,12 @@ def fill_readme_tree_store(store, data, parent=None):
     def fill_readme_tree_store_from_list(store, list_data, parent=None):
         for i, current_data in enumerate(list_data):
             entry = f'{i + 1}'
-            if type(current_data) is list:
+            if isinstance(current_data, list):
                 current_parent = store.append(parent,
                                               [entry, None, False, None])
                 fill_readme_tree_store_from_list(store, current_data,
                                                  parent=current_parent)
-            elif type(current_data) is dict:
+            elif isinstance(current_data, dict):
                 current_parent = store.append(parent,
                                               [entry, None, False, None])
                 fill_readme_tree_store(store, current_data,
@@ -124,11 +124,11 @@ def fill_readme_tree_store(store, data, parent=None):
 
     if data is not None:
         for entry, value in data.items():
-            if type(value) is list:
+            if isinstance(value, list):
                 current = store.append(parent,
                                        [entry, None, False, None])
                 fill_readme_tree_store_from_list(store, value, parent=current)
-            elif type(value) is dict:
+            elif isinstance(value, dict):
                 current = store.append(parent,
                                        [entry, None, False, None])
                 fill_readme_tree_store(store, value, parent=current)
