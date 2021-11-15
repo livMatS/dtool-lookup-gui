@@ -129,7 +129,7 @@ class SignalHandler:
             if method_name.startswith('_'):
                 continue
             if callable(method):
-                print("Registering callback %s" % (method_name))
+                logger.debug("Registering callback %s" % (method_name))
                 if method_name in self.handlers:
                     self.handlers[method_name].append(method)
                 else:
