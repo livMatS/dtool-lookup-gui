@@ -325,14 +325,18 @@ class SignalHandler:
         users_view = self.builder.get_object('settings-users')
         store = users_view.get_model()
         store.clear()
-        self._users = await self.lookup.permission_info('ecs://frct-simdata')
-        print(self._users)
 
-        users = sorted(set(self._users['users_with_register_permissions']).union(
-            self._users['users_with_search_permissions']))
+        base_uris = await self.lookup.list_base_uris()
 
-        for user in users:
-            store.append(None, [user, False])
+        users = []
+        for base_uri in base_uris:
+            for user in base_uri['users_with_register_permissions'] + base_uri['users_with_search_permissions']:
+                users += [(user, base_uri,
+                           user in base_uri['users_with_search_permissions'],
+                           user in base_uri['users_with_register_permissions'])]
+
+        for user, base_uri, has_search_permission, has_register_permission in users:
+            store.append(None, [user, False, has_search_permission, has_register_permission])
 
         #try:
         #    fill_manifest_tree_store(store, self._manifest['items'])

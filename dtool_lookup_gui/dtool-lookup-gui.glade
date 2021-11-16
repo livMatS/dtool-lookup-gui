@@ -919,11 +919,76 @@
       </object>
     </child>
   </object>
+  <object class="GtkTextBuffer" id="search-text-buffer"/>
+  <object class="GtkPopover" id="search-popover">
+    <property name="can-focus">False</property>
+    <property name="relative-to">search-entry</property>
+    <property name="position">bottom</property>
+    <property name="modal">False</property>
+    <child>
+      <object class="GtkBox">
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <property name="margin-left">10</property>
+        <property name="margin-right">10</property>
+        <property name="margin-start">10</property>
+        <property name="margin-end">10</property>
+        <property name="margin-top">10</property>
+        <property name="margin-bottom">10</property>
+        <property name="orientation">vertical</property>
+        <child>
+          <object class="GtkScrolledWindow">
+            <property name="width-request">800</property>
+            <property name="height-request">200</property>
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="hexpand">True</property>
+            <property name="vexpand">True</property>
+            <property name="shadow-type">in</property>
+            <child>
+              <object class="GtkTextView">
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="hexpand">True</property>
+                <property name="vexpand">True</property>
+                <property name="buffer">search-text-buffer</property>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="search-button">
+            <property name="label" translatable="yes">Search</property>
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
+            <property name="margin-top">10</property>
+            <signal name="clicked" handler="on_search_button_clicked" swapped="no"/>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="pack-type">end</property>
+            <property name="position">2</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+  </object>
   <object class="GtkTreeStore" id="users-treestore">
     <columns>
       <!-- column-name Name -->
       <column type="gchararray"/>
       <!-- column-name Administrator? -->
+      <column type="gboolean"/>
+      <!-- column-name Search permission? -->
+      <column type="gboolean"/>
+      <!-- column-name Register permission? -->
       <column type="gboolean"/>
     </columns>
   </object>
@@ -1128,6 +1193,28 @@
                     </child>
                   </object>
                 </child>
+                <child>
+                  <object class="GtkTreeViewColumn">
+                    <property name="title" translatable="yes">Search permission?</property>
+                    <child>
+                      <object class="GtkCellRendererToggle" id="users-renderer3"/>
+                      <attributes>
+                        <attribute name="active">2</attribute>
+                      </attributes>
+                    </child>
+                  </object>
+                </child>
+                <child>
+                  <object class="GtkTreeViewColumn">
+                    <property name="title" translatable="yes">Register permission?</property>
+                    <child>
+                      <object class="GtkCellRendererToggle" id="users-renderer4"/>
+                      <attributes>
+                        <attribute name="active">3</attribute>
+                      </attributes>
+                    </child>
+                  </object>
+                </child>
               </object>
               <packing>
                 <property name="position">1</property>
@@ -1176,64 +1263,4 @@
       </object>
     </child>
   </object>
-  <object class="GtkTextBuffer" id="search-text-buffer"/>
-  <object class="GtkPopover" id="search-popover">
-    <property name="can-focus">False</property>
-    <property name="relative-to">search-entry</property>
-    <property name="position">bottom</property>
-    <property name="modal">False</property>
-    <child>
-      <object class="GtkBox">
-        <property name="visible">True</property>
-        <property name="can-focus">False</property>
-        <property name="margin-left">10</property>
-        <property name="margin-right">10</property>
-        <property name="margin-start">10</property>
-        <property name="margin-end">10</property>
-        <property name="margin-top">10</property>
-        <property name="margin-bottom">10</property>
-        <property name="orientation">vertical</property>
-        <child>
-          <object class="GtkScrolledWindow">
-            <property name="width-request">800</property>
-            <property name="height-request">200</property>
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="hexpand">True</property>
-            <property name="vexpand">True</property>
-            <property name="shadow-type">in</property>
-            <child>
-              <object class="GtkTextView">
-                <property name="visible">True</property>
-                <property name="can-focus">True</property>
-                <property name="hexpand">True</property>
-                <property name="vexpand">True</property>
-                <property name="buffer">search-text-buffer</property>
-              </object>
-            </child>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">0</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkButton" id="search-button">
-            <property name="label" translatable="yes">Search</property>
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="receives-default">True</property>
-            <property name="margin-top">10</property>
-            <signal name="clicked" handler="on_search_button_clicked" swapped="no"/>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="pack-type">end</property>
-            <property name="position">2</property>
-          </packing>
-        </child>
-      </object>
-    </child>
-  </object></interface>
+</interface>
