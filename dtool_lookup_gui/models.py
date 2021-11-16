@@ -29,6 +29,7 @@ import dtoolcore
 import dtool_gui_tk.models
 
 from dtool_gui_tk.models import (
+    _ConfigFileVariableBaseModel,
     LocalBaseURIModel,
     # DataSetListModel,
     DataSetModel,
@@ -41,6 +42,7 @@ from dtool_gui_tk.models import (
 from dtool_info.inventory import _dataset_info
 
 logger = logging.getLogger(__name__)
+
 
 def _proto_dataset_info(dataset):
     """Return information about proto dataset as a dict."""
@@ -58,6 +60,29 @@ def _proto_dataset_info(dataset):
     info["readme_content"] = dataset.get_readme_content()
 
     return info
+
+
+class RemoteBaseURIModel(_ConfigFileVariableBaseModel):
+    "Model for managing local base URI."
+
+    KEY = "DTOOL_REMOTE_BASE_URI"
+
+    def get_base_uri(self):
+        """Return the base URI.
+
+        :returns: base URI where datasets will be read from and written to
+        """
+        return self._get()
+
+    def put_base_uri(self, base_uri):
+        """Put/update the base URI.
+
+        The value is updated in the config file.
+
+        :param base_uri: base URI
+        """
+        value = dtoolcore.utils.sanitise_uri(base_uri)
+        self._put(value)
 
 
 class BaseURIModel():
@@ -174,9 +199,9 @@ class DataSetListModel(dtool_gui_tk.models.DataSetListModel):
             self._datasets_by_uri[ds.uri] = ds
             self._index_by_uri[ds.uri] = i
 
-    def sort(self, **kwargs):
+    def sort(self, *args, **kwargs):
         """Sort the datasets by items properties."""
-        super().sort(**kwargs)
+        super().sort(*args, **kwargs)
         self._rebuild_mappings()
 
     def get_index_by_uri(self, uri):

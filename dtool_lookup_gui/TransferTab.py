@@ -21,10 +21,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-# TODO: Make pure use of Tjelvar's model layer, move direct access to data sets
-#       there
-# TODO: Metadata input via GUI
-# TODO: Copy dataset via GUI
 import asyncio
 import gi
 gi.require_version('Gtk', '3.0')
@@ -55,6 +51,7 @@ from . import (
 
 from .models import (
     LocalBaseURIModel,
+    RemoteBaseURIModel,
     DataSetListModel,
     DataSetModel,
     UnsupportedTypeError,
@@ -62,31 +59,7 @@ from .models import (
 
 HOME_DIR = os.path.expanduser("~")
 
-# Page numbers inverted, very weird
-DATASET_NOTEBOOK_README_PAGE = 0
-DATASET_NOTEBOOK_MANIFEST_PAGE = 1
-
 logger = logging.getLogger(__name__)
-
-
-class DatasetNameDialog(Gtk.Dialog):
-    def __init__(self, parent, default_name=''):
-        super().__init__(title="Specify dataset name", transient_for=parent, flags=0)
-        self.add_buttons(
-            Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OK, Gtk.ResponseType.OK
-        )
-
-        self.set_default_size(150, -1)
-
-        label = Gtk.Label(label="name:")
-        self.entry = Gtk.Entry()
-        self.entry.set_text(default_name)
-        box = self.get_content_area()
-        hbox = Gtk.Box.new(Gtk.Orientation.HORIZONTAL, 6)
-        box.add(hbox)
-        hbox.pack_start(label, False, False, 0)
-        hbox.pack_start(self.entry, True, True, 0)
-        self.show_all()
 
 
 class SignalHandler:
@@ -104,132 +77,135 @@ class SignalHandler:
         # gui elements
         self.readme_stack = self.builder.get_object('direct-readme-stack')
         self.manifest_stack = self.builder.get_object('direct-manifest-stack')
-        self.dtool_freeze_button = self.builder.get_object('dtool-freeze')
-        self.dtool_add_items_button = self.builder.get_object('dtool-add-items')
+        self.dtool_copy_left_to_right_button = self.builder.get_object('dtool-copy-left-to-right')
+        self.dtool_copy_right_to_left_button = self.builder.get_object('dtool-copy-right-to-left')
 
+        self.lhs_base_uri_file_chooser_button = self.builder.get_object('lhs-base-uri-chooser-button')
+        self.rhs_base_uri_file_chooser_button = self.builder.get_object('rhs-base-uri-chooser-button')
+
+        self.lhs_base_uri_entry_buffer = self.builder.get_object('lhs-base-uri-entry-buffer')
+        self.rhs_base_uri_entry_buffer = self.builder.get_object('rhs-base-uri-entry-buffer')
+
+        self.lhs_dataset_uri_entry_buffer = self.builder.get_object('lhs-dataset-uri-entry-buffer')
+        self.rhs_dataset_uri_entry_buffer = self.builder.get_object('rhs-dataset-uri-entry-buffer')
 
         # models
-        self.base_uri_model = LocalBaseURIModel()
-        self.dataset_list_model = DataSetListModel()
-        self.dataset_model = DataSetModel()
-        self.dataset_list_model.set_base_uri_model(self.base_uri_model)
-        # print(self.base_uri_model.get_base_uri())
+        self.lhs_base_uri_model = LocalBaseURIModel()
+        self.rhs_base_uri_model = RemoteBaseURIModel()
+        self.lhs_dataset_list_model = DataSetListModel()
+        self.rhs_base_uri_model = DataSetListModel()
+        self.lhs_dataset_model = DataSetModel()
+        self.rhs_dataset_model = DataSetModel()
+        self.lhs_dataset_list_model.set_base_uri_model(self.lhs_base_uri_model)
+        self.rhs_dataset_list_model.set_base_uri_model(self.rhs_base_uri_model)
+
         # Configure the models.
-        initial_base_uri = self.base_uri_model.get_base_uri()
-        if initial_base_uri is None:
-            initial_base_uri = HOME_DIR
-        self._set_base_uri(initial_base_uri)
-        self._list_datasets()
+        initial_lhs_base_uri = self.lhs_base_uri_model.get_base_uri()
+        if initial_lhs_base_uri is None:
+            initial_lhs_base_uri = HOME_DIR
+        self._set_lhs_base_uri(initial_lhs_base_uri)
+
+        initial_rhs_base_uri = self.rhs_base_uri_model.get_base_uri()
+        if initial_rhs_base_uri is None:
+            initial_rhs_base_uri = HOME_DIR
+        self._set_rhs_base_uri(initial_rhs_base_uri)
+
+        self._list_lhs_datasets()
+        self._list_rhs_datasets()
 
         try:
-            self.dataset_list_model.set_active_index(0)
+            self.lhs_dataset_list_model.set_active_index(0)
         except IndexError as exc:
             pass # Empty list, ignore
 
-        dataset_uri = self.dataset_list_model.get_active_uri()
+        try:
+            self.rhs_dataset_list_model.set_active_index(0)
+        except IndexError as exc:
+            pass # Empty list, ignore
+
+        lhs_dataset_uri = self.lhs_dataset_list_model.get_active_uri()
         # print(self.dataset_list_model.base_uri)
-        if dataset_uri is not None:
-            self._set_dataset_uri(dataset_uri)
-            self._select_dataset(dataset_uri)
-            self._show_dataset()
+        if lhs_dataset_uri is not None:
+            self._set_lhs_dataset_uri(lhs_dataset_uri)
+            self._select_lhs_dataset(lhs_dataset_uri)
+
+        rhs_dataset_uri = self.rhs_dataset_list_model.get_active_uri()
+        if rhs_dataset_uri is not None:
+            self._set_rhs_dataset_uri(rhs_dataset_uri)
+            self._select_rhs_dataset(rhs_dataset_uri)
 
         self.refresh()
 
     # signal handles
 
-    def on_base_uri_set(self,  filechooserbutton):
+    def on_lhs_base_uri_set(self,  filechooserbutton):
         """Base URI directory selected with file chooser."""
         base_uri = filechooserbutton.get_uri()
-        self._set_base_uri(base_uri)
+        self._set_lhs_base_uri(base_uri)
 
-    def on_base_uri_open(self,  button):
+    def on_rhs_base_uri_set(self,  filechooserbutton):
+        """Base URI directory selected with file chooser."""
+        base_uri = filechooserbutton.get_uri()
+        self._set_rhs_base_uri(base_uri)
+
+    def on_lhs_base_uri_open(self,  button):
         """Open base URI button clicked."""
-        base_uri_entry_buffer = self.builder.get_object('base-uri-entry-buffer')
-        base_uri = base_uri_entry_buffer.get_text()
-        self.base_uri_model.put_base_uri(base_uri)
-        self._list_datasets()
+        base_uri = self.lhs_base_uri_entry_buffer.get_text()
+        self.lhs_base_uri_model.put_base_uri(base_uri)
+        self._list_lhs_datasets()
 
-    def on_dataset_uri_set(self,  filechooserbutton):
-        self._set_dataset_uri(filechooserbutton.get_uri())
+    def on_rhs_base_uri_open(self,  button):
+        """Open base URI button clicked."""
+        base_uri = self.rhs_base_uri_entry_buffer.get_text()
+        self.rhs_base_uri_model.put_base_uri(base_uri)
+        self._list_rhs_datasets()
 
-    def on_dataset_uri_open(self,  button):
+    def on_lhs_dataset_uri_set(self,  filechooserbutton):
+        self._set_lhs_dataset_uri(filechooserbutton.get_uri())
+
+    def on_rhs_dataset_uri_set(self,  filechooserbutton):
+        self._set_rhs_dataset_uri(filechooserbutton.get_uri())
+
+    def on_lhs_dataset_uri_open(self,  button):
         """Select and display dataset when URI specified in text box 'dataset URI' and button 'open' clicked."""
-        dataset_uri_entry_buffer = self.builder.get_object('dataset-uri-entry-buffer')
-        uri = dataset_uri_entry_buffer.get_text()
-        self._select_dataset(uri)
-        self._mark_dataset_as_changed()
-        self._list_datasets()
-        self._show_dataset()
+        uri = self.lhs_dataset_uri_entry_buffer.get_text()
+        self._select_lhs_dataset(uri)
+        self._list_lhs_datasets()
         self.refresh()
 
-    def on_direct_dataset_selected_from_list(self, list_box, list_box_row):
+    def on_rhs_dataset_uri_open(self,  button):
+        """Select and display dataset when URI specified in text box 'dataset URI' and button 'open' clicked."""
+        uri = self.lhs_dataset_uri_entry_buffer.get_text()
+        self._select_rhs_dataset(uri)
+        self._list_rhs_datasets()
+        self.refresh()
+
+    def on_lhs_dataset_selected_from_list(self, list_box, list_box_row):
         """Select and display dataset when selected in left hand side list."""
         if list_box_row is None:
             return
         uri = list_box_row.dataset['uri']
-        self._select_dataset(uri)
-        self._mark_dataset_as_changed()
-        self._show_dataset()
+        self._select_lhs_dataset(uri)
         self.refresh()
 
-    def on_dtool_create(self, button):
-        dialog = DatasetNameDialog(self.builder.get_object('main-window'))
-        response = dialog.run()
-
-        if response == Gtk.ResponseType.OK:
-            dataset_name = dialog.entry.get_text()
-            self._create_dataset(dataset_name, self.base_uri_model.get_base_uri())
-        elif response == Gtk.ResponseType.CANCEL:
-            pass
-        dialog.destroy()
-
-    def on_dtool_item_add(self, button):
-        dialog = Gtk.FileChooserDialog(
-            title="Add items", parent=self.builder.get_object('main-window'),
-            action=Gtk.FileChooserAction.OPEN
-        )
-        dialog.add_buttons(
-            Gtk.STOCK_CANCEL,
-            Gtk.ResponseType.CANCEL,
-            Gtk.STOCK_OPEN,
-            Gtk.ResponseType.OK,
-        )
-        dialog.set_select_multiple(True)
-
-        response = dialog.run()
-        if response == Gtk.ResponseType.OK:
-            uris = dialog.get_uris()
-            for uri in uris:
-                self._add_item(uri)
-        elif response == Gtk.ResponseType.CANCEL:
-            pass
-        dialog.destroy()
-
-    def on_dtool_freeze(self, button):
-        if not self.dataset_model.is_frozen:
-            self.dataset_model.dataset.freeze()
-            self._reload_dataset()
-            self._mark_dataset_as_changed()
-            self._list_datasets()
-            self._show_dataset()
-            self.refresh()
-        else:
-            self.show_error("Not a proto dataset.")
-
-    def on_direct_dataset_view_switch_page(self, notebook, page, page_num):
-        logger.debug(f"Selected page {page_num}.")
-        self.refresh(page_num)
+    def on_rhs_dataset_selected_from_list(self, list_box, list_box_row):
+        """Select and display dataset when selected in left hand side list."""
+        if list_box_row is None:
+            return
+        uri = list_box_row.dataset['uri']
+        self._select_rhs_dataset(uri)
+        self.refresh()
 
     def refresh(self, page=None):
         """Update statusbar and tab contents."""
         logger.debug("Refresh tab.")
         statusbar_widget = self.builder.get_object('main-statusbar')
         if not self.dataset_model.is_empty:
-            statusbar_widget.push(0, f'{len(self.dataset_list_model._datasets)} '
-                                     f'datasets - {self.dataset_model.dataset.uri}')
+            statusbar_widget.push(0, f'{len(self.lhs_dataset_list_model._datasets)} '
+                                     f'datasets - {self.lhs_dataset_model.dataset.uri}')
         elif self.base_uri_model.get_base_uri() is not None:
-            statusbar_widget.push(0, f'{len(self.dataset_list_model._datasets)} '
-                                     f'datasets - {self.base_uri_model.get_base_uri()}')
+            statusbar_widget.push(0, f'{len(self.lhs_dataset_list_model._datasets)} '
+                                     f'datasets - {self.lhs_base_uri_model.get_base_uri()}')
         else:
             statusbar_widget.push(0, f'Specify base URI.')
 
@@ -238,42 +214,19 @@ class SignalHandler:
             page = dataset_notebook.get_current_page()
         logger.debug(f"Selected page {page}.")
 
-        if not self.dataset_model.is_empty:
-            manifest_page = dataset_notebook.get_nth_page(DATASET_NOTEBOOK_MANIFEST_PAGE)
-
-            if self.dataset_model.is_frozen:
-                logger.debug("Showing frozen dataset.")
-                manifest_page.show()
-                self.dtool_freeze_button.set_sensitive(False)
-                self.dtool_add_items_button.set_sensitive(False)
-            else:
-                logger.debug("Showinf proto dataset.")
-                manifest_page.hide()
-                self.dtool_freeze_button.set_sensitive(True)
-                self.dtool_add_items_button.set_sensitive(True)
-
-            if page == DATASET_NOTEBOOK_README_PAGE:
-                logger.debug("Show readme.")
-                self._show_readme()
-            elif page == DATASET_NOTEBOOK_MANIFEST_PAGE and self.dataset_model.is_frozen:
-                logger.debug("Show manifest.")
-                self._show_manifest()
-
     # private methods
 
-    def _set_base_uri(self, uri):
+    def _set_lhs_base_uri(self, uri):
         """Sets model base uri and associated file chooser and input field."""
-        self.base_uri_model.put_base_uri(uri)
-        base_uri_entry_buffer = self.builder.get_object('base-uri-entry-buffer')
-        base_uri_entry_buffer.set_text(self.base_uri_model.get_base_uri(), -1)
+        self.lhs_base_uri_model.put_base_uri(uri)
+        self.lhs_base_uri_entry_buffer.set_text(self.lhs_base_uri_model.get_base_uri(), -1)
 
         p = urllib.parse.urlparse(uri)
         fpath = os.path.abspath(os.path.join(p.netloc, p.path))
 
         if os.path.isdir(fpath):
             fpath = os.path.abspath(fpath)
-            base_uri_file_chooser_button = self.builder.get_object('base-uri-chooser-button')
-            base_uri_file_chooser_button.set_current_folder(fpath)
+            self.lhs_base_uri_file_chooser_button.set_current_folder(fpath)
 
     def _set_dataset_uri(self, uri):
         """Set dataset file chooser and input field."""
