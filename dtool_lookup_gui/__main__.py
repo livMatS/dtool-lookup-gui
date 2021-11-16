@@ -23,5 +23,40 @@
 #
 
 if __name__ == '__main__':
+    import logging
+    import argparse
+
     from .MainApplication import run_gui
+
+
+    # in order to have both:
+    # * preformatted help text and ...
+    # * automatic display of defaults
+    class ArgumentDefaultsAndRawDescriptionHelpFormatter(
+        argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter):
+        pass
+
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=ArgumentDefaultsAndRawDescriptionHelpFormatter)
+
+    parser.add_argument('--verbose', '-v', action='count', dest='verbose',
+                        default=0, help='Make terminal output more verbose')
+    parser.add_argument('--debug', '-d', action='store_true',
+                        help='Print debug info')
+    args = parser.parse_args()
+
+    loglevel = logging.ERROR
+
+    if args.verbose > 0:
+        loglevel = logging.WARN
+    if args.verbose > 1:
+        loglevel = logging.INFO
+    if args.debug or (args.verbose > 2):
+        loglevel = logging.DEBUG
+
+    # explicitly modify the root logger
+    logging.basicConfig(level=loglevel)
+    logger = logging.getLogger()
+    logger.setLevel(loglevel)
+
     run_gui()

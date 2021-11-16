@@ -26,7 +26,9 @@ import json
 import logging
 import uuid
 
+from . import is_uuid
 from .SimpleGraph import SimpleGraph
+
 
 logger = logging.getLogger(__name__)
 
@@ -34,16 +36,6 @@ logger = logging.getLogger(__name__)
 def _log_nested(log_func, dct):
     for l in json.dumps(dct, indent=2, default=str).splitlines():
         log_func(l)
-
-
-def is_uuid(value):
-    '''Check whether the data is a UUID.'''
-    value = str(value)
-    try:
-        uuid.UUID(value)
-        return True
-    except ValueError:
-        return False
 
 
 class DependencyGraph:
