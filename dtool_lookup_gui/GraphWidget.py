@@ -77,7 +77,7 @@ class GraphWidget(Gtk.DrawingArea):
         builder.get_object('dependency-show-dataset-button').connect(
             'clicked', self.on_show_clicked)
 
-        self._timer = GObject.timeout_add(50, self.on_timeout, self)
+        self._timer = GObject.timeout_add(10, self.on_timeout, self)
 
     def __del__(self):
         GObject.source_remove(self._timer)
@@ -149,9 +149,9 @@ class GraphWidget(Gtk.DrawingArea):
             context.line_to(*(j_pos + 0.1 * normal))
             context.stroke()
             # Draw arrow head
-            context.move_to(*j_pos)
-            context.line_to(*(j_pos + 0.2 * normal + 0.2 * perpendicular))
-            context.line_to(*(j_pos + 0.2 * normal - 0.2 * perpendicular))
+            context.move_to(*i_pos)
+            context.line_to(*(i_pos - 0.2 * normal - 0.2 * perpendicular))
+            context.line_to(*(i_pos - 0.2 * normal + 0.2 * perpendicular))
             context.fill()
             context.close_path()
 

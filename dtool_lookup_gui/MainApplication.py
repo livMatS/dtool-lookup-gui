@@ -44,14 +44,16 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, Gio
 
 import gbulb
-
 gbulb.install(gtk=True)
+#import asyncio_glib
+#asyncio.set_event_loop_policy(asyncio_glib.GLibEventLoopPolicy())
 
 from .Dependencies import DependencyGraph, is_uuid
 from .GraphWidget import GraphWidget
 
 def open(filename):
     """Open file in system-default application"""
+    pass
 
 
 @contextmanager
@@ -315,6 +317,34 @@ class SignalHandler:
         self.manifest_stack.set_visible_child(
             self.builder.get_object('manifest-view'))
 
+    async def _fetch_users(self):
+        #self.error_bar.set_revealed(False)
+        #self.manifest_stack.set_visible_child(
+        #    self.builder.get_object('manifest-spinner'))
+
+        users_view = self.builder.get_object('settings-users')
+        store = users_view.get_model()
+        store.clear()
+
+        base_uris = await self.lookup.list_base_uris()
+
+        users = []
+        for base_uri in base_uris:
+            for user in base_uri['users_with_register_permissions'] + base_uri['users_with_search_permissions']:
+                users += [(user, base_uri,
+                           user in base_uri['users_with_search_permissions'],
+                           user in base_uri['users_with_register_permissions'])]
+
+        for user, base_uri, has_search_permission, has_register_permission in users:
+            store.append(None, [user, False, has_search_permission, has_register_permission])
+
+        #try:
+        #    fill_manifest_tree_store(store, self._manifest['items'])
+        #except Exception as e:
+        #    print(e)
+        users_view.columns_autosize()
+        users_view.show_all()
+
     async def _compute_dependencies(self, uri):
         self.error_bar.set_revealed(False)
         self.dependency_stack.set_visible_child(
@@ -391,16 +421,21 @@ class SignalHandler:
             f'{datetime_to_string(self._selected_dataset["created_at"])}')
         self.builder.get_object('dataset-frozen-at').set_text(
             f'{datetime_to_string(self._selected_dataset["frozen_at"])}')
+        if 'size_in_bytes' in self._selected_dataset and self._selected_dataset['size_in_bytes'] is not None:
+            self.builder.get_object('dataset-size-in-bytes').set_text(
+                f'{human_readable_file_size(self._selected_dataset["size_in_bytes"])}')
+        else:
+            self.builder.get_object('dataset-size-in-bytes').set_text('N/A')
 
         page = self.builder.get_object('dataset-notebook').get_property('page')
         if page == 0:
-            self._readme_task = asyncio.ensure_future(
+            self._readme_task = asyncio.create_task(
                 self._fetch_readme(self._selected_dataset['uri']))
         elif page == 1:
-            self._manifest_task = asyncio.ensure_future(
+            self._manifest_task = asyncio.create_task(
                 self._fetch_manifest(self._selected_dataset['uri']))
         elif page == 2:
-            self._dependency_task = asyncio.ensure_future(
+            self._dependency_task = asyncio.create_task(
                 self._compute_dependencies(self._selected_dataset['uri']))
 
     def on_search_entry_button_press(self, search_entry, event):
@@ -453,28 +488,29 @@ class SignalHandler:
 
         if self._search_task is not None:
             self._search_task.cancel()
-        self._search_task = asyncio.ensure_future(
+        self._search_task = asyncio.create_task(
             fetch_search_result(search_entry.get_text()))
 
     def on_settings_clicked(self, user_data):
+        asyncio.create_task(self._fetch_users())
         self.settings_window.show()
 
     def on_delete_settings(self, event, user_data):
         self.settings_window.hide()
         # Reconnect since settings may have been changed
-        asyncio.ensure_future(self.connect())
+        asyncio.create_task(self.connect())
         return True
 
     def on_switch_page(self, notebook, page, page_num):
         if self._selected_dataset is not None:
             if page_num == 0 and self._readme is None:
-                self._readme_task = asyncio.ensure_future(
+                self._readme_task = asyncio.create_task(
                     self._fetch_readme(self._selected_dataset['uri']))
             elif page_num == 1 and self._manifest is None:
-                self._manifest_task = asyncio.ensure_future(
+                self._manifest_task = asyncio.create_task(
                     self._fetch_manifest(self._selected_dataset['uri']))
             elif page_num == 2 and self._dependency_graph is None:
-                self._dependency_task = asyncio.ensure_future(
+                self._dependency_task = asyncio.create_task(
                     self._compute_dependencies(self._selected_dataset['uri']))
 
     def on_readme_row_activated(self, tree_view, path, column):
@@ -511,7 +547,7 @@ class SignalHandler:
         iter = store.get_iter(path)
         item = store.get_value(iter, 0)
         uuid = store.get_value(iter, 3)
-        asyncio.ensure_future(
+        asyncio.create_task(
             self.retrieve_item(self._selected_dataset['uri'], item, uuid))
 
 def run_gui():
