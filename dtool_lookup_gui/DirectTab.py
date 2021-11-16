@@ -24,7 +24,7 @@
 # TODO: Make pure use of Tjelvar's model layer, move direct access to data sets
 #       there
 # TODO: Metadata input via GUI
-# TODO:
+# TODO: Copy dataset via GUI
 import asyncio
 import gi
 gi.require_version('Gtk', '3.0')
@@ -60,6 +60,8 @@ from .models import (
     # MetadataSchemaListModel,
     UnsupportedTypeError,
 )
+
+HOME_DIR = os.path.expanduser("~")
 
 # Page numbers inverted, very weird
 DATASET_NOTEBOOK_README_PAGE = 0
@@ -109,10 +111,17 @@ class SignalHandler:
         self.dataset_list_model.set_base_uri_model(self.base_uri_model)
         # print(self.base_uri_model.get_base_uri())
         # Configure the models.
-        self._set_base_uri(self.base_uri_model.get_base_uri())
+        initial_base_uri = self.base_uri_model.get_base_uri()
+        if initial_base_uri is None:
+            initial_base_uri = HOME_DIR
+        self._set_base_uri(initial_base_uri)
         self._list_datasets()
 
-        self.dataset_list_model.set_active_index(0)
+        try:
+            self.dataset_list_model.set_active_index(0)
+        except IndexError as exc:
+            pass # Empty list, ignore
+
         dataset_uri = self.dataset_list_model.get_active_uri()
         # print(self.dataset_list_model.base_uri)
         if dataset_uri is not None:
