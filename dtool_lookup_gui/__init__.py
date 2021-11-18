@@ -23,6 +23,7 @@
 #
 
 import locale
+import logging
 import math
 import os
 import uuid
@@ -36,6 +37,7 @@ from ruamel.yaml.scanner import ScannerError
 
 import dtoolcore
 
+logger = logging.getLogger(__name__)
 
 @contextmanager
 def time_locale(name):
@@ -169,3 +171,4 @@ def _validate_readme(readme_content):
         return readme_formatted, None
     except (ParserError, DuplicateKeyError, ScannerError) as message:
         return None, str(message)
+

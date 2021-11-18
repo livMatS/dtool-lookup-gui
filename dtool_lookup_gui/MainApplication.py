@@ -31,9 +31,9 @@ import dtool_lookup_api.core.config
 dtool_lookup_api.core.config.Config.interactive = False
 
 import gi
-
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk, Gio
+gi.require_version('GtkSource', '4')
+from gi.repository import Gtk, Gdk, Gio, GtkSource, GObject
 
 import gbulb
 gbulb.install(gtk=True)
@@ -41,9 +41,8 @@ gbulb.install(gtk=True)
 #asyncio.set_event_loop_policy(asyncio_glib.GLibEventLoopPolicy())
 
 from . import LookupTab, DirectTab
-
+from dtool_lookup_gui.dtool_gtk import DtoolDatasetListBox, DtoolDatasetListBoxRow
 logger = logging.getLogger(__name__)
-
 
 # used for wrapping a list of signal handlers
 # source: https://github.com/LinuxCNC/linuxcnc/blob/master/src/emc/usr_intf/gscreen/gscreen.py
@@ -162,7 +161,11 @@ class SignalHandler:
 
 
 def run_gui():
+    # weird solution for registering custom widgets with gtk builder
     builder = Gtk.Builder()
+    #GObject.type_register(DtoolDatasetListBox)
+    #GObject.type_register(DtoolDatasetListBoxRow)
+    dummy1, dummy2 = DtoolDatasetListBox(), DtoolDatasetListBoxRow()
     builder.add_from_file(os.path.dirname(__file__) + '/dtool-lookup-gui.glade')
 
     loop = asyncio.get_event_loop()

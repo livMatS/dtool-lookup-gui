@@ -107,26 +107,27 @@ class SignalHandler:
         self.dtool_freeze_button = self.builder.get_object('dtool-freeze')
         self.dtool_add_items_button = self.builder.get_object('dtool-add-items')
 
+        self.dtool_dataset_list = self.builder.get_object('dtool-ls-results')
 
         # models
-        self.base_uri_model = LocalBaseURIModel()
-        self.dataset_list_model = DataSetListModel()
+        self.dtool_dataset_list.dataset_list_model = DataSetListModel()
+        self.dtool_dataset_list.base_uri_model = LocalBaseURIModel()
         self.dataset_model = DataSetModel()
-        self.dataset_list_model.set_base_uri_model(self.base_uri_model)
-        # print(self.base_uri_model.get_base_uri())
+        # self.dtool_dataset_list.dataset_list_model.set_base_uri_model(self.base_uri_model)
+
         # Configure the models.
-        initial_base_uri = self.base_uri_model.get_base_uri()
+        initial_base_uri = self.dtool_dataset_list.base_uri
         if initial_base_uri is None:
             initial_base_uri = HOME_DIR
         self._set_base_uri(initial_base_uri)
-        self._list_datasets()
+        self.dtool_dataset_list.refresh()
 
         try:
-            self.dataset_list_model.set_active_index(0)
+            self.dtool_dataset_list.dataset_list_model.set_active_index(0)
         except IndexError as exc:
             pass # Empty list, ignore
 
-        dataset_uri = self.dataset_list_model.get_active_uri()
+        dataset_uri = self.dtool_dataset_list.dataset_list_model.get_active_uri()
         # print(self.dataset_list_model.base_uri)
         if dataset_uri is not None:
             self._set_dataset_uri(dataset_uri)
@@ -146,8 +147,8 @@ class SignalHandler:
         """Open base URI button clicked."""
         base_uri_entry_buffer = self.builder.get_object('base-uri-entry-buffer')
         base_uri = base_uri_entry_buffer.get_text()
-        self.base_uri_model.put_base_uri(base_uri)
-        self._list_datasets()
+        self.dtool_dataset_list.base_uri = base_uri
+        self.dtool_dataset_list.refresh()
 
     def on_dataset_uri_set(self,  filechooserbutton):
         self._set_dataset_uri(filechooserbutton.get_uri())
@@ -158,7 +159,7 @@ class SignalHandler:
         uri = dataset_uri_entry_buffer.get_text()
         self._select_dataset(uri)
         self._mark_dataset_as_changed()
-        self._list_datasets()
+        self.dtool_dataset_list.refresh()
         self._show_dataset()
         self.refresh()
 
@@ -178,7 +179,7 @@ class SignalHandler:
 
         if response == Gtk.ResponseType.OK:
             dataset_name = dialog.entry.get_text()
-            self._create_dataset(dataset_name, self.base_uri_model.get_base_uri())
+            self._create_dataset(dataset_name, self.dtool_dataset_list.base_uri)
         elif response == Gtk.ResponseType.CANCEL:
             pass
         dialog.destroy()
@@ -210,7 +211,7 @@ class SignalHandler:
             self.dataset_model.dataset.freeze()
             self._reload_dataset()
             self._mark_dataset_as_changed()
-            self._list_datasets()
+            self.dtool_dataset_list.refresh()
             self._show_dataset()
             self.refresh()
         else:
@@ -225,11 +226,11 @@ class SignalHandler:
         logger.debug("Refresh tab.")
         statusbar_widget = self.builder.get_object('main-statusbar')
         if not self.dataset_model.is_empty:
-            statusbar_widget.push(0, f'{len(self.dataset_list_model._datasets)} '
+            statusbar_widget.push(0, f'{len(self.dtool_dataset_list.dataset_list_model._datasets)} '
                                      f'datasets - {self.dataset_model.dataset.uri}')
-        elif self.base_uri_model.get_base_uri() is not None:
-            statusbar_widget.push(0, f'{len(self.dataset_list_model._datasets)} '
-                                     f'datasets - {self.base_uri_model.get_base_uri()}')
+        elif self.dtool_dataset_list.base_uri is not None:
+            statusbar_widget.push(0, f'{len(self.dtool_dataset_list.dataset_list_model._datasets)} '
+                                     f'datasets - {self.dtool_dataset_list.base_uri}')
         else:
             statusbar_widget.push(0, f'Specify base URI.')
 
@@ -263,9 +264,9 @@ class SignalHandler:
 
     def _set_base_uri(self, uri):
         """Sets model base uri and associated file chooser and input field."""
-        self.base_uri_model.put_base_uri(uri)
+        self.dtool_dataset_list.base_uri = uri
         base_uri_entry_buffer = self.builder.get_object('base-uri-entry-buffer')
-        base_uri_entry_buffer.set_text(self.base_uri_model.get_base_uri(), -1)
+        base_uri_entry_buffer.set_text(self.dtool_dataset_list.base_uri, -1)
 
         p = urllib.parse.urlparse(uri)
         fpath = os.path.abspath(os.path.join(p.netloc, p.path))
@@ -288,81 +289,6 @@ class SignalHandler:
             dataset_uri_file_chooser_button = self.builder.get_object('dataset-uri-chooser-button')
             dataset_uri_file_chooser_button.set_current_folder(fpath)
 
-    def _list_datasets(self, selected_uri=None):
-        base_uri = self.base_uri_model.get_base_uri()
-        if len(base_uri) == 0:
-            self.show_error("Specify a non-empty base URI.")
-            return
-
-        results_widget = self.builder.get_object('dtool-ls-results')
-        self.base_uri_model.put_base_uri(base_uri)
-
-        try:
-            self.dataset_list_model.reindex()
-        except FileNotFoundError as exc:
-            self.show_error(exc.__str__())
-            return
-
-        # sort by name
-        # TODO: sort field selection
-        self.dataset_list_model.sort('name')
-
-        for entry in results_widget:
-            entry.destroy()
-
-        selected_row = None
-        if selected_uri is None:
-            if self.dataset_model.is_empty:
-                selected_uri = self.dataset_list_model.get_active_uri()
-            else:
-                selected_uri = self.dataset_model.dataset.uri
-
-        dataset_list_columns = ("uuid", "name", "size_str", "num_items", "creator", "date", "uri")
-        proto_dataset_list_columns = ("uuid", "name", "creator", "uri")
-
-        for props in self.dataset_list_model.yield_properties():
-            # TODO: other way for distinguishing frozen and proto
-            is_frozen = "date" in props
-
-            if is_frozen:
-                values = [props[c] for c in dataset_list_columns]
-                d = {c: v for c, v in zip(dataset_list_columns, values)}
-                prefix = ''
-            else:
-                values = [props[c] for c in proto_dataset_list_columns]
-                d = {c: v for c, v in zip(proto_dataset_list_columns, values)}
-                prefix = '*'
-
-
-            row = Gtk.ListBoxRow()
-            if selected_row is None or selected_uri == d["uri"]:
-                # select the first row just in case the currently selected row is lost
-                selected_row = row
-
-            vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-            label = Gtk.Label(xalign=0)
-            label.set_markup(f'{prefix}<b>{d["uuid"]}</b>')
-            vbox.pack_start(label, True, True, 0)
-            label = Gtk.Label(xalign=0)
-            label.set_markup(f'{d["name"]}')
-            vbox.pack_start(label, True, True, 0)
-            label = Gtk.Label(xalign=0)
-            if is_frozen:
-                label.set_markup(
-                    f'<small>Created by: {d["creator"]}, '
-                    f'frozen at: '
-                    f'{date_to_string(d["date"])}</small>')
-            else:
-                label.set_markup(
-                    f'<small>Created by: {d["creator"]}, proto dataset</small>')
-                vbox.pack_start(label, True, True, 0)
-            row.dataset = d
-            row.add(vbox)
-            results_widget.add(row)
-
-        results_widget.select_row(selected_row)
-        results_widget.show_all()
-
     def _load_dataset(self, uri):
         """Load dataset and deal with UnsupportedTypeError exceptions."""
         try:
@@ -383,7 +309,7 @@ class SignalHandler:
     def _select_dataset(self, uri):
         """Specify dataset selected in list."""
         if len(uri) > 0:
-            self.dataset_list_model.set_active_index_by_uri(uri)
+            self.dtool_dataset_list.selected_uri = uri
             self._load_dataset(uri)
             self._mark_dataset_as_changed()
         else:
@@ -395,7 +321,7 @@ class SignalHandler:
         # TODO: use self.dataset_model.metadata_model instead of direct README content
         ds = self.dataset_model.dataset
 
-        uri = self.dataset_list_model.get_active_uri()
+        uri = self.dtool_dataset_list.dataset_list_model.get_active_uri()
         # TODO: move admin metadata into DataSetModel
         admin_metadata = dtoolcore._admin_metadata_from_uri(uri, config_path=None)
         self._readme = None
@@ -520,7 +446,8 @@ class SignalHandler:
         self._load_dataset(proto_dataset.uri)
         self._initialize_readme()
         self._mark_dataset_as_changed()
-        self._list_datasets()
+        # self.dtool_dataset_list.selected_uri = proto_dataset.uri
+        self.dtool_dataset_list.refresh(selected_uri=proto_dataset.uri)
         self._show_dataset()
 
     def _initialize_readme(self, readme_template_path=None):

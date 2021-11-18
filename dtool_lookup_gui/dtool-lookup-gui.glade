@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Generated with glade 3.38.2 -->
 <interface>
+  <!-- interface-requires gtk+ 3.0 -->
+  <!-- interface-requires dtool_gtk_catalog 0.1 -->
   <requires lib="gtk+" version="3.22"/>
   <object class="GtkWindow">
     <property name="can-focus">False</property>
@@ -1039,7 +1041,7 @@
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
                             <child>
-                              <object class="GtkListBox" id="dtool-ls-results">
+                              <object class="DtoolDatasetListBox" id="dtool-ls-results">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
                                 <signal name="row-selected" handler="on_direct_dataset_selected_from_list" swapped="no"/>
@@ -1919,7 +1921,7 @@
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
                                 <child>
-                                  <object class="GtkListBox" id="dtool-ls-results-lhs">
+                                  <object class="DtoolDatasetListBox" id="dtool-ls-results-lhs">
                                     <property name="visible">True</property>
                                     <property name="can-focus">False</property>
                                   </object>
@@ -1987,7 +1989,7 @@
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
                                 <child>
-                                  <object class="GtkListBox" id="dtool-ls-results-rhs">
+                                  <object class="DtoolDatasetListBox" id="dtool-ls-results-rhs">
                                     <property name="visible">True</property>
                                     <property name="can-focus">False</property>
                                   </object>
