@@ -44,6 +44,10 @@ from . import LookupTab, DirectTab
 from dtool_lookup_gui.dtool_gtk import DtoolDatasetListBox, DtoolDatasetListBoxRow
 logger = logging.getLogger(__name__)
 
+LOOKUP_TAB = 0
+DIRECT_TAB = 1
+TRANSFER_TAB = 2
+
 # used for wrapping a list of signal handlers
 # source: https://github.com/LinuxCNC/linuxcnc/blob/master/src/emc/usr_intf/gscreen/gscreen.py
 class Trampoline(object):
@@ -136,10 +140,16 @@ class SignalHandler:
                     self.handlers[method_name] = Trampoline([method])
 
     def on_main_switch_page(self, notebook, page, page_num):
-        if page_num == 0:
+        if page_num == LOOKUP_TAB:
+            self.lookup_tab.set_sensitive(True)
+            self.direct_tab.set_sensitive(False)
             self.lookup_tab.refresh()
-        elif page_num == 1:
+        elif page_num == DIRECT_TAB:
+            self.lookup_tab.set_sensitive(False)
+            self.direct_tab.set_sensitive(True)
             self.direct_tab.refresh()
+        elif page_num == TRANSFER_TAB:
+            self.show_error("Not implemented.")
 
     def on_settings_clicked(self, user_data):
         asyncio.create_task(self._fetch_users())
@@ -163,9 +173,6 @@ class SignalHandler:
 def run_gui():
     # weird solution for registering custom widgets with gtk builder
     builder = Gtk.Builder()
-    #GObject.type_register(DtoolDatasetListBox)
-    #GObject.type_register(DtoolDatasetListBoxRow)
-    dummy1, dummy2 = DtoolDatasetListBox(), DtoolDatasetListBoxRow()
     builder.add_from_file(os.path.dirname(__file__) + '/dtool-lookup-gui.glade')
 
     loop = asyncio.get_event_loop()

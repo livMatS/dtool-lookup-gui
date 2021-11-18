@@ -62,20 +62,46 @@ class SignalHandler:
         self.error_bar = self.builder.get_object('error-bar')
         self.error_label = self.builder.get_object('error-label')
 
+        # gui widgets
         self.main_stack = self.builder.get_object('main-stack')
         self.readme_stack = self.builder.get_object('readme-stack')
         self.manifest_stack = self.builder.get_object('manifest-stack')
         self.dependency_stack = self.builder.get_object('dependency-stack')
         self.search_popover = self.builder.get_object('search-popover')
 
+        self.results_widget = self.builder.get_object('search-results')
+        self.statusbar_widget = self.builder.get_object('main-statusbar')
+        self.main_spinner = self.builder.get_object('main-spinner')
+        self.main_not_found = self.builder.get_object('main-not-found')
+        self.main_view = self.builder.get_object('main-view')
+        self.readme_spinner = self.builder.get_object('readme-spinner')
+
+        self.dataset_readme = self.builder.get_object('dataset-readme')
+        self.readme_view = self.builder.get_object('readme-view')
+
+        self.manifest_spinner = self.builder.get_object('manifest-spinner')
+        self.dataset_manifest = self.builder.get_object('dataset-manifest')
+
+        self.manifest_view = self.builder.get_object('manifest-view')
+        self.dependency_spinner = self.builder.get_object('dependency-spinner')
+
+        self.dependency_view = self.builder.get_object('dependency-view')
+
+        self.dataset_notebook = self.builder.get_object('dataset-notebook')
+
+        self.search_text_buffer = self.builder.get_object('search-text-buffer')
+        self.search_entry_buffer = self.builder.get_object('search-entry-buffer')
+
+        self.search_entry = builder.get_object('search-entry')
+
+        # private properties
         self._search_task = None
 
         self._selected_dataset = None
         self._readme = None
         self._manifest = None
 
-        self.main_stack.set_visible_child(
-            self.builder.get_object('main-spinner'))
+        self.main_stack.set_visible_child(self.main_spinner)
 
         self.datasets = None
         self.server_config = None
@@ -83,23 +109,19 @@ class SignalHandler:
         self.thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
     def _refresh_results(self):
-        results_widget = self.builder.get_object('search-results')
-        statusbar_widget = self.builder.get_object('main-statusbar')
         if self.datasets is not None and self.server_config:
-            statusbar_widget.push(0, f'{len(self.datasets)} datasets - '
+            self.statusbar_widget.push(0, f'{len(self.datasets)} datasets - '
                                      f'Connected to lookup server version '
                                      f"{self.server_config['version']}")
             if len(self.datasets) == 0:
-                self.main_stack.set_visible_child(
-                    self.builder.get_object('main-not-found'))
+                self.main_stack.set_visible_child(self.main_not_found)
                 return
         else:
-            statusbar_widget.push(0, 'Server connection failed')
-            self.main_stack.set_visible_child(
-                self.builder.get_object('main-not-found'))
+            self.statusbar_widget.push(0, 'Server connection failed')
+            self.main_stack.set_visible_child(self.main_not_found)
             return
 
-        for entry in results_widget:
+        for entry in self.results_widget:
             entry.destroy()
         first_row = None
         for dataset in sorted(self.datasets,
@@ -122,22 +144,20 @@ class SignalHandler:
             vbox.pack_start(label, True, True, 0)
             row.dataset = dataset
             row.add(vbox)
-            results_widget.add(row)
-        results_widget.select_row(first_row)
-        results_widget.show_all()
+            self.results_widget.add(row)
+        self.results_widget.select_row(first_row)
+        self.results_widget.show_all()
 
-        self.main_stack.set_visible_child(
-            self.builder.get_object('main-view'))
+        self.main_stack.set_visible_child(self.main_view)
 
     def refresh(self):
         self._refresh_results()
 
     async def _fetch_readme(self, uri):
         self.error_bar.set_revealed(False)
-        self.readme_stack.set_visible_child(
-            self.builder.get_object('readme-spinner'))
+        self.readme_stack.set_visible_child(self.readme_spinner)
 
-        readme_view = self.builder.get_object('dataset-readme')
+        readme_view = self.dataset_readme
         store = readme_view.get_model()
         store.clear()
         self._readme = await self.lookup.readme(uri)
@@ -145,15 +165,13 @@ class SignalHandler:
         readme_view.columns_autosize()
         readme_view.show_all()
 
-        self.readme_stack.set_visible_child(
-            self.builder.get_object('readme-view'))
+        self.readme_stack.set_visible_child(self.readme_view)
 
     async def _fetch_manifest(self, uri):
         self.error_bar.set_revealed(False)
-        self.manifest_stack.set_visible_child(
-            self.builder.get_object('manifest-spinner'))
+        self.manifest_stack.set_visible_child(self.manifest_spinner)
 
-        manifest_view = self.builder.get_object('dataset-manifest')
+        manifest_view = self.dataset_manifest
         store = manifest_view.get_model()
         store.clear()
         self._manifest = await self.lookup.manifest(uri)
@@ -164,13 +182,11 @@ class SignalHandler:
         manifest_view.columns_autosize()
         manifest_view.show_all()
 
-        self.manifest_stack.set_visible_child(
-            self.builder.get_object('manifest-view'))
+        self.manifest_stack.set_visible_child(self.manifest_view)
 
     async def _compute_dependencies(self, uri):
         self.error_bar.set_revealed(False)
-        self.dependency_stack.set_visible_child(
-            self.builder.get_object('dependency-spinner'))
+        self.dependency_stack.set_visible_child(self.dependency_spinner)
 
         # Compute dependency graph
         self._dependency_graph = DependencyGraph()
@@ -186,18 +202,17 @@ class SignalHandler:
 
         # Create graph widget
         graph_widget = GraphWidget(self.builder, self._dependency_graph.graph)
-        dependency_view = self.builder.get_object('dependency-view')
-        for child in dependency_view:
+
+        for child in self.dependency_view:
             child.destroy()
-        dependency_view.pack_start(graph_widget, True, True, 0)
+        self.dependency_view.pack_start(graph_widget, True, True, 0)
         graph_widget.show()
 
-        self.dependency_stack.set_visible_child(dependency_view)
+        self.dependency_stack.set_visible_child(self.dependency_view)
 
     async def connect(self):
         self.error_bar.set_revealed(False)
-        self.main_stack.set_visible_child(
-            self.builder.get_object('main-spinner'))
+        self.main_stack.set_visible_child(self.main_spinner)
 
         self.lookup = LookupClient(lookup_url=self.settings.lookup_url,
                                    auth_url=self.settings.authenticator_url,
@@ -236,7 +251,7 @@ class SignalHandler:
         self.builder.get_object('dataset-frozen-at').set_text(
             f'{datetime_to_string(self._selected_dataset["frozen_at"])}')
 
-        page = self.builder.get_object('dataset-notebook').get_property('page')
+        page = self.dataset_notebook.get_property('page')
         if page == 0:
             self._readme_task = asyncio.ensure_future(
                 self._fetch_readme(self._selected_dataset['uri']))
@@ -251,10 +266,8 @@ class SignalHandler:
         """"Display larger text box popover for multiline search queries on double-click in search bar."""
         if event.button == 1:
             if event.type == Gdk.EventType._2BUTTON_PRESS:
-                search_text_buffer = self.builder.get_object('search-text-buffer')
-                search_entry_buffer = self.builder.get_object('search-entry-buffer')
-                search_text = search_entry_buffer.get_text()
-                search_text_buffer.set_text(search_text, -1)
+                search_text = self.search_entry_buffer.get_text()
+                self.search_text_buffer.set_text(search_text, -1)
 
                 rect = Gdk.Rectangle()
                 rect.x, rect.y = event.x, event.y
@@ -263,17 +276,14 @@ class SignalHandler:
 
     def on_search_button_clicked(self, button):
         """"Update search bar text when clicking search button in search popover."""
-        search_text_buffer = self.builder.get_object('search-text-buffer')
-        search_entry_buffer = self.builder.get_object('search-entry-buffer')
-        start_iter = search_text_buffer.get_start_iter()
-        end_iter = search_text_buffer.get_end_iter()
-        search_text = search_text_buffer.get_text(start_iter, end_iter, True)
-        search_entry_buffer.set_text(search_text, -1)
+        start_iter = self.search_text_buffer.get_start_iter()
+        end_iter = self.search_text_buffer.get_end_iter()
+        search_text = self.search_text_buffer.get_text(start_iter, end_iter, True)
+        self.search_entry_buffer.set_text(search_text, -1)
         self.search_popover.popdown()
 
     def on_search(self, search_entry):
-        self.main_stack.set_visible_child(
-            self.builder.get_object('main-spinner'))
+        self.main_stack.set_visible_child(self.main_spinner)
 
         async def fetch_search_result(keyword):
             if keyword:
@@ -318,7 +328,7 @@ class SignalHandler:
         is_uuid = store.get_value(iter, 2)
         if is_uuid:
             uuid = store.get_value(iter, 1)
-            self.builder.get_object('search-entry').set_text(f'uuid:{uuid}')
+            self.search_entry.set_text(f'uuid:{uuid}')
             return True
         return False
 
@@ -353,3 +363,9 @@ class SignalHandler:
         self.error_label.set_text(msg)
         self.error_bar.show()
         self.error_bar.set_revealed(True)
+
+    def set_sensitive(self, sensitive=True):
+        if not sensitive:
+            self.search_popover.popdown()
+        self.search_popover.set_sensitive(sensitive)
+        self.search_entry.set_sensitive(sensitive)

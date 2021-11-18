@@ -472,3 +472,6 @@ class SignalHandler:
         self.error_label.set_text(msg)
         self.error_bar.show()
         self.error_bar.set_revealed(True)
+
+    def set_sensitive(self, sensitive=True):
+        pass
