@@ -27,8 +27,8 @@ import concurrent.futures
 import logging
 import os
 
-import dtool_lookup_api.core.config
-dtool_lookup_api.core.config.Config.interactive = False
+from dtool_lookup_api.core.config import Config
+Config.interactive = False
 
 import gi
 
@@ -67,22 +67,7 @@ class Settings:
         schema = Gio.SettingsSchemaSource.lookup(
             schema_source, "de.uni-freiburg.dtool-lookup-gui", False)
         self.settings = Gio.Settings.new_full(schema, None, None)
-
-    @property
-    def lookup_url(self):
-        return self.settings.get_string('lookup-url')
-
-    @property
-    def authenticator_url(self):
-        return self.settings.get_string('authenticator-url')
-
-    @property
-    def username(self):
-        return self.settings.get_string('lookup-username')
-
-    @property
-    def password(self):
-        return self.settings.get_string('lookup-password')
+        self.config = Config
 
     @property
     def dependency_keys(self):
@@ -142,14 +127,32 @@ class SignalHandler:
         elif page_num == 1:
             self.direct_tab.refresh()
 
-    def on_settings_clicked(self, user_data):
-        asyncio.create_task(self._fetch_users())
+    def on_settings_clicked(self, widget):
+        #asyncio.create_task(self._fetch_users())
         self.settings_window.show()
 
-    def on_delete_settings(self, event, user_data):
-        self.settings_window.hide()
+    def on_settings_window_show(self, widget):
+        if Config.lookup_url is not None:
+            self.builder.get_object('lookup-url-entry').set_text(Config.lookup_url)
+        if Config.token is not None:
+            self.builder.get_object('token-entry').set_text(Config.token)
+        if Config.auth_url is not None:
+            self.builder.get_object('authenticator-url-entry').set_text(Config.auth_url)
+
+    def on_settings_window_delete(self, widget, event):
+        print('window deletion', widget, event)
+
+        # Don't delete, simply hide the window
+        widget.hide()
+
+        # Write back configuration
+        Config.lookup_url = self.builder.get_object('lookup-url-entry').get_text()
+        Config.token = self.builder.get_object('token-entry').get_text()
+        Config.auth_url = self.builder.get_object('authenticator-url-entry').get_text()
+
         # Reconnect since settings may have been changed
-        asyncio.create_task(self.lookup_tab.connect())
+        #asyncio.create_task(self.lookup_tab.connect())
+
         return True
 
     def show_error(self, msg):
@@ -172,19 +175,8 @@ def run_gui():
     signal_handler = SignalHandler(loop, builder, settings)
     # builder.connect_signals(signal_handler)
 
-    settings.settings.bind("lookup-url", builder.get_object('lookup-url-entry'),
-                           'text', Gio.SettingsBindFlags.DEFAULT)
-    settings.settings.bind("authenticator-url",
-                           builder.get_object('authenticator-url-entry'),
-                           'text', Gio.SettingsBindFlags.DEFAULT)
-    settings.settings.bind("lookup-username",
-                           builder.get_object('username-entry'), 'text',
-                           Gio.SettingsBindFlags.DEFAULT)
-    settings.settings.bind("lookup-password",
-                           builder.get_object('password-entry'), 'text',
-                           Gio.SettingsBindFlags.DEFAULT)
     settings.settings.bind("dependency-keys",
-                           builder.get_object('dependency-keys'), 'text',
+                           builder.get_object('dependency-keys-entry'), 'text',
                            Gio.SettingsBindFlags.DEFAULT)
 
     # Connect to the lookup server upon startup
