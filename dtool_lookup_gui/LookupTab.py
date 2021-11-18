@@ -29,6 +29,7 @@ import subprocess
 from functools import reduce
 
 from . import (
+    GlobalConfig,
     to_timestamp,
     date_to_string,
     datetime_to_string,
@@ -70,6 +71,8 @@ class SignalHandler:
         self.search_popover = self.builder.get_object('search-popover')
 
         self.results_widget = self.builder.get_object('search-results')
+        self.dataset_list_auto_refresh = builder.get_object('dataset-list-auto-refresh')
+
         self.statusbar_widget = self.builder.get_object('main-statusbar')
         self.main_spinner = self.builder.get_object('main-spinner')
         self.main_not_found = self.builder.get_object('main-not-found')
@@ -95,20 +98,30 @@ class SignalHandler:
         self.search_entry = builder.get_object('search-entry')
 
         # private properties
+        self._auto_refresh = GlobalConfig.auto_refresh_on
+        self.dataset_list_auto_refresh.set_active(self._auto_refresh)
+
+
         self._search_task = None
 
         self._selected_dataset = None
         self._readme = None
         self._manifest = None
 
-        self.main_stack.set_visible_child(self.main_spinner)
+        self.main_stack.set_visible_child(self.main_view)
 
         self.datasets = None
         self.server_config = None
 
         self.thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
-    def _refresh_results(self):
+    async def _refresh_results(self):
+        if not self._auto_refresh:
+            self.main_stack.set_visible_child(self.main_view)
+            return
+
+        self.main_stack.set_visible_child(self.main_spinner)
+
         if self.datasets is not None and self.server_config:
             self.statusbar_widget.push(0, f'{len(self.datasets)} datasets - '
                                      f'Connected to lookup server version '
@@ -150,8 +163,9 @@ class SignalHandler:
 
         self.main_stack.set_visible_child(self.main_view)
 
+    # TODO: jlh, need to understand better which calls run truly asynchronous and which ones still block the GUI
     def refresh(self):
-        self._refresh_results()
+        self.event_loop.create_task(self._refresh_results())
 
     async def _fetch_readme(self, uri):
         self.error_bar.set_revealed(False)
@@ -210,7 +224,10 @@ class SignalHandler:
 
         self.dependency_stack.set_visible_child(self.dependency_view)
 
-    async def connect(self):
+    def connect(self):
+        self.event_loop.create_task(self._connect())
+
+    async def _connect(self):
         self.error_bar.set_revealed(False)
         self.main_stack.set_visible_child(self.main_spinner)
 
@@ -228,7 +245,7 @@ class SignalHandler:
         except Exception as e:
             self.show_error(str(e))
             self.datasets = []
-        self._refresh_results()
+        self.refresh()
 
     def on_result_selected(self, list_box, list_box_row):
         if list_box_row is None:
@@ -303,7 +320,7 @@ class SignalHandler:
                     self.datasets = await self.lookup.search(keyword)
             else:
                 self.datasets = await self.lookup.all()
-            self._refresh_results()
+            self.refresh()
 
         if self._search_task is not None:
             self._search_task.cancel()
@@ -365,7 +382,14 @@ class SignalHandler:
         self.error_bar.set_revealed(True)
 
     def set_sensitive(self, sensitive=True):
+        sensitive = sensitive & self._auto_refresh
         if not sensitive:
             self.search_popover.popdown()
         self.search_popover.set_sensitive(sensitive)
         self.search_entry.set_sensitive(sensitive)
+
+    def on_lookup_dataset_list_auto_refresh_toggled(self, checkbox):
+        self._auto_refresh = checkbox.get_active()
+        self.set_sensitive(self._auto_refresh)
+        self.refresh()
+

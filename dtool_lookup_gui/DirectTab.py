@@ -44,14 +44,12 @@ import dtoolcore
 
 from dtool_create.dataset import _get_readme_template
 
-from . import date_to_string, _validate_readme
-
 from . import (
-    to_timestamp,
-    date_to_string,
+    GlobalConfig,
     datetime_to_string,
     fill_readme_tree_store,
-    fill_manifest_tree_store)
+    fill_manifest_tree_store,
+    _validate_readme)
 
 from .models import (
     LocalBaseURIModel,
@@ -108,14 +106,17 @@ class SignalHandler:
         self.dtool_add_items_button = self.builder.get_object('dtool-add-items')
 
         self.dtool_dataset_list = self.builder.get_object('dtool-ls-results')
+        self.dataset_list_auto_refresh = self.builder.get_object('direct-dataset-list-auto-refresh')
 
         # models
         self.dtool_dataset_list.dataset_list_model = DataSetListModel()
         self.dtool_dataset_list.base_uri_model = LocalBaseURIModel()
         self.dataset_model = DataSetModel()
-        # self.dtool_dataset_list.dataset_list_model.set_base_uri_model(self.base_uri_model)
 
         # Configure the models.
+        self.dtool_dataset_list.auto_refresh = GlobalConfig.auto_refresh_on
+        self.dataset_list_auto_refresh.set_active(GlobalConfig.auto_refresh_on)
+
         initial_base_uri = self.dtool_dataset_list.base_uri
         if initial_base_uri is None:
             initial_base_uri = HOME_DIR
@@ -220,6 +221,10 @@ class SignalHandler:
     def on_direct_dataset_view_switch_page(self, notebook, page, page_num):
         logger.debug(f"Selected page {page_num}.")
         self.refresh(page_num)
+
+    def on_direct_dataset_list_auto_refresh_toggled(self, checkbox):
+        self.dtool_dataset_list.auto_refresh = checkbox.get_active()
+        self.dtool_dataset_list.refresh()
 
     def refresh(self, page=None):
         """Update statusbar and tab contents."""
@@ -446,7 +451,6 @@ class SignalHandler:
         self._load_dataset(proto_dataset.uri)
         self._initialize_readme()
         self._mark_dataset_as_changed()
-        # self.dtool_dataset_list.selected_uri = proto_dataset.uri
         self.dtool_dataset_list.refresh(selected_uri=proto_dataset.uri)
         self._show_dataset()
 

@@ -39,6 +39,12 @@ import dtoolcore
 
 logger = logging.getLogger(__name__)
 
+
+class GlobalConfig:
+    """GUI-global behavioral settings. """
+    auto_refresh_on = True
+
+
 @contextmanager
 def time_locale(name):
     # This code snippet was taken from:

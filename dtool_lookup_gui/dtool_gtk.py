@@ -20,6 +20,7 @@ class DtoolDatasetListBox(Gtk.ListBox):
     __gtype_name__ = 'DtoolDatasetListBox'
 
     def __init__(self, *args, **kwargs):
+        self._auto_refresh = False
         self._dataset_list_model = None
         self._base_uri_model = None
         self._error_callback = logger.warning
@@ -59,11 +60,21 @@ class DtoolDatasetListBox(Gtk.ListBox):
     def selected_uri(self, uri):
         self._dataset_list_model.set_active_index_by_uri(uri)
 
+    # TODO: cache selected URI also when refresh deactivated
+    @property
+    def auto_refresh(self):
+        """If disabled, widget will not refresh content until enabled again."""
+        return self._auto_refresh
+
+    @auto_refresh.setter
+    def auto_refresh(self, auto_refresh):
+        self._auto_refresh = auto_refresh
+        self._dataset_list_model.active_refresh = auto_refresh
+
     def set_error_callback(self, error_callback):
         self._error_callback = error_callback
 
     def populate(self, selected_uri=None):
-
         # TODO: selection Gtk-native
         if selected_uri is None:
             selected_uri = self.selected_uri
@@ -97,6 +108,10 @@ class DtoolDatasetListBox(Gtk.ListBox):
         self.show_all()
 
     def refresh(self, *args, **kwargs):
+        if not self._auto_refresh:
+            logger.debug("No auto refresh, skip.")
+            return
+
         # TODO: refine
         self.populate(*args, **kwargs)
 

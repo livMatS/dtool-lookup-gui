@@ -198,6 +198,6 @@ def run_gui():
                            Gio.SettingsBindFlags.DEFAULT)
 
     # Connect to the lookup server upon startup
-    loop.create_task(signal_handler.lookup_tab.connect())
+    signal_handler.lookup_tab.connect()
 
     loop.run_forever()

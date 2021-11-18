@@ -144,8 +144,33 @@ class DataSetModel(dtool_gui_tk.models.DataSetModel):
 class DataSetListModel(dtool_gui_tk.models.DataSetListModel):
     "Model for managing all (frozen and proto) datasets in a base URI."
 
+    def __init__(self, *args, **kwargs):
+        self._active_refresh = False
+        super().__init__(*args, **kwargs)
+
+    @property
+    def active_refresh(self):
+        return self._active_refresh
+
+    @active_refresh.setter
+    def active_refresh(self, active):
+        self._active_refresh = active
+        if active:
+            self.reindex()
+
+    def activate_refresh(self):
+        self._active_refresh = True
+        self.reindex()
+
+    def deactivate_refresh(self):
+        self._active_refresh = False
+
     def reindex(self):
         """Index the base URI."""
+        if not self._active_refresh:
+            logger.debug("Refresh deactivated, skip.")
+            return
+
         self._datasets = []
         self._datasets_info = []
         self._active_index = None

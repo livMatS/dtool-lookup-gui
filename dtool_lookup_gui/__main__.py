@@ -1,4 +1,5 @@
 #
+# PYTHON_ARGCOMPLETE_OK
 # Copyright 2020 Lars Pastewka
 #
 # ### MIT license
@@ -26,6 +27,7 @@ if __name__ == '__main__':
     import logging
     import argparse
 
+    from . import GlobalConfig
     from .MainApplication import run_gui
 
 
@@ -41,8 +43,18 @@ if __name__ == '__main__':
 
     parser.add_argument('--verbose', '-v', action='count', dest='verbose',
                         default=0, help='Make terminal output more verbose')
+    parser.add_argument('--all-auto-refresh-off', action='store_true',
+                        dest='all_auto_refresh_off', default=False,
+                        help='Do not load any dataset lists at launch.')
     parser.add_argument('--debug', '-d', action='store_true',
                         help='Print debug info')
+
+    try:
+        import argcomplete
+        argcomplete.autocomplete(parser)
+    except ModuleNotFoundError as err:
+        pass
+
     args = parser.parse_args()
 
     loglevel = logging.ERROR
@@ -58,5 +70,9 @@ if __name__ == '__main__':
     logging.basicConfig(level=loglevel)
     logger = logging.getLogger()
     logger.setLevel(loglevel)
+
+    if args.all_auto_refresh_off:
+        logger.debug("All auto refresh turned off via CLI flag.")
+        GlobalConfig.auto_refresh_on = False
 
     run_gui()
