@@ -40,9 +40,10 @@ gbulb.install(gtk=True)
 #import asyncio_glib
 #asyncio.set_event_loop_policy(asyncio_glib.GLibEventLoopPolicy())
 
-from . import LookupTab, DirectTab
+from . import LookupTab, DirectTab, SettingsDialog
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 # used for wrapping a list of signal handlers
@@ -53,7 +54,7 @@ class Trampoline(object):
 
     def __call__(self, *args, **kwargs):
         for m in self.methods:
-            m(*args, **kwargs)
+            return m(*args, **kwargs)
 
     def append(self, method):
         self.methods.append(method)
@@ -81,7 +82,6 @@ class SignalHandler:
         self.settings = settings
 
         self.main_window = self.builder.get_object('main-window')
-        self.settings_window = self.builder.get_object('settings-window')
 
         self.error_bar = self.builder.get_object('error-bar')
         self.error_label = self.builder.get_object('error-label')
@@ -90,8 +90,9 @@ class SignalHandler:
 
         self.thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
-        self.lookup_tab = LookupTab.SignalHandler(event_loop, builder, settings)
-        self.direct_tab = DirectTab.SignalHandler(event_loop, builder, settings)
+        self.lookup_tab = LookupTab.SignalHandler(self, event_loop, builder, settings)
+        self.direct_tab = DirectTab.SignalHandler(self, builder)
+        self.settings_dialog = SettingsDialog.SignalHandler(self, event_loop, builder, settings)
 
         # Create a dictionary to hold the signal-handler pairs
         self.handlers = {}
@@ -99,6 +100,7 @@ class SignalHandler:
         # load all signal handlers into sel.handlers
         self._load_handlers(self.lookup_tab)
         self._load_handlers(self.direct_tab)
+        self._load_handlers(self.settings_dialog)
         self._load_handlers(self)
 
         self.builder.connect_signals(self.handlers)
@@ -115,10 +117,11 @@ class SignalHandler:
             if method_name.startswith('_'):
                 continue
             if callable(method):
-                logger.debug("Registering callback %s" % (method_name))
                 if method_name in self.handlers:
+                    logger.debug("Registering additional callback for '%s'" % (method_name))
                     self.handlers[method_name].append(method)
                 else:
+                    logger.debug("Registering callback for '%s'" % (method_name))
                     self.handlers[method_name] = Trampoline([method])
 
     def on_main_switch_page(self, notebook, page, page_num):
@@ -129,31 +132,7 @@ class SignalHandler:
 
     def on_settings_clicked(self, widget):
         #asyncio.create_task(self._fetch_users())
-        self.settings_window.show()
-
-    def on_settings_window_show(self, widget):
-        if Config.lookup_url is not None:
-            self.builder.get_object('lookup-url-entry').set_text(Config.lookup_url)
-        if Config.token is not None:
-            self.builder.get_object('token-entry').set_text(Config.token)
-        if Config.auth_url is not None:
-            self.builder.get_object('authenticator-url-entry').set_text(Config.auth_url)
-
-    def on_settings_window_delete(self, widget, event):
-        print('window deletion', widget, event)
-
-        # Don't delete, simply hide the window
-        widget.hide()
-
-        # Write back configuration
-        Config.lookup_url = self.builder.get_object('lookup-url-entry').get_text()
-        Config.token = self.builder.get_object('token-entry').get_text()
-        Config.auth_url = self.builder.get_object('authenticator-url-entry').get_text()
-
-        # Reconnect since settings may have been changed
-        #asyncio.create_task(self.lookup_tab.connect())
-
-        return True
+        self.settings_dialog.show()
 
     def show_error(self, msg):
         self.error_label.set_text(msg)
@@ -173,7 +152,6 @@ def run_gui():
     settings = Settings()
 
     signal_handler = SignalHandler(loop, builder, settings)
-    # builder.connect_signals(signal_handler)
 
     settings.settings.bind("dependency-keys",
                            builder.get_object('dependency-keys-entry'), 'text',
