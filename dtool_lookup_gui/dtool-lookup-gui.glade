@@ -264,6 +264,8 @@
     </columns>
   </object>
   <object class="GtkEntryCompletion" id="entrycompletion1"/>
+  <object class="GtkEntryBuffer" id="lhs-base-uri-entry-buffer"/>
+  <object class="GtkEntryBuffer" id="lhs-dataset-uri-entry-buffer"/>
   <object class="GtkTreeStore" id="lookup-manifest-treestore">
     <columns>
       <!-- column-name name -->
@@ -353,6 +355,8 @@
       </object>
     </child>
   </object>
+  <object class="GtkEntryBuffer" id="rhs-base-uri-entry-buffer"/>
+  <object class="GtkEntryBuffer" id="rhs-dataset-uri-entry-buffer"/>
   <object class="GtkEntryBuffer" id="search-entry-buffer"/>
   <object class="GtkApplicationWindow" id="main-window">
     <property name="width-request">1000</property>
@@ -422,259 +426,551 @@
                 <property name="can-focus">True</property>
                 <signal name="switch-page" handler="on_main_switch_page" swapped="no"/>
                 <child>
-                  <object class="GtkStack" id="main-stack">
+                  <object class="GtkBox">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="orientation">vertical</property>
                     <child>
-                      <object class="GtkPaned" id="main-view">
+                      <object class="GtkBox">
                         <property name="visible">True</property>
-                        <property name="can-focus">True</property>
-                        <property name="position">400</property>
-                        <property name="position-set">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="orientation">vertical</property>
                         <child>
-                          <object class="GtkBox">
+                          <!-- n-columns=4 n-rows=1 -->
+                          <object class="GtkGrid">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="orientation">vertical</property>
+                            <property name="margin-left">5</property>
+                            <property name="margin-right">5</property>
+                            <property name="margin-start">5</property>
+                            <property name="margin-end">5</property>
+                            <property name="margin-top">5</property>
+                            <property name="margin-bottom">5</property>
+                            <property name="row-spacing">5</property>
+                            <property name="column-spacing">5</property>
                             <child>
-                              <object class="GtkScrolledWindow">
+                              <object class="GtkFileChooserButton" id="lookup-base-uri-chooser-button">
                                 <property name="visible">True</property>
-                                <property name="can-focus">True</property>
-                                <property name="shadow-type">in</property>
-                                <property name="min-content-width">400</property>
-                                <child>
-                                  <object class="GtkViewport">
-                                    <property name="visible">True</property>
-                                    <property name="can-focus">False</property>
-                                    <property name="vscroll-policy">natural</property>
-                                    <child>
-                                      <object class="GtkListBox" id="search-results">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <signal name="row-selected" handler="on_result_selected" swapped="no"/>
-                                      </object>
-                                    </child>
-                                  </object>
-                                </child>
+                                <property name="can-focus">False</property>
+                                <property name="action">select-folder</property>
+                                <property name="create-folders">False</property>
+                                <property name="local-only">False</property>
+                                <property name="title" translatable="yes"/>
+                                <signal name="file-set" handler="on_lhs_base_uri_set" swapped="no"/>
                               </object>
                               <packing>
-                                <property name="expand">True</property>
-                                <property name="fill">True</property>
-                                <property name="position">0</property>
+                                <property name="left-attach">2</property>
+                                <property name="top-attach">0</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkCheckButton" id="dataset-list-auto-refresh">
-                                <property name="label" translatable="yes">Automatic refresh</property>
+                              <object class="GtkLabel">
                                 <property name="visible">True</property>
-                                <property name="can-focus">True</property>
-                                <property name="receives-default">False</property>
-                                <property name="draw-indicator">True</property>
-                                <signal name="toggled" handler="on_lookup_dataset_list_auto_refresh_toggled" swapped="no"/>
+                                <property name="can-focus">False</property>
+                                <property name="label" translatable="yes">Base URI: </property>
+                                <attributes>
+                                  <attribute name="weight" value="bold"/>
+                                </attributes>
                               </object>
                               <packing>
-                                <property name="expand">False</property>
-                                <property name="fill">True</property>
-                                <property name="position">1</property>
+                                <property name="left-attach">0</property>
+                                <property name="top-attach">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkEntry" id="lookup-base-uri-entry">
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="hexpand">True</property>
+                                <property name="buffer">lhs-base-uri-entry-buffer</property>
+                              </object>
+                              <packing>
+                                <property name="left-attach">1</property>
+                                <property name="top-attach">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="lookup-lhs-uri-apply-button">
+                                <property name="label">gtk-apply</property>
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="receives-default">True</property>
+                                <property name="use-stock">True</property>
+                                <property name="always-show-image">True</property>
+                                <signal name="clicked" handler="on_lhs_base_uri_open" swapped="no"/>
+                              </object>
+                              <packing>
+                                <property name="left-attach">3</property>
+                                <property name="top-attach">0</property>
                               </packing>
                             </child>
                           </object>
                           <packing>
-                            <property name="resize">False</property>
-                            <property name="shrink">True</property>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkNotebook" id="dataset-notebook">
+                          <!-- n-columns=4 n-rows=1 -->
+                          <object class="GtkGrid">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="margin-left">5</property>
+                            <property name="margin-right">5</property>
+                            <property name="margin-start">5</property>
+                            <property name="margin-end">5</property>
+                            <property name="margin-top">5</property>
+                            <property name="margin-bottom">5</property>
+                            <property name="row-spacing">5</property>
+                            <property name="column-spacing">5</property>
+                            <child>
+                              <object class="GtkFileChooserButton" id="lookup-dataset-uri-chooser-button">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="action">select-folder</property>
+                                <property name="create-folders">False</property>
+                                <property name="local-only">False</property>
+                                <property name="title" translatable="yes"/>
+                                <signal name="file-set" handler="on_lhs_dataset_uri_set" swapped="no"/>
+                              </object>
+                              <packing>
+                                <property name="left-attach">2</property>
+                                <property name="top-attach">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="label" translatable="yes">Dataset URI: </property>
+                                <attributes>
+                                  <attribute name="weight" value="bold"/>
+                                </attributes>
+                              </object>
+                              <packing>
+                                <property name="left-attach">0</property>
+                                <property name="top-attach">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkEntry" id="lookup-dataset-uri-entry">
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="hexpand">True</property>
+                                <property name="buffer">lhs-dataset-uri-entry-buffer</property>
+                              </object>
+                              <packing>
+                                <property name="left-attach">1</property>
+                                <property name="top-attach">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="lookup-lhs-dataset-uri-apply-button1">
+                                <property name="label">gtk-open</property>
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="receives-default">True</property>
+                                <property name="use-stock">True</property>
+                                <property name="always-show-image">True</property>
+                                <signal name="clicked" handler="on_lhs_dataset_uri_open" swapped="no"/>
+                              </object>
+                              <packing>
+                                <property name="left-attach">3</property>
+                                <property name="top-attach">0</property>
+                              </packing>
+                            </child>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkStack" id="main-stack">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <child>
+                          <object class="GtkPaned" id="main-view">
                             <property name="visible">True</property>
                             <property name="can-focus">True</property>
-                            <signal name="switch-page" handler="on_switch_page" swapped="no"/>
+                            <property name="position">400</property>
+                            <property name="position-set">True</property>
                             <child>
                               <object class="GtkBox">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
                                 <property name="orientation">vertical</property>
                                 <child>
-                                  <!-- n-columns=3 n-rows=6 -->
-                                  <object class="GtkGrid">
+                                  <object class="GtkScrolledWindow">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="shadow-type">in</property>
+                                    <property name="min-content-width">400</property>
+                                    <child>
+                                      <object class="GtkViewport">
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">False</property>
+                                        <property name="vscroll-policy">natural</property>
+                                        <child>
+                                          <object class="GtkListBox" id="search-results">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <signal name="row-selected" handler="on_result_selected" swapped="no"/>
+                                          </object>
+                                        </child>
+                                      </object>
+                                    </child>
+                                  </object>
+                                  <packing>
+                                    <property name="expand">True</property>
+                                    <property name="fill">True</property>
+                                    <property name="position">0</property>
+                                  </packing>
+                                </child>
+                              </object>
+                              <packing>
+                                <property name="resize">False</property>
+                                <property name="shrink">True</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkNotebook" id="dataset-notebook">
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <signal name="switch-page" handler="on_switch_page" swapped="no"/>
+                                <child>
+                                  <object class="GtkBox">
                                     <property name="visible">True</property>
                                     <property name="can-focus">False</property>
-                                    <property name="margin-left">5</property>
-                                    <property name="margin-right">5</property>
-                                    <property name="margin-start">5</property>
-                                    <property name="margin-end">5</property>
-                                    <property name="margin-top">5</property>
-                                    <property name="margin-bottom">5</property>
                                     <property name="orientation">vertical</property>
-                                    <property name="row-spacing">5</property>
-                                    <property name="column-spacing">5</property>
+                                    <child>
+                                      <!-- n-columns=3 n-rows=6 -->
+                                      <object class="GtkGrid">
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">False</property>
+                                        <property name="margin-left">5</property>
+                                        <property name="margin-right">5</property>
+                                        <property name="margin-start">5</property>
+                                        <property name="margin-end">5</property>
+                                        <property name="margin-top">5</property>
+                                        <property name="margin-bottom">5</property>
+                                        <property name="orientation">vertical</property>
+                                        <property name="row-spacing">5</property>
+                                        <property name="column-spacing">5</property>
+                                        <child>
+                                          <object class="GtkLabel">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="halign">start</property>
+                                            <property name="label" translatable="yes">UUID</property>
+                                            <attributes>
+                                              <attribute name="weight" value="bold"/>
+                                            </attributes>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">0</property>
+                                            <property name="top-attach">0</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel" id="dataset-uuid">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="halign">start</property>
+                                            <property name="label" translatable="yes">label</property>
+                                            <property name="selectable">True</property>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">1</property>
+                                            <property name="top-attach">0</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="halign">start</property>
+                                            <property name="label" translatable="yes">URI</property>
+                                            <attributes>
+                                              <attribute name="weight" value="bold"/>
+                                            </attributes>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">0</property>
+                                            <property name="top-attach">1</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel" id="dataset-uri">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="halign">start</property>
+                                            <property name="label" translatable="yes">label</property>
+                                            <property name="selectable">True</property>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">1</property>
+                                            <property name="top-attach">1</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="halign">start</property>
+                                            <property name="label" translatable="yes">Name</property>
+                                            <attributes>
+                                              <attribute name="weight" value="bold"/>
+                                            </attributes>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">0</property>
+                                            <property name="top-attach">2</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel" id="dataset-name">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="halign">start</property>
+                                            <property name="label" translatable="yes">label</property>
+                                            <property name="selectable">True</property>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">1</property>
+                                            <property name="top-attach">2</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="halign">start</property>
+                                            <property name="label" translatable="yes">Created by</property>
+                                            <attributes>
+                                              <attribute name="weight" value="bold"/>
+                                            </attributes>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">0</property>
+                                            <property name="top-attach">3</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel" id="dataset-created-by">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="halign">start</property>
+                                            <property name="label" translatable="yes">label</property>
+                                            <property name="selectable">True</property>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">1</property>
+                                            <property name="top-attach">3</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="halign">start</property>
+                                            <property name="label" translatable="yes">Created at</property>
+                                            <attributes>
+                                              <attribute name="weight" value="bold"/>
+                                            </attributes>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">0</property>
+                                            <property name="top-attach">4</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel" id="dataset-created-at">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="halign">start</property>
+                                            <property name="label" translatable="yes">label</property>
+                                            <property name="selectable">True</property>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">1</property>
+                                            <property name="top-attach">4</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="halign">start</property>
+                                            <property name="label" translatable="yes">Frozen at</property>
+                                            <attributes>
+                                              <attribute name="weight" value="bold"/>
+                                            </attributes>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">0</property>
+                                            <property name="top-attach">5</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel" id="dataset-frozen-at">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="halign">start</property>
+                                            <property name="label" translatable="yes">label</property>
+                                            <property name="selectable">True</property>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">1</property>
+                                            <property name="top-attach">5</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <placeholder/>
+                                        </child>
+                                        <child>
+                                          <placeholder/>
+                                        </child>
+                                        <child>
+                                          <placeholder/>
+                                        </child>
+                                        <child>
+                                          <placeholder/>
+                                        </child>
+                                        <child>
+                                          <placeholder/>
+                                        </child>
+                                        <child>
+                                          <placeholder/>
+                                        </child>
+                                      </object>
+                                      <packing>
+                                        <property name="expand">False</property>
+                                        <property name="fill">True</property>
+                                        <property name="position">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <object class="GtkStack" id="readme-stack">
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">False</property>
+                                        <child>
+                                          <object class="GtkScrolledWindow" id="readme-view">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">True</property>
+                                            <property name="shadow-type">in</property>
+                                            <property name="propagate-natural-width">True</property>
+                                            <property name="propagate-natural-height">True</property>
+                                            <child>
+                                              <object class="GtkViewport">
+                                                <property name="visible">True</property>
+                                                <property name="can-focus">False</property>
+                                                <child>
+                                                  <object class="GtkTreeView" id="dataset-readme">
+                                                    <property name="visible">True</property>
+                                                    <property name="can-focus">True</property>
+                                                    <property name="model">lookup-readme-treestore</property>
+                                                    <property name="search-column">0</property>
+                                                    <property name="enable-tree-lines">True</property>
+                                                    <signal name="row-activated" handler="on_readme_row_activated" swapped="no"/>
+                                                    <child internal-child="selection">
+                                                      <object class="GtkTreeSelection"/>
+                                                    </child>
+                                                    <child>
+                                                      <object class="GtkTreeViewColumn" id="readme-column1">
+                                                        <property name="title" translatable="yes">Key</property>
+                                                        <child>
+                                                          <object class="GtkCellRendererText" id="readme-renderer1"/>
+                                                          <attributes>
+                                                            <attribute name="text">0</attribute>
+                                                          </attributes>
+                                                        </child>
+                                                      </object>
+                                                    </child>
+                                                    <child>
+                                                      <object class="GtkTreeViewColumn" id="readme-column2">
+                                                        <property name="title" translatable="yes">Value</property>
+                                                        <child>
+                                                          <object class="GtkCellRendererText" id="readme-renderer2">
+                                                            <property name="editable">True</property>
+                                                            <property name="ellipsize">end</property>
+                                                            <property name="wrap-mode">word</property>
+                                                          </object>
+                                                          <attributes>
+                                                            <attribute name="markup">3</attribute>
+                                                          </attributes>
+                                                        </child>
+                                                      </object>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                              </object>
+                                            </child>
+                                          </object>
+                                          <packing>
+                                            <property name="name">page0</property>
+                                            <property name="title" translatable="yes">page0</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkSpinner" id="readme-spinner">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="active">True</property>
+                                          </object>
+                                          <packing>
+                                            <property name="name">page1</property>
+                                            <property name="title" translatable="yes">page1</property>
+                                            <property name="position">1</property>
+                                          </packing>
+                                        </child>
+                                      </object>
+                                      <packing>
+                                        <property name="expand">True</property>
+                                        <property name="fill">True</property>
+                                        <property name="position">1</property>
+                                      </packing>
+                                    </child>
                                     <child>
                                       <object class="GtkLabel">
                                         <property name="visible">True</property>
                                         <property name="can-focus">False</property>
                                         <property name="halign">start</property>
-                                        <property name="label" translatable="yes">UUID</property>
+                                        <property name="label" translatable="yes">Size</property>
                                         <attributes>
                                           <attribute name="weight" value="bold"/>
                                         </attributes>
                                       </object>
                                       <packing>
-                                        <property name="left-attach">0</property>
-                                        <property name="top-attach">0</property>
+                                        <property name="expand">False</property>
+                                        <property name="fill">True</property>
+                                        <property name="position">2</property>
                                       </packing>
                                     </child>
                                     <child>
-                                      <object class="GtkLabel" id="dataset-uuid">
+                                      <object class="GtkLabel" id="dataset-size-in-bytes">
                                         <property name="visible">True</property>
                                         <property name="can-focus">False</property>
                                         <property name="halign">start</property>
                                         <property name="label" translatable="yes">label</property>
-                                        <property name="selectable">True</property>
                                       </object>
                                       <packing>
-                                        <property name="left-attach">1</property>
-                                        <property name="top-attach">0</property>
+                                        <property name="expand">False</property>
+                                        <property name="fill">True</property>
+                                        <property name="position">3</property>
                                       </packing>
                                     </child>
                                     <child>
-                                      <object class="GtkLabel">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="halign">start</property>
-                                        <property name="label" translatable="yes">URI</property>
-                                        <attributes>
-                                          <attribute name="weight" value="bold"/>
-                                        </attributes>
-                                      </object>
-                                      <packing>
-                                        <property name="left-attach">0</property>
-                                        <property name="top-attach">1</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel" id="dataset-uri">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="halign">start</property>
-                                        <property name="label" translatable="yes">label</property>
-                                        <property name="selectable">True</property>
-                                      </object>
-                                      <packing>
-                                        <property name="left-attach">1</property>
-                                        <property name="top-attach">1</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="halign">start</property>
-                                        <property name="label" translatable="yes">Name</property>
-                                        <attributes>
-                                          <attribute name="weight" value="bold"/>
-                                        </attributes>
-                                      </object>
-                                      <packing>
-                                        <property name="left-attach">0</property>
-                                        <property name="top-attach">2</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel" id="dataset-name">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="halign">start</property>
-                                        <property name="label" translatable="yes">label</property>
-                                        <property name="selectable">True</property>
-                                      </object>
-                                      <packing>
-                                        <property name="left-attach">1</property>
-                                        <property name="top-attach">2</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="halign">start</property>
-                                        <property name="label" translatable="yes">Created by</property>
-                                        <attributes>
-                                          <attribute name="weight" value="bold"/>
-                                        </attributes>
-                                      </object>
-                                      <packing>
-                                        <property name="left-attach">0</property>
-                                        <property name="top-attach">3</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel" id="dataset-created-by">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="halign">start</property>
-                                        <property name="label" translatable="yes">label</property>
-                                        <property name="selectable">True</property>
-                                      </object>
-                                      <packing>
-                                        <property name="left-attach">1</property>
-                                        <property name="top-attach">3</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="halign">start</property>
-                                        <property name="label" translatable="yes">Created at</property>
-                                        <attributes>
-                                          <attribute name="weight" value="bold"/>
-                                        </attributes>
-                                      </object>
-                                      <packing>
-                                        <property name="left-attach">0</property>
-                                        <property name="top-attach">4</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel" id="dataset-created-at">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="halign">start</property>
-                                        <property name="label" translatable="yes">label</property>
-                                        <property name="selectable">True</property>
-                                      </object>
-                                      <packing>
-                                        <property name="left-attach">1</property>
-                                        <property name="top-attach">4</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="halign">start</property>
-                                        <property name="label" translatable="yes">Frozen at</property>
-                                        <attributes>
-                                          <attribute name="weight" value="bold"/>
-                                        </attributes>
-                                      </object>
-                                      <packing>
-                                        <property name="left-attach">0</property>
-                                        <property name="top-attach">5</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel" id="dataset-frozen-at">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="halign">start</property>
-                                        <property name="label" translatable="yes">label</property>
-                                        <property name="selectable">True</property>
-                                      </object>
-                                      <packing>
-                                        <property name="left-attach">1</property>
-                                        <property name="top-attach">5</property>
-                                      </packing>
+                                      <placeholder/>
                                     </child>
                                     <child>
                                       <placeholder/>
@@ -696,42 +992,47 @@
                                     </child>
                                   </object>
                                   <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">0</property>
+                                    <property name="menu-label">dataset-readme</property>
+                                  </packing>
+                                </child>
+                                <child type="tab">
+                                  <object class="GtkLabel">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                    <property name="label" translatable="yes">Details</property>
+                                  </object>
+                                  <packing>
+                                    <property name="tab-fill">False</property>
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkStack" id="readme-stack">
+                                  <object class="GtkStack" id="manifest-stack">
                                     <property name="visible">True</property>
                                     <property name="can-focus">False</property>
                                     <child>
-                                      <object class="GtkScrolledWindow" id="readme-view">
+                                      <object class="GtkScrolledWindow" id="manifest-view">
                                         <property name="visible">True</property>
                                         <property name="can-focus">True</property>
                                         <property name="shadow-type">in</property>
-                                        <property name="propagate-natural-width">True</property>
-                                        <property name="propagate-natural-height">True</property>
                                         <child>
                                           <object class="GtkViewport">
                                             <property name="visible">True</property>
                                             <property name="can-focus">False</property>
                                             <child>
-                                              <object class="GtkTreeView" id="dataset-readme">
+                                              <object class="GtkTreeView" id="dataset-manifest">
                                                 <property name="visible">True</property>
                                                 <property name="can-focus">True</property>
-                                                <property name="model">lookup-readme-treestore</property>
+                                                <property name="model">lookup-manifest-treestore</property>
                                                 <property name="search-column">0</property>
-                                                <property name="enable-tree-lines">True</property>
-                                                <signal name="row-activated" handler="on_readme_row_activated" swapped="no"/>
+                                                <signal name="row-activated" handler="on_manifest_row_activated" swapped="no"/>
                                                 <child internal-child="selection">
                                                   <object class="GtkTreeSelection"/>
                                                 </child>
                                                 <child>
-                                                  <object class="GtkTreeViewColumn" id="readme-column1">
-                                                    <property name="title" translatable="yes">Key</property>
+                                                  <object class="GtkTreeViewColumn" id="manifest-column1">
+                                                    <property name="title" translatable="yes">Name</property>
                                                     <child>
-                                                      <object class="GtkCellRendererText" id="readme-renderer1"/>
+                                                      <object class="GtkCellRendererText" id="manifest-renderer1"/>
                                                       <attributes>
                                                         <attribute name="text">0</attribute>
                                                       </attributes>
@@ -739,16 +1040,36 @@
                                                   </object>
                                                 </child>
                                                 <child>
-                                                  <object class="GtkTreeViewColumn" id="readme-column2">
-                                                    <property name="title" translatable="yes">Value</property>
+                                                  <object class="GtkTreeViewColumn" id="manifest-column2">
+                                                    <property name="title" translatable="yes">Size</property>
                                                     <child>
-                                                      <object class="GtkCellRendererText" id="readme-renderer2">
+                                                      <object class="GtkCellRendererText" id="manifest-renderer2"/>
+                                                      <attributes>
+                                                        <attribute name="text">1</attribute>
+                                                      </attributes>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkTreeViewColumn" id="manifest-column3">
+                                                    <property name="title" translatable="yes">Date</property>
+                                                    <child>
+                                                      <object class="GtkCellRendererText" id="manifest-renderer3"/>
+                                                      <attributes>
+                                                        <attribute name="text">2</attribute>
+                                                      </attributes>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkTreeViewColumn" id="manifest-column4">
+                                                    <property name="title" translatable="yes">UUID</property>
+                                                    <child>
+                                                      <object class="GtkCellRendererText" id="manifest-renderer4">
                                                         <property name="editable">True</property>
-                                                        <property name="ellipsize">end</property>
-                                                        <property name="wrap-mode">word</property>
                                                       </object>
                                                       <attributes>
-                                                        <attribute name="markup">3</attribute>
+                                                        <attribute name="text">3</attribute>
                                                       </attributes>
                                                     </child>
                                                   </object>
@@ -764,7 +1085,7 @@
                                       </packing>
                                     </child>
                                     <child>
-                                      <object class="GtkSpinner" id="readme-spinner">
+                                      <object class="GtkSpinner" id="manifest-spinner">
                                         <property name="visible">True</property>
                                         <property name="can-focus">False</property>
                                         <property name="active">True</property>
@@ -777,273 +1098,148 @@
                                     </child>
                                   </object>
                                   <packing>
-                                    <property name="expand">True</property>
-                                    <property name="fill">True</property>
                                     <property name="position">1</property>
                                   </packing>
                                 </child>
-                                <child>
+                                <child type="tab">
                                   <object class="GtkLabel">
                                     <property name="visible">True</property>
                                     <property name="can-focus">False</property>
-                                    <property name="halign">start</property>
-                                    <property name="label" translatable="yes">Size</property>
-                                    <attributes>
-                                      <attribute name="weight" value="bold"/>
-                                    </attributes>
+                                    <property name="label" translatable="yes">Manifest</property>
                                   </object>
                                   <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">True</property>
+                                    <property name="position">1</property>
+                                    <property name="tab-fill">False</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkStack" id="dependency-stack">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                    <child>
+                                      <object class="GtkBox" id="dependency-view">
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">False</property>
+                                        <property name="orientation">vertical</property>
+                                        <child>
+                                          <placeholder/>
+                                        </child>
+                                      </object>
+                                      <packing>
+                                        <property name="name">page0</property>
+                                        <property name="title" translatable="yes">page0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <object class="GtkSpinner" id="dependency-spinner">
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">False</property>
+                                        <property name="active">True</property>
+                                      </object>
+                                      <packing>
+                                        <property name="name">page1</property>
+                                        <property name="title" translatable="yes">page1</property>
+                                        <property name="position">1</property>
+                                      </packing>
+                                    </child>
+                                  </object>
+                                  <packing>
                                     <property name="position">2</property>
                                   </packing>
                                 </child>
-                                <child>
-                                  <object class="GtkLabel" id="dataset-size-in-bytes">
+                                <child type="tab">
+                                  <object class="GtkLabel">
                                     <property name="visible">True</property>
                                     <property name="can-focus">False</property>
-                                    <property name="halign">start</property>
-                                    <property name="label" translatable="yes">label</property>
+                                    <property name="label" translatable="yes">Dependencies</property>
                                   </object>
                                   <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">3</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <placeholder/>
-                                </child>
-                                <child>
-                                  <placeholder/>
-                                </child>
-                                <child>
-                                  <placeholder/>
-                                </child>
-                                <child>
-                                  <placeholder/>
-                                </child>
-                                <child>
-                                  <placeholder/>
-                                </child>
-                                <child>
-                                  <placeholder/>
-                                </child>
-                                <child>
-                                  <placeholder/>
-                                </child>
-                              </object>
-                              <packing>
-                                <property name="menu-label">dataset-readme</property>
-                              </packing>
-                            </child>
-                            <child type="tab">
-                              <object class="GtkLabel">
-                                <property name="visible">True</property>
-                                <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">Details</property>
-                              </object>
-                              <packing>
-                                <property name="tab-fill">False</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkStack" id="manifest-stack">
-                                <property name="visible">True</property>
-                                <property name="can-focus">False</property>
-                                <child>
-                                  <object class="GtkScrolledWindow" id="manifest-view">
-                                    <property name="visible">True</property>
-                                    <property name="can-focus">True</property>
-                                    <property name="shadow-type">in</property>
-                                    <child>
-                                      <object class="GtkViewport">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <child>
-                                          <object class="GtkTreeView" id="dataset-manifest">
-                                            <property name="visible">True</property>
-                                            <property name="can-focus">True</property>
-                                            <property name="model">lookup-manifest-treestore</property>
-                                            <property name="search-column">0</property>
-                                            <signal name="row-activated" handler="on_manifest_row_activated" swapped="no"/>
-                                            <child internal-child="selection">
-                                              <object class="GtkTreeSelection"/>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn" id="manifest-column1">
-                                                <property name="title" translatable="yes">Name</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText" id="manifest-renderer1"/>
-                                                  <attributes>
-                                                    <attribute name="text">0</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn" id="manifest-column2">
-                                                <property name="title" translatable="yes">Size</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText" id="manifest-renderer2"/>
-                                                  <attributes>
-                                                    <attribute name="text">1</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn" id="manifest-column3">
-                                                <property name="title" translatable="yes">Date</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText" id="manifest-renderer3"/>
-                                                  <attributes>
-                                                    <attribute name="text">2</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn" id="manifest-column4">
-                                                <property name="title" translatable="yes">UUID</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText" id="manifest-renderer4">
-                                                    <property name="editable">True</property>
-                                                  </object>
-                                                  <attributes>
-                                                    <attribute name="text">3</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                          </object>
-                                        </child>
-                                      </object>
-                                    </child>
-                                  </object>
-                                  <packing>
-                                    <property name="name">page0</property>
-                                    <property name="title" translatable="yes">page0</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <object class="GtkSpinner" id="manifest-spinner">
-                                    <property name="visible">True</property>
-                                    <property name="can-focus">False</property>
-                                    <property name="active">True</property>
-                                  </object>
-                                  <packing>
-                                    <property name="name">page1</property>
-                                    <property name="title" translatable="yes">page1</property>
-                                    <property name="position">1</property>
+                                    <property name="position">2</property>
+                                    <property name="tab-fill">False</property>
                                   </packing>
                                 </child>
                               </object>
                               <packing>
-                                <property name="position">1</property>
-                              </packing>
-                            </child>
-                            <child type="tab">
-                              <object class="GtkLabel">
-                                <property name="visible">True</property>
-                                <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">Manifest</property>
-                              </object>
-                              <packing>
-                                <property name="position">1</property>
-                                <property name="tab-fill">False</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkStack" id="dependency-stack">
-                                <property name="visible">True</property>
-                                <property name="can-focus">False</property>
-                                <child>
-                                  <object class="GtkBox" id="dependency-view">
-                                    <property name="visible">True</property>
-                                    <property name="can-focus">False</property>
-                                    <property name="orientation">vertical</property>
-                                    <child>
-                                      <placeholder/>
-                                    </child>
-                                  </object>
-                                  <packing>
-                                    <property name="name">page0</property>
-                                    <property name="title" translatable="yes">page0</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <object class="GtkSpinner" id="dependency-spinner">
-                                    <property name="visible">True</property>
-                                    <property name="can-focus">False</property>
-                                    <property name="active">True</property>
-                                  </object>
-                                  <packing>
-                                    <property name="name">page1</property>
-                                    <property name="title" translatable="yes">page1</property>
-                                    <property name="position">1</property>
-                                  </packing>
-                                </child>
-                              </object>
-                              <packing>
-                                <property name="position">2</property>
-                              </packing>
-                            </child>
-                            <child type="tab">
-                              <object class="GtkLabel">
-                                <property name="visible">True</property>
-                                <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">Dependencies</property>
-                              </object>
-                              <packing>
-                                <property name="position">2</property>
-                                <property name="tab-fill">False</property>
+                                <property name="resize">True</property>
+                                <property name="shrink">True</property>
                               </packing>
                             </child>
                           </object>
                           <packing>
-                            <property name="resize">True</property>
-                            <property name="shrink">True</property>
+                            <property name="name">page3</property>
+                            <property name="title" translatable="yes">page3</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkSpinner" id="main-spinner">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="active">True</property>
+                          </object>
+                          <packing>
+                            <property name="name">page1</property>
+                            <property name="title" translatable="yes">page1</property>
+                            <property name="position">1</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <object class="GtkLabel" id="main-not-found">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="label" translatable="yes">No datasets found</property>
+                            <attributes>
+                              <attribute name="weight" value="bold"/>
+                              <attribute name="scale" value="2"/>
+                            </attributes>
+                          </object>
+                          <packing>
+                            <property name="name">page2</property>
+                            <property name="title" translatable="yes">page2</property>
+                            <property name="position">2</property>
                           </packing>
                         </child>
                       </object>
                       <packing>
-                        <property name="name">page3</property>
-                        <property name="title" translatable="yes">page3</property>
-                      </packing>
-                    </child>
-                    <child>
-                      <object class="GtkSpinner" id="main-spinner">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="active">True</property>
-                      </object>
-                      <packing>
-                        <property name="name">page1</property>
-                        <property name="title" translatable="yes">page1</property>
+                        <property name="expand">True</property>
+                        <property name="fill">True</property>
                         <property name="position">1</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel" id="main-not-found">
+                      <object class="GtkBox">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
-                        <property name="label" translatable="yes">No datasets found</property>
-                        <attributes>
-                          <attribute name="weight" value="bold"/>
-                          <attribute name="scale" value="2"/>
-                        </attributes>
+                        <property name="margin-start">5</property>
+                        <property name="margin-end">5</property>
+                        <property name="margin-top">5</property>
+                        <property name="margin-bottom">5</property>
+                        <property name="spacing">1</property>
+                        <child>
+                          <object class="GtkCheckButton" id="dataset-list-auto-refresh">
+                            <property name="label" translatable="yes">Automatic refresh</property>
+                            <property name="visible">True</property>
+                            <property name="can-focus">True</property>
+                            <property name="receives-default">False</property>
+                            <property name="draw-indicator">True</property>
+                            <signal name="toggled" handler="on_lookup_dataset_list_auto_refresh_toggled" swapped="no"/>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
                       </object>
                       <packing>
-                        <property name="name">page2</property>
-                        <property name="title" translatable="yes">page2</property>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
                         <property name="position">2</property>
                       </packing>
                     </child>
                   </object>
                 </child>
                 <child type="tab">
-                  <object class="GtkLabel">
+                  <object class="GtkLabel" id="search-tab-label">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="label" translatable="yes">Search</property>
@@ -1053,61 +1249,10 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkPaned" id="direct-view">
+                  <object class="GtkBox">
                     <property name="visible">True</property>
-                    <property name="can-focus">True</property>
-                    <child>
-                      <object class="GtkBox">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="orientation">vertical</property>
-                        <child>
-                          <object class="GtkScrolledWindow">
-                            <property name="visible">True</property>
-                            <property name="can-focus">True</property>
-                            <property name="shadow-type">in</property>
-                            <property name="min-content-width">400</property>
-                            <child>
-                              <object class="GtkViewport">
-                                <property name="visible">True</property>
-                                <property name="can-focus">False</property>
-                                <child>
-                                  <object class="DtoolDatasetListBox" id="dtool-ls-results">
-                                    <property name="visible">True</property>
-                                    <property name="can-focus">False</property>
-                                    <signal name="row-selected" handler="on_direct_dataset_selected_from_list" swapped="no"/>
-                                  </object>
-                                </child>
-                              </object>
-                            </child>
-                          </object>
-                          <packing>
-                            <property name="expand">True</property>
-                            <property name="fill">True</property>
-                            <property name="position">0</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <object class="GtkCheckButton" id="direct-dataset-list-auto-refresh">
-                            <property name="label" translatable="yes">Automatic refresh</property>
-                            <property name="visible">True</property>
-                            <property name="can-focus">True</property>
-                            <property name="receives-default">False</property>
-                            <property name="draw-indicator">True</property>
-                            <signal name="toggled" handler="on_direct_dataset_list_auto_refresh_toggled" swapped="no"/>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">True</property>
-                            <property name="position">1</property>
-                          </packing>
-                        </child>
-                      </object>
-                      <packing>
-                        <property name="resize">False</property>
-                        <property name="shrink">True</property>
-                      </packing>
-                    </child>
+                    <property name="can-focus">False</property>
+                    <property name="orientation">vertical</property>
                     <child>
                       <object class="GtkBox">
                         <property name="visible">True</property>
@@ -1160,7 +1305,7 @@
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="hexpand">True</property>
-                                <property name="buffer">base-uri-entry-buffer</property>
+                                <property name="buffer">lhs-base-uri-entry-buffer</property>
                               </object>
                               <packing>
                                 <property name="left-attach">1</property>
@@ -1175,7 +1320,7 @@
                                 <property name="receives-default">True</property>
                                 <property name="use-stock">True</property>
                                 <property name="always-show-image">True</property>
-                                <signal name="clicked" handler="on_base_uri_open" swapped="no"/>
+                                <signal name="clicked" handler="on_lhs_base_uri_open" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="left-attach">3</property>
@@ -1210,7 +1355,7 @@
                                 <property name="create-folders">False</property>
                                 <property name="local-only">False</property>
                                 <property name="title" translatable="yes"/>
-                                <signal name="file-set" handler="on_dataset_uri_set" swapped="no"/>
+                                <signal name="file-set" handler="on_lhs_dataset_uri_set" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="left-attach">2</property>
@@ -1236,7 +1381,7 @@
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="hexpand">True</property>
-                                <property name="buffer">dataset-uri-entry-buffer</property>
+                                <property name="buffer">lhs-dataset-uri-entry-buffer</property>
                               </object>
                               <packing>
                                 <property name="left-attach">1</property>
@@ -1251,7 +1396,7 @@
                                 <property name="receives-default">True</property>
                                 <property name="use-stock">True</property>
                                 <property name="always-show-image">True</property>
-                                <signal name="clicked" handler="on_dataset_uri_open" swapped="no"/>
+                                <signal name="clicked" handler="on_lhs_dataset_uri_open" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="left-attach">3</property>
@@ -1265,328 +1410,461 @@
                             <property name="position">1</property>
                           </packing>
                         </child>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkPaned" id="direct-view">
+                        <property name="visible">True</property>
+                        <property name="can-focus">True</property>
                         <child>
-                          <!-- n-columns=4 n-rows=1 -->
-                          <object class="GtkGrid">
+                          <object class="GtkScrolledWindow">
                             <property name="visible">True</property>
-                            <property name="can-focus">False</property>
-                            <property name="margin-left">5</property>
-                            <property name="margin-right">5</property>
-                            <property name="margin-start">5</property>
-                            <property name="margin-end">5</property>
-                            <property name="margin-top">5</property>
-                            <property name="margin-bottom">5</property>
-                            <property name="row-spacing">5</property>
-                            <property name="column-spacing">5</property>
-                            <property name="column-homogeneous">True</property>
+                            <property name="can-focus">True</property>
+                            <property name="shadow-type">in</property>
+                            <property name="min-content-width">400</property>
                             <child>
-                              <object class="GtkButton" id="dtool-create">
-                                <property name="label" translatable="yes">Create dataset</property>
+                              <object class="GtkViewport">
                                 <property name="visible">True</property>
-                                <property name="can-focus">True</property>
-                                <property name="receives-default">True</property>
-                                <property name="tooltip-text" translatable="yes">Create new proto dataset at the current base URI, e.g. current local folder.</property>
-                                <property name="always-show-image">True</property>
-                                <signal name="clicked" handler="on_dtool_create" swapped="no"/>
+                                <property name="can-focus">False</property>
+                                <child>
+                                  <object class="DtoolDatasetListBox" id="dtool-ls-results">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                    <signal name="row-selected" handler="on_direct_dataset_selected_from_list" swapped="no"/>
+                                  </object>
+                                </child>
                               </object>
-                              <packing>
-                                <property name="left-attach">0</property>
-                                <property name="top-attach">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkButton" id="dtool-edit-metadata">
-                                <property name="label" translatable="yes">Edit metadata</property>
-                                <property name="visible">True</property>
-                                <property name="can-focus">True</property>
-                                <property name="receives-default">True</property>
-                              </object>
-                              <packing>
-                                <property name="left-attach">2</property>
-                                <property name="top-attach">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkButton" id="dtool-freeze">
-                                <property name="label" translatable="yes">Freeze dataset</property>
-                                <property name="visible">True</property>
-                                <property name="can-focus">True</property>
-                                <property name="receives-default">True</property>
-                                <property name="tooltip-text" translatable="yes">Freeze the currently selected proto dataset.</property>
-                                <signal name="clicked" handler="on_dtool_freeze" swapped="no"/>
-                              </object>
-                              <packing>
-                                <property name="left-attach">3</property>
-                                <property name="top-attach">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkButton" id="dtool-add-items">
-                                <property name="label" translatable="yes">Add items</property>
-                                <property name="visible">True</property>
-                                <property name="can-focus">True</property>
-                                <property name="receives-default">True</property>
-                                <signal name="clicked" handler="on_dtool_item_add" swapped="no"/>
-                              </object>
-                              <packing>
-                                <property name="left-attach">1</property>
-                                <property name="top-attach">0</property>
-                              </packing>
                             </child>
                           </object>
                           <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">True</property>
-                            <property name="position">2</property>
+                            <property name="resize">False</property>
+                            <property name="shrink">True</property>
                           </packing>
                         </child>
                         <child>
-                          <object class="GtkNotebook" id="direct-dataset-notebook">
+                          <object class="GtkBox">
                             <property name="visible">True</property>
-                            <property name="can-focus">True</property>
-                            <signal name="switch-page" handler="on_direct_dataset_view_switch_page" swapped="no"/>
+                            <property name="can-focus">False</property>
+                            <property name="orientation">vertical</property>
                             <child>
-                              <object class="GtkBox">
+                              <!-- n-columns=4 n-rows=1 -->
+                              <object class="GtkGrid">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="orientation">vertical</property>
+                                <property name="margin-left">5</property>
+                                <property name="margin-right">5</property>
+                                <property name="margin-start">5</property>
+                                <property name="margin-end">5</property>
+                                <property name="margin-top">5</property>
+                                <property name="margin-bottom">5</property>
+                                <property name="row-spacing">5</property>
+                                <property name="column-spacing">5</property>
+                                <property name="column-homogeneous">True</property>
                                 <child>
-                                  <!-- n-columns=3 n-rows=6 -->
-                                  <object class="GtkGrid">
+                                  <object class="GtkButton" id="dtool-create">
+                                    <property name="label" translatable="yes">Create dataset</property>
                                     <property name="visible">True</property>
-                                    <property name="can-focus">False</property>
-                                    <property name="margin-left">5</property>
-                                    <property name="margin-right">5</property>
-                                    <property name="margin-start">5</property>
-                                    <property name="margin-end">5</property>
-                                    <property name="margin-top">5</property>
-                                    <property name="margin-bottom">5</property>
-                                    <property name="orientation">vertical</property>
-                                    <property name="row-spacing">5</property>
-                                    <property name="column-spacing">5</property>
-                                    <child>
-                                      <object class="GtkLabel">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="halign">start</property>
-                                        <property name="label" translatable="yes">UUID</property>
-                                        <attributes>
-                                          <attribute name="weight" value="bold"/>
-                                        </attributes>
-                                      </object>
-                                      <packing>
-                                        <property name="left-attach">0</property>
-                                        <property name="top-attach">0</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel" id="direct-dataset-uuid">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="halign">start</property>
-                                        <property name="label" translatable="yes">label</property>
-                                        <property name="selectable">True</property>
-                                      </object>
-                                      <packing>
-                                        <property name="left-attach">1</property>
-                                        <property name="top-attach">0</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="halign">start</property>
-                                        <property name="label" translatable="yes">URI</property>
-                                        <attributes>
-                                          <attribute name="weight" value="bold"/>
-                                        </attributes>
-                                      </object>
-                                      <packing>
-                                        <property name="left-attach">0</property>
-                                        <property name="top-attach">1</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel" id="direct-dataset-uri">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="halign">start</property>
-                                        <property name="label" translatable="yes">label</property>
-                                        <property name="selectable">True</property>
-                                      </object>
-                                      <packing>
-                                        <property name="left-attach">1</property>
-                                        <property name="top-attach">1</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="halign">start</property>
-                                        <property name="label" translatable="yes">Name</property>
-                                        <attributes>
-                                          <attribute name="weight" value="bold"/>
-                                        </attributes>
-                                      </object>
-                                      <packing>
-                                        <property name="left-attach">0</property>
-                                        <property name="top-attach">2</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel" id="direct-dataset-name">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="halign">start</property>
-                                        <property name="label" translatable="yes">label</property>
-                                        <property name="selectable">True</property>
-                                      </object>
-                                      <packing>
-                                        <property name="left-attach">1</property>
-                                        <property name="top-attach">2</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="halign">start</property>
-                                        <property name="label" translatable="yes">Created by</property>
-                                        <attributes>
-                                          <attribute name="weight" value="bold"/>
-                                        </attributes>
-                                      </object>
-                                      <packing>
-                                        <property name="left-attach">0</property>
-                                        <property name="top-attach">3</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel" id="direct-dataset-created-by">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="halign">start</property>
-                                        <property name="label" translatable="yes">label</property>
-                                        <property name="selectable">True</property>
-                                      </object>
-                                      <packing>
-                                        <property name="left-attach">1</property>
-                                        <property name="top-attach">3</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="halign">start</property>
-                                        <property name="label" translatable="yes">Created at</property>
-                                        <attributes>
-                                          <attribute name="weight" value="bold"/>
-                                        </attributes>
-                                      </object>
-                                      <packing>
-                                        <property name="left-attach">0</property>
-                                        <property name="top-attach">4</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel" id="direct-dataset-created-at">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="halign">start</property>
-                                        <property name="label" translatable="yes">label</property>
-                                        <property name="selectable">True</property>
-                                      </object>
-                                      <packing>
-                                        <property name="left-attach">1</property>
-                                        <property name="top-attach">4</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="halign">start</property>
-                                        <property name="label" translatable="yes">Frozen at</property>
-                                        <attributes>
-                                          <attribute name="weight" value="bold"/>
-                                        </attributes>
-                                      </object>
-                                      <packing>
-                                        <property name="left-attach">0</property>
-                                        <property name="top-attach">5</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <object class="GtkLabel" id="direct-dataset-frozen-at">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="halign">start</property>
-                                        <property name="label" translatable="yes">label</property>
-                                        <property name="selectable">True</property>
-                                      </object>
-                                      <packing>
-                                        <property name="left-attach">1</property>
-                                        <property name="top-attach">5</property>
-                                      </packing>
-                                    </child>
-                                    <child>
-                                      <placeholder/>
-                                    </child>
-                                    <child>
-                                      <placeholder/>
-                                    </child>
-                                    <child>
-                                      <placeholder/>
-                                    </child>
-                                    <child>
-                                      <placeholder/>
-                                    </child>
-                                    <child>
-                                      <placeholder/>
-                                    </child>
-                                    <child>
-                                      <placeholder/>
-                                    </child>
+                                    <property name="can-focus">True</property>
+                                    <property name="receives-default">True</property>
+                                    <property name="tooltip-text" translatable="yes">Create new proto dataset at the current base URI, e.g. current local folder.</property>
+                                    <property name="always-show-image">True</property>
+                                    <signal name="clicked" handler="on_dtool_create" swapped="no"/>
                                   </object>
                                   <packing>
-                                    <property name="expand">False</property>
-                                    <property name="fill">True</property>
-                                    <property name="position">0</property>
+                                    <property name="left-attach">0</property>
+                                    <property name="top-attach">0</property>
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkStack" id="direct-readme-stack">
+                                  <object class="GtkButton" id="dtool-edit-metadata">
+                                    <property name="label" translatable="yes">Edit metadata</property>
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="receives-default">True</property>
+                                  </object>
+                                  <packing>
+                                    <property name="left-attach">2</property>
+                                    <property name="top-attach">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkButton" id="dtool-freeze">
+                                    <property name="label" translatable="yes">Freeze dataset</property>
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="receives-default">True</property>
+                                    <property name="tooltip-text" translatable="yes">Freeze the currently selected proto dataset.</property>
+                                    <signal name="clicked" handler="on_dtool_freeze" swapped="no"/>
+                                  </object>
+                                  <packing>
+                                    <property name="left-attach">3</property>
+                                    <property name="top-attach">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkButton" id="dtool-add-items">
+                                    <property name="label" translatable="yes">Add items</property>
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="receives-default">True</property>
+                                    <signal name="clicked" handler="on_dtool_item_add" swapped="no"/>
+                                  </object>
+                                  <packing>
+                                    <property name="left-attach">1</property>
+                                    <property name="top-attach">0</property>
+                                  </packing>
+                                </child>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">2</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkNotebook" id="direct-dataset-notebook">
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <signal name="switch-page" handler="on_direct_dataset_view_switch_page" swapped="no"/>
+                                <child>
+                                  <object class="GtkBox">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                    <property name="orientation">vertical</property>
+                                    <child>
+                                      <!-- n-columns=3 n-rows=6 -->
+                                      <object class="GtkGrid">
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">False</property>
+                                        <property name="margin-left">5</property>
+                                        <property name="margin-right">5</property>
+                                        <property name="margin-start">5</property>
+                                        <property name="margin-end">5</property>
+                                        <property name="margin-top">5</property>
+                                        <property name="margin-bottom">5</property>
+                                        <property name="orientation">vertical</property>
+                                        <property name="row-spacing">5</property>
+                                        <property name="column-spacing">5</property>
+                                        <child>
+                                          <object class="GtkLabel">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="halign">start</property>
+                                            <property name="label" translatable="yes">UUID</property>
+                                            <attributes>
+                                              <attribute name="weight" value="bold"/>
+                                            </attributes>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">0</property>
+                                            <property name="top-attach">0</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel" id="direct-dataset-uuid">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="halign">start</property>
+                                            <property name="label" translatable="yes">label</property>
+                                            <property name="selectable">True</property>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">1</property>
+                                            <property name="top-attach">0</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="halign">start</property>
+                                            <property name="label" translatable="yes">URI</property>
+                                            <attributes>
+                                              <attribute name="weight" value="bold"/>
+                                            </attributes>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">0</property>
+                                            <property name="top-attach">1</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel" id="direct-dataset-uri">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="halign">start</property>
+                                            <property name="label" translatable="yes">label</property>
+                                            <property name="selectable">True</property>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">1</property>
+                                            <property name="top-attach">1</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="halign">start</property>
+                                            <property name="label" translatable="yes">Name</property>
+                                            <attributes>
+                                              <attribute name="weight" value="bold"/>
+                                            </attributes>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">0</property>
+                                            <property name="top-attach">2</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel" id="direct-dataset-name">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="halign">start</property>
+                                            <property name="label" translatable="yes">label</property>
+                                            <property name="selectable">True</property>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">1</property>
+                                            <property name="top-attach">2</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="halign">start</property>
+                                            <property name="label" translatable="yes">Created by</property>
+                                            <attributes>
+                                              <attribute name="weight" value="bold"/>
+                                            </attributes>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">0</property>
+                                            <property name="top-attach">3</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel" id="direct-dataset-created-by">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="halign">start</property>
+                                            <property name="label" translatable="yes">label</property>
+                                            <property name="selectable">True</property>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">1</property>
+                                            <property name="top-attach">3</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="halign">start</property>
+                                            <property name="label" translatable="yes">Created at</property>
+                                            <attributes>
+                                              <attribute name="weight" value="bold"/>
+                                            </attributes>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">0</property>
+                                            <property name="top-attach">4</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel" id="direct-dataset-created-at">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="halign">start</property>
+                                            <property name="label" translatable="yes">label</property>
+                                            <property name="selectable">True</property>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">1</property>
+                                            <property name="top-attach">4</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="halign">start</property>
+                                            <property name="label" translatable="yes">Frozen at</property>
+                                            <attributes>
+                                              <attribute name="weight" value="bold"/>
+                                            </attributes>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">0</property>
+                                            <property name="top-attach">5</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkLabel" id="direct-dataset-frozen-at">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="halign">start</property>
+                                            <property name="label" translatable="yes">label</property>
+                                            <property name="selectable">True</property>
+                                          </object>
+                                          <packing>
+                                            <property name="left-attach">1</property>
+                                            <property name="top-attach">5</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <placeholder/>
+                                        </child>
+                                        <child>
+                                          <placeholder/>
+                                        </child>
+                                        <child>
+                                          <placeholder/>
+                                        </child>
+                                        <child>
+                                          <placeholder/>
+                                        </child>
+                                        <child>
+                                          <placeholder/>
+                                        </child>
+                                        <child>
+                                          <placeholder/>
+                                        </child>
+                                      </object>
+                                      <packing>
+                                        <property name="expand">False</property>
+                                        <property name="fill">True</property>
+                                        <property name="position">0</property>
+                                      </packing>
+                                    </child>
+                                    <child>
+                                      <object class="GtkStack" id="direct-readme-stack">
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">False</property>
+                                        <child>
+                                          <object class="GtkScrolledWindow" id="direct-readme-view">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">True</property>
+                                            <property name="shadow-type">in</property>
+                                            <property name="propagate-natural-width">True</property>
+                                            <property name="propagate-natural-height">True</property>
+                                            <child>
+                                              <object class="GtkViewport">
+                                                <property name="visible">True</property>
+                                                <property name="can-focus">False</property>
+                                                <child>
+                                                  <object class="GtkTreeView" id="direct-dataset-readme">
+                                                    <property name="visible">True</property>
+                                                    <property name="can-focus">True</property>
+                                                    <property name="model">direct-readme-treestore</property>
+                                                    <property name="search-column">0</property>
+                                                    <property name="enable-tree-lines">True</property>
+                                                    <child internal-child="selection">
+                                                      <object class="GtkTreeSelection"/>
+                                                    </child>
+                                                    <child>
+                                                      <object class="GtkTreeViewColumn" id="readme-column3">
+                                                        <property name="title" translatable="yes">Key</property>
+                                                        <child>
+                                                          <object class="GtkCellRendererText" id="readme-renderer3"/>
+                                                          <attributes>
+                                                            <attribute name="text">0</attribute>
+                                                          </attributes>
+                                                        </child>
+                                                      </object>
+                                                    </child>
+                                                    <child>
+                                                      <object class="GtkTreeViewColumn" id="readme-column4">
+                                                        <property name="title" translatable="yes">Value</property>
+                                                        <child>
+                                                          <object class="GtkCellRendererText" id="readme-renderer4">
+                                                            <property name="editable">True</property>
+                                                            <property name="ellipsize">end</property>
+                                                            <property name="wrap-mode">word</property>
+                                                          </object>
+                                                          <attributes>
+                                                            <attribute name="markup">3</attribute>
+                                                          </attributes>
+                                                        </child>
+                                                      </object>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                              </object>
+                                            </child>
+                                          </object>
+                                          <packing>
+                                            <property name="name">page0</property>
+                                            <property name="title" translatable="yes">page0</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <object class="GtkSpinner" id="direct-readme-spinner">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="active">True</property>
+                                          </object>
+                                          <packing>
+                                            <property name="name">page1</property>
+                                            <property name="title" translatable="yes">page1</property>
+                                            <property name="position">1</property>
+                                          </packing>
+                                        </child>
+                                      </object>
+                                      <packing>
+                                        <property name="expand">True</property>
+                                        <property name="fill">True</property>
+                                        <property name="position">1</property>
+                                      </packing>
+                                    </child>
+                                  </object>
+                                  <packing>
+                                    <property name="menu-label">dataset-readme</property>
+                                  </packing>
+                                </child>
+                                <child type="tab">
+                                  <object class="GtkLabel">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                    <property name="label" translatable="yes">Details</property>
+                                  </object>
+                                  <packing>
+                                    <property name="tab-fill">False</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkStack" id="direct-manifest-stack">
                                     <property name="visible">True</property>
                                     <property name="can-focus">False</property>
                                     <child>
-                                      <object class="GtkScrolledWindow" id="direct-readme-view">
+                                      <object class="GtkScrolledWindow" id="direct-manifest-view">
                                         <property name="visible">True</property>
                                         <property name="can-focus">True</property>
                                         <property name="shadow-type">in</property>
-                                        <property name="propagate-natural-width">True</property>
-                                        <property name="propagate-natural-height">True</property>
                                         <child>
                                           <object class="GtkViewport">
                                             <property name="visible">True</property>
                                             <property name="can-focus">False</property>
                                             <child>
-                                              <object class="GtkTreeView" id="direct-dataset-readme">
+                                              <object class="GtkTreeView" id="direct-dataset-manifest">
                                                 <property name="visible">True</property>
                                                 <property name="can-focus">True</property>
-                                                <property name="model">direct-readme-treestore</property>
+                                                <property name="model">direct-manifest-treestore</property>
                                                 <property name="search-column">0</property>
-                                                <property name="enable-tree-lines">True</property>
                                                 <child internal-child="selection">
                                                   <object class="GtkTreeSelection"/>
                                                 </child>
                                                 <child>
-                                                  <object class="GtkTreeViewColumn" id="readme-column3">
-                                                    <property name="title" translatable="yes">Key</property>
+                                                  <object class="GtkTreeViewColumn" id="manifest-column5">
+                                                    <property name="title" translatable="yes">Name</property>
                                                     <child>
-                                                      <object class="GtkCellRendererText" id="readme-renderer3"/>
+                                                      <object class="GtkCellRendererText" id="manifest-renderer5"/>
                                                       <attributes>
                                                         <attribute name="text">0</attribute>
                                                       </attributes>
@@ -1594,16 +1872,36 @@
                                                   </object>
                                                 </child>
                                                 <child>
-                                                  <object class="GtkTreeViewColumn" id="readme-column4">
-                                                    <property name="title" translatable="yes">Value</property>
+                                                  <object class="GtkTreeViewColumn" id="manifest-column6">
+                                                    <property name="title" translatable="yes">Size</property>
                                                     <child>
-                                                      <object class="GtkCellRendererText" id="readme-renderer4">
+                                                      <object class="GtkCellRendererText" id="manifest-renderer6"/>
+                                                      <attributes>
+                                                        <attribute name="text">1</attribute>
+                                                      </attributes>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkTreeViewColumn" id="manifest-column7">
+                                                    <property name="title" translatable="yes">Date</property>
+                                                    <child>
+                                                      <object class="GtkCellRendererText" id="manifest-renderer7"/>
+                                                      <attributes>
+                                                        <attribute name="text">2</attribute>
+                                                      </attributes>
+                                                    </child>
+                                                  </object>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkTreeViewColumn" id="manifest-column8">
+                                                    <property name="title" translatable="yes">UUID</property>
+                                                    <child>
+                                                      <object class="GtkCellRendererText" id="manifest-renderer8">
                                                         <property name="editable">True</property>
-                                                        <property name="ellipsize">end</property>
-                                                        <property name="wrap-mode">word</property>
                                                       </object>
                                                       <attributes>
-                                                        <attribute name="markup">3</attribute>
+                                                        <attribute name="text">3</attribute>
                                                       </attributes>
                                                     </child>
                                                   </object>
@@ -1619,7 +1917,7 @@
                                       </packing>
                                     </child>
                                     <child>
-                                      <object class="GtkSpinner" id="direct-readme-spinner">
+                                      <object class="GtkSpinner" id="direct-manifest-spinner">
                                         <property name="visible">True</property>
                                         <property name="can-focus">False</property>
                                         <property name="active">True</property>
@@ -1632,149 +1930,76 @@
                                     </child>
                                   </object>
                                   <packing>
-                                    <property name="expand">True</property>
-                                    <property name="fill">True</property>
                                     <property name="position">1</property>
                                   </packing>
                                 </child>
-                              </object>
-                              <packing>
-                                <property name="menu-label">dataset-readme</property>
-                              </packing>
-                            </child>
-                            <child type="tab">
-                              <object class="GtkLabel">
-                                <property name="visible">True</property>
-                                <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">Details</property>
-                              </object>
-                              <packing>
-                                <property name="tab-fill">False</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkStack" id="direct-manifest-stack">
-                                <property name="visible">True</property>
-                                <property name="can-focus">False</property>
-                                <child>
-                                  <object class="GtkScrolledWindow" id="direct-manifest-view">
-                                    <property name="visible">True</property>
-                                    <property name="can-focus">True</property>
-                                    <property name="shadow-type">in</property>
-                                    <child>
-                                      <object class="GtkViewport">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <child>
-                                          <object class="GtkTreeView" id="direct-dataset-manifest">
-                                            <property name="visible">True</property>
-                                            <property name="can-focus">True</property>
-                                            <property name="model">direct-manifest-treestore</property>
-                                            <property name="search-column">0</property>
-                                            <child internal-child="selection">
-                                              <object class="GtkTreeSelection"/>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn" id="manifest-column5">
-                                                <property name="title" translatable="yes">Name</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText" id="manifest-renderer5"/>
-                                                  <attributes>
-                                                    <attribute name="text">0</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn" id="manifest-column6">
-                                                <property name="title" translatable="yes">Size</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText" id="manifest-renderer6"/>
-                                                  <attributes>
-                                                    <attribute name="text">1</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn" id="manifest-column7">
-                                                <property name="title" translatable="yes">Date</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText" id="manifest-renderer7"/>
-                                                  <attributes>
-                                                    <attribute name="text">2</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                            <child>
-                                              <object class="GtkTreeViewColumn" id="manifest-column8">
-                                                <property name="title" translatable="yes">UUID</property>
-                                                <child>
-                                                  <object class="GtkCellRendererText" id="manifest-renderer8">
-                                                    <property name="editable">True</property>
-                                                  </object>
-                                                  <attributes>
-                                                    <attribute name="text">3</attribute>
-                                                  </attributes>
-                                                </child>
-                                              </object>
-                                            </child>
-                                          </object>
-                                        </child>
-                                      </object>
-                                    </child>
-                                  </object>
-                                  <packing>
-                                    <property name="name">page0</property>
-                                    <property name="title" translatable="yes">page0</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <object class="GtkSpinner" id="direct-manifest-spinner">
+                                <child type="tab">
+                                  <object class="GtkLabel">
                                     <property name="visible">True</property>
                                     <property name="can-focus">False</property>
-                                    <property name="active">True</property>
+                                    <property name="label" translatable="yes">Manifest</property>
                                   </object>
                                   <packing>
-                                    <property name="name">page1</property>
-                                    <property name="title" translatable="yes">page1</property>
                                     <property name="position">1</property>
+                                    <property name="tab-fill">False</property>
                                   </packing>
+                                </child>
+                                <child>
+                                  <placeholder/>
+                                </child>
+                                <child type="tab">
+                                  <placeholder/>
                                 </child>
                               </object>
                               <packing>
-                                <property name="position">1</property>
+                                <property name="expand">True</property>
+                                <property name="fill">True</property>
+                                <property name="position">3</property>
                               </packing>
-                            </child>
-                            <child type="tab">
-                              <object class="GtkLabel">
-                                <property name="visible">True</property>
-                                <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">Manifest</property>
-                              </object>
-                              <packing>
-                                <property name="position">1</property>
-                                <property name="tab-fill">False</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <placeholder/>
-                            </child>
-                            <child type="tab">
-                              <placeholder/>
                             </child>
                           </object>
                           <packing>
-                            <property name="expand">True</property>
-                            <property name="fill">True</property>
-                            <property name="position">3</property>
+                            <property name="resize">True</property>
+                            <property name="shrink">True</property>
                           </packing>
                         </child>
                       </object>
                       <packing>
-                        <property name="resize">True</property>
-                        <property name="shrink">True</property>
+                        <property name="expand">True</property>
+                        <property name="fill">True</property>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkBox">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="margin-left">5</property>
+                        <property name="margin-right">5</property>
+                        <property name="margin-start">5</property>
+                        <property name="margin-end">5</property>
+                        <property name="margin-top">5</property>
+                        <property name="margin-bottom">5</property>
+                        <property name="spacing">1</property>
+                        <child>
+                          <object class="GtkCheckButton" id="dataset-list-auto-refresh1">
+                            <property name="label" translatable="yes">Automatic refresh</property>
+                            <property name="visible">True</property>
+                            <property name="can-focus">True</property>
+                            <property name="receives-default">False</property>
+                            <property name="draw-indicator">True</property>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">2</property>
                       </packing>
                     </child>
                   </object>
@@ -1783,7 +2008,7 @@
                   </packing>
                 </child>
                 <child type="tab">
-                  <object class="GtkLabel">
+                  <object class="GtkLabel" id="direct-tab-label">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="label" translatable="yes">Manage</property>
@@ -1824,6 +2049,7 @@
                                 <property name="create-folders">False</property>
                                 <property name="local-only">False</property>
                                 <property name="title" translatable="yes"/>
+                                <signal name="file-set" handler="on_lhs_base_uri_set" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="left-attach">2</property>
@@ -1834,7 +2060,7 @@
                               <object class="GtkLabel">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">Left hand side URI: </property>
+                                <property name="label" translatable="yes">Base URI: </property>
                                 <attributes>
                                   <attribute name="weight" value="bold"/>
                                 </attributes>
@@ -1849,7 +2075,7 @@
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="hexpand">True</property>
-                                <property name="buffer">base-uri-entry-buffer</property>
+                                <property name="buffer">lhs-base-uri-entry-buffer</property>
                               </object>
                               <packing>
                                 <property name="left-attach">1</property>
@@ -1864,6 +2090,7 @@
                                 <property name="receives-default">True</property>
                                 <property name="use-stock">True</property>
                                 <property name="always-show-image">True</property>
+                                <signal name="clicked" handler="on_lhs_base_uri_open" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="left-attach">3</property>
@@ -1898,6 +2125,7 @@
                                 <property name="create-folders">False</property>
                                 <property name="local-only">False</property>
                                 <property name="title" translatable="yes"/>
+                                <signal name="file-set" handler="on_lhs_dataset_uri_set" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="left-attach">2</property>
@@ -1923,7 +2151,7 @@
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="hexpand">True</property>
-                                <property name="buffer">dataset-uri-entry-buffer</property>
+                                <property name="buffer">lhs-dataset-uri-entry-buffer</property>
                               </object>
                               <packing>
                                 <property name="left-attach">1</property>
@@ -1938,6 +2166,7 @@
                                 <property name="receives-default">True</property>
                                 <property name="use-stock">True</property>
                                 <property name="always-show-image">True</property>
+                                <signal name="clicked" handler="on_lhs_dataset_uri_open" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="left-attach">3</property>
@@ -1962,6 +2191,7 @@
                       <object class="GtkBox">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
+                        <property name="halign">center</property>
                         <property name="spacing">5</property>
                         <child>
                           <object class="GtkBox">
@@ -1972,7 +2202,9 @@
                               <object class="GtkScrolledWindow">
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
+                                <property name="hexpand">True</property>
                                 <property name="vexpand">False</property>
+                                <property name="hscrollbar-policy">always</property>
                                 <property name="shadow-type">in</property>
                                 <property name="min-content-width">400</property>
                                 <child>
@@ -1983,6 +2215,7 @@
                                       <object class="DtoolDatasetListBox" id="dtool-ls-results-lhs">
                                         <property name="visible">True</property>
                                         <property name="can-focus">False</property>
+                                        <signal name="row-selected" handler="on_lhs_dataset_selected_from_list" swapped="no"/>
                                       </object>
                                     </child>
                                   </object>
@@ -2000,7 +2233,9 @@
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="receives-default">False</property>
+                                <property name="halign">start</property>
                                 <property name="draw-indicator">True</property>
+                                <signal name="toggled" handler="on_lhs_dataset_list_auto_refresh_toggled" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -2033,6 +2268,7 @@
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="receives-default">True</property>
+                                <signal name="clicked" handler="on_dtool_copy_left_to_right_clicked" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="left-attach">0</property>
@@ -2045,6 +2281,7 @@
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="receives-default">True</property>
+                                <signal name="clicked" handler="on_dtool_copy_right_to_left_clicked" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="left-attach">0</property>
@@ -2067,6 +2304,7 @@
                               <object class="GtkScrolledWindow">
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
+                                <property name="hexpand">True</property>
                                 <property name="shadow-type">in</property>
                                 <property name="min-content-width">400</property>
                                 <child>
@@ -2077,6 +2315,7 @@
                                       <object class="DtoolDatasetListBox" id="dtool-ls-results-rhs">
                                         <property name="visible">True</property>
                                         <property name="can-focus">False</property>
+                                        <signal name="row-selected" handler="on_rhs_dataset_selected_from_list" swapped="no"/>
                                       </object>
                                     </child>
                                   </object>
@@ -2094,7 +2333,9 @@
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="receives-default">False</property>
+                                <property name="halign">start</property>
                                 <property name="draw-indicator">True</property>
+                                <signal name="toggled" handler="on_rhs_dataset_list_auto_refresh_toggled" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -2142,6 +2383,7 @@
                                 <property name="create-folders">False</property>
                                 <property name="local-only">False</property>
                                 <property name="title" translatable="yes"/>
+                                <signal name="file-set" handler="on_rhs_dataset_uri_set" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="left-attach">2</property>
@@ -2152,7 +2394,7 @@
                               <object class="GtkLabel">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">Dataset URI: </property>
+                                <property name="label" translatable="yes">Right hand side dataset URI: </property>
                                 <attributes>
                                   <attribute name="weight" value="bold"/>
                                 </attributes>
@@ -2167,7 +2409,7 @@
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="hexpand">True</property>
-                                <property name="buffer">dataset-uri-entry-buffer</property>
+                                <property name="buffer">rhs-dataset-uri-entry-buffer</property>
                               </object>
                               <packing>
                                 <property name="left-attach">1</property>
@@ -2182,6 +2424,7 @@
                                 <property name="receives-default">True</property>
                                 <property name="use-stock">True</property>
                                 <property name="always-show-image">True</property>
+                                <signal name="clicked" handler="on_rhs_dataset_uri_open" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="left-attach">3</property>
@@ -2209,13 +2452,14 @@
                             <property name="row-spacing">5</property>
                             <property name="column-spacing">5</property>
                             <child>
-                              <object class="GtkFileChooserButton" id="rhs-uri-chooser-button">
+                              <object class="GtkFileChooserButton" id="rhs-base-uri-chooser-button">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
                                 <property name="action">select-folder</property>
                                 <property name="create-folders">False</property>
                                 <property name="local-only">False</property>
                                 <property name="title" translatable="yes"/>
+                                <signal name="file-set" handler="on_rhs_base_uri_set" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="left-attach">2</property>
@@ -2226,7 +2470,7 @@
                               <object class="GtkLabel">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">Right hand side URI: </property>
+                                <property name="label" translatable="yes">Right hand side base URI: </property>
                                 <attributes>
                                   <attribute name="weight" value="bold"/>
                                 </attributes>
@@ -2241,7 +2485,7 @@
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
                                 <property name="hexpand">True</property>
-                                <property name="buffer">base-uri-entry-buffer</property>
+                                <property name="buffer">rhs-base-uri-entry-buffer</property>
                               </object>
                               <packing>
                                 <property name="left-attach">1</property>
@@ -2256,6 +2500,7 @@
                                 <property name="receives-default">True</property>
                                 <property name="use-stock">True</property>
                                 <property name="always-show-image">True</property>
+                                <signal name="clicked" handler="on_rhs_base_uri_open" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="left-attach">3</property>
@@ -2282,7 +2527,7 @@
                   </packing>
                 </child>
                 <child type="tab">
-                  <object class="GtkLabel">
+                  <object class="GtkLabel" id="transfer-tab-label">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="label" translatable="yes">Transfer</property>
@@ -2307,21 +2552,49 @@
           </packing>
         </child>
         <child>
-          <object class="GtkStatusbar" id="main-statusbar">
+          <object class="GtkStack" id="statusbar-stack">
+            <property name="name">status-stack</property>
             <property name="visible">True</property>
             <property name="can-focus">False</property>
-            <property name="margin-left">10</property>
-            <property name="margin-right">10</property>
-            <property name="margin-start">10</property>
-            <property name="margin-end">10</property>
-            <property name="margin-top">6</property>
-            <property name="margin-bottom">6</property>
-            <property name="spacing">2</property>
+            <child>
+              <object class="GtkStatusbar" id="main-statusbar">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="margin-left">10</property>
+                <property name="margin-right">10</property>
+                <property name="margin-start">10</property>
+                <property name="margin-end">10</property>
+                <property name="margin-top">6</property>
+                <property name="margin-bottom">6</property>
+                <property name="spacing">2</property>
+              </object>
+              <packing>
+                <property name="name">page0</property>
+                <property name="title" translatable="yes">page0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkProgressBar" id="main-progressbar">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="valign">center</property>
+                <property name="margin-start">10</property>
+                <property name="margin-end">10</property>
+                <property name="margin-top">6</property>
+                <property name="margin-bottom">6</property>
+                <property name="show-text">True</property>
+                <property name="ellipsize">middle</property>
+              </object>
+              <packing>
+                <property name="name">page1</property>
+                <property name="title" translatable="yes">page1</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
           </object>
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="pack-type">end</property>
             <property name="position">1</property>
           </packing>
         </child>

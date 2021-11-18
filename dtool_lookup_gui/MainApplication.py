@@ -37,11 +37,9 @@ from gi.repository import Gtk, Gdk, Gio, GtkSource, GObject
 
 import gbulb
 gbulb.install(gtk=True)
-#import asyncio_glib
-#asyncio.set_event_loop_policy(asyncio_glib.GLibEventLoopPolicy())
 
-from . import LookupTab, DirectTab
-from dtool_lookup_gui.dtool_gtk import DtoolDatasetListBox, DtoolDatasetListBoxRow
+from . import LookupTab, DirectTab, TransferTab
+
 logger = logging.getLogger(__name__)
 
 LOOKUP_TAB = 0
@@ -110,6 +108,10 @@ class SignalHandler:
 
         self.lookup_tab = LookupTab.SignalHandler(event_loop, builder, settings)
         self.direct_tab = DirectTab.SignalHandler(event_loop, builder, settings)
+        self.transfer_tab = TransferTab.SignalHandler(event_loop, builder, settings)
+
+        # self.main_statusbar = self.builder.get_object('main-statusbar')
+        # self.main_progressbar = self.builder.get_object('main-progressbar')
 
         # Create a dictionary to hold the signal-handler pairs
         self.handlers = {}
@@ -117,6 +119,7 @@ class SignalHandler:
         # load all signal handlers into sel.handlers
         self._load_handlers(self.lookup_tab)
         self._load_handlers(self.direct_tab)
+        self._load_handlers(self.transfer_tab)
         self._load_handlers(self)
 
         self.builder.connect_signals(self.handlers)
@@ -143,13 +146,18 @@ class SignalHandler:
         if page_num == LOOKUP_TAB:
             self.lookup_tab.set_sensitive(True)
             self.direct_tab.set_sensitive(False)
+            self.transfer_tab.set_sensitive(False)
             self.lookup_tab.refresh()
         elif page_num == DIRECT_TAB:
             self.lookup_tab.set_sensitive(False)
             self.direct_tab.set_sensitive(True)
+            self.transfer_tab.set_sensitive(False)
             self.direct_tab.refresh()
         elif page_num == TRANSFER_TAB:
-            self.show_error("Not implemented.")
+            self.lookup_tab.set_sensitive(False)
+            self.direct_tab.set_sensitive(False)
+            self.transfer_tab.set_sensitive(True)
+            self.transfer_tab.refresh()
 
     def on_settings_clicked(self, user_data):
         asyncio.create_task(self._fetch_users())

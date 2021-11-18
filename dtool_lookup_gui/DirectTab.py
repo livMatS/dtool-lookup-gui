@@ -100,6 +100,23 @@ class SignalHandler:
         self._manifest = None
 
         # gui elements
+        self.main_window = self.builder.get_object('main-window')
+        self.statusbar_widget = self.builder.get_object('main-statusbar')
+
+        self.base_uri_file_chooser_button = self.builder.get_object('base-uri-chooser-button')
+        self.dataset_uri_file_chooser_button = self.builder.get_object('dataset-uri-chooser-button')
+
+        self.base_uri_entry_buffer = self.builder.get_object('base-uri-entry-buffer')
+        self.dataset_uri_entry_buffer = self.builder.get_object('dataset-uri-entry-buffer')
+
+        self.dataset_notebook = self.builder.get_object('direct-dataset-notebook')
+        self.readme_spinner = self.builder.get_object('direct-readme-spinner')
+        self.dataset_readme = self.builder.get_object('direct-dataset-readme')
+        self.readme_view = self.self.builder.get_object('direct-readme-view')
+        self.manifest_spinner =  self.builder.get_object('direct-manifest-spinner')
+        self.dataset_manifest = self.builder.get_object('direct-dataset-manifest')
+        self.manifest_view = self.builder.get_object('direct-manifest-view')
+
         self.readme_stack = self.builder.get_object('direct-readme-stack')
         self.manifest_stack = self.builder.get_object('direct-manifest-stack')
         self.dtool_freeze_button = self.builder.get_object('dtool-freeze')
@@ -107,6 +124,10 @@ class SignalHandler:
 
         self.dtool_dataset_list = self.builder.get_object('dtool-ls-results')
         self.dataset_list_auto_refresh = self.builder.get_object('direct-dataset-list-auto-refresh')
+
+        self.base_uri_entry_buffer = self.builder.get_object('base-uri-entry-buffer')
+        self.dataset_uri_entry_buffer = self.builder.get_object('dataset-uri-entry-buffer')
+
 
         # models
         self.dtool_dataset_list.dataset_list_model = DataSetListModel()
@@ -146,8 +167,7 @@ class SignalHandler:
 
     def on_base_uri_open(self,  button):
         """Open base URI button clicked."""
-        base_uri_entry_buffer = self.builder.get_object('base-uri-entry-buffer')
-        base_uri = base_uri_entry_buffer.get_text()
+        base_uri = self.base_uri_entry_buffer.get_text()
         self.dtool_dataset_list.base_uri = base_uri
         self.dtool_dataset_list.refresh()
 
@@ -156,8 +176,7 @@ class SignalHandler:
 
     def on_dataset_uri_open(self,  button):
         """Select and display dataset when URI specified in text box 'dataset URI' and button 'open' clicked."""
-        dataset_uri_entry_buffer = self.builder.get_object('dataset-uri-entry-buffer')
-        uri = dataset_uri_entry_buffer.get_text()
+        uri = self.dataset_uri_entry_buffer.get_text()
         self._select_dataset(uri)
         self._mark_dataset_as_changed()
         self.dtool_dataset_list.refresh()
@@ -175,7 +194,7 @@ class SignalHandler:
         self.refresh()
 
     def on_dtool_create(self, button):
-        dialog = DatasetNameDialog(self.builder.get_object('main-window'))
+        dialog = DatasetNameDialog(self.main_window)
         response = dialog.run()
 
         if response == Gtk.ResponseType.OK:
@@ -187,7 +206,7 @@ class SignalHandler:
 
     def on_dtool_item_add(self, button):
         dialog = Gtk.FileChooserDialog(
-            title="Add items", parent=self.builder.get_object('main-window'),
+            title="Add items", parent=self.main_window,
             action=Gtk.FileChooserAction.OPEN
         )
         dialog.add_buttons(
@@ -229,23 +248,21 @@ class SignalHandler:
     def refresh(self, page=None):
         """Update statusbar and tab contents."""
         logger.debug("Refresh tab.")
-        statusbar_widget = self.builder.get_object('main-statusbar')
         if not self.dataset_model.is_empty:
-            statusbar_widget.push(0, f'{len(self.dtool_dataset_list.dataset_list_model._datasets)} '
+            self.statusbar_widget.push(0, f'{len(self.dtool_dataset_list.dataset_list_model._datasets)} '
                                      f'datasets - {self.dataset_model.dataset.uri}')
         elif self.dtool_dataset_list.base_uri is not None:
-            statusbar_widget.push(0, f'{len(self.dtool_dataset_list.dataset_list_model._datasets)} '
+            self.statusbar_widget.push(0, f'{len(self.dtool_dataset_list.dataset_list_model._datasets)} '
                                      f'datasets - {self.dtool_dataset_list.base_uri}')
         else:
-            statusbar_widget.push(0, f'Specify base URI.')
+            self.statusbar_widget.push(0, f'Specify base URI.')
 
-        dataset_notebook = self.builder.get_object('direct-dataset-notebook')
         if page is None:
-            page = dataset_notebook.get_current_page()
+            page = self.dataset_notebook.get_current_page()
         logger.debug(f"Selected page {page}.")
 
         if not self.dataset_model.is_empty:
-            manifest_page = dataset_notebook.get_nth_page(DATASET_NOTEBOOK_MANIFEST_PAGE)
+            manifest_page = self.dataset_notebook.get_nth_page(DATASET_NOTEBOOK_MANIFEST_PAGE)
 
             if self.dataset_model.is_frozen:
                 logger.debug("Showing frozen dataset.")
@@ -270,29 +287,25 @@ class SignalHandler:
     def _set_base_uri(self, uri):
         """Sets model base uri and associated file chooser and input field."""
         self.dtool_dataset_list.base_uri = uri
-        base_uri_entry_buffer = self.builder.get_object('base-uri-entry-buffer')
-        base_uri_entry_buffer.set_text(self.dtool_dataset_list.base_uri, -1)
+        self.base_uri_entry_buffer.set_text(self.dtool_dataset_list.base_uri, -1)
 
         p = urllib.parse.urlparse(uri)
         fpath = os.path.abspath(os.path.join(p.netloc, p.path))
 
         if os.path.isdir(fpath):
             fpath = os.path.abspath(fpath)
-            base_uri_file_chooser_button = self.builder.get_object('base-uri-chooser-button')
-            base_uri_file_chooser_button.set_current_folder(fpath)
+            self.base_uri_file_chooser_button.set_current_folder(fpath)
 
     def _set_dataset_uri(self, uri):
         """Set dataset file chooser and input field."""
-        dataset_uri_entry_buffer = self.builder.get_object('dataset-uri-entry-buffer')
-        dataset_uri_entry_buffer.set_text(uri, -1)
+        self.dataset_uri_entry_buffer.set_text(uri, -1)
 
         p = urllib.parse.urlparse(uri)
         fpath = os.path.abspath(os.path.join(p.netloc, p.path))
 
         if os.path.isdir(fpath):
             fpath = os.path.abspath(fpath)
-            dataset_uri_file_chooser_button = self.builder.get_object('dataset-uri-chooser-button')
-            dataset_uri_file_chooser_button.set_current_folder(fpath)
+            self.dataset_uri_file_chooser_button.set_current_folder(fpath)
 
     def _load_dataset(self, uri):
         """Load dataset and deal with UnsupportedTypeError exceptions."""
@@ -367,11 +380,9 @@ class SignalHandler:
 
     async def _fetch_readme(self, uri):
         self.error_bar.set_revealed(False)
-        self.readme_stack.set_visible_child(
-            self.builder.get_object('direct-readme-spinner'))
+        self.readme_stack.set_visible_child(self.readme_spinner)
 
-        readme_view = self.builder.get_object('direct-dataset-readme')
-        store = readme_view.get_model()
+        store = self.dataset_readme.get_model()
         store.clear()
         _readme_content = self.dataset_model.dataset.get_readme_content()
         self._readme, error = _validate_readme(_readme_content)
@@ -379,18 +390,16 @@ class SignalHandler:
             self.show_error(error)
             self._readme = _readme_content
         fill_readme_tree_store(store, self._readme)
-        readme_view.columns_autosize()
-        readme_view.show_all()
+        self.dataset_readme.columns_autosize()
+        self.dataset_readme.show_all()
 
-        self.readme_stack.set_visible_child(
-            self.builder.get_object('direct-readme-view'))
+        self.readme_stack.set_visible_child(self.readme_view)
 
     async def _fetch_manifest(self, uri):
         self.error_bar.set_revealed(False)
-        self.manifest_stack.set_visible_child(
-            self.builder.get_object('direct-manifest-spinner'))
+        self.manifest_stack.set_visible_child(self.manifest_spinner)
 
-        manifest_view = self.builder.get_object('direct-dataset-manifest')
+        manifest_view = self.dataset_manifest
         store = manifest_view.get_model()
         store.clear()
         # TODO: access via unprotected method
@@ -402,8 +411,7 @@ class SignalHandler:
         manifest_view.columns_autosize()
         manifest_view.show_all()
 
-        self.manifest_stack.set_visible_child(
-            self.builder.get_object('direct-manifest-view'))
+        self.manifest_stack.set_visible_child(self.manifest_view)
 
     def _create_dataset(self, name, base_uri, symlink_path=None):
         """Create a proto dataset."""

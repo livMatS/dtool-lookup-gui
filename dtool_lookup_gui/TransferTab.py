@@ -21,15 +21,14 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-import asyncio
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, Gio
+import asyncio
+import concurrent.futures
 import logging
 import os.path
 import urllib.parse
-
-from ruamel.yaml import YAML
 
 try:
     from StringIO import StringIO
@@ -38,23 +37,14 @@ except ImportError:
 
 import dtoolcore
 
-from dtool_create.dataset import _get_readme_template
+from .dtool_gtk import ProgressBar
 
-from . import date_to_string, _validate_readme
-
-from . import (
-    to_timestamp,
-    date_to_string,
-    datetime_to_string,
-    fill_readme_tree_store,
-    fill_manifest_tree_store)
+from . import GlobalConfig
 
 from .models import (
     LocalBaseURIModel,
     RemoteBaseURIModel,
     DataSetListModel,
-    DataSetModel,
-    UnsupportedTypeError,
 )
 
 HOME_DIR = os.path.expanduser("~")
@@ -64,7 +54,7 @@ logger = logging.getLogger(__name__)
 
 class SignalHandler:
     def __init__(self, event_loop, builder, settings):
-        # self.event_loop = event_loop
+        self.event_loop = event_loop
         self.builder = builder
         # self.settings = settings
 
@@ -75,13 +65,18 @@ class SignalHandler:
         self._manifest = None
 
         # gui elements
-        self.readme_stack = self.builder.get_object('direct-readme-stack')
-        self.manifest_stack = self.builder.get_object('direct-manifest-stack')
+        self.statusbar_stack = self.builder.get_object('statusbar-stack')
+        self.main_progressbar = self.builder.get_object('main-progressbar')
+        self.main_statusbar = self.builder.get_object('main-statusbar')
+
         self.dtool_copy_left_to_right_button = self.builder.get_object('dtool-copy-left-to-right')
         self.dtool_copy_right_to_left_button = self.builder.get_object('dtool-copy-right-to-left')
 
         self.lhs_base_uri_file_chooser_button = self.builder.get_object('lhs-base-uri-chooser-button')
         self.rhs_base_uri_file_chooser_button = self.builder.get_object('rhs-base-uri-chooser-button')
+
+        self.lhs_dataset_uri_file_chooser_button = self.builder.get_object('lhs-dataset-uri-chooser-button')
+        self.rhs_dataset_uri_file_chooser_button = self.builder.get_object('rhs-dataset-uri-chooser-button')
 
         self.lhs_base_uri_entry_buffer = self.builder.get_object('lhs-base-uri-entry-buffer')
         self.rhs_base_uri_entry_buffer = self.builder.get_object('rhs-base-uri-entry-buffer')
@@ -89,50 +84,60 @@ class SignalHandler:
         self.lhs_dataset_uri_entry_buffer = self.builder.get_object('lhs-dataset-uri-entry-buffer')
         self.rhs_dataset_uri_entry_buffer = self.builder.get_object('rhs-dataset-uri-entry-buffer')
 
+        self.lhs_dtool_ls_results = self.builder.get_object('dtool-ls-results-lhs')
+        self.rhs_dtool_ls_results = self.builder.get_object('dtool-ls-results-rhs')
+
+        self.lhs_dataset_list_auto_refresh = self.builder.get_object('lhs-dataset-list-auto-refresh')
+        self.rhs_dataset_list_auto_refresh = self.builder.get_object('lhs-dataset-list-auto-refresh')
+
         # models
-        self.lhs_base_uri_model = LocalBaseURIModel()
-        self.rhs_base_uri_model = RemoteBaseURIModel()
-        self.lhs_dataset_list_model = DataSetListModel()
-        self.rhs_base_uri_model = DataSetListModel()
-        self.lhs_dataset_model = DataSetModel()
-        self.rhs_dataset_model = DataSetModel()
-        self.lhs_dataset_list_model.set_base_uri_model(self.lhs_base_uri_model)
-        self.rhs_dataset_list_model.set_base_uri_model(self.rhs_base_uri_model)
+        self.lhs_dtool_ls_results.dataset_list_model = DataSetListModel()
+        self.rhs_dtool_ls_results.dataset_list_model = DataSetListModel()
+        self.lhs_dtool_ls_results.base_uri_model = LocalBaseURIModel()
+        self.rhs_dtool_ls_results.base_uri_model = RemoteBaseURIModel()
 
         # Configure the models.
-        initial_lhs_base_uri = self.lhs_base_uri_model.get_base_uri()
+        self.lhs_dtool_ls_results.auto_refresh = GlobalConfig.auto_refresh_on
+        self.lhs_dataset_list_auto_refresh.set_active(GlobalConfig.auto_refresh_on)
+
+        self.rhs_dtool_ls_results.auto_refresh = GlobalConfig.auto_refresh_on
+        self.rhs_dataset_list_auto_refresh.set_active(GlobalConfig.auto_refresh_on)
+
+        initial_lhs_base_uri = self.lhs_dtool_ls_results.base_uri
         if initial_lhs_base_uri is None:
             initial_lhs_base_uri = HOME_DIR
         self._set_lhs_base_uri(initial_lhs_base_uri)
 
-        initial_rhs_base_uri = self.rhs_base_uri_model.get_base_uri()
+        initial_rhs_base_uri = self.rhs_dtool_ls_results.base_uri
         if initial_rhs_base_uri is None:
             initial_rhs_base_uri = HOME_DIR
         self._set_rhs_base_uri(initial_rhs_base_uri)
 
-        self._list_lhs_datasets()
-        self._list_rhs_datasets()
+        self.lhs_dtool_ls_results.refresh()
+        self.rhs_dtool_ls_results.refresh()
 
         try:
-            self.lhs_dataset_list_model.set_active_index(0)
+            self.lhs_dtool_ls_results.dataset_list_model.set_active_index(0)
         except IndexError as exc:
             pass # Empty list, ignore
 
         try:
-            self.rhs_dataset_list_model.set_active_index(0)
+            self.rhs_dtool_ls_results.dataset_list_model.set_active_index(0)
         except IndexError as exc:
             pass # Empty list, ignore
 
-        lhs_dataset_uri = self.lhs_dataset_list_model.get_active_uri()
+        lhs_dataset_uri = self.lhs_dtool_ls_results.selected_uri
         # print(self.dataset_list_model.base_uri)
         if lhs_dataset_uri is not None:
             self._set_lhs_dataset_uri(lhs_dataset_uri)
-            self._select_lhs_dataset(lhs_dataset_uri)
+            #  self._select_lhs_dataset(lhs_dataset_uri)
 
-        rhs_dataset_uri = self.rhs_dataset_list_model.get_active_uri()
+        rhs_dataset_uri = self.rhs_dtool_ls_results.selected_uri
         if rhs_dataset_uri is not None:
             self._set_rhs_dataset_uri(rhs_dataset_uri)
-            self._select_rhs_dataset(rhs_dataset_uri)
+            # self._select_rhs_dataset(rhs_dataset_uri)
+
+        self.thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
         self.refresh()
 
@@ -151,14 +156,14 @@ class SignalHandler:
     def on_lhs_base_uri_open(self,  button):
         """Open base URI button clicked."""
         base_uri = self.lhs_base_uri_entry_buffer.get_text()
-        self.lhs_base_uri_model.put_base_uri(base_uri)
-        self._list_lhs_datasets()
+        self.lhs_dtool_ls_results.base_uri = base_uri
+        self.lhs_dtool_ls_results.refresh()
 
     def on_rhs_base_uri_open(self,  button):
         """Open base URI button clicked."""
         base_uri = self.rhs_base_uri_entry_buffer.get_text()
-        self.rhs_base_uri_model.put_base_uri(base_uri)
-        self._list_rhs_datasets()
+        self.rhs_dtool_ls_results.base_uri = base_uri
+        self.rhs_dtool_ls_results.refresh()
 
     def on_lhs_dataset_uri_set(self,  filechooserbutton):
         self._set_lhs_dataset_uri(filechooserbutton.get_uri())
@@ -169,15 +174,15 @@ class SignalHandler:
     def on_lhs_dataset_uri_open(self,  button):
         """Select and display dataset when URI specified in text box 'dataset URI' and button 'open' clicked."""
         uri = self.lhs_dataset_uri_entry_buffer.get_text()
-        self._select_lhs_dataset(uri)
-        self._list_lhs_datasets()
+        self.lhs_dtool_ls_results.selected_uri = uri
+        self.lhs_dtool_ls_results.refresh()
         self.refresh()
 
     def on_rhs_dataset_uri_open(self,  button):
         """Select and display dataset when URI specified in text box 'dataset URI' and button 'open' clicked."""
-        uri = self.lhs_dataset_uri_entry_buffer.get_text()
-        self._select_rhs_dataset(uri)
-        self._list_rhs_datasets()
+        uri = self.rhs_dataset_uri_entry_buffer.get_text()
+        self.rhs_dtool_ls_results.selected_uri = uri
+        self.rhs_dtool_ls_results.refresh()
         self.refresh()
 
     def on_lhs_dataset_selected_from_list(self, list_box, list_box_row):
@@ -185,41 +190,65 @@ class SignalHandler:
         if list_box_row is None:
             return
         uri = list_box_row.dataset['uri']
-        self._select_lhs_dataset(uri)
+        #self.lhs_dtool_ls_results.selected_uri = uri
+        self._set_lhs_dataset_uri(uri)
         self.refresh()
 
     def on_rhs_dataset_selected_from_list(self, list_box, list_box_row):
-        """Select and display dataset when selected in left hand side list."""
+        """Select and dataset when selected in right hand side list."""
         if list_box_row is None:
             return
         uri = list_box_row.dataset['uri']
-        self._select_rhs_dataset(uri)
+        # self.rhs_dtool_ls_results.selected_uri = uri
+        self._set_rhs_dataset_uri(uri)
         self.refresh()
 
-    def refresh(self, page=None):
-        """Update statusbar and tab contents."""
-        logger.debug("Refresh tab.")
-        statusbar_widget = self.builder.get_object('main-statusbar')
-        if not self.dataset_model.is_empty:
-            statusbar_widget.push(0, f'{len(self.lhs_dataset_list_model._datasets)} '
-                                     f'datasets - {self.lhs_dataset_model.dataset.uri}')
-        elif self.base_uri_model.get_base_uri() is not None:
-            statusbar_widget.push(0, f'{len(self.lhs_dataset_list_model._datasets)} '
-                                     f'datasets - {self.lhs_base_uri_model.get_base_uri()}')
-        else:
-            statusbar_widget.push(0, f'Specify base URI.')
+    def on_lhs_dataset_list_auto_refresh_toggled(self, checkbox):
+        self.lhs_dtool_ls_results.auto_refresh = checkbox.get_active()
+        self.lhs_dtool_ls_results.refresh()
 
-        dataset_notebook = self.builder.get_object('direct-dataset-notebook')
-        if page is None:
-            page = dataset_notebook.get_current_page()
-        logger.debug(f"Selected page {page}.")
+    def on_rhs_dataset_list_auto_refresh_toggled(self, checkbox):
+        self.rhs_dtool_ls_results.auto_refresh = checkbox.get_active()
+        self.rhs_dtool_ls_results.refresh()
+
+    def on_dtool_copy_left_to_right_clicked(self,  button):
+        """Copy lhs selected dataset to rhs selected base uri."""
+        self.event_loop.create_task(self._dtool_copy_left_to_right())
+
+    def on_dtool_copy_right_to_left_clicked(self,  button):
+        """Copy lhs selected dataset to rhs selected base uri."""
+        self.event_loop.create_task(self._dtool_copy_right_to_left())
+
+    def refresh(self, page=None):
+        """Update status bar and tab contents."""
+
+        logger.debug("Refresh tab.")
+        if self.lhs_dtool_ls_results.selected_uri is not None:
+            lhs_msg = (f'{len(self.lhs_dtool_ls_results)} datasets - '
+                       f'{self.lhs_dtool_ls_results.selected_uri}')
+        elif self.lhs_dtool_ls_results.base_uri is not None:
+            lhs_msg = (f'{len(self.lhs_dtool_ls_results)} '
+                       f'datasets - {self.lhs_dtool_ls_results.base_uri}')
+        else:
+            lhs_msg = 'Specify left hand side base URI.'
+
+        if self.rhs_dtool_ls_results.selected_uri is not None:
+            rhs_msg = (f'{self.rhs_dtool_ls_results.selected_uri} - '
+                       f'{len(self.rhs_dtool_ls_results)} datasets')
+        elif self.rhs_dtool_ls_results.base_uri is not None:
+            rhs_msg = (f'{self.rhs_dtool_ls_results.base_uri} - '
+                       f'{len(self.rhs_dtool_ls_results)} datasets')
+        else:
+            rhs_msg = 'Specify right hand side base URI.'
+
+        msg = ' : '.join((lhs_msg, rhs_msg))
+        self.main_statusbar.push(0,msg)
 
     # private methods
-
     def _set_lhs_base_uri(self, uri):
-        """Sets model base uri and associated file chooser and input field."""
-        self.lhs_base_uri_model.put_base_uri(uri)
-        self.lhs_base_uri_entry_buffer.set_text(self.lhs_base_uri_model.get_base_uri(), -1)
+        """Sets lhs base uri and associated file chooser and input field."""
+        self.lhs_dtool_ls_results.base_uri = uri
+        self.lhs_base_uri_entry_buffer.set_text(self.lhs_dtool_ls_results.base_uri, -1)
 
         p = urllib.parse.urlparse(uri)
         fpath = os.path.abspath(os.path.join(p.netloc, p.path))
@@ -228,273 +257,114 @@ class SignalHandler:
             fpath = os.path.abspath(fpath)
             self.lhs_base_uri_file_chooser_button.set_current_folder(fpath)
 
-    def _set_dataset_uri(self, uri):
+    def _set_rhs_base_uri(self, uri):
         """Set dataset file chooser and input field."""
-        dataset_uri_entry_buffer = self.builder.get_object('dataset-uri-entry-buffer')
-        dataset_uri_entry_buffer.set_text(uri, -1)
+        self.rhs_dtool_ls_results.base_uri = uri
+        self.rhs_base_uri_entry_buffer.set_text(self.rhs_dtool_ls_results.base_uri, -1)
 
         p = urllib.parse.urlparse(uri)
         fpath = os.path.abspath(os.path.join(p.netloc, p.path))
 
         if os.path.isdir(fpath):
             fpath = os.path.abspath(fpath)
-            dataset_uri_file_chooser_button = self.builder.get_object('dataset-uri-chooser-button')
-            dataset_uri_file_chooser_button.set_current_folder(fpath)
+            self.rhs_base_uri_file_chooser_button.set_current_folder(fpath)
 
-    def _list_datasets(self, selected_uri=None):
-        base_uri = self.base_uri_model.get_base_uri()
-        if len(base_uri) == 0:
-            self.show_error("Specify a non-empty base URI.")
-            return
+    def _set_lhs_dataset_uri(self, uri):
+        """Set dataset file chooser and input field."""
+        self.lhs_dataset_uri_entry_buffer.set_text(uri, -1)
+        self.lhs_dtool_ls_results.selected_uri = uri
 
-        results_widget = self.builder.get_object('dtool-ls-results')
-        self.base_uri_model.put_base_uri(base_uri)
-
-        try:
-            self.dataset_list_model.reindex()
-        except FileNotFoundError as exc:
-            self.show_error(exc.__str__())
-            return
-
-        # sort by name
-        # TODO: sort field selection
-        self.dataset_list_model.sort('name')
-
-        for entry in results_widget:
-            entry.destroy()
-
-        selected_row = None
-        if selected_uri is None:
-            if self.dataset_model.is_empty:
-                selected_uri = self.dataset_list_model.get_active_uri()
-            else:
-                selected_uri = self.dataset_model.dataset.uri
-
-        dataset_list_columns = ("uuid", "name", "size_str", "num_items", "creator", "date", "uri")
-        proto_dataset_list_columns = ("uuid", "name", "creator", "uri")
-
-        for props in self.dataset_list_model.yield_properties():
-            # TODO: other way for distinguishing frozen and proto
-            is_frozen = "date" in props
-
-            if is_frozen:
-                values = [props[c] for c in dataset_list_columns]
-                d = {c: v for c, v in zip(dataset_list_columns, values)}
-                prefix = ''
-            else:
-                values = [props[c] for c in proto_dataset_list_columns]
-                d = {c: v for c, v in zip(proto_dataset_list_columns, values)}
-                prefix = '*'
-
-
-            row = Gtk.ListBoxRow()
-            if selected_row is None or selected_uri == d["uri"]:
-                # select the first row just in case the currently selected row is lost
-                selected_row = row
-
-            vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-            label = Gtk.Label(xalign=0)
-            label.set_markup(f'{prefix}<b>{d["uuid"]}</b>')
-            vbox.pack_start(label, True, True, 0)
-            label = Gtk.Label(xalign=0)
-            label.set_markup(f'{d["name"]}')
-            vbox.pack_start(label, True, True, 0)
-            label = Gtk.Label(xalign=0)
-            if is_frozen:
-                label.set_markup(
-                    f'<small>Created by: {d["creator"]}, '
-                    f'frozen at: '
-                    f'{date_to_string(d["date"])}</small>')
-            else:
-                label.set_markup(
-                    f'<small>Created by: {d["creator"]}, proto dataset</small>')
-                vbox.pack_start(label, True, True, 0)
-            row.dataset = d
-            row.add(vbox)
-            results_widget.add(row)
-
-        results_widget.select_row(selected_row)
-        results_widget.show_all()
-
-    def _load_dataset(self, uri):
-        """Load dataset and deal with UnsupportedTypeError exceptions."""
-        try:
-            self.dataset_model.load_dataset(uri)
-            self.active_dataset_metadata_supported = True
-        except UnsupportedTypeError:
-            logger.warning("Dataset contains unsupported metadata type")
-            self.active_dataset_metadata_supported = False
-
-    def _reload_dataset(self):
-        self._load_dataset(self.dataset_model.dataset.uri)
-
-    def _mark_dataset_as_changed(self):
-        """Mark a change in the dataset, reload content where necessary."""
-        self._reload_readme = True
-        self._reload_manifest = True
-
-    def _select_dataset(self, uri):
-        """Specify dataset selected in list."""
-        if len(uri) > 0:
-            self.dataset_list_model.set_active_index_by_uri(uri)
-            self._load_dataset(uri)
-            self._mark_dataset_as_changed()
-        else:
-            self.show_error("Specify a non-empty dataset URI.")
-            return
-
-    def _show_dataset(self):
-        """Display dataset info."""
-        # TODO: use self.dataset_model.metadata_model instead of direct README content
-        ds = self.dataset_model.dataset
-
-        uri = self.dataset_list_model.get_active_uri()
-        # TODO: move admin metadata into DataSetModel
-        admin_metadata = dtoolcore._admin_metadata_from_uri(uri, config_path=None)
-        self._readme = None
-        self._manifest = None
-
-        self.builder.get_object('direct-dataset-name').set_text(ds.name)
-        self.builder.get_object('direct-dataset-uuid').set_text(ds.uuid)
-        self.builder.get_object('direct-dataset-uri').set_text(ds.uri)
-        self.builder.get_object('direct-dataset-created-by').set_text(
-            admin_metadata['creator_username'])
-        self.builder.get_object('direct-dataset-created-at').set_text(
-            f'{datetime_to_string(admin_metadata["created_at"])}')
-        if self.dataset_model.is_frozen:
-            self.builder.get_object('direct-dataset-frozen-at').set_text(
-                f'{datetime_to_string(admin_metadata["frozen_at"])}')
-        else:
-            self.builder.get_object('direct-dataset-frozen-at').set_text("-")
-
-        self.refresh()
-
-    def _show_readme(self):
-        if self._reload_readme:
-            logger.debug("Reload readme.")
-            self._readme_task = asyncio.ensure_future(
-                self._fetch_readme(self.dataset_model.dataset.uri))
-        else:
-            logger.debug("Readme cached, don't reload.")
-        self._reload_readme = False
-
-    def _show_manifest(self):
-        if self._reload_manifest:
-            logger.debug("Reload manifest.")
-            self._manifest_task = asyncio.ensure_future(
-                self._fetch_manifest(self.dataset_model.dataset.uri))
-        else:
-            logger.debug("Manifest cached, don't reload.")
-        self._reload_manifest = False
-
-    async def _fetch_readme(self, uri):
-        self.error_bar.set_revealed(False)
-        self.readme_stack.set_visible_child(
-            self.builder.get_object('direct-readme-spinner'))
-
-        readme_view = self.builder.get_object('direct-dataset-readme')
-        store = readme_view.get_model()
-        store.clear()
-        _readme_content = self.dataset_model.dataset.get_readme_content()
-        self._readme, error = _validate_readme(_readme_content)
-        if error is not None:
-            self.show_error(error)
-            self._readme = _readme_content
-        fill_readme_tree_store(store, self._readme)
-        readme_view.columns_autosize()
-        readme_view.show_all()
-
-        self.readme_stack.set_visible_child(
-            self.builder.get_object('direct-readme-view'))
-
-    async def _fetch_manifest(self, uri):
-        self.error_bar.set_revealed(False)
-        self.manifest_stack.set_visible_child(
-            self.builder.get_object('direct-manifest-spinner'))
-
-        manifest_view = self.builder.get_object('direct-dataset-manifest')
-        store = manifest_view.get_model()
-        store.clear()
-        # TODO: access via unprotected method
-        self._manifest = self.dataset_model.dataset._manifest
-        try:
-            fill_manifest_tree_store(store, self._manifest['items'])
-        except Exception as e:
-            print(e)
-        manifest_view.columns_autosize()
-        manifest_view.show_all()
-
-        self.manifest_stack.set_visible_child(
-            self.builder.get_object('direct-manifest-view'))
-
-    def _create_dataset(self, name, base_uri, symlink_path=None):
-        """Create a proto dataset."""
-        # As in https://github.com/jic-dtool/dtool-create/blob/master/dtool_create/dataset.py#L133
-
-        # TODO: move creation without metadata and items into model layer
-        if not dtoolcore.utils.name_is_valid(name):
-            valid_chars = " ".join(dtoolcore.utils.NAME_VALID_CHARS_LIST)
-            self.show_error(f"Invalid dataset name '{name}'. "
-                            f"Name must be 80 characters or less. "
-                            f"Dataset names may only contain the characters: {valid_chars}")
-            return
-
-        admin_metadata = dtoolcore.generate_admin_metadata(name)
-        parsed_base_uri = dtoolcore.utils.generous_parse_uri(base_uri)
-
-        if parsed_base_uri.scheme == "symlink":
-            if symlink_path is None:
-                self.show_error("Need to specify symlink path. NOT IMPLEMENTED.")
-
-        if symlink_path:
-            base_uri = dtoolcore.utils.sanitise_uri(
-                "symlink:" + parsed_base_uri.path
-            )
-            parsed_base_uri = dtoolcore.utils.generous_parse_uri(base_uri)
-
-        # Create the dataset.
-        proto_dataset = dtoolcore.generate_proto_dataset(
-            admin_metadata=admin_metadata,
-            base_uri=dtoolcore.utils.urlunparse(parsed_base_uri),
-            config_path=None)
-
-        # If we are creating a symlink dataset we need to set the symlink_path
-        # attribute on the storage broker.
-        if symlink_path:
-            symlink_abspath = os.path.abspath(symlink_path)
-            proto_dataset._storage_broker.symlink_path = symlink_abspath
-        try:
-            proto_dataset.create()
-        except dtoolcore.storagebroker.StorageBrokerOSError as err:
-            self.show_error(err.__str__)
-
-        # Initialize with empty README.yml
-        proto_dataset.put_readme("")
-        self._load_dataset(proto_dataset.uri)
-        self._initialize_readme()
-        self._mark_dataset_as_changed()
-        self._list_datasets()
-        self._show_dataset()
-
-    def _initialize_readme(self, readme_template_path=None):
-        """Fill README.yml with template configured in dtool.json config."""
-        readme_template = _get_readme_template(readme_template_path)
-        yaml = YAML()
-        yaml.explicit_start = True
-        yaml.indent(mapping=2, sequence=4, offset=2)
-        descriptive_metadata = yaml.load(readme_template)
-        stream = StringIO()
-        yaml.dump(descriptive_metadata, stream)
-        self.dataset_model.dataset.put_readme(stream.getvalue())
-
-    def _add_item(self, uri):
         p = urllib.parse.urlparse(uri)
         fpath = os.path.abspath(os.path.join(p.netloc, p.path))
-        handle = os.path.basename(fpath)
-        handle = dtoolcore.utils.windows_to_unix_path(handle)  # NOQA
-        self.dataset_model.dataset.put_item(fpath, handle)
 
+        if os.path.isdir(fpath):
+            fpath = os.path.abspath(fpath)
+            self.lhs_dataset_uri_file_chooser_button.set_current_folder(fpath)
+
+    def _set_rhs_dataset_uri(self, uri):
+        """Set dataset file chooser and input field."""
+        self.rhs_dataset_uri_entry_buffer.set_text(uri, -1)
+        self.rhs_dtool_ls_results.selected_uri = uri
+
+        p = urllib.parse.urlparse(uri)
+        fpath = os.path.abspath(os.path.join(p.netloc, p.path))
+
+        if os.path.isdir(fpath):
+            fpath = os.path.abspath(fpath)
+            self.rhs_dataset_uri_file_chooser_button.set_current_folder(fpath)
+
+    # TODO: jlh, I really don't know hat I am doing here, just copy & paste
+    # def _async_copy_dataset(self, *args, **kwargs):
+    #    loop = asyncio.get_event_loop()
+    #    await asyncio.wait([
+    #        loop.run_in_executor(self.thread_pool, self._copy_dataset, *args, **kwargs)])
+
+    def _copy_dataset(self, source_dataset_uri, target_base_uri, resume=False, auto_resume=True):
+        """Copy a dataset."""
+
+        # TODO: try to copy without resume flag, if failed, then ask whether
+        # try to resume
+
+        src_dataset = dtoolcore.DataSet.from_uri(source_dataset_uri)
+
+        dest_uri = dtoolcore._generate_uri(
+            admin_metadata=src_dataset._admin_metadata,
+            base_uri=target_base_uri
+        )
+
+        copy_func = dtoolcore.copy
+        is_dataset = dtoolcore._is_dataset(dest_uri, config_path=None)
+        if resume or (auto_resume and is_dataset):
+            # copy resume
+            copy_func = dtoolcore.copy_resume
+        elif is_dataset:
+            # don't resume
+            raise FileExistsError("Dataset already exists: {}".format(dest_uri))
+        else:
+            # If the destination URI is a "file" dataset one needs to check if
+            # the path already exists and exit gracefully if true.
+            parsed_dataset_uri = dtoolcore.utils.generous_parse_uri(dest_uri)
+            if parsed_dataset_uri.scheme == "file":
+                if os.path.exists(parsed_dataset_uri.path):
+                    raise FileExistsError(
+                        "Path already exists: {}".format(parsed_dataset_uri.path))
+
+        num_items = len(list(src_dataset.identifiers))
+
+        with ProgressBar(length=num_items * 2,
+                         label="Copying dataset",
+                         pb=self.main_progressbar) as progressbar:
+            dest_uri = copy_func(
+                src_uri=source_dataset_uri,
+                dest_base_uri=target_base_uri,
+                config_path=None,
+                progressbar=progressbar
+            )
+
+        return dest_uri
+
+    # asynchronous methods
+    async def _dtool_copy_left_to_right(self):
+        self.statusbar_stack.set_visible_child(self.main_progressbar)
+        source_dataset_uri = self.lhs_dtool_ls_results.selected_uri
+        target_base_uri = self.rhs_dtool_ls_results.base_uri
+        target_dataset_uri = self._copy_dataset(source_dataset_uri, target_base_uri)
+        self.rhs_dtool_ls_results.refresh(selected_uri=target_dataset_uri)
+        self.statusbar_stack.set_visible_child(self.main_statusbar)
+
+    async def _dtool_copy_right_to_left(self):
+        self.statusbar_stack.set_visible_child(self.main_progressbar)
+        source_dataset_uri = self.rhs_dtool_ls_results.selected_uri
+        target_base_uri = self.lhs_dtool_ls_results.base_uri
+        target_dataset_uri = self._copy_dataset(source_dataset_uri, target_base_uri)
+        self.lhs_dtool_ls_results.refresh(selected_uri=target_dataset_uri)
+        self.statusbar_stack.set_visible_child(self.main_statusbar)
+
+    # general-purpose methods
     def show_error(self, msg):
         self.error_label.set_text(msg)
         self.error_bar.show()
         self.error_bar.set_revealed(True)
+
+    def set_sensitive(self, sensitive=True):
+        pass

@@ -6,6 +6,7 @@ gi.require_version('GtkSource', '4')
 from gi.repository import Gtk, Gdk, Gio, GtkSource, GObject
 import logging
 
+from contextlib import AbstractContextManager
 from . import date_to_string
 
 logger = logging.getLogger(__name__)
@@ -13,6 +14,60 @@ logger = logging.getLogger(__name__)
 
 DATASET_LIST_COLUMNS = ("uuid", "name", "size_str", "num_items", "creator", "date", "uri")
 PROTO_DATASET_LIST_COLUMNS = ("uuid", "name", "creator", "uri")
+
+
+class ProgressBar(AbstractContextManager):
+    """Mimics click.progressbar"""
+    def __init__(self, length=None, label=None, pb=None):
+        if pb is None:
+            pb = Gtk.ProgressBar(show_text=True, text=None)
+        self._pb = pb
+        self._item_show_func = None
+        self._label_template = '{label:}'
+        self._label_item_template = '{label:} ({item:})'
+        self._label = label
+        self._length = length
+        self._step = 0
+
+    def __enter__(self):
+        self._pb.set_fraction(0.0)
+        self._set_text()
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        return
+
+    @property
+    def label(self):
+        return self._label
+
+    @label.setter
+    def label(self, label):
+        self._label = label
+        self._set_text()
+
+    @property
+    def item_show_func(self):
+        return self._item_show_func
+
+    @item_show_func.setter
+    def item_show_func(self, item_show_func):
+        self._item_show_func = item_show_func
+        self._set_text()
+
+    def update(self, step):
+        self._step += step
+        self._pb.set_fraction(float(self._step) / float(self._length))
+        self._set_text()
+
+    def _set_text(self):
+        if self._label is not None and self._item_show_func is not None:
+            self._pb.set_text(self._label_item_template.format(
+                label=self._label, item=self.item_show_func()))
+        if self._label is not None:
+            self._pb.set_text(self._label_template.format(label=self._label))
+        else:
+            self._pb.set_show_text(False)
 
 
 class DtoolDatasetListBox(Gtk.ListBox):
@@ -104,7 +159,8 @@ class DtoolDatasetListBox(Gtk.ListBox):
             self.add(row)
 
         self.select_row(selected_row)
-        self.selected_uri = selected_row.dataset['uri']
+        if selected_row is not None:
+            self.selected_uri = selected_row.dataset['uri']
         self.show_all()
 
     def refresh(self, *args, **kwargs):
@@ -169,7 +225,7 @@ class DtoolDatasetListBoxRow(Gtk.ListBoxRow):
         else:
             label.set_markup(
                 f'<small>Created by: {d["creator"]}, proto dataset</small>')
-            vbox.pack_start(label, True, True, 0)
+        vbox.pack_start(label, True, True, 0)
 
         self.add(vbox)
         self.dataset = d

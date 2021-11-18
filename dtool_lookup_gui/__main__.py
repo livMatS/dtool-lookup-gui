@@ -46,7 +46,7 @@ if __name__ == '__main__':
     parser.add_argument('--all-auto-refresh-off', action='store_true',
                         dest='all_auto_refresh_off', default=False,
                         help='Do not load any dataset lists at launch.')
-    parser.add_argument('--debug', '-d', action='store_true',
+    parser.add_argument('--debug', action='store_true',
                         help='Print debug info')
 
     try:
