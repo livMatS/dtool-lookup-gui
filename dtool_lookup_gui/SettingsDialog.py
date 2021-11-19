@@ -93,6 +93,8 @@ class SignalHandler:
             vbox.pack_start(label, True, True, 0)
             hbox.pack_start(vbox, True, True, 0)
             button = Gtk.Button(image=Gtk.Image.new_from_icon_name('emblem-system-symbolic', Gtk.IconSize.BUTTON))
+            button.connect('clicked', self.on_configure_endpoint_clicked)
+            button.base_uri = base_uri["base_uri"]
             hbox.pack_end(button, False, False, 0)
             row.add(hbox)
             endpoints_list_box.add(row)
@@ -144,3 +146,6 @@ class SignalHandler:
 
     def on_auth_cancel_clicked(self, widget):
         self.auth_dialog.hide()
+
+    def on_configure_endpoint_clicked(self, widget):
+        print(widget.base_uri)
