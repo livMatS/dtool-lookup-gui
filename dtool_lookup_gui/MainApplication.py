@@ -31,8 +31,7 @@ dtool_lookup_api.core.config.Config.interactive = False
 
 import gi
 gi.require_version('Gtk', '3.0')
-gi.require_version('GtkSource', '4')
-from gi.repository import Gtk, Gdk, Gio, GtkSource, GObject
+from gi.repository import Gtk, Gdk, Gio, GObject
 
 import gbulb
 gbulb.install(gtk=True)
