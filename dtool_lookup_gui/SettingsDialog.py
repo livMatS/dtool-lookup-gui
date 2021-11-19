@@ -26,8 +26,17 @@ import asyncio
 
 from gi.repository import Gtk
 
+from dtoolcore.utils import get_config_value, write_config_value_to_file, generous_parse_uri
 from dtool_lookup_api.core.config import Config
 from dtool_lookup_api.core.LookupClient import authenticate
+
+
+def _is_configured(base_uri):
+    if base_uri.scheme == 's3':
+        return get_config_value(f'DTOOL_S3_ENDPOINT_{base_uri.netloc}') is not None
+    else:
+        return False
+
 
 class SignalHandler:
     def __init__(self, main_application, event_loop, builder, settings):
@@ -38,6 +47,7 @@ class SignalHandler:
 
         self.settings_window = self.builder.get_object('settings-window')
         self.auth_dialog = self.builder.get_object('auth-dialog')
+        self.s3_configuration_dialog = self.builder.get_object('s3-configuration-dialog')
 
     def show(self):
         self.settings_window.show()
@@ -75,7 +85,7 @@ class SignalHandler:
         base_uris = await self.main_application.lookup_tab.lookup.list_base_uris()
         first_row = None
         for base_uri in base_uris:
-            print(base_uri["base_uri"])
+            parsed_uri = generous_parse_uri(base_uri["base_uri"])
             row = Gtk.ListBoxRow()
             if first_row is None:
                 first_row = row
@@ -89,12 +99,15 @@ class SignalHandler:
             label.set_markup(f'<b>{base_uri["base_uri"]}</b>')
             vbox.pack_start(label, True, True, 0)
             label = Gtk.Label(xalign=0)
-            label.set_markup('This endpoint was reported by the lookup server.')
+            if _is_configured(parsed_uri):
+                label.set_markup('This endpoint was reported by the lookup server and it is configured locally.')
+            else:
+                label.set_markup('This endpoint was reported by the lookup server, but it is not configured locally')
             vbox.pack_start(label, True, True, 0)
             hbox.pack_start(vbox, True, True, 0)
             button = Gtk.Button(image=Gtk.Image.new_from_icon_name('emblem-system-symbolic', Gtk.IconSize.BUTTON))
             button.connect('clicked', self.on_configure_endpoint_clicked)
-            button.base_uri = base_uri["base_uri"]
+            button.base_uri = parsed_uri
             hbox.pack_end(button, False, False, 0)
             row.add(hbox)
             endpoints_list_box.add(row)
@@ -148,4 +161,36 @@ class SignalHandler:
         self.auth_dialog.hide()
 
     def on_configure_endpoint_clicked(self, widget):
-        print(widget.base_uri)
+        base_uri = widget.base_uri
+        if base_uri.scheme == 's3':
+            s3_endpoint = get_config_value(f'DTOOL_S3_ENDPOINT_{base_uri.netloc}')
+            s3_access_key = get_config_value(f'DTOOL_S3_ACCESS_KEY_ID_{base_uri.netloc}')
+            s3_secret_key = get_config_value(f'DTOOL_S3_SECRET_ACCESS_KEY_{base_uri.netloc}')
+            s3_prefix = get_config_value(f'DTOOL_S3_DATASET_PREFIX')
+            if s3_endpoint:
+                self.builder.get_object('s3-endpoint-url-entry').set_text(s3_endpoint)
+            if s3_access_key:
+                self.builder.get_object('s3-access-key-entry').set_text(s3_access_key)
+            if s3_secret_key:
+                self.builder.get_object('s3-secret-key-entry').set_text(s3_secret_key)
+            if s3_prefix:
+                self.builder.get_object('s3-prefix-entry').set_text(s3_prefix)
+
+            self.s3_configuration_dialog.base_uri = base_uri
+            self.s3_configuration_dialog.show()
+
+    def on_s3_configuration_ok_clicked(self, widget):
+        self.s3_configuration_dialog.hide()
+
+        base_uri = self.s3_configuration_dialog.base_uri
+        write_config_value_to_file(f'DTOOL_S3_ENDPOINT_{base_uri.netloc}',
+                                   self.builder.get_object('s3-endpoint-url-entry').get_text())
+        write_config_value_to_file(f'DTOOL_S3_ACCESS_KEY_ID_{base_uri.netloc}',
+                                   self.builder.get_object('s3-access-key-entry').get_text())
+        write_config_value_to_file(f'DTOOL_S3_SECRET_ACCESS_KEY_{base_uri.netloc}',
+                                   self.builder.get_object('s3-secret-key-entry').get_text())
+        write_config_value_to_file(f'DTOOL_S3_DATASET_PREFIX',
+                                   self.builder.get_object('s3-prefix-entry').get_text())
+
+    def on_s3_configuration_cancel_clicked(self, widget):
+        self.s3_configuration_dialog.hide()
