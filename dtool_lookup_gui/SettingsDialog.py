@@ -107,6 +107,8 @@ class SignalHandler:
             hbox.pack_start(vbox, True, True, 0)
             button = Gtk.Button(image=Gtk.Image.new_from_icon_name('emblem-system-symbolic', Gtk.IconSize.BUTTON))
             button.connect('clicked', self.on_configure_endpoint_clicked)
+            # We currently can only configure S3 endpoints through the GUI
+            button.set_sensitive(parsed_uri.scheme == 's3')
             button.base_uri = parsed_uri
             hbox.pack_end(button, False, False, 0)
             row.add(hbox)
@@ -179,7 +181,7 @@ class SignalHandler:
             self.s3_configuration_dialog.base_uri = base_uri
             self.s3_configuration_dialog.show()
 
-    def on_s3_configuration_ok_clicked(self, widget):
+    def on_s3_configuration_apply_clicked(self, widget):
         self.s3_configuration_dialog.hide()
 
         base_uri = self.s3_configuration_dialog.base_uri
