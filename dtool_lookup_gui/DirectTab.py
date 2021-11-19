@@ -25,6 +25,8 @@
 #       there
 # TODO: Metadata input via GUI
 # TODO: Copy dataset via GUI
+# TODO: date not shown correctly in local results
+# TODO: status bar not updated correctly
 import asyncio
 import gi
 gi.require_version('Gtk', '3.0')
@@ -88,60 +90,51 @@ class DatasetNameDialog(Gtk.Dialog):
 
 
 class SignalHandler:
-    def __init__(self, event_loop, builder, settings):
+    def __init__(self, parent):
         # self.event_loop = event_loop
-        self.builder = builder
+        self.builder = parent.builder
         # self.settings = settings
 
-        self.error_bar = self.builder.get_object('error-bar')
-        self.error_label = self.builder.get_object('error-label')
 
         self._readme = None
         self._manifest = None
 
         # gui elements
+        self.base_uri_entry_buffer = self.builder.get_object('base-uri-entry-buffer')
+        self.base_uri_entry_buffer = self.builder.get_object('lhs-base-uri-entry-buffer')
+        self.base_uri_file_chooser_button = self.builder.get_object('base-uri-chooser-button')
+        self.dataset_list_auto_refresh = self.builder.get_object('direct-dataset-list-auto-refresh')
+        self.dataset_manifest = self.builder.get_object('direct-dataset-manifest')
+        self.dataset_notebook = self.builder.get_object('direct-dataset-notebook')
+        self.dataset_readme = self.builder.get_object('direct-dataset-readme')
+        self.dataset_uri_entry_buffer = self.builder.get_object('lhs-dataset-uri-entry-buffer')
+        self.dataset_uri_file_chooser_button = self.builder.get_object('dataset-uri-chooser-button')
+        self.dtool_add_items_button = self.builder.get_object('dtool-add-items')
+        self.dtool_dataset_list = self.builder.get_object('dtool-ls-results')
+        self.dtool_freeze_button = self.builder.get_object('dtool-freeze')
+        self.error_bar = self.builder.get_object('error-bar')
+        self.error_label = self.builder.get_object('error-label')
         self.main_window = self.builder.get_object('main-window')
+        self.manifest_spinner =  self.builder.get_object('direct-manifest-spinner')
+        self.manifest_stack = self.builder.get_object('direct-manifest-stack')
+        self.manifest_view = self.builder.get_object('direct-manifest-view')
+        self.readme_spinner = self.builder.get_object('direct-readme-spinner')
+        self.readme_stack = self.builder.get_object('direct-readme-stack')
+        self.readme_view = self.builder.get_object('direct-readme-view')
         self.statusbar_widget = self.builder.get_object('main-statusbar')
 
-        self.base_uri_file_chooser_button = self.builder.get_object('base-uri-chooser-button')
-        self.dataset_uri_file_chooser_button = self.builder.get_object('dataset-uri-chooser-button')
-
-        self.base_uri_entry_buffer = self.builder.get_object('base-uri-entry-buffer')
-        self.dataset_uri_entry_buffer = self.builder.get_object('dataset-uri-entry-buffer')
-
-        self.dataset_notebook = self.builder.get_object('direct-dataset-notebook')
-        self.readme_spinner = self.builder.get_object('direct-readme-spinner')
-        self.dataset_readme = self.builder.get_object('direct-dataset-readme')
-        self.readme_view = self.self.builder.get_object('direct-readme-view')
-        self.manifest_spinner =  self.builder.get_object('direct-manifest-spinner')
-        self.dataset_manifest = self.builder.get_object('direct-dataset-manifest')
-        self.manifest_view = self.builder.get_object('direct-manifest-view')
-
-        self.readme_stack = self.builder.get_object('direct-readme-stack')
-        self.manifest_stack = self.builder.get_object('direct-manifest-stack')
-        self.dtool_freeze_button = self.builder.get_object('dtool-freeze')
-        self.dtool_add_items_button = self.builder.get_object('dtool-add-items')
-
-        self.dtool_dataset_list = self.builder.get_object('dtool-ls-results')
-        self.dataset_list_auto_refresh = self.builder.get_object('direct-dataset-list-auto-refresh')
-
-        self.base_uri_entry_buffer = self.builder.get_object('base-uri-entry-buffer')
-        self.dataset_uri_entry_buffer = self.builder.get_object('dataset-uri-entry-buffer')
-
-
         # models
-        self.dtool_dataset_list.dataset_list_model = DataSetListModel()
-        self.dtool_dataset_list.base_uri_model = LocalBaseURIModel()
-        self.dataset_model = DataSetModel()
+        self.dtool_dataset_list.dataset_list_model = parent.lhs_dataset_list_model
+        self.dataset_model = parent.lhs_dataset_model
 
-        # Configure the models.
-        self.dtool_dataset_list.auto_refresh = GlobalConfig.auto_refresh_on
+        # configure
         self.dataset_list_auto_refresh.set_active(GlobalConfig.auto_refresh_on)
+        self.dtool_dataset_list.auto_refresh = GlobalConfig.auto_refresh_on
 
         initial_base_uri = self.dtool_dataset_list.base_uri
         if initial_base_uri is None:
             initial_base_uri = HOME_DIR
-        self._set_base_uri(initial_base_uri)
+        self._set_lhs_base_uri(initial_base_uri)
         self.dtool_dataset_list.refresh()
 
         try:
@@ -160,18 +153,16 @@ class SignalHandler:
 
     # signal handles
 
-    def on_base_uri_set(self,  filechooserbutton):
+    def on_lhs_base_uri_set(self,  filechooserbutton):
         """Base URI directory selected with file chooser."""
         base_uri = filechooserbutton.get_uri()
-        self._set_base_uri(base_uri)
+        self._set_lhs_base_uri(base_uri)
 
-    def on_base_uri_open(self,  button):
+    def on_lhs_base_uri_open(self,  button):
         """Open base URI button clicked."""
-        base_uri = self.base_uri_entry_buffer.get_text()
-        self.dtool_dataset_list.base_uri = base_uri
         self.dtool_dataset_list.refresh()
 
-    def on_dataset_uri_set(self,  filechooserbutton):
+    def on_lhs_dataset_uri_set(self,  filechooserbutton):
         self._set_dataset_uri(filechooserbutton.get_uri())
 
     def on_dataset_uri_open(self,  button):
@@ -188,6 +179,7 @@ class SignalHandler:
         if list_box_row is None:
             return
         uri = list_box_row.dataset['uri']
+        self.dataset_uri_entry_buffer.set_text(uri, -1)
         self._select_dataset(uri)
         self._mark_dataset_as_changed()
         self._show_dataset()
@@ -283,12 +275,8 @@ class SignalHandler:
                 self._show_manifest()
 
     # private methods
-
-    def _set_base_uri(self, uri):
+    def _set_lhs_base_uri(self, uri):
         """Sets model base uri and associated file chooser and input field."""
-        self.dtool_dataset_list.base_uri = uri
-        self.base_uri_entry_buffer.set_text(self.dtool_dataset_list.base_uri, -1)
-
         p = urllib.parse.urlparse(uri)
         fpath = os.path.abspath(os.path.join(p.netloc, p.path))
 
@@ -298,8 +286,6 @@ class SignalHandler:
 
     def _set_dataset_uri(self, uri):
         """Set dataset file chooser and input field."""
-        self.dataset_uri_entry_buffer.set_text(uri, -1)
-
         p = urllib.parse.urlparse(uri)
         fpath = os.path.abspath(os.path.join(p.netloc, p.path))
 
@@ -327,7 +313,8 @@ class SignalHandler:
     def _select_dataset(self, uri):
         """Specify dataset selected in list."""
         if len(uri) > 0:
-            self.dtool_dataset_list.selected_uri = uri
+            # self.dtool_dataset_list.selected_uri = uri
+            self._set_dataset_uri(uri)
             self._load_dataset(uri)
             self._mark_dataset_as_changed()
         else:

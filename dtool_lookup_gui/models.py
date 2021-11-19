@@ -187,9 +187,13 @@ class DataSetListModel(dtool_gui_tk.models.DataSetListModel):
             if self.tag_filter is not None and self.tag_filter not in ds_tags:
                 append_okay = False
             if append_okay:
-                self._datasets.append(ds)
-
-                self._datasets_info.append(_proto_dataset_info(ds))
+                try:
+                    ds_info = _proto_dataset_info(ds)
+                except FileNotFoundError as err:  # README might not exist
+                    logger.warning(err.__str__())
+                else:
+                    self._datasets.append(ds)
+                    self._datasets_info.append(ds_info)
 
         # iter through frozen datasets
         for ds in dtoolcore.iter_datasets_in_base_uri(base_uri):

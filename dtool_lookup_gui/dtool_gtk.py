@@ -1,7 +1,29 @@
-import dtoolcore
+#
+# Copyright 2021 Johannes Hoermann, Lars Pastewka
+#
+# ### MIT license
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
+# TODO: remove selected_uri property
 import gi
 gi.require_version('Gtk', '3.0')
-# gi.require_version('dtool_gtk', '0.1')
 gi.require_version('GtkSource', '4')
 from gi.repository import Gtk, Gdk, Gio, GtkSource, GObject
 import logging
@@ -63,7 +85,7 @@ class ProgressBar(AbstractContextManager):
     def _set_text(self):
         if self._label is not None and self._item_show_func is not None:
             self._pb.set_text(self._label_item_template.format(
-                label=self._label, item=self.item_show_func()))
+                label=self._label, item=self.item_show_func(self._step)))
         if self._label is not None:
             self._pb.set_text(self._label_template.format(label=self._label))
         else:
@@ -77,27 +99,30 @@ class DtoolDatasetListBox(Gtk.ListBox):
     def __init__(self, *args, **kwargs):
         self._auto_refresh = False
         self._dataset_list_model = None
-        self._base_uri_model = None
+        # self._base_uri_model = None
         self._error_callback = logger.warning
         super().__init__(*args, **kwargs)
 
     @property
     def base_uri_model(self):
-        return self._base_uri_model
+        # return self._base_uri_model
+        return self._dataset_list_model._base_uri_model
 
     @base_uri_model.setter
     def base_uri_model(self, base_uri_model):
-        self._base_uri_model = base_uri_model
-        self._dataset_list_model.set_base_uri_model(self._base_uri_model)
+        # self._base_uri_model = base_uri_model
+        logger.debug(f"Set base URI model with URI {base_uri_model.get_base_uri()},")
+        self._dataset_list_model.set_base_uri_model(base_uri_model)
 
     @property
     def base_uri(self):
-        return self._base_uri_model.get_base_uri()
+        # return self._dataset_list_model.base_uri_model.get_base_uri()
+        return self._dataset_list_model.base_uri
 
-    @base_uri.setter
-    def base_uri(self, base_uri):
-        logger.debug(f"Put base URI {base_uri}.")
-        self._base_uri_model.put_base_uri(base_uri)
+    # @base_uri.setter
+    # def base_uri(self, base_uri):
+    #    logger.debug(f"Put base URI {base_uri}.")
+    #    self._base_uri_model.put_base_uri(base_uri)
 
     @property
     def dataset_list_model(self):

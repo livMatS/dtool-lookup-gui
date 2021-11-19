@@ -122,8 +122,6 @@
       </packing>
     </child>
   </object>
-  <object class="GtkEntryBuffer" id="base-uri-entry-buffer"/>
-  <object class="GtkEntryBuffer" id="dataset-uri-entry-buffer"/>
   <object class="GtkPopover" id="dependency-popover">
     <property name="can-focus">False</property>
     <property name="position">bottom</property>
@@ -430,170 +428,6 @@
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="orientation">vertical</property>
-                    <child>
-                      <object class="GtkBox">
-                        <property name="visible">True</property>
-                        <property name="can-focus">False</property>
-                        <property name="orientation">vertical</property>
-                        <child>
-                          <!-- n-columns=4 n-rows=1 -->
-                          <object class="GtkGrid">
-                            <property name="visible">True</property>
-                            <property name="can-focus">False</property>
-                            <property name="margin-left">5</property>
-                            <property name="margin-right">5</property>
-                            <property name="margin-start">5</property>
-                            <property name="margin-end">5</property>
-                            <property name="margin-top">5</property>
-                            <property name="margin-bottom">5</property>
-                            <property name="row-spacing">5</property>
-                            <property name="column-spacing">5</property>
-                            <child>
-                              <object class="GtkFileChooserButton" id="lookup-base-uri-chooser-button">
-                                <property name="visible">True</property>
-                                <property name="can-focus">False</property>
-                                <property name="action">select-folder</property>
-                                <property name="create-folders">False</property>
-                                <property name="local-only">False</property>
-                                <property name="title" translatable="yes"/>
-                                <signal name="file-set" handler="on_lhs_base_uri_set" swapped="no"/>
-                              </object>
-                              <packing>
-                                <property name="left-attach">2</property>
-                                <property name="top-attach">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkLabel">
-                                <property name="visible">True</property>
-                                <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">Base URI: </property>
-                                <attributes>
-                                  <attribute name="weight" value="bold"/>
-                                </attributes>
-                              </object>
-                              <packing>
-                                <property name="left-attach">0</property>
-                                <property name="top-attach">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkEntry" id="lookup-base-uri-entry">
-                                <property name="visible">True</property>
-                                <property name="can-focus">True</property>
-                                <property name="hexpand">True</property>
-                                <property name="buffer">lhs-base-uri-entry-buffer</property>
-                              </object>
-                              <packing>
-                                <property name="left-attach">1</property>
-                                <property name="top-attach">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkButton" id="lookup-lhs-uri-apply-button">
-                                <property name="label">gtk-apply</property>
-                                <property name="visible">True</property>
-                                <property name="can-focus">True</property>
-                                <property name="receives-default">True</property>
-                                <property name="use-stock">True</property>
-                                <property name="always-show-image">True</property>
-                                <signal name="clicked" handler="on_lhs_base_uri_open" swapped="no"/>
-                              </object>
-                              <packing>
-                                <property name="left-attach">3</property>
-                                <property name="top-attach">0</property>
-                              </packing>
-                            </child>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">True</property>
-                            <property name="position">0</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <!-- n-columns=4 n-rows=1 -->
-                          <object class="GtkGrid">
-                            <property name="visible">True</property>
-                            <property name="can-focus">False</property>
-                            <property name="margin-left">5</property>
-                            <property name="margin-right">5</property>
-                            <property name="margin-start">5</property>
-                            <property name="margin-end">5</property>
-                            <property name="margin-top">5</property>
-                            <property name="margin-bottom">5</property>
-                            <property name="row-spacing">5</property>
-                            <property name="column-spacing">5</property>
-                            <child>
-                              <object class="GtkFileChooserButton" id="lookup-dataset-uri-chooser-button">
-                                <property name="visible">True</property>
-                                <property name="can-focus">False</property>
-                                <property name="action">select-folder</property>
-                                <property name="create-folders">False</property>
-                                <property name="local-only">False</property>
-                                <property name="title" translatable="yes"/>
-                                <signal name="file-set" handler="on_lhs_dataset_uri_set" swapped="no"/>
-                              </object>
-                              <packing>
-                                <property name="left-attach">2</property>
-                                <property name="top-attach">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkLabel">
-                                <property name="visible">True</property>
-                                <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">Dataset URI: </property>
-                                <attributes>
-                                  <attribute name="weight" value="bold"/>
-                                </attributes>
-                              </object>
-                              <packing>
-                                <property name="left-attach">0</property>
-                                <property name="top-attach">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkEntry" id="lookup-dataset-uri-entry">
-                                <property name="visible">True</property>
-                                <property name="can-focus">True</property>
-                                <property name="hexpand">True</property>
-                                <property name="buffer">lhs-dataset-uri-entry-buffer</property>
-                              </object>
-                              <packing>
-                                <property name="left-attach">1</property>
-                                <property name="top-attach">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkButton" id="lookup-lhs-dataset-uri-apply-button1">
-                                <property name="label">gtk-open</property>
-                                <property name="visible">True</property>
-                                <property name="can-focus">True</property>
-                                <property name="receives-default">True</property>
-                                <property name="use-stock">True</property>
-                                <property name="always-show-image">True</property>
-                                <signal name="clicked" handler="on_lhs_dataset_uri_open" swapped="no"/>
-                              </object>
-                              <packing>
-                                <property name="left-attach">3</property>
-                                <property name="top-attach">0</property>
-                              </packing>
-                            </child>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">True</property>
-                            <property name="position">1</property>
-                          </packing>
-                        </child>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="position">0</property>
-                      </packing>
-                    </child>
                     <child>
                       <object class="GtkStack" id="main-stack">
                         <property name="visible">True</property>
@@ -1202,7 +1036,7 @@
                       <packing>
                         <property name="expand">True</property>
                         <property name="fill">True</property>
-                        <property name="position">1</property>
+                        <property name="position">0</property>
                       </packing>
                     </child>
                     <child>
@@ -1227,6 +1061,170 @@
                             <property name="expand">False</property>
                             <property name="fill">True</property>
                             <property name="position">0</property>
+                          </packing>
+                        </child>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">1</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkBox">
+                        <property name="visible">True</property>
+                        <property name="can-focus">False</property>
+                        <property name="orientation">vertical</property>
+                        <child>
+                          <!-- n-columns=4 n-rows=1 -->
+                          <object class="GtkGrid">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="margin-left">5</property>
+                            <property name="margin-right">5</property>
+                            <property name="margin-start">5</property>
+                            <property name="margin-end">5</property>
+                            <property name="margin-top">5</property>
+                            <property name="margin-bottom">5</property>
+                            <property name="row-spacing">5</property>
+                            <property name="column-spacing">5</property>
+                            <child>
+                              <object class="GtkFileChooserButton" id="lookup-base-uri-chooser-button">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="action">select-folder</property>
+                                <property name="create-folders">False</property>
+                                <property name="local-only">False</property>
+                                <property name="title" translatable="yes"/>
+                                <signal name="file-set" handler="on_rhs_base_uri_set" swapped="no"/>
+                              </object>
+                              <packing>
+                                <property name="left-attach">2</property>
+                                <property name="top-attach">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="label" translatable="yes">Remote base URI: </property>
+                                <attributes>
+                                  <attribute name="weight" value="bold"/>
+                                </attributes>
+                              </object>
+                              <packing>
+                                <property name="left-attach">0</property>
+                                <property name="top-attach">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkEntry" id="lookup-base-uri-entry">
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="hexpand">True</property>
+                                <property name="buffer">rhs-base-uri-entry-buffer</property>
+                              </object>
+                              <packing>
+                                <property name="left-attach">1</property>
+                                <property name="top-attach">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="lookup-lhs-uri-apply-button">
+                                <property name="label">gtk-apply</property>
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="receives-default">True</property>
+                                <property name="use-stock">True</property>
+                                <property name="always-show-image">True</property>
+                                <signal name="clicked" handler="on_rhs_base_uri_open" swapped="no"/>
+                              </object>
+                              <packing>
+                                <property name="left-attach">3</property>
+                                <property name="top-attach">0</property>
+                              </packing>
+                            </child>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <!-- n-columns=4 n-rows=1 -->
+                          <object class="GtkGrid">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="margin-left">5</property>
+                            <property name="margin-right">5</property>
+                            <property name="margin-start">5</property>
+                            <property name="margin-end">5</property>
+                            <property name="margin-top">5</property>
+                            <property name="margin-bottom">5</property>
+                            <property name="row-spacing">5</property>
+                            <property name="column-spacing">5</property>
+                            <child>
+                              <object class="GtkFileChooserButton" id="lookup-dataset-uri-chooser-button">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="action">select-folder</property>
+                                <property name="create-folders">False</property>
+                                <property name="local-only">False</property>
+                                <property name="title" translatable="yes"/>
+                                <signal name="file-set" handler="on_rhs_dataset_uri_set" swapped="no"/>
+                              </object>
+                              <packing>
+                                <property name="left-attach">2</property>
+                                <property name="top-attach">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="label" translatable="yes">Remote dataset URI: </property>
+                                <attributes>
+                                  <attribute name="weight" value="bold"/>
+                                </attributes>
+                              </object>
+                              <packing>
+                                <property name="left-attach">0</property>
+                                <property name="top-attach">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkEntry" id="lookup-dataset-uri-entry">
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="hexpand">True</property>
+                                <property name="buffer">rhs-dataset-uri-entry-buffer</property>
+                              </object>
+                              <packing>
+                                <property name="left-attach">1</property>
+                                <property name="top-attach">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="lookup-lhs-dataset-uri-apply-button">
+                                <property name="label">gtk-open</property>
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="receives-default">True</property>
+                                <property name="use-stock">True</property>
+                                <property name="always-show-image">True</property>
+                                <signal name="clicked" handler="on_rhs_dataset_uri_open" swapped="no"/>
+                              </object>
+                              <packing>
+                                <property name="left-attach">3</property>
+                                <property name="top-attach">0</property>
+                              </packing>
+                            </child>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">1</property>
                           </packing>
                         </child>
                       </object>
@@ -1279,7 +1277,7 @@
                                 <property name="create-folders">False</property>
                                 <property name="local-only">False</property>
                                 <property name="title" translatable="yes"/>
-                                <signal name="file-set" handler="on_base_uri_set" swapped="no"/>
+                                <signal name="file-set" handler="on_lhs_base_uri_set" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="left-attach">2</property>
@@ -1982,7 +1980,7 @@
                         <property name="margin-bottom">5</property>
                         <property name="spacing">1</property>
                         <child>
-                          <object class="GtkCheckButton" id="dataset-list-auto-refresh1">
+                          <object class="GtkCheckButton" id="direct-dataset-list-auto-refresh">
                             <property name="label" translatable="yes">Automatic refresh</property>
                             <property name="visible">True</property>
                             <property name="can-focus">True</property>
@@ -2376,82 +2374,6 @@
                             <property name="row-spacing">5</property>
                             <property name="column-spacing">5</property>
                             <child>
-                              <object class="GtkFileChooserButton" id="rhs-dataset-uri-chooser-button">
-                                <property name="visible">True</property>
-                                <property name="can-focus">False</property>
-                                <property name="action">select-folder</property>
-                                <property name="create-folders">False</property>
-                                <property name="local-only">False</property>
-                                <property name="title" translatable="yes"/>
-                                <signal name="file-set" handler="on_rhs_dataset_uri_set" swapped="no"/>
-                              </object>
-                              <packing>
-                                <property name="left-attach">2</property>
-                                <property name="top-attach">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkLabel">
-                                <property name="visible">True</property>
-                                <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">Right hand side dataset URI: </property>
-                                <attributes>
-                                  <attribute name="weight" value="bold"/>
-                                </attributes>
-                              </object>
-                              <packing>
-                                <property name="left-attach">0</property>
-                                <property name="top-attach">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkEntry" id="rhs-dataset-uri-entry">
-                                <property name="visible">True</property>
-                                <property name="can-focus">True</property>
-                                <property name="hexpand">True</property>
-                                <property name="buffer">rhs-dataset-uri-entry-buffer</property>
-                              </object>
-                              <packing>
-                                <property name="left-attach">1</property>
-                                <property name="top-attach">0</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkButton" id="rhs-dataset-uri-apply-button">
-                                <property name="label">gtk-open</property>
-                                <property name="visible">True</property>
-                                <property name="can-focus">True</property>
-                                <property name="receives-default">True</property>
-                                <property name="use-stock">True</property>
-                                <property name="always-show-image">True</property>
-                                <signal name="clicked" handler="on_rhs_dataset_uri_open" swapped="no"/>
-                              </object>
-                              <packing>
-                                <property name="left-attach">3</property>
-                                <property name="top-attach">0</property>
-                              </packing>
-                            </child>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">True</property>
-                            <property name="position">0</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <!-- n-columns=4 n-rows=1 -->
-                          <object class="GtkGrid">
-                            <property name="visible">True</property>
-                            <property name="can-focus">False</property>
-                            <property name="margin-left">5</property>
-                            <property name="margin-right">5</property>
-                            <property name="margin-start">5</property>
-                            <property name="margin-end">5</property>
-                            <property name="margin-top">5</property>
-                            <property name="margin-bottom">5</property>
-                            <property name="row-spacing">5</property>
-                            <property name="column-spacing">5</property>
-                            <child>
                               <object class="GtkFileChooserButton" id="rhs-base-uri-chooser-button">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
@@ -2470,7 +2392,7 @@
                               <object class="GtkLabel">
                                 <property name="visible">True</property>
                                 <property name="can-focus">False</property>
-                                <property name="label" translatable="yes">Right hand side base URI: </property>
+                                <property name="label" translatable="yes">Remote base URI: </property>
                                 <attributes>
                                   <attribute name="weight" value="bold"/>
                                 </attributes>
@@ -2501,6 +2423,82 @@
                                 <property name="use-stock">True</property>
                                 <property name="always-show-image">True</property>
                                 <signal name="clicked" handler="on_rhs_base_uri_open" swapped="no"/>
+                              </object>
+                              <packing>
+                                <property name="left-attach">3</property>
+                                <property name="top-attach">0</property>
+                              </packing>
+                            </child>
+                          </object>
+                          <packing>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
+                            <property name="position">0</property>
+                          </packing>
+                        </child>
+                        <child>
+                          <!-- n-columns=4 n-rows=1 -->
+                          <object class="GtkGrid">
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <property name="margin-left">5</property>
+                            <property name="margin-right">5</property>
+                            <property name="margin-start">5</property>
+                            <property name="margin-end">5</property>
+                            <property name="margin-top">5</property>
+                            <property name="margin-bottom">5</property>
+                            <property name="row-spacing">5</property>
+                            <property name="column-spacing">5</property>
+                            <child>
+                              <object class="GtkFileChooserButton" id="rhs-dataset-uri-chooser-button">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="action">select-folder</property>
+                                <property name="create-folders">False</property>
+                                <property name="local-only">False</property>
+                                <property name="title" translatable="yes"/>
+                                <signal name="file-set" handler="on_rhs_dataset_uri_set" swapped="no"/>
+                              </object>
+                              <packing>
+                                <property name="left-attach">2</property>
+                                <property name="top-attach">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkLabel">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="label" translatable="yes">Remote dataset URI: </property>
+                                <attributes>
+                                  <attribute name="weight" value="bold"/>
+                                </attributes>
+                              </object>
+                              <packing>
+                                <property name="left-attach">0</property>
+                                <property name="top-attach">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkEntry" id="rhs-dataset-uri-entry">
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="hexpand">True</property>
+                                <property name="buffer">rhs-dataset-uri-entry-buffer</property>
+                              </object>
+                              <packing>
+                                <property name="left-attach">1</property>
+                                <property name="top-attach">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkButton" id="rhs-dataset-uri-apply-button">
+                                <property name="label">gtk-open</property>
+                                <property name="visible">True</property>
+                                <property name="can-focus">True</property>
+                                <property name="receives-default">True</property>
+                                <property name="use-stock">True</property>
+                                <property name="always-show-image">True</property>
+                                <signal name="clicked" handler="on_rhs_dataset_uri_open" swapped="no"/>
                               </object>
                               <packing>
                                 <property name="left-attach">3</property>

@@ -21,7 +21,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-
 import asyncio
 import concurrent.futures
 import shutil
@@ -54,48 +53,42 @@ from .GraphWidget import GraphWidget
 
 
 class SignalHandler:
-    def __init__(self, event_loop, builder, settings):
-        self.event_loop = event_loop
-        self.builder = builder
-        self.settings = settings
+    def __init__(self, parent):
+        self.event_loop = parent.event_loop
+        self.builder = parent.builder
+        self.settings = parent.settings
         self.lookup = None
 
+        # gui widgets, alphabetically
+        self.base_uri_entry_buffer = self.builder.get_object('rhs-base-uri-entry-buffer')
+        self.base_uri_file_chooser_button = self.builder.get_object('lookup-base-uri-chooser-button')
+        self.dataset_list_auto_refresh = self.builder.get_object('dataset-list-auto-refresh')
+        self.dataset_manifest = self.builder.get_object('dataset-manifest')
+        self.dataset_notebook = self.builder.get_object('dataset-notebook')
+        self.dataset_readme = self.builder.get_object('dataset-readme')
+        self.dataset_uri_entry_buffer = self.builder.get_object('rhs-dataset-uri-entry-buffer')
+        self.dataset_uri_file_chooser_button = self.builder.get_object('lookup-dataset-uri-chooser-button')
+        self.dependency_spinner = self.builder.get_object('dependency-spinner')
+        self.dependency_stack = self.builder.get_object('dependency-stack')
+        self.dependency_view = self.builder.get_object('dependency-view')
         self.error_bar = self.builder.get_object('error-bar')
         self.error_label = self.builder.get_object('error-label')
-
-        # gui widgets
-        self.main_stack = self.builder.get_object('main-stack')
-        self.readme_stack = self.builder.get_object('readme-stack')
-        self.manifest_stack = self.builder.get_object('manifest-stack')
-        self.dependency_stack = self.builder.get_object('dependency-stack')
-        self.search_popover = self.builder.get_object('search-popover')
-
-        self.results_widget = self.builder.get_object('search-results')
-        self.dataset_list_auto_refresh = builder.get_object('dataset-list-auto-refresh')
-
-        self.statusbar_widget = self.builder.get_object('main-statusbar')
-        self.main_spinner = self.builder.get_object('main-spinner')
         self.main_not_found = self.builder.get_object('main-not-found')
+        self.main_spinner = self.builder.get_object('main-spinner')
+        self.main_stack = self.builder.get_object('main-stack')
         self.main_view = self.builder.get_object('main-view')
-        self.readme_spinner = self.builder.get_object('readme-spinner')
-
-        self.dataset_readme = self.builder.get_object('dataset-readme')
-        self.readme_view = self.builder.get_object('readme-view')
-
         self.manifest_spinner = self.builder.get_object('manifest-spinner')
-        self.dataset_manifest = self.builder.get_object('dataset-manifest')
-
+        self.manifest_stack = self.builder.get_object('manifest-stack')
         self.manifest_view = self.builder.get_object('manifest-view')
-        self.dependency_spinner = self.builder.get_object('dependency-spinner')
-
-        self.dependency_view = self.builder.get_object('dependency-view')
-
-        self.dataset_notebook = self.builder.get_object('dataset-notebook')
-
-        self.search_text_buffer = self.builder.get_object('search-text-buffer')
+        self.readme_spinner = self.builder.get_object('readme-spinner')
+        self.readme_stack = self.builder.get_object('readme-stack')
+        self.readme_view = self.builder.get_object('readme-view')
+        self.results_widget = self.builder.get_object('search-results')
+        self.search_entry = self.builder.get_object('search-entry')
         self.search_entry_buffer = self.builder.get_object('search-entry-buffer')
-
-        self.search_entry = builder.get_object('search-entry')
+        self.search_popover = self.builder.get_object('search-popover')
+        self.search_text_buffer = self.builder.get_object('search-text-buffer')
+        self.statusbar_widget = self.builder.get_object('main-statusbar')
 
         # private properties
         self._auto_refresh = GlobalConfig.auto_refresh_on
@@ -251,6 +244,11 @@ class SignalHandler:
         if list_box_row is None:
             return
         self._selected_dataset = list_box_row.dataset
+
+        self.dataset_uri_entry_buffer.set_text(
+            self._selected_dataset['uri'], -1)
+        # TODO: extract base URI from URI and set
+
         self._readme = None
         self._manifest = None
         self._dependency_graph = None

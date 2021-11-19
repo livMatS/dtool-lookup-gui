@@ -21,7 +21,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-
 import asyncio
 import concurrent.futures
 import logging
@@ -38,9 +37,18 @@ from gi.repository import Gtk, Gdk, Gio, GtkSource, GObject
 import gbulb
 gbulb.install(gtk=True)
 
-from . import LookupTab, DirectTab, TransferTab
+from . import GlobalConfig, LookupTab, DirectTab, TransferTab
+from .models import (
+    LocalBaseURIModel,
+    RemoteBaseURIModel,
+    DataSetListModel,
+    DataSetModel,
+    UnsupportedTypeError,
+)
 
 logger = logging.getLogger(__name__)
+
+HOME_DIR = os.path.expanduser("~")
 
 LOOKUP_TAB = 0
 DIRECT_TAB = 1
@@ -96,31 +104,54 @@ class SignalHandler:
         self.builder = builder
         self.settings = settings
 
+        # gui elements
+        self.lhs_base_uri_entry_buffer = self.builder.get_object('lhs-base-uri-entry-buffer')
+        self.lhs_dataset_uri_entry_buffer = self.builder.get_object('lhs-dataset-uri-entry-buffer')
+        self.rhs_base_uri_entry_buffer = self.builder.get_object('rhs-base-uri-entry-buffer')
+        self.rhs_dataset_uri_entry_buffer = self.builder.get_object('rhs-dataset-uri-entry-buffer')
+
         self.main_window = self.builder.get_object('main-window')
         self.settings_window = self.builder.get_object('settings-window')
 
         self.error_bar = self.builder.get_object('error-bar')
         self.error_label = self.builder.get_object('error-label')
 
+        # models
+        self.lhs_dataset_list_model = DataSetListModel()
+        self.lhs_base_uri_model = LocalBaseURIModel()
+        self.lhs_dataset_model = DataSetModel()
+        self.lhs_dataset_list_model.set_base_uri_model(self.lhs_base_uri_model)
+
+        self.rhs_dataset_list_model = DataSetListModel()
+        self.rhs_base_uri_model = RemoteBaseURIModel()
+        # self.rhs_dataset_model = DataSetModel()
+        self.rhs_dataset_list_model.set_base_uri_model(self.rhs_base_uri_model)
+
+        #configure
+        self.lhs_dataset_list_model.auto_refresh = GlobalConfig.auto_refresh_on
+        self.rhs_dataset_list_model.auto_refresh = GlobalConfig.auto_refresh_on
+
+        initial_base_uri = self.lhs_base_uri_model.get_base_uri()
+        if initial_base_uri is None:
+            initial_base_uri = HOME_DIR
+        self._set_lhs_base_uri(initial_base_uri)
+
         self.error_bar.set_revealed(False)
 
         self.thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
-        self.lookup_tab = LookupTab.SignalHandler(event_loop, builder, settings)
-        self.direct_tab = DirectTab.SignalHandler(event_loop, builder, settings)
-        self.transfer_tab = TransferTab.SignalHandler(event_loop, builder, settings)
-
-        # self.main_statusbar = self.builder.get_object('main-statusbar')
-        # self.main_progressbar = self.builder.get_object('main-progressbar')
+        self.lookup_tab = LookupTab.SignalHandler(self)
+        self.direct_tab = DirectTab.SignalHandler(self)
+        self.transfer_tab = TransferTab.SignalHandler(self)
 
         # Create a dictionary to hold the signal-handler pairs
         self.handlers = {}
 
         # load all signal handlers into sel.handlers
+        self._load_handlers(self)
         self._load_handlers(self.lookup_tab)
         self._load_handlers(self.direct_tab)
         self._load_handlers(self.transfer_tab)
-        self._load_handlers(self)
 
         self.builder.connect_signals(self.handlers)
         self.builder.get_object('main-window').show_all()
@@ -141,6 +172,46 @@ class SignalHandler:
                     self.handlers[method_name].append(method)
                 else:
                     self.handlers[method_name] = Trampoline([method])
+
+    def on_lhs_base_uri_set(self, filechooserbutton):
+        """Base URI directory selected with file chooser."""
+        base_uri = filechooserbutton.get_uri()
+        logger.debug(f"Selected lhs base URI '{base_uri}' via file chooser.")
+        self._set_lhs_base_uri(base_uri)
+
+    def on_rhs_base_uri_set(self, filechooserbutton):
+        """Base URI directory selected with file chooser."""
+        base_uri = filechooserbutton.get_uri()
+        logger.debug(f"Selected rhs base URI '{base_uri}' via file chooser.")
+        self._set_rhs_base_uri(base_uri)
+
+    def on_lhs_base_uri_open(self, button):
+        """Open base URI button clicked."""
+        base_uri = self.lhs_base_uri_entry_buffer.get_text()
+        logger.debug(f"lhs base URI open button clicked for {base_uri}.")
+        self.lhs_base_uri_model.put_base_uri(base_uri)
+
+    def on_rhs_base_uri_open(self, button):
+        """Open base URI button clicked."""
+        base_uri = self.rhs_base_uri_entry_buffer.get_text()
+        logger.debug(f"rhs base URI open button clicked for {base_uri}.")
+        self.rhs_base_uri_model.put_base_uri(base_uri)
+
+    def on_lhs_dataset_uri_set(self, filechooserbutton):
+        self._set_lhs_dataset_uri(filechooserbutton.get_uri())
+
+    def on_rhs_dataset_uri_set(self, filechooserbutton):
+        self._set_rhs_dataset_uri(filechooserbutton.get_uri())
+
+    def on_lhs_dataset_uri_open(self, button):
+        """Select and display dataset when URI specified in text box 'dataset URI' and button 'open' clicked."""
+        uri = self.lhs_dataset_uri_entry_buffer.get_text()
+        self.lhs_dataset_list_model.set_active_index_by_uri(uri)
+
+    def on_rhs_dataset_uri_open(self, button):
+        """Select and display dataset when URI specified in text box 'dataset URI' and button 'open' clicked."""
+        uri = self.rhs_dataset_uri_entry_buffer.get_text()
+        self.rhs_dataset_list_model.set_active_index_by_uri(uri)
 
     def on_main_switch_page(self, notebook, page, page_num):
         if page_num == LOOKUP_TAB:
@@ -176,6 +247,31 @@ class SignalHandler:
 
     def on_window_destroy(self, *args):
         self.event_loop.stop()
+
+    # private methods
+    def _set_lhs_base_uri(self, uri):
+        """Sets lhs base uri and associated file chooser and input field."""
+        logger.debug(f"Set lhs base URI {uri}.")
+        self.lhs_base_uri_model.put_base_uri(uri)
+        self.lhs_base_uri_entry_buffer.set_text(self.lhs_base_uri_model.get_base_uri(), -1)
+
+    def _set_rhs_base_uri(self, uri):
+        """Set dataset file chooser and input field."""
+        logger.debug(f"Set rhs base URI {uri}.")
+        self.rhs_base_uri_model.put_base_uri(uri)
+        self.rhs_base_uri_entry_buffer.set_text(self.rhs_base_uri_model.get_base_uri(), -1)
+
+    def _set_lhs_dataset_uri(self, uri):
+        """Set dataset file chooser and input field."""
+        logger.debug(f"Set lhs dataset URI {uri}.")
+        self.lhs_dataset_uri_entry_buffer.set_text(uri, -1)
+        self.lhs_dataset_list_model.set_active_index_by_uri(uri)
+
+    def _set_rhs_dataset_uri(self, uri):
+        """Set dataset file chooser and input field."""
+        logger.debug(f"Set rhs dataset URI {uri}.")
+        self.rhs_dataset_uri_entry_buffer.set_text(uri, -1)
+        self.rhs_dataset_list_model.set_active_index_by_uri(uri)
 
 
 def run_gui():
