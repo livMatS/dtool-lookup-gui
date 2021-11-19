@@ -24,7 +24,6 @@
 # TODO: remove selected_uri property
 import gi
 gi.require_version('Gtk', '3.0')
-gi.require_version('GtkSource', '4')
 from gi.repository import Gtk, Gdk, Gio, GObject
 import logging
 
