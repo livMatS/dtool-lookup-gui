@@ -53,8 +53,14 @@ class Trampoline(object):
         self.methods = methods
 
     def __call__(self, *args, **kwargs):
+        retval = None
         for m in self.methods:
-            return m(*args, **kwargs)
+            new_retval = m(*args, **kwargs)
+            if new_retval is not None and retval is not None:
+                raise RuntimeError('Can only trampoline signals that do not return anything')
+            else:
+                retval = new_retval
+        return retval
 
     def append(self, method):
         self.methods.append(method)
