@@ -418,22 +418,22 @@ class BaseURIInventoryGroup:
             for entry in dataset_list_box:
                 entry.destroy()
 
-        # TODO: targeted modifications instead of whole rebuild
-        selected_row = None
-        for props in self._dataset_list_model.yield_properties():
-            row = DtoolDatasetListBoxRow()
-            row.properties = props
-            row.fill()
-            if selected_row is None or selected_uri == row.dataset["uri"]:
-                # select the first row just in case the currently selected row is lost
-                selected_row = row
-            for dataset_list_box in self._dataset_list_box:
+            # TODO: targeted modifications instead of whole rebuild
+            selected_row = None
+            for props in self._dataset_list_model.yield_properties():
+                row = DtoolDatasetListBoxRow()
+                row.properties = props
+                row.fill()
+                if selected_row is None or selected_uri == row.dataset["uri"]:
+                    # select the first row just in case the currently selected row is lost
+                    selected_row = row
                 dataset_list_box.add(row)
 
-        if selected_row is not None:
-            self.set_selected_dataset_row(selected_row)
+            if selected_row is not None:
+                self.set_selected_dataset_uri(selected_row.dataset['uri'])
+                dataset_list_box.select_row(selected_row)
 
-        for dataset_list_box in self._dataset_list_box:
+            # self._dataset_uri_selector.apply_uri()
             dataset_list_box.show_all()
 
     def refresh(self, *args, **kwargs):
