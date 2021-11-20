@@ -82,6 +82,7 @@ class DatasetNameDialog(Gtk.Dialog):
 
 class SignalHandler:
     def __init__(self, parent):
+        self.main_application = parent.main_application
         self.builder = parent.builder
 
         self._readme = None

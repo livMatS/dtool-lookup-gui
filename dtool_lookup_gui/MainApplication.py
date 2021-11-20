@@ -92,6 +92,7 @@ class Settings:
 
 class SignalHandler:
     def __init__(self, event_loop, builder, settings):
+        self.main_application = self
         self.event_loop = event_loop
         self.builder = builder
         self.settings = settings

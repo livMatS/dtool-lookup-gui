@@ -1,5 +1,4 @@
 dtoolcore
-dtool-gui-tk
 aiohttp
 gbulb
 pyyaml

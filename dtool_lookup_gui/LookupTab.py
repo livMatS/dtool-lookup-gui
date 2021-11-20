@@ -51,6 +51,7 @@ from .GraphWidget import GraphWidget
 
 class SignalHandler:
     def __init__(self, parent):
+        self.main_application = parent.main_application
         self.event_loop = parent.event_loop
         self.builder = parent.builder
         self.settings = parent.settings
