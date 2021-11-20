@@ -36,24 +36,22 @@ from . import (
     fill_manifest_tree_store)
 import dtoolcore
 import dtool_lookup_api.core.config
-from dtool_lookup_api.core.LookupClient import ConfigurationBasedLookupClient as LookupClient
+from dtool_lookup_api.core.LookupClient import ConfigurationBasedLookupClient
 dtool_lookup_api.core.config.Config.interactive = False
 
-import gi
-
-gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, Gio
 
 import gbulb
 
 gbulb.install(gtk=True)
 
-from .Dependencies import DependencyGraph, is_uuid
+from .Dependencies import DependencyGraph
 from .GraphWidget import GraphWidget
 
 
 class SignalHandler:
-    def __init__(self, event_loop, builder, settings):
+    def __init__(self, main_application, event_loop, builder, settings):
+        self.main_application = main_application
         self.event_loop = event_loop
         self.builder = builder
         self.settings = settings
@@ -199,11 +197,7 @@ class SignalHandler:
         self.main_stack.set_visible_child(
             self.builder.get_object('main-spinner'))
 
-        self.lookup = LookupClient(lookup_url=self.settings.lookup_url,
-                                   auth_url=self.settings.authenticator_url,
-                                   username=self.settings.username,
-                                   password=self.settings.password,
-                                   verify_ssl=False)
+        self.lookup = ConfigurationBasedLookupClient()
         try:
             await self.lookup.connect()
             self.server_config = await self.lookup.config()

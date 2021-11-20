@@ -27,8 +27,8 @@ import concurrent.futures
 import logging
 import os
 
-import dtool_lookup_api.core.config
-dtool_lookup_api.core.config.Config.interactive = False
+from dtool_lookup_api.core.config import Config
+Config.interactive = False
 
 import gi
 
@@ -40,9 +40,10 @@ gbulb.install(gtk=True)
 #import asyncio_glib
 #asyncio.set_event_loop_policy(asyncio_glib.GLibEventLoopPolicy())
 
-from . import LookupTab, DirectTab
+from . import LookupTab, DirectTab, SettingsDialog
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
 # used for wrapping a list of signal handlers
@@ -52,8 +53,14 @@ class Trampoline(object):
         self.methods = methods
 
     def __call__(self, *args, **kwargs):
+        retval = None
         for m in self.methods:
-            m(*args, **kwargs)
+            new_retval = m(*args, **kwargs)
+            if new_retval is not None and retval is not None:
+                raise RuntimeError('Can only trampoline signals that do not return anything')
+            else:
+                retval = new_retval
+        return retval
 
     def append(self, method):
         self.methods.append(method)
@@ -67,22 +74,7 @@ class Settings:
         schema = Gio.SettingsSchemaSource.lookup(
             schema_source, "de.uni-freiburg.dtool-lookup-gui", False)
         self.settings = Gio.Settings.new_full(schema, None, None)
-
-    @property
-    def lookup_url(self):
-        return self.settings.get_string('lookup-url')
-
-    @property
-    def authenticator_url(self):
-        return self.settings.get_string('authenticator-url')
-
-    @property
-    def username(self):
-        return self.settings.get_string('lookup-username')
-
-    @property
-    def password(self):
-        return self.settings.get_string('lookup-password')
+        self.config = Config
 
     @property
     def dependency_keys(self):
@@ -96,7 +88,6 @@ class SignalHandler:
         self.settings = settings
 
         self.main_window = self.builder.get_object('main-window')
-        self.settings_window = self.builder.get_object('settings-window')
 
         self.error_bar = self.builder.get_object('error-bar')
         self.error_label = self.builder.get_object('error-label')
@@ -105,8 +96,9 @@ class SignalHandler:
 
         self.thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
-        self.lookup_tab = LookupTab.SignalHandler(event_loop, builder, settings)
-        self.direct_tab = DirectTab.SignalHandler(event_loop, builder, settings)
+        self.lookup_tab = LookupTab.SignalHandler(self, event_loop, builder, settings)
+        self.direct_tab = DirectTab.SignalHandler(self, builder)
+        self.settings_dialog = SettingsDialog.SignalHandler(self, event_loop, builder, settings)
 
         # Create a dictionary to hold the signal-handler pairs
         self.handlers = {}
@@ -114,6 +106,7 @@ class SignalHandler:
         # load all signal handlers into sel.handlers
         self._load_handlers(self.lookup_tab)
         self._load_handlers(self.direct_tab)
+        self._load_handlers(self.settings_dialog)
         self._load_handlers(self)
 
         self.builder.connect_signals(self.handlers)
@@ -130,10 +123,11 @@ class SignalHandler:
             if method_name.startswith('_'):
                 continue
             if callable(method):
-                logger.debug("Registering callback %s" % (method_name))
                 if method_name in self.handlers:
+                    logger.debug("Registering additional callback for '%s'" % (method_name))
                     self.handlers[method_name].append(method)
                 else:
+                    logger.debug("Registering callback for '%s'" % (method_name))
                     self.handlers[method_name] = Trampoline([method])
 
     def on_main_switch_page(self, notebook, page, page_num):
@@ -142,15 +136,9 @@ class SignalHandler:
         elif page_num == 1:
             self.direct_tab.refresh()
 
-    def on_settings_clicked(self, user_data):
-        asyncio.create_task(self._fetch_users())
-        self.settings_window.show()
-
-    def on_delete_settings(self, event, user_data):
-        self.settings_window.hide()
-        # Reconnect since settings may have been changed
-        asyncio.create_task(self.lookup_tab.connect())
-        return True
+    def on_settings_clicked(self, widget):
+        #asyncio.create_task(self._fetch_users())
+        self.settings_dialog.show()
 
     def show_error(self, msg):
         self.error_label.set_text(msg)
@@ -170,21 +158,9 @@ def run_gui():
     settings = Settings()
 
     signal_handler = SignalHandler(loop, builder, settings)
-    # builder.connect_signals(signal_handler)
 
-    settings.settings.bind("lookup-url", builder.get_object('lookup-url-entry'),
-                           'text', Gio.SettingsBindFlags.DEFAULT)
-    settings.settings.bind("authenticator-url",
-                           builder.get_object('authenticator-url-entry'),
-                           'text', Gio.SettingsBindFlags.DEFAULT)
-    settings.settings.bind("lookup-username",
-                           builder.get_object('username-entry'), 'text',
-                           Gio.SettingsBindFlags.DEFAULT)
-    settings.settings.bind("lookup-password",
-                           builder.get_object('password-entry'), 'text',
-                           Gio.SettingsBindFlags.DEFAULT)
     settings.settings.bind("dependency-keys",
-                           builder.get_object('dependency-keys'), 'text',
+                           builder.get_object('dependency-keys-entry'), 'text',
                            Gio.SettingsBindFlags.DEFAULT)
 
     # Connect to the lookup server upon startup

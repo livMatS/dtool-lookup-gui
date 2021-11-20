@@ -26,14 +26,14 @@
 # TODO: Metadata input via GUI
 # TODO: Copy dataset via GUI
 import asyncio
-import gi
-gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk, Gio
 import logging
 import os.path
 import urllib.parse
 
+from gi.repository import Gtk, Gdk, Gio
+
 from ruamel.yaml import YAML
+
 
 try:
     from StringIO import StringIO
@@ -91,10 +91,9 @@ class DatasetNameDialog(Gtk.Dialog):
 
 
 class SignalHandler:
-    def __init__(self, event_loop, builder, settings):
-        # self.event_loop = event_loop
+    def __init__(self, main_application, builder):
+        self.main_application = main_application
         self.builder = builder
-        # self.settings = settings
 
         self.error_bar = self.builder.get_object('error-bar')
         self.error_label = self.builder.get_object('error-label')
