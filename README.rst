@@ -149,3 +149,12 @@ A possible fix is
     DYLD_LIBRARY_PATH="/System/Library/Frameworks/OpenGL.framework/Versions/A/Libraries/:/System/Library/Frameworks/ApplicationServices.framework/Versions/A/Frameworks/ImageIO.framework/Versions/A/Resources/:/usr/local/lib" python3.9 -m dtool_lookup_gui
     
 See https://gitlab.gnome.org/GNOME/pygobject/-/issues/417 
+
+Development
+-----------
+
+The GUI uses custom Gtk widgets. To edit the the XML UI definition files with
+Glade_, add the directory ``glade/catalog`` to `Extra Catalog & Template paths`
+within Glade's preferences dialog.
+
+.. _Glade: https://glade.gnome.org/

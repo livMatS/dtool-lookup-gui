@@ -24,7 +24,6 @@
 # TODO: Make pure use of Tjelvar's model layer, move direct access to data sets
 #       there
 # TODO: Metadata input via GUI
-# TODO: Copy dataset via GUI
 # TODO: date not shown correctly in local results
 # TODO: status bar not updated correctly
 import asyncio
