@@ -47,7 +47,6 @@ from .dtool_gtk import BaseURISelector, DatasetURISelector, BaseURIInventoryGrou
 from . import GlobalConfig, LookupTab, DirectTab, TransferTab, SettingsDialog
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
 
 HOME_DIR = os.path.expanduser("~")
 

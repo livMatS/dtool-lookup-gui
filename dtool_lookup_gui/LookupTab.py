@@ -289,7 +289,7 @@ class SignalHandler:
             self._dependency_task = asyncio.ensure_future(
                 self._compute_dependencies(self._selected_dataset['uri']))
 
-    def on_search_entry_button_press(self, search_entry, event):
+    def on_search_entry_button_press(self, _, event):
         """"Display larger text box popover for multiline search queries on double-click in search bar."""
         if event.button == 1:
             if event.type == Gdk.EventType._2BUTTON_PRESS:
@@ -300,6 +300,13 @@ class SignalHandler:
                 rect.x, rect.y = event.x, event.y
                 self.search_popover.set_pointing_to(rect)
                 self.search_popover.popup()
+
+    def on_search_results_button_press(self, _, event):
+        """Download dataset on double-click."""
+        if event.button == 1:
+            if event.type == Gdk.EventType._2BUTTON_PRESS:
+                self.dataset_save_button.emit('clicked')  # mimic click on download button
+
 
     def on_search_button_clicked(self, button):
         """"Update search bar text when clicking search button in search popover."""
