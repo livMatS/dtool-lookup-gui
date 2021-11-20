@@ -26,9 +26,9 @@ import logging
 
 import dtoolcore
 
-import dtool_gui_tk.models
+from . import dtool_tk_models
 
-from dtool_gui_tk.models import (
+from .dtool_tk_models import (
     _ConfigFileVariableBaseModel,
     LocalBaseURIModel,
     # DataSetListModel,
@@ -107,7 +107,7 @@ class BaseURIModel():
         self._base_uri = value
 
 
-class DataSetModel(dtool_gui_tk.models.DataSetModel):
+class DataSetModel(dtool_tk_models.DataSetModel):
     "Model for both frozen and ProtoDataSet."
     def load_dataset(self, uri):
         """Load the dataset from a URI.
@@ -141,7 +141,7 @@ class DataSetModel(dtool_gui_tk.models.DataSetModel):
         return self._dataset
 
 
-class DataSetListModel(dtool_gui_tk.models.DataSetListModel):
+class DataSetListModel(dtool_tk_models.DataSetListModel):
     "Model for managing all (frozen and proto) datasets in a base URI."
 
     def __init__(self, *args, **kwargs):

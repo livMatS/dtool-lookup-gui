@@ -59,6 +59,8 @@ class SignalHandler:
         self.settings = parent.settings
         self.lookup = None
 
+        self._sensitive = False
+
         # gui widgets, alphabetically
         self.base_uri_entry_buffer = self.builder.get_object('rhs-base-uri-entry-buffer')
         self.base_uri_file_chooser_button = self.builder.get_object('lookup-base-uri-chooser-button')
@@ -92,8 +94,17 @@ class SignalHandler:
 
         # private properties
         self._auto_refresh = GlobalConfig.auto_refresh_on
-        self.dataset_list_auto_refresh.set_active(self._auto_refresh)
 
+        # models
+        self.rhs_base_uri_inventory_group = parent.rhs_base_uri_inventory_group
+
+        self.rhs_base_uri_inventory_group.base_uri_selector.append_file_chooser_button(
+            self.base_uri_file_chooser_button)
+
+        self.rhs_base_uri_inventory_group.dataset_uri_selector.append_file_chooser_button(
+            self.dataset_uri_file_chooser_button)
+
+        self.dataset_list_auto_refresh.set_active(self._auto_refresh)
 
         self._search_task = None
 
@@ -158,6 +169,8 @@ class SignalHandler:
 
     # TODO: jlh, need to understand better which calls run truly asynchronous and which ones still block the GUI
     def refresh(self):
+        if not self._sensitive:
+            return
         self.event_loop.create_task(self._refresh_results())
 
     async def _fetch_readme(self, uri):
@@ -245,8 +258,10 @@ class SignalHandler:
             return
         self._selected_dataset = list_box_row.dataset
 
-        self.dataset_uri_entry_buffer.set_text(
-            self._selected_dataset['uri'], -1)
+        base_uri = self._selected_dataset['base_uri']
+        dataset_uri = self._selected_dataset['uri']
+        self.rhs_base_uri_inventory_group.base_uri_selector.set_uri(base_uri)
+        self.rhs_base_uri_inventory_group.dataset_uri_selector.set_uri(dataset_uri)
         # TODO: extract base URI from URI and set
 
         self._readme = None
@@ -374,6 +389,11 @@ class SignalHandler:
         asyncio.ensure_future(
             self.retrieve_item(self._selected_dataset['uri'], item, uuid))
 
+    def on_lookup_dataset_list_auto_refresh_toggled(self, checkbox):
+        self._auto_refresh = checkbox.get_active()
+        self.set_sensitive(self._auto_refresh)
+        self.refresh()
+
     def show_error(self, msg):
         self.error_label.set_text(msg)
         self.error_bar.show()
@@ -385,9 +405,8 @@ class SignalHandler:
             self.search_popover.popdown()
         self.search_popover.set_sensitive(sensitive)
         self.search_entry.set_sensitive(sensitive)
+        self._sensitive = sensitive
 
-    def on_lookup_dataset_list_auto_refresh_toggled(self, checkbox):
-        self._auto_refresh = checkbox.get_active()
-        self.set_sensitive(self._auto_refresh)
-        self.refresh()
+
+
 

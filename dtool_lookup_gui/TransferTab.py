@@ -53,6 +53,8 @@ class SignalHandler:
         self._readme = None
         self._manifest = None
 
+        self._sensitive = False
+
         # gui elements, alphabetically
         self.dtool_copy_left_to_right_button = self.builder.get_object('dtool-copy-left-to-right')
         self.dtool_copy_right_to_left_button = self.builder.get_object('dtool-copy-right-to-left')
@@ -75,8 +77,33 @@ class SignalHandler:
         self.statusbar_stack = self.builder.get_object('statusbar-stack')
 
         # models
-        self.lhs_dtool_ls_results.dataset_list_model = parent.lhs_dataset_list_model
-        self.rhs_dtool_ls_results.dataset_list_model = parent.rhs_dataset_list_model
+        self.lhs_base_uri_inventory_group = parent.lhs_base_uri_inventory_group
+        self.rhs_base_uri_inventory_group = parent.rhs_base_uri_inventory_group
+
+        self.lhs_base_uri_inventory_group.append_dataset_list_box(self.lhs_dtool_ls_results)
+        self.rhs_base_uri_inventory_group.append_dataset_list_box(self.rhs_dtool_ls_results)
+
+        # self.lhs_base_uri_inventory_group.base_uri_selector.append_text_entry(self.lhs_base_uri_text_entry)
+        # self.rhs_base_uri_inventory_group.base_uri_selector.append_text_entry(self.rhs_base_uri_text_entry)
+
+        # self.lhs_base_uri_inventory_group.base_uri_selector.append_button(self.lhs_base_uri_apply_button)
+        # self.lhs_base_uri_inventory_group.base_uri_selector.append_button(self.lhs_base_uri_apply_button)
+
+        self.lhs_base_uri_inventory_group.base_uri_selector.append_file_chooser_button(
+            self.lhs_base_uri_file_chooser_button)
+        self.rhs_base_uri_inventory_group.base_uri_selector.append_file_chooser_button(
+            self.rhs_base_uri_file_chooser_button)
+
+        # self.lhs_base_uri_inventory_group.dataset_uri_selector.append_text_entry(self.lhs_dataset_uri_text_entry)
+        # self.rhs_base_uri_inventory_group.dataset_uri_selector.append_text_entry(self.rhs_dataset_uri_text_entry)
+
+        # self.lhs_base_uri_inventory_group.dataset_uri_selector.append_button(self.lhs_dataset_uri_apply_button)
+        # self.lhs_base_uri_inventory_group.dataset_uri_selector.append_button(self.lhs_dataset_uri_apply_button)
+
+        self.lhs_base_uri_inventory_group.dataset_uri_selector.append_file_chooser_button(
+            self.lhs_dataset_uri_file_chooser_button)
+        self.rhs_base_uri_inventory_group.dataset_uri_selector.append_file_chooser_button(
+            self.rhs_dataset_uri_file_chooser_button)
 
         # configure
         self.lhs_dataset_list_auto_refresh.set_active(GlobalConfig.auto_refresh_on)
@@ -84,107 +111,19 @@ class SignalHandler:
         self.lhs_dtool_ls_results.auto_refresh = GlobalConfig.auto_refresh_on
         self.rhs_dtool_ls_results.auto_refresh = GlobalConfig.auto_refresh_on
 
-        initial_lhs_base_uri = self.lhs_dtool_ls_results.base_uri
-        if initial_lhs_base_uri is None:
-            initial_lhs_base_uri = HOME_DIR
-        self._set_lhs_base_uri(initial_lhs_base_uri)
-
-        initial_rhs_base_uri = self.rhs_dtool_ls_results.base_uri
-        if initial_rhs_base_uri is None:
-            initial_rhs_base_uri = HOME_DIR
-        self._set_rhs_base_uri(initial_rhs_base_uri)
-
-        self.lhs_dtool_ls_results.refresh()
-        self.rhs_dtool_ls_results.refresh()
-
-        try:
-            self.lhs_dtool_ls_results.dataset_list_model.set_active_index(0)
-        except IndexError as exc:
-            pass # Empty list, ignore
-
-        try:
-            self.rhs_dtool_ls_results.dataset_list_model.set_active_index(0)
-        except IndexError as exc:
-            pass # Empty list, ignore
-
-        lhs_dataset_uri = self.lhs_dtool_ls_results.selected_uri
-        # print(self.dataset_list_model.base_uri)
-        if lhs_dataset_uri is not None:
-            self._set_lhs_dataset_uri(lhs_dataset_uri)
-            #  self._select_lhs_dataset(lhs_dataset_uri)
-
-        rhs_dataset_uri = self.rhs_dtool_ls_results.selected_uri
-        if rhs_dataset_uri is not None:
-            self._set_rhs_dataset_uri(rhs_dataset_uri)
-            # self._select_rhs_dataset(rhs_dataset_uri)
+        # self.lhs_dtool_ls_results.refresh()
+        # self.rhs_dtool_ls_results.refresh()
 
         self.thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
-        self.refresh()
-
     # signal handles
-
-    def on_lhs_base_uri_set(self,  filechooserbutton):
-        """Base URI directory selected with file chooser."""
-        base_uri = filechooserbutton.get_uri()
-        self._set_lhs_base_uri(base_uri)
-
-    def on_rhs_base_uri_set(self,  filechooserbutton):
-        """Base URI directory selected with file chooser."""
-        base_uri = filechooserbutton.get_uri()
-        self._set_rhs_base_uri(base_uri)
-
-    def on_lhs_base_uri_open(self,  button):
-        """Open base URI button clicked."""
-        self.lhs_dtool_ls_results.refresh()
-
-    def on_rhs_base_uri_open(self,  button):
-        """Open base URI button clicked."""
-        self.rhs_dtool_ls_results.refresh()
-
-    def on_lhs_dataset_uri_set(self,  filechooserbutton):
-        self._set_lhs_dataset_uri(filechooserbutton.get_uri())
-
-    def on_rhs_dataset_uri_set(self,  filechooserbutton):
-        self._set_rhs_dataset_uri(filechooserbutton.get_uri())
-
-    def on_lhs_dataset_uri_open(self,  button):
-        """Select and display dataset when URI specified in text box 'dataset URI' and button 'open' clicked."""
-        self.lhs_dtool_ls_results.refresh()
-        self.refresh()
-
-    def on_rhs_dataset_uri_open(self,  button):
-        """Select and display dataset when URI specified in text box 'dataset URI' and button 'open' clicked."""
-        self.rhs_dtool_ls_results.refresh()
-        self.refresh()
-
     def on_lhs_dataset_selected_from_list(self, list_box, list_box_row):
         """Select and display dataset when selected in left hand side list."""
-        if list_box_row is None:
-            return
-        uri = list_box_row.dataset['uri']
-        # self.lhs_dtool_ls_results.selected_uri = uri
-        self._set_lhs_dataset_uri(uri)
-        self.lhs_dataset_uri_entry_buffer.set_text(uri, -1)
         self.refresh()
 
     def on_rhs_dataset_selected_from_list(self, list_box, list_box_row):
         """Select and dataset when selected in right hand side list."""
-        if list_box_row is None:
-            return
-        uri = list_box_row.dataset['uri']
-        # self.rhs_dtool_ls_results.selected_uri = uri
-        self._set_rhs_dataset_uri(uri)
-        self.rhs_dataset_uri_entry_buffer.set_text(uri, -1)
         self.refresh()
-
-    def on_lhs_dataset_list_auto_refresh_toggled(self, checkbox):
-        self.lhs_dtool_ls_results.auto_refresh = checkbox.get_active()
-        self.lhs_dtool_ls_results.refresh()
-
-    def on_rhs_dataset_list_auto_refresh_toggled(self, checkbox):
-        self.rhs_dtool_ls_results.auto_refresh = checkbox.get_active()
-        self.rhs_dtool_ls_results.refresh()
 
     def on_dtool_copy_left_to_right_clicked(self,  button):
         """Copy lhs selected dataset to rhs selected base uri."""
@@ -196,22 +135,24 @@ class SignalHandler:
 
     def refresh(self, page=None):
         """Update status bar and tab contents."""
+        if not self._sensitive:
+            return
 
         logger.debug("Refresh tab.")
-        if self.lhs_dtool_ls_results.selected_uri is not None:
+        if self.lhs_base_uri_inventory_group.selected_uri is not None:
             lhs_msg = (f'{len(self.lhs_dtool_ls_results)} datasets - '
-                       f'{self.lhs_dtool_ls_results.selected_uri}')
-        elif self.lhs_dtool_ls_results.base_uri is not None:
+                       f'{self.lhs_base_uri_inventory_group.selected_uri}')
+        elif self.lhs_base_uri_inventory_group.base_uri is not None:
             lhs_msg = (f'{len(self.lhs_dtool_ls_results)} '
-                       f'datasets - {self.lhs_dtool_ls_results.base_uri}')
+                       f'datasets - {self.lhs_base_uri_inventory_group.base_uri}')
         else:
             lhs_msg = 'Specify left hand side base URI.'
 
-        if self.rhs_dtool_ls_results.selected_uri is not None:
-            rhs_msg = (f'{self.rhs_dtool_ls_results.selected_uri} - '
+        if self.rhs_base_uri_inventory_group.selected_uri is not None:
+            rhs_msg = (f'{self.rhs_base_uri_inventory_group.selected_uri} - '
                        f'{len(self.rhs_dtool_ls_results)} datasets')
-        elif self.rhs_dtool_ls_results.base_uri is not None:
-            rhs_msg = (f'{self.rhs_dtool_ls_results.base_uri} - '
+        elif self.rhs_base_uri_inventory_group.base_uri is not None:
+            rhs_msg = (f'{self.rhs_base_uri_inventory_group.base_uri} - '
                        f'{len(self.rhs_dtool_ls_results)} datasets')
         else:
             rhs_msg = 'Specify right hand side base URI.'
@@ -220,41 +161,6 @@ class SignalHandler:
         self.main_statusbar.push(0,msg)
 
     # private methods
-    def _set_lhs_base_uri(self, uri):
-        """Sets lhs base uri and associated file chooser and input field."""
-        p = urllib.parse.urlparse(uri)
-        fpath = os.path.abspath(os.path.join(p.netloc, p.path))
-
-        if os.path.isdir(fpath):
-            fpath = os.path.abspath(fpath)
-            self.lhs_base_uri_file_chooser_button.set_current_folder(fpath)
-
-    def _set_rhs_base_uri(self, uri):
-        """Set dataset file chooser and input field."""
-        p = urllib.parse.urlparse(uri)
-        fpath = os.path.abspath(os.path.join(p.netloc, p.path))
-
-        if os.path.isdir(fpath):
-            fpath = os.path.abspath(fpath)
-            self.rhs_base_uri_file_chooser_button.set_current_folder(fpath)
-
-    def _set_lhs_dataset_uri(self, uri):
-        """Set dataset file chooser and input field."""
-        p = urllib.parse.urlparse(uri)
-        fpath = os.path.abspath(os.path.join(p.netloc, p.path))
-
-        if os.path.isdir(fpath):
-            fpath = os.path.abspath(fpath)
-            self.lhs_dataset_uri_file_chooser_button.set_current_folder(fpath)
-
-    def _set_rhs_dataset_uri(self, uri):
-        """Set dataset file chooser and input field."""
-        p = urllib.parse.urlparse(uri)
-        fpath = os.path.abspath(os.path.join(p.netloc, p.path))
-
-        if os.path.isdir(fpath):
-            fpath = os.path.abspath(fpath)
-            self.rhs_dataset_uri_file_chooser_button.set_current_folder(fpath)
 
     # TODO: jlh, I really don't know hat I am doing here, just copy & paste
     # def _async_copy_dataset(self, *args, **kwargs):
@@ -312,7 +218,7 @@ class SignalHandler:
         source_dataset_uri = self.lhs_dataset_uri_entry_buffer.get_text()
         target_base_uri = self.rhs_base_uri_entry_buffer.get_text()
         target_dataset_uri = self._copy_dataset(source_dataset_uri, target_base_uri)
-        self.rhs_dtool_ls_results.refresh(selected_uri=target_dataset_uri)
+        self.rhs_base_uri_inventory_group.refresh(selected_uri=target_dataset_uri)
         self.statusbar_stack.set_visible_child(self.main_statusbar)
 
     async def _dtool_copy_right_to_left(self):
@@ -320,14 +226,8 @@ class SignalHandler:
         source_dataset_uri = self.rhs_dataset_uri_entry_buffer.get_text()
         target_base_uri = self.lhs_base_uri_entry_buffer.get_text()
         target_dataset_uri = self._copy_dataset(source_dataset_uri, target_base_uri)
-        self.lhs_dtool_ls_results.refresh(selected_uri=target_dataset_uri)
+        self.lhs_base_uri_inventory_group.refresh(selected_uri=target_dataset_uri)
         self.statusbar_stack.set_visible_child(self.main_statusbar)
 
-    # general-purpose methods
-    def show_error(self, msg):
-        self.error_label.set_text(msg)
-        self.error_bar.show()
-        self.error_bar.set_revealed(True)
-
     def set_sensitive(self, sensitive=True):
-        pass
+        self._sensitive = sensitive

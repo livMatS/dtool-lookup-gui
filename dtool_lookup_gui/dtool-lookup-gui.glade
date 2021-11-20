@@ -419,7 +419,7 @@
               </packing>
             </child>
             <child>
-              <object class="GtkNotebook" id="functionality-notebook">
+              <object class="GtkNotebook" id="main-notebook">
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <signal name="switch-page" handler="on_main_switch_page" swapped="no"/>
@@ -1433,7 +1433,7 @@
                                   <object class="DtoolDatasetListBox" id="dtool-ls-results">
                                     <property name="visible">True</property>
                                     <property name="can-focus">False</property>
-                                    <signal name="row-selected" handler="on_direct_dataset_selected_from_list" swapped="no"/>
+                                    <signal name="row-selected" handler="on_lhs_dataset_selected_from_list" swapped="no"/>
                                   </object>
                                 </child>
                               </object>
@@ -1986,6 +1986,7 @@
                             <property name="can-focus">True</property>
                             <property name="receives-default">False</property>
                             <property name="draw-indicator">True</property>
+                            <signal name="toggled" handler="on_lhs_dataset_list_auto_refresh_toggled" swapped="no"/>
                           </object>
                           <packing>
                             <property name="expand">False</property>

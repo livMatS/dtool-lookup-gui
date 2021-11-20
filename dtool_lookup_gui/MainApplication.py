@@ -45,6 +45,8 @@ from .models import (
     UnsupportedTypeError,
 )
 
+from .dtool_gtk import BaseURISelector, DatasetURISelector, BaseURIInventoryGroup
+
 logger = logging.getLogger(__name__)
 
 HOME_DIR = os.path.expanduser("~")
@@ -111,6 +113,7 @@ class SignalHandler:
 
         self.main_window = self.builder.get_object('main-window')
         self.settings_window = self.builder.get_object('settings-window')
+        self.main_notebook = self.builder.get_object('main-notebook')
 
         self.error_bar = self.builder.get_object('error-bar')
         self.error_label = self.builder.get_object('error-label')
@@ -123,17 +126,31 @@ class SignalHandler:
 
         self.rhs_dataset_list_model = DataSetListModel()
         self.rhs_base_uri_model = RemoteBaseURIModel()
-        # self.rhs_dataset_model = DataSetModel()
+        self.rhs_dataset_model = DataSetModel()  # dummy, not used
         self.rhs_dataset_list_model.set_base_uri_model(self.rhs_base_uri_model)
 
-        #configure
-        self.lhs_dataset_list_model.auto_refresh = GlobalConfig.auto_refresh_on
-        self.rhs_dataset_list_model.auto_refresh = GlobalConfig.auto_refresh_on
+        self.lhs_base_uri_selector = BaseURISelector(base_uri_model=self.lhs_base_uri_model,
+                                                     text_entry_buffer=self.lhs_base_uri_entry_buffer)
+        self.rhs_base_uri_selector = BaseURISelector(base_uri_model=self.rhs_base_uri_model,
+                                                     text_entry_buffer=self.rhs_base_uri_entry_buffer)
+        self.lhs_dataset_uri_selector = DatasetURISelector(dataset_model=self.lhs_dataset_model,
+                                                        text_entry_buffer=self.lhs_dataset_uri_entry_buffer)
+        self.rhs_dataset_uri_selector = DatasetURISelector(dataset_model=self.rhs_dataset_model,
+                                                        text_entry_buffer=self.rhs_dataset_uri_entry_buffer)
+        self.lhs_base_uri_inventory_group = BaseURIInventoryGroup(base_uri_selector=self.lhs_base_uri_selector,
+                                                                  dataset_uri_selector=self.lhs_dataset_uri_selector,
+                                                                  dataset_list_model=self.lhs_dataset_list_model)
+        self.rhs_base_uri_inventory_group = BaseURIInventoryGroup(base_uri_selector=self.rhs_base_uri_selector,
+                                                                  dataset_uri_selector=self.rhs_dataset_uri_selector,
+                                                                  dataset_list_model=self.rhs_dataset_list_model)
 
-        initial_base_uri = self.lhs_base_uri_model.get_base_uri()
-        if initial_base_uri is None:
-            initial_base_uri = HOME_DIR
-        self._set_lhs_base_uri(initial_base_uri)
+
+        #configure
+        self.lhs_base_uri_inventory_group.set_error_callback(self.show_error)
+        self.rhs_base_uri_inventory_group.set_error_callback(self.show_error)
+
+        self.lhs_base_uri_inventory_group.auto_refresh = GlobalConfig.auto_refresh_on
+        self.rhs_base_uri_inventory_group.auto_refresh = GlobalConfig.auto_refresh_on
 
         self.error_bar.set_revealed(False)
 
@@ -153,7 +170,10 @@ class SignalHandler:
         self._load_handlers(self.transfer_tab)
 
         self.builder.connect_signals(self.handlers)
-        self.builder.get_object('main-window').show_all()
+        self.main_window.show_all()
+
+        self.refresh()
+
 
     def _load_handlers(self, object):
         """Scan object for signal handlers and add them to a (class-global) """
@@ -172,62 +192,62 @@ class SignalHandler:
                 else:
                     self.handlers[method_name] = Trampoline([method])
 
-    def on_lhs_base_uri_set(self, filechooserbutton):
-        """Base URI directory selected with file chooser."""
-        base_uri = filechooserbutton.get_uri()
-        logger.debug(f"Selected lhs base URI '{base_uri}' via file chooser.")
-        self._set_lhs_base_uri(base_uri)
+    # signal handlers
 
-    def on_rhs_base_uri_set(self, filechooserbutton):
+    def on_lhs_base_uri_set(self, file_chooser_button):
         """Base URI directory selected with file chooser."""
-        base_uri = filechooserbutton.get_uri()
+        base_uri = file_chooser_button.get_uri()
+        logger.debug(f"Selected lhs base URI '{base_uri}' via file chooser.")
+        self.lhs_base_uri_inventory_group.set_base_uri_from_file_chooser_button(file_chooser_button)
+
+    def on_rhs_base_uri_set(self, file_chooser_button):
+        """Base URI directory selected with file chooser."""
+        base_uri = file_chooser_button.get_uri()
         logger.debug(f"Selected rhs base URI '{base_uri}' via file chooser.")
-        self._set_rhs_base_uri(base_uri)
+        self.rhs_base_uri_inventory_group.set_base_uri_from_file_chooser_button(file_chooser_button)
 
     def on_lhs_base_uri_open(self, button):
         """Open base URI button clicked."""
-        base_uri = self.lhs_base_uri_entry_buffer.get_text()
-        logger.debug(f"lhs base URI open button clicked for {base_uri}.")
-        self.lhs_base_uri_model.put_base_uri(base_uri)
+        self.lhs_base_uri_inventory_group.apply_base_uri()
 
     def on_rhs_base_uri_open(self, button):
         """Open base URI button clicked."""
-        base_uri = self.rhs_base_uri_entry_buffer.get_text()
-        logger.debug(f"rhs base URI open button clicked for {base_uri}.")
-        self.rhs_base_uri_model.put_base_uri(base_uri)
+        self.rhs_base_uri_inventory_group.apply_base_uri()
 
-    def on_lhs_dataset_uri_set(self, filechooserbutton):
-        self._set_lhs_dataset_uri(filechooserbutton.get_uri())
+    def on_lhs_dataset_uri_set(self, file_chooser_button):
+        self.lhs_base_uri_inventory_group.set_dataset_uri_from_file_chooser_button(file_chooser_button)
 
-    def on_rhs_dataset_uri_set(self, filechooserbutton):
-        self._set_rhs_dataset_uri(filechooserbutton.get_uri())
+    def on_rhs_dataset_uri_set(self, file_chooser_button):
+        self.rhs_base_uri_inventory_group.set_dataset_uri_from_file_chooser_button(file_chooser_button)
 
     def on_lhs_dataset_uri_open(self, button):
         """Select and display dataset when URI specified in text box 'dataset URI' and button 'open' clicked."""
-        uri = self.lhs_dataset_uri_entry_buffer.get_text()
-        self.lhs_dataset_list_model.set_active_index_by_uri(uri)
+        self.lhs_base_uri_inventory_group.apply_dataset_uri()
 
     def on_rhs_dataset_uri_open(self, button):
         """Select and display dataset when URI specified in text box 'dataset URI' and button 'open' clicked."""
-        uri = self.rhs_dataset_uri_entry_buffer.get_text()
-        self.rhs_dataset_list_model.set_active_index_by_uri(uri)
+        self.rhs_base_uri_inventory_group.apply_dataset_uri()
+
+    def on_lhs_dataset_selected_from_list(self, list_box, list_box_row):
+        """Select and display dataset when selected in left hand side list."""
+        if list_box_row is not None:
+            self.lhs_base_uri_inventory_group.set_selected_dataset_row(list_box_row)
+
+    def on_rhs_dataset_selected_from_list(self, list_box, list_box_row):
+        """Select and dataset when selected in right hand side list."""
+        if list_box_row is not None:
+            self.rhs_base_uri_inventory_group.set_selected_dataset_row(list_box_row)
+
+    def on_lhs_dataset_list_auto_refresh_toggled(self, checkbox):
+        self.lhs_base_uri_inventory_group.auto_refresh = checkbox.get_active()
+        self.lhs_base_uri_inventory_group.refresh()
+
+    def on_rhs_dataset_list_auto_refresh_toggled(self, checkbox):
+        self.rhs_base_uri_inventory_group.auto_refresh = checkbox.get_active()
+        self.rhs_base_uri_inventory_group.refresh()
 
     def on_main_switch_page(self, notebook, page, page_num):
-        if page_num == LOOKUP_TAB:
-            self.lookup_tab.set_sensitive(True)
-            self.direct_tab.set_sensitive(False)
-            self.transfer_tab.set_sensitive(False)
-            self.lookup_tab.refresh()
-        elif page_num == DIRECT_TAB:
-            self.lookup_tab.set_sensitive(False)
-            self.direct_tab.set_sensitive(True)
-            self.transfer_tab.set_sensitive(False)
-            self.direct_tab.refresh()
-        elif page_num == TRANSFER_TAB:
-            self.lookup_tab.set_sensitive(False)
-            self.direct_tab.set_sensitive(False)
-            self.transfer_tab.set_sensitive(True)
-            self.transfer_tab.refresh()
+        self.refresh(page_num)
 
     def on_settings_clicked(self, user_data):
         asyncio.create_task(self._fetch_users())
@@ -247,30 +267,26 @@ class SignalHandler:
     def on_window_destroy(self, *args):
         self.event_loop.stop()
 
-    # private methods
-    def _set_lhs_base_uri(self, uri):
-        """Sets lhs base uri and associated file chooser and input field."""
-        logger.debug(f"Set lhs base URI {uri}.")
-        self.lhs_base_uri_model.put_base_uri(uri)
-        self.lhs_base_uri_entry_buffer.set_text(self.lhs_base_uri_model.get_base_uri(), -1)
+    # generic methods
 
-    def _set_rhs_base_uri(self, uri):
-        """Set dataset file chooser and input field."""
-        logger.debug(f"Set rhs base URI {uri}.")
-        self.rhs_base_uri_model.put_base_uri(uri)
-        self.rhs_base_uri_entry_buffer.set_text(self.rhs_base_uri_model.get_base_uri(), -1)
-
-    def _set_lhs_dataset_uri(self, uri):
-        """Set dataset file chooser and input field."""
-        logger.debug(f"Set lhs dataset URI {uri}.")
-        self.lhs_dataset_uri_entry_buffer.set_text(uri, -1)
-        self.lhs_dataset_list_model.set_active_index_by_uri(uri)
-
-    def _set_rhs_dataset_uri(self, uri):
-        """Set dataset file chooser and input field."""
-        logger.debug(f"Set rhs dataset URI {uri}.")
-        self.rhs_dataset_uri_entry_buffer.set_text(uri, -1)
-        self.rhs_dataset_list_model.set_active_index_by_uri(uri)
+    def refresh(self, page_num=None):
+        if page_num is None:
+            page_num = self.main_notebook.get_current_page()
+        if page_num == LOOKUP_TAB:
+            self.lookup_tab.set_sensitive(True)
+            self.direct_tab.set_sensitive(False)
+            self.transfer_tab.set_sensitive(False)
+            self.lookup_tab.refresh()
+        elif page_num == DIRECT_TAB:
+            self.lookup_tab.set_sensitive(False)
+            self.direct_tab.set_sensitive(True)
+            self.transfer_tab.set_sensitive(False)
+            self.direct_tab.refresh()
+        elif page_num == TRANSFER_TAB:
+            self.lookup_tab.set_sensitive(False)
+            self.direct_tab.set_sensitive(False)
+            self.transfer_tab.set_sensitive(True)
+            self.transfer_tab.refresh()
 
 
 def run_gui():
