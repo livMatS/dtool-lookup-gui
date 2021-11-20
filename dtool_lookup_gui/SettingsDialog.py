@@ -66,12 +66,10 @@ class SignalHandler:
         for child in endpoints_list_box.get_children():
             child.destroy()
         base_uris = await self.main_application.lookup_tab.lookup.list_base_uris()
-        first_row = None
+
         for base_uri in base_uris:
             parsed_uri = generous_parse_uri(base_uri["base_uri"])
             row = Gtk.ListBoxRow()
-            if first_row is None:
-                first_row = row
             hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
             hbox.set_margin_top(12)
             hbox.set_margin_bottom(12)
@@ -96,7 +94,17 @@ class SignalHandler:
             hbox.pack_end(button, False, False, 0)
             row.add(hbox)
             endpoints_list_box.add(row)
-        endpoints_list_box.select_row(first_row)
+
+        row = Gtk.ListBoxRow()
+        image = Gtk.Image.new_from_icon_name('list-add-symbolic', Gtk.IconSize.BUTTON)
+        image.set_margin_top(20)
+        image.set_margin_bottom(20)
+        image.set_margin_start(12)
+        image.set_margin_end(12)
+        row.connect('state-changed', self.on_add_endpoint_clicked)
+        row.add(image)
+        endpoints_list_box.add(row)
+
         endpoints_list_box.show_all()
 
     def on_settings_window_delete(self, widget, event):
@@ -163,6 +171,9 @@ class SignalHandler:
 
             self.s3_configuration_dialog.base_uri = base_uri
             self.s3_configuration_dialog.show()
+
+    def on_add_endpoint_state_changed(self, widget, state):
+        print('add endpoint', widget, state)
 
     def on_s3_configuration_apply_clicked(self, widget):
         self.s3_configuration_dialog.hide()
