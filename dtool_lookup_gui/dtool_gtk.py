@@ -21,7 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-# TODO: remove selected_uri property
+# TODO: fill lists with one dataset when auto refresh toggled off
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, Gio, GObject

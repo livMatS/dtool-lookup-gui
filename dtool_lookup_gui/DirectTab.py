@@ -90,6 +90,8 @@ class SignalHandler:
         self._reload_readme = True
         self._reload_manifest = True
 
+        self._sensitive = False
+
         # gui elements
         self.base_uri_entry_buffer = self.builder.get_object('base-uri-entry-buffer')
         self.base_uri_entry_buffer = self.builder.get_object('lhs-base-uri-entry-buffer')
@@ -134,7 +136,6 @@ class SignalHandler:
         if dataset_uri is not None:
           self._show_dataset()
 
-        # self.refresh()
 
     # signal handles
 

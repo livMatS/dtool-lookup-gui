@@ -62,13 +62,13 @@ class SignalHandler:
 
         # gui widgets, alphabetically
         self.base_uri_entry_buffer = self.builder.get_object('rhs-base-uri-entry-buffer')
-        self.base_uri_file_chooser_button = self.builder.get_object('lookup-base-uri-chooser-button')
+        # self.base_uri_file_chooser_button = self.builder.get_object('lookup-base-uri-chooser-button')
         self.dataset_list_auto_refresh = self.builder.get_object('dataset-list-auto-refresh')
         self.dataset_manifest = self.builder.get_object('dataset-manifest')
         self.dataset_notebook = self.builder.get_object('dataset-notebook')
         self.dataset_readme = self.builder.get_object('dataset-readme')
         self.dataset_uri_entry_buffer = self.builder.get_object('rhs-dataset-uri-entry-buffer')
-        self.dataset_uri_file_chooser_button = self.builder.get_object('lookup-dataset-uri-chooser-button')
+        # self.dataset_uri_file_chooser_button = self.builder.get_object('lookup-dataset-uri-chooser-button')
         self.dependency_spinner = self.builder.get_object('dependency-spinner')
         self.dependency_stack = self.builder.get_object('dependency-stack')
         self.dependency_view = self.builder.get_object('dependency-view')
@@ -91,17 +91,19 @@ class SignalHandler:
         self.search_text_buffer = self.builder.get_object('search-text-buffer')
         self.statusbar_widget = self.builder.get_object('main-statusbar')
 
+        self.dataset_save_button = self.builder.get_object('lookup-dataset-uri-save-button')
+
         # private properties
         self._auto_refresh = GlobalConfig.auto_refresh_on
 
         # models
         self.rhs_base_uri_inventory_group = parent.rhs_base_uri_inventory_group
 
-        self.rhs_base_uri_inventory_group.base_uri_selector.append_file_chooser_button(
-            self.base_uri_file_chooser_button)
+        # self.rhs_base_uri_inventory_group.base_uri_selector.append_file_chooser_button(
+        #    self.base_uri_file_chooser_button)
 
-        self.rhs_base_uri_inventory_group.dataset_uri_selector.append_file_chooser_button(
-            self.dataset_uri_file_chooser_button)
+        # self.rhs_base_uri_inventory_group.dataset_uri_selector.append_file_chooser_button(
+        #    self.dataset_uri_file_chooser_button)
 
         self.dataset_list_auto_refresh.set_active(self._auto_refresh)
 

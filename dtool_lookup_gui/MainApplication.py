@@ -248,6 +248,9 @@ class SignalHandler:
         #asyncio.create_task(self._fetch_users())
         self.settings_dialog.show()
 
+    def on_jump_to_transfer_tab(self, button):
+        self.main_notebook.set_current_page(TRANSFER_TAB)
+
     def show_error(self, msg):
         self.error_label.set_text(msg)
         self.error_bar.show()
