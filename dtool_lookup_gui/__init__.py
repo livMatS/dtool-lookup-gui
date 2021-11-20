@@ -23,6 +23,7 @@
 #
 
 import locale
+import logging
 import math
 import os
 import uuid
@@ -35,6 +36,13 @@ from ruamel.yaml.constructor import DuplicateKeyError
 from ruamel.yaml.scanner import ScannerError
 
 import dtoolcore
+
+logger = logging.getLogger(__name__)
+
+
+class GlobalConfig:
+    """GUI-global behavioral settings. """
+    auto_refresh_on = True
 
 
 @contextmanager
@@ -60,7 +68,7 @@ def is_uuid(value):
 
 def to_timestamp(d):
     """
-    Convert a sting or a timestamp to a timestamp. This is a dirty fix necessary
+    Convert a string or a timestamp to a timestamp. This is a dirty fix necessary
     because the /dataset/list route return timestamps but /dataset/search
     returns strings in older versions of the lookup server (before 0.15.0).
     """
@@ -169,3 +177,4 @@ def _validate_readme(readme_content):
         return readme_formatted, None
     except (ParserError, DuplicateKeyError, ScannerError) as message:
         return None, str(message)
+

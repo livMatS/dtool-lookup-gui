@@ -1,0 +1,2 @@
+Within glade, open preferences and add the folder catalog here to "Extra Catalog & Template paths".
+This allows te use of this repostory's custom widgets within glade.

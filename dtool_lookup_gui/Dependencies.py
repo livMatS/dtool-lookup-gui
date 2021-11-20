@@ -21,10 +21,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-
 import json
 import logging
-import uuid
 
 from . import is_uuid
 from .SimpleGraph import SimpleGraph

@@ -25,6 +25,8 @@
 #       there
 # TODO: Metadata input via GUI
 # TODO: Copy dataset via GUI
+# TODO: date not shown correctly in local results
+# TODO: status bar not updated correctly
 import asyncio
 import logging
 import os.path
@@ -33,7 +35,6 @@ import urllib.parse
 from gi.repository import Gtk, Gdk, Gio
 
 from ruamel.yaml import YAML
-
 
 try:
     from StringIO import StringIO
@@ -44,24 +45,12 @@ import dtoolcore
 
 from dtool_create.dataset import _get_readme_template
 
-from . import date_to_string, _validate_readme
-
 from . import (
-    to_timestamp,
-    date_to_string,
+    GlobalConfig,
     datetime_to_string,
     fill_readme_tree_store,
-    fill_manifest_tree_store)
-
-from .models import (
-    LocalBaseURIModel,
-    DataSetListModel,
-    DataSetModel,
-    # MetadataSchemaListModel,
-    UnsupportedTypeError,
-)
-
-HOME_DIR = os.path.expanduser("~")
+    fill_manifest_tree_store,
+    _validate_readme)
 
 # Page numbers inverted, very weird
 DATASET_NOTEBOOK_README_PAGE = 0
@@ -91,96 +80,94 @@ class DatasetNameDialog(Gtk.Dialog):
 
 
 class SignalHandler:
-    def __init__(self, main_application, builder):
-        self.main_application = main_application
-        self.builder = builder
-
-        self.error_bar = self.builder.get_object('error-bar')
-        self.error_label = self.builder.get_object('error-label')
+    def __init__(self, parent):
+        self.main_application = parent.main_application
+        self.builder = parent.builder
 
         self._readme = None
         self._manifest = None
 
-        self.readme_stack = self.builder.get_object('direct-readme-stack')
+        self._reload_readme = True
+        self._reload_manifest = True
+
+        self._sensitive = False
+
+        # gui elements
+        self.base_uri_entry_buffer = self.builder.get_object('base-uri-entry-buffer')
+        self.base_uri_entry_buffer = self.builder.get_object('lhs-base-uri-entry-buffer')
+        self.base_uri_file_chooser_button = self.builder.get_object('base-uri-chooser-button')
+        self.dataset_list_auto_refresh = self.builder.get_object('direct-dataset-list-auto-refresh')
+        self.dataset_manifest = self.builder.get_object('direct-dataset-manifest')
+        self.dataset_notebook = self.builder.get_object('direct-dataset-notebook')
+        self.dataset_readme = self.builder.get_object('direct-dataset-readme')
+        self.dataset_uri_entry_buffer = self.builder.get_object('lhs-dataset-uri-entry-buffer')
+        self.dataset_uri_file_chooser_button = self.builder.get_object('dataset-uri-chooser-button')
+        self.dtool_add_items_button = self.builder.get_object('dtool-add-items')
+        self.dtool_dataset_list = self.builder.get_object('dtool-ls-results')
+        self.dtool_freeze_button = self.builder.get_object('dtool-freeze')
+        self.error_bar = self.builder.get_object('error-bar')
+        self.error_label = self.builder.get_object('error-label')
+        self.main_window = self.builder.get_object('main-window')
+        self.manifest_spinner =  self.builder.get_object('direct-manifest-spinner')
         self.manifest_stack = self.builder.get_object('direct-manifest-stack')
+        self.manifest_view = self.builder.get_object('direct-manifest-view')
+        self.readme_spinner = self.builder.get_object('direct-readme-spinner')
+        self.readme_stack = self.builder.get_object('direct-readme-stack')
+        self.readme_view = self.builder.get_object('direct-readme-view')
+        self.statusbar_widget = self.builder.get_object('main-statusbar')
 
-        self.base_uri_model = LocalBaseURIModel()
-        self.dataset_list_model = DataSetListModel()
-        self.dataset_model = DataSetModel()
-        self.dataset_list_model.set_base_uri_model(self.base_uri_model)
-        # print(self.base_uri_model.get_base_uri())
-        # Configure the models.
-        initial_base_uri = self.base_uri_model.get_base_uri()
-        if initial_base_uri is None:
-            initial_base_uri = HOME_DIR
-        self._set_base_uri(initial_base_uri)
-        self._list_datasets()
+        # models
+        # self.dataset_model = parent.lhs_dataset_model
+        self.lhs_base_uri_inventory_group = parent.lhs_base_uri_inventory_group
+        self.lhs_base_uri_inventory_group.append_dataset_list_box(self.dtool_dataset_list)
 
-        try:
-            self.dataset_list_model.set_active_index(0)
-        except IndexError as exc:
-            pass # Empty list, ignore
+        self.lhs_base_uri_inventory_group.base_uri_selector.append_file_chooser_button(
+            self.base_uri_file_chooser_button)
 
-        dataset_uri = self.dataset_list_model.get_active_uri()
+        self.lhs_base_uri_inventory_group.dataset_uri_selector.append_file_chooser_button(
+            self.dataset_uri_file_chooser_button)
+
+        # configure
+        self.dataset_list_auto_refresh.set_active(GlobalConfig.auto_refresh_on)
+        # self.dtool_dataset_list.auto_refresh = GlobalConfig.auto_refresh_on
+
+        dataset_uri = self.lhs_base_uri_inventory_group.get_selected_uri()
         # print(self.dataset_list_model.base_uri)
         if dataset_uri is not None:
-            self._set_dataset_uri(dataset_uri)
-            self._select_dataset(dataset_uri)
-            self._show_dataset()
+          self._show_dataset()
 
-        self.refresh()
 
     # signal handles
 
-    def on_base_uri_set(self,  filechooserbutton):
-        """Base URI directory selected with file chooser."""
-        base_uri = filechooserbutton.get_uri()
-        self._set_base_uri(base_uri)
-
-    def on_base_uri_open(self,  button):
-        """Open base URI button clicked."""
-        base_uri_entry_buffer = self.builder.get_object('base-uri-entry-buffer')
-        base_uri = base_uri_entry_buffer.get_text()
-        self.base_uri_model.put_base_uri(base_uri)
-        self._list_datasets()
-
-    def on_dataset_uri_set(self,  filechooserbutton):
-        self._set_dataset_uri(filechooserbutton.get_uri())
-
-    def on_dataset_uri_open(self,  button):
+    def on_lhs_dataset_uri_open(self,  button):
         """Select and display dataset when URI specified in text box 'dataset URI' and button 'open' clicked."""
-        dataset_uri_entry_buffer = self.builder.get_object('dataset-uri-entry-buffer')
-        uri = dataset_uri_entry_buffer.get_text()
-        self._select_dataset(uri)
         self._mark_dataset_as_changed()
-        self._list_datasets()
         self._show_dataset()
         self.refresh()
 
-    def on_direct_dataset_selected_from_list(self, list_box, list_box_row):
+    def on_lhs_dataset_selected_from_list(self, list_box, list_box_row):
         """Select and display dataset when selected in left hand side list."""
         if list_box_row is None:
             return
-        uri = list_box_row.dataset['uri']
-        self._select_dataset(uri)
         self._mark_dataset_as_changed()
         self._show_dataset()
         self.refresh()
 
     def on_dtool_create(self, button):
-        dialog = DatasetNameDialog(self.builder.get_object('main-window'))
+        dialog = DatasetNameDialog(self.main_window)
         response = dialog.run()
 
         if response == Gtk.ResponseType.OK:
             dataset_name = dialog.entry.get_text()
-            self._create_dataset(dataset_name, self.base_uri_model.get_base_uri())
+            self._create_dataset(dataset_name, self.lhs_base_uri_inventory_group.base_uri)
+
         elif response == Gtk.ResponseType.CANCEL:
             pass
         dialog.destroy()
 
     def on_dtool_item_add(self, button):
         dialog = Gtk.FileChooserDialog(
-            title="Add items", parent=self.builder.get_object('main-window'),
+            title="Add items", parent=self.main_window,
             action=Gtk.FileChooserAction.OPEN
         )
         dialog.add_buttons(
@@ -201,11 +188,11 @@ class SignalHandler:
         dialog.destroy()
 
     def on_dtool_freeze(self, button):
-        if not self.dataset_model.is_frozen:
-            self.dataset_model.dataset.freeze()
-            self._reload_dataset()
+        if not self.lhs_base_uri_inventory_group.dataset_model.is_frozen:
+            self.lhs_base_uri_inventory_group.dataset_model.dataset.freeze()
+            self.lhs_base_uri_inventory_group.apply_dataset_uri()  # reloads dataset
+            self.lhs_base_uri_inventory_group.refresh()  # rebuilds list
             self._mark_dataset_as_changed()
-            self._list_datasets()
             self._show_dataset()
             self.refresh()
         else:
@@ -217,172 +204,55 @@ class SignalHandler:
 
     def refresh(self, page=None):
         """Update statusbar and tab contents."""
-        logger.debug("Refresh tab.")
-        statusbar_widget = self.builder.get_object('main-statusbar')
-        if not self.dataset_model.is_empty:
-            statusbar_widget.push(0, f'{len(self.dataset_list_model._datasets)} '
-                                     f'datasets - {self.dataset_model.dataset.uri}')
-        elif self.base_uri_model.get_base_uri() is not None:
-            statusbar_widget.push(0, f'{len(self.dataset_list_model._datasets)} '
-                                     f'datasets - {self.base_uri_model.get_base_uri()}')
-        else:
-            statusbar_widget.push(0, f'Specify base URI.')
+        if not self._sensitive:
+            return
 
-        dataset_notebook = self.builder.get_object('direct-dataset-notebook')
+        logger.debug("Refresh tab.")
+        if not self.lhs_base_uri_inventory_group.dataset_model.is_empty:
+            self.statusbar_widget.push(0, f'{len(self.lhs_base_uri_inventory_group.dataset_list_model._datasets)} '
+                                     f'datasets - {self.lhs_base_uri_inventory_group.dataset_model.dataset.uri}')
+        elif self.lhs_base_uri_inventory_group.dataset_list_model.base_uri is not None:
+            self.statusbar_widget.push(0, f'{len(self.lhs_base_uri_inventory_group.dataset_list_model._datasets)} '
+                                     f'datasets - {self.lhs_base_uri_inventory_group.dataset_list_model.base_uri}')
+        else:
+            self.statusbar_widget.push(0, f'Specify base URI.')
+
         if page is None:
-            page = dataset_notebook.get_current_page()
+            page = self.dataset_notebook.get_current_page()
         logger.debug(f"Selected page {page}.")
 
-        if not self.dataset_model.is_empty:
-            manifest_page = dataset_notebook.get_nth_page(DATASET_NOTEBOOK_MANIFEST_PAGE)
+        if not self.lhs_base_uri_inventory_group.dataset_model.is_empty:
+            manifest_page = self.dataset_notebook.get_nth_page(DATASET_NOTEBOOK_MANIFEST_PAGE)
 
-            if self.dataset_model.is_frozen:
-                logger.debug("Show manifest tab.")
+            if self.lhs_base_uri_inventory_group.dataset_model.is_frozen:
+                logger.debug("Showing frozen dataset.")
                 manifest_page.show()
+                self.dtool_freeze_button.set_sensitive(False)
+                self.dtool_add_items_button.set_sensitive(False)
             else:
-                logger.debug("Hide manifest tab.")
+                logger.debug("Showing proto dataset.")
                 manifest_page.hide()
+                self.dtool_freeze_button.set_sensitive(True)
+                self.dtool_add_items_button.set_sensitive(True)
 
             if page == DATASET_NOTEBOOK_README_PAGE:
                 logger.debug("Show readme.")
                 self._show_readme()
-            elif page == DATASET_NOTEBOOK_MANIFEST_PAGE and self.dataset_model.is_frozen:
+            elif page == DATASET_NOTEBOOK_MANIFEST_PAGE and self.lhs_base_uri_inventory_group.dataset_model.is_frozen:
                 logger.debug("Show manifest.")
                 self._show_manifest()
 
     # private methods
-
-    def _set_base_uri(self, uri):
-        """Sets model base uri and associated file chooser and input field."""
-        self.base_uri_model.put_base_uri(uri)
-        base_uri_entry_buffer = self.builder.get_object('base-uri-entry-buffer')
-        base_uri_entry_buffer.set_text(self.base_uri_model.get_base_uri(), -1)
-
-        p = urllib.parse.urlparse(uri)
-        fpath = os.path.abspath(os.path.join(p.netloc, p.path))
-
-        if os.path.isdir(fpath):
-            fpath = os.path.abspath(fpath)
-            base_uri_file_chooser_button = self.builder.get_object('base-uri-chooser-button')
-            base_uri_file_chooser_button.set_current_folder(fpath)
-
-    def _set_dataset_uri(self, uri):
-        """Set dataset file chooser and input field."""
-        dataset_uri_entry_buffer = self.builder.get_object('dataset-uri-entry-buffer')
-        dataset_uri_entry_buffer.set_text(uri, -1)
-
-        p = urllib.parse.urlparse(uri)
-        fpath = os.path.abspath(os.path.join(p.netloc, p.path))
-
-        if os.path.isdir(fpath):
-            fpath = os.path.abspath(fpath)
-            dataset_uri_file_chooser_button = self.builder.get_object('dataset-uri-chooser-button')
-            dataset_uri_file_chooser_button.set_current_folder(fpath)
-
-    def _list_datasets(self, selected_uri=None):
-        base_uri = self.base_uri_model.get_base_uri()
-        if len(base_uri) == 0:
-            self.show_error("Specify a non-empty base URI.")
-            return
-
-        results_widget = self.builder.get_object('dtool-ls-results')
-        self.base_uri_model.put_base_uri(base_uri)
-
-        try:
-            self.dataset_list_model.reindex()
-        except FileNotFoundError as exc:
-            self.show_error(exc.__str__())
-            return
-
-        for entry in results_widget:
-            entry.destroy()
-
-        selected_row = None
-        if selected_uri is None:
-            if self.dataset_model.is_empty:
-                selected_uri = self.dataset_list_model.get_active_uri()
-            else:
-                selected_uri = self.dataset_model.dataset.uri
-
-        dataset_list_columns = ("uuid", "name", "size_str", "num_items", "creator", "date", "uri")
-        proto_dataset_list_columns = ("uuid", "name", "creator", "uri")
-
-        for props in self.dataset_list_model.yield_properties():
-            # TODO: other way for distinguishing frozen and proto
-            is_frozen = "date" in props
-
-            if is_frozen:
-                values = [props[c] for c in dataset_list_columns]
-                d = {c: v for c, v in zip(dataset_list_columns, values)}
-                prefix = ''
-            else:
-                values = [props[c] for c in proto_dataset_list_columns]
-                d = {c: v for c, v in zip(proto_dataset_list_columns, values)}
-                prefix = '*'
-
-
-            row = Gtk.ListBoxRow()
-            if selected_row is None or selected_uri == d["uri"]:
-                # select the first row just in case the currently selected row is lost
-                selected_row = row
-
-            vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-            label = Gtk.Label(xalign=0)
-            label.set_markup(f'{prefix}<b>{d["uuid"]}</b>')
-            vbox.pack_start(label, True, True, 0)
-            label = Gtk.Label(xalign=0)
-            label.set_markup(f'{d["name"]}')
-            vbox.pack_start(label, True, True, 0)
-            label = Gtk.Label(xalign=0)
-            if is_frozen:
-                label.set_markup(
-                    f'<small>Created by: {d["creator"]}, '
-                    f'frozen at: '
-                    f'{date_to_string(d["date"])}</small>')
-            else:
-                label.set_markup(
-                    f'<small>Created by: {d["creator"]}, proto dataset</small>')
-                vbox.pack_start(label, True, True, 0)
-            row.dataset = d
-            row.add(vbox)
-            results_widget.add(row)
-
-        results_widget.select_row(selected_row)
-        results_widget.show_all()
-
-    def _load_dataset(self, uri):
-        """Load dataset and deal with UnsupportedTypeError exceptions."""
-        try:
-            self.dataset_model.load_dataset(uri)
-            self.active_dataset_metadata_supported = True
-        except UnsupportedTypeError:
-            logger.warning("Dataset contains unsupported metadata type")
-            self.active_dataset_metadata_supported = False
-
-    def _reload_dataset(self):
-        self._load_dataset(self.dataset_model.dataset.uri)
-
     def _mark_dataset_as_changed(self):
         """Mark a change in the dataset, reload content where necessary."""
         self._reload_readme = True
         self._reload_manifest = True
 
-    def _select_dataset(self, uri):
-        """Specify dataset selected in list."""
-        if len(uri) > 0:
-            self.dataset_list_model.set_active_index_by_uri(uri)
-            self._load_dataset(uri)
-            self._mark_dataset_as_changed()
-        else:
-            self.show_error("Specify a non-empty dataset URI.")
-            return
-
     def _show_dataset(self):
         """Display dataset info."""
         # TODO: use self.dataset_model.metadata_model instead of direct README content
-        ds = self.dataset_model.dataset
-
-        uri = self.dataset_list_model.get_active_uri()
+        ds = self.lhs_base_uri_inventory_group.dataset_model.dataset
+        uri = self.lhs_base_uri_inventory_group.get_selected_uri()
         # TODO: move admin metadata into DataSetModel
         admin_metadata = dtoolcore._admin_metadata_from_uri(uri, config_path=None)
         self._readme = None
@@ -395,19 +265,17 @@ class SignalHandler:
             admin_metadata['creator_username'])
         self.builder.get_object('direct-dataset-created-at').set_text(
             f'{datetime_to_string(admin_metadata["created_at"])}')
-        if self.dataset_model.is_frozen:
+        if self.lhs_base_uri_inventory_group.dataset_model.is_frozen:
             self.builder.get_object('direct-dataset-frozen-at').set_text(
                 f'{datetime_to_string(admin_metadata["frozen_at"])}')
         else:
             self.builder.get_object('direct-dataset-frozen-at').set_text("-")
 
-        self.refresh()
-
     def _show_readme(self):
         if self._reload_readme:
             logger.debug("Reload readme.")
             self._readme_task = asyncio.ensure_future(
-                self._fetch_readme(self.dataset_model.dataset.uri))
+                self._fetch_readme(self.lhs_base_uri_inventory_group.dataset_model.dataset.uri))
         else:
             logger.debug("Readme cached, don't reload.")
         self._reload_readme = False
@@ -416,41 +284,37 @@ class SignalHandler:
         if self._reload_manifest:
             logger.debug("Reload manifest.")
             self._manifest_task = asyncio.ensure_future(
-                self._fetch_manifest(self.dataset_model.dataset.uri))
+                self._fetch_manifest(self.lhs_base_uri_inventory_group.dataset_model.dataset.uri))
         else:
             logger.debug("Manifest cached, don't reload.")
         self._reload_manifest = False
 
     async def _fetch_readme(self, uri):
         self.error_bar.set_revealed(False)
-        self.readme_stack.set_visible_child(
-            self.builder.get_object('direct-readme-spinner'))
+        self.readme_stack.set_visible_child(self.readme_spinner)
 
-        readme_view = self.builder.get_object('direct-dataset-readme')
-        store = readme_view.get_model()
+        store = self.dataset_readme.get_model()
         store.clear()
-        _readme_content = self.dataset_model.dataset.get_readme_content()
+        _readme_content = self.lhs_base_uri_inventory_group.dataset_model.dataset.get_readme_content()
         self._readme, error = _validate_readme(_readme_content)
         if error is not None:
             self.show_error(error)
             self._readme = _readme_content
         fill_readme_tree_store(store, self._readme)
-        readme_view.columns_autosize()
-        readme_view.show_all()
+        self.dataset_readme.columns_autosize()
+        self.dataset_readme.show_all()
 
-        self.readme_stack.set_visible_child(
-            self.builder.get_object('direct-readme-view'))
+        self.readme_stack.set_visible_child(self.readme_view)
 
     async def _fetch_manifest(self, uri):
         self.error_bar.set_revealed(False)
-        self.manifest_stack.set_visible_child(
-            self.builder.get_object('direct-manifest-spinner'))
+        self.manifest_stack.set_visible_child(self.manifest_spinner)
 
-        manifest_view = self.builder.get_object('direct-dataset-manifest')
+        manifest_view = self.dataset_manifest
         store = manifest_view.get_model()
         store.clear()
         # TODO: access via unprotected method
-        self._manifest = self.dataset_model.dataset._manifest
+        self._manifest = self.lhs_base_uri_inventory_group.dataset_model.dataset._manifest
         try:
             fill_manifest_tree_store(store, self._manifest['items'])
         except Exception as e:
@@ -458,8 +322,7 @@ class SignalHandler:
         manifest_view.columns_autosize()
         manifest_view.show_all()
 
-        self.manifest_stack.set_visible_child(
-            self.builder.get_object('direct-manifest-view'))
+        self.manifest_stack.set_visible_child(self.manifest_view)
 
     def _create_dataset(self, name, base_uri, symlink_path=None):
         """Create a proto dataset."""
@@ -504,10 +367,10 @@ class SignalHandler:
 
         # Initialize with empty README.yml
         proto_dataset.put_readme("")
-        self._load_dataset(proto_dataset.uri)
+        self.lhs_base_uri_inventory_group.dataset_model.load_dataset(proto_dataset.uri)
         self._initialize_readme()
         self._mark_dataset_as_changed()
-        self._list_datasets()
+        self.lhs_base_uri_inventory_group.refresh(selected_uri=proto_dataset.uri)
         self._show_dataset()
 
     def _initialize_readme(self, readme_template_path=None):
@@ -519,16 +382,20 @@ class SignalHandler:
         descriptive_metadata = yaml.load(readme_template)
         stream = StringIO()
         yaml.dump(descriptive_metadata, stream)
-        self.dataset_model.dataset.put_readme(stream.getvalue())
+        self.lhs_base_uri_inventory_group.dataset_model.dataset.put_readme(stream.getvalue())
 
+    # TODO: allow adding whole folders
     def _add_item(self, uri):
         p = urllib.parse.urlparse(uri)
         fpath = os.path.abspath(os.path.join(p.netloc, p.path))
         handle = os.path.basename(fpath)
         handle = dtoolcore.utils.windows_to_unix_path(handle)  # NOQA
-        self.dataset_model.dataset.put_item(fpath, handle)
+        self.lhs_base_uri_inventory_group.dataset_model.dataset.put_item(fpath, handle)
 
     def show_error(self, msg):
         self.error_label.set_text(msg)
         self.error_bar.show()
         self.error_bar.set_revealed(True)
+
+    def set_sensitive(self, sensitive=True):
+        self._sensitive = sensitive

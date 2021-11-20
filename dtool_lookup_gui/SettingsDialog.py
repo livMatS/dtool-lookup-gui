@@ -39,11 +39,11 @@ def _is_configured(base_uri):
 
 
 class SignalHandler:
-    def __init__(self, main_application, event_loop, builder, settings):
-        self.main_application = main_application
-        self.event_loop = event_loop
-        self.builder = builder
-        self.settings = settings
+    def __init__(self, parent):
+        self.main_application = parent.main_application
+        self.event_loop = parent.event_loop
+        self.builder = parent.builder
+        self.settings = parent.settings
 
         self.settings_window = self.builder.get_object('settings-window')
         self.auth_dialog = self.builder.get_object('auth-dialog')
@@ -51,23 +51,6 @@ class SignalHandler:
 
     def show(self):
         self.settings_window.show()
-
-    def _load_handlers(self, object):
-        """Scan object for signal handlers and add them to a (class-global) """
-        if isinstance(object, dict):
-            methods = object.items()
-        else:
-            methods = map(lambda n: (n, getattr(object, n, None)), dir(object))
-
-        for method_name, method in methods:
-            if method_name.startswith('_'):
-                continue
-            if callable(method):
-                logger.debug("Registering callback %s" % (method_name))
-                if method_name in self.handlers:
-                    self.handlers[method_name].append(method)
-                else:
-                    self.handlers[method_name] = Trampoline([method])
 
     def on_settings_window_show(self, widget):
         if Config.lookup_url is not None:

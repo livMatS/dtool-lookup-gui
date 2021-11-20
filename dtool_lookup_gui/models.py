@@ -26,9 +26,10 @@ import logging
 
 import dtoolcore
 
-import dtool_gui_tk.models
+from . import dtool_tk_models
 
-from dtool_gui_tk.models import (
+from .dtool_tk_models import (
+    _ConfigFileVariableBaseModel,
     LocalBaseURIModel,
     # DataSetListModel,
     DataSetModel,
@@ -41,6 +42,7 @@ from dtool_gui_tk.models import (
 from dtool_info.inventory import _dataset_info
 
 logger = logging.getLogger(__name__)
+
 
 def _proto_dataset_info(dataset):
     """Return information about proto dataset as a dict."""
@@ -58,6 +60,29 @@ def _proto_dataset_info(dataset):
     info["readme_content"] = dataset.get_readme_content()
 
     return info
+
+
+class RemoteBaseURIModel(_ConfigFileVariableBaseModel):
+    "Model for managing local base URI."
+
+    KEY = "DTOOL_REMOTE_BASE_URI"
+
+    def get_base_uri(self):
+        """Return the base URI.
+
+        :returns: base URI where datasets will be read from and written to
+        """
+        return self._get()
+
+    def put_base_uri(self, base_uri):
+        """Put/update the base URI.
+
+        The value is updated in the config file.
+
+        :param base_uri: base URI
+        """
+        value = dtoolcore.utils.sanitise_uri(base_uri)
+        self._put(value)
 
 
 class BaseURIModel():
@@ -82,7 +107,7 @@ class BaseURIModel():
         self._base_uri = value
 
 
-class DataSetModel(dtool_gui_tk.models.DataSetModel):
+class DataSetModel(dtool_tk_models.DataSetModel):
     "Model for both frozen and ProtoDataSet."
     def load_dataset(self, uri):
         """Load the dataset from a URI.
@@ -116,11 +141,36 @@ class DataSetModel(dtool_gui_tk.models.DataSetModel):
         return self._dataset
 
 
-class DataSetListModel(dtool_gui_tk.models.DataSetListModel):
+class DataSetListModel(dtool_tk_models.DataSetListModel):
     "Model for managing all (frozen and proto) datasets in a base URI."
+
+    def __init__(self, *args, **kwargs):
+        self._active_refresh = False
+        super().__init__(*args, **kwargs)
+
+    @property
+    def active_refresh(self):
+        return self._active_refresh
+
+    @active_refresh.setter
+    def active_refresh(self, active):
+        self._active_refresh = active
+        if active:
+            self.reindex()
+
+    def activate_refresh(self):
+        self._active_refresh = True
+        self.reindex()
+
+    def deactivate_refresh(self):
+        self._active_refresh = False
 
     def reindex(self):
         """Index the base URI."""
+        if not self._active_refresh:
+            logger.debug("Refresh deactivated, skip.")
+            return
+
         self._datasets = []
         self._datasets_info = []
         self._active_index = None
@@ -137,9 +187,13 @@ class DataSetListModel(dtool_gui_tk.models.DataSetListModel):
             if self.tag_filter is not None and self.tag_filter not in ds_tags:
                 append_okay = False
             if append_okay:
-                self._datasets.append(ds)
-
-                self._datasets_info.append(_proto_dataset_info(ds))
+                try:
+                    ds_info = _proto_dataset_info(ds)
+                except FileNotFoundError as err:  # README might not exist
+                    logger.warning(err.__str__())
+                else:
+                    self._datasets.append(ds)
+                    self._datasets_info.append(ds_info)
 
         # iter through frozen datasets
         for ds in dtoolcore.iter_datasets_in_base_uri(base_uri):
@@ -174,9 +228,9 @@ class DataSetListModel(dtool_gui_tk.models.DataSetListModel):
             self._datasets_by_uri[ds.uri] = ds
             self._index_by_uri[ds.uri] = i
 
-    def sort(self, **kwargs):
+    def sort(self, *args, **kwargs):
         """Sort the datasets by items properties."""
-        super().sort(**kwargs)
+        super().sort(*args, **kwargs)
         self._rebuild_mappings()
 
     def get_index_by_uri(self, uri):

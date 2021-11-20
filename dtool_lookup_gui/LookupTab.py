@@ -21,7 +21,6 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-
 import asyncio
 import concurrent.futures
 import shutil
@@ -29,6 +28,7 @@ import subprocess
 from functools import reduce
 
 from . import (
+    GlobalConfig,
     to_timestamp,
     date_to_string,
     datetime_to_string,
@@ -50,21 +50,62 @@ from .GraphWidget import GraphWidget
 
 
 class SignalHandler:
-    def __init__(self, main_application, event_loop, builder, settings):
-        self.main_application = main_application
-        self.event_loop = event_loop
-        self.builder = builder
-        self.settings = settings
+    def __init__(self, parent):
+        self.main_application = parent.main_application
+        self.event_loop = parent.event_loop
+        self.builder = parent.builder
+        self.settings = parent.settings
+
         self.lookup = None
 
+        self._sensitive = False
+
+        # gui widgets, alphabetically
+        self.base_uri_entry_buffer = self.builder.get_object('rhs-base-uri-entry-buffer')
+        # self.base_uri_file_chooser_button = self.builder.get_object('lookup-base-uri-chooser-button')
+        self.dataset_list_auto_refresh = self.builder.get_object('dataset-list-auto-refresh')
+        self.dataset_manifest = self.builder.get_object('dataset-manifest')
+        self.dataset_notebook = self.builder.get_object('dataset-notebook')
+        self.dataset_readme = self.builder.get_object('dataset-readme')
+        self.dataset_uri_entry_buffer = self.builder.get_object('rhs-dataset-uri-entry-buffer')
+        # self.dataset_uri_file_chooser_button = self.builder.get_object('lookup-dataset-uri-chooser-button')
+        self.dependency_spinner = self.builder.get_object('dependency-spinner')
+        self.dependency_stack = self.builder.get_object('dependency-stack')
+        self.dependency_view = self.builder.get_object('dependency-view')
         self.error_bar = self.builder.get_object('error-bar')
         self.error_label = self.builder.get_object('error-label')
-
+        self.main_not_found = self.builder.get_object('main-not-found')
+        self.main_spinner = self.builder.get_object('main-spinner')
         self.main_stack = self.builder.get_object('main-stack')
-        self.readme_stack = self.builder.get_object('readme-stack')
+        self.main_view = self.builder.get_object('main-view')
+        self.manifest_spinner = self.builder.get_object('manifest-spinner')
         self.manifest_stack = self.builder.get_object('manifest-stack')
-        self.dependency_stack = self.builder.get_object('dependency-stack')
+        self.manifest_view = self.builder.get_object('manifest-view')
+        self.readme_spinner = self.builder.get_object('readme-spinner')
+        self.readme_stack = self.builder.get_object('readme-stack')
+        self.readme_view = self.builder.get_object('readme-view')
+        self.results_widget = self.builder.get_object('search-results')
+        self.search_entry = self.builder.get_object('search-entry')
+        self.search_entry_buffer = self.builder.get_object('search-entry-buffer')
         self.search_popover = self.builder.get_object('search-popover')
+        self.search_text_buffer = self.builder.get_object('search-text-buffer')
+        self.statusbar_widget = self.builder.get_object('main-statusbar')
+
+        self.dataset_save_button = self.builder.get_object('lookup-dataset-uri-save-button')
+
+        # private properties
+        self._auto_refresh = GlobalConfig.auto_refresh_on
+
+        # models
+        self.rhs_base_uri_inventory_group = parent.rhs_base_uri_inventory_group
+
+        # self.rhs_base_uri_inventory_group.base_uri_selector.append_file_chooser_button(
+        #    self.base_uri_file_chooser_button)
+
+        # self.rhs_base_uri_inventory_group.dataset_uri_selector.append_file_chooser_button(
+        #    self.dataset_uri_file_chooser_button)
+
+        self.dataset_list_auto_refresh.set_active(self._auto_refresh)
 
         self._search_task = None
 
@@ -72,32 +113,33 @@ class SignalHandler:
         self._readme = None
         self._manifest = None
 
-        self.main_stack.set_visible_child(
-            self.builder.get_object('main-spinner'))
+        self.main_stack.set_visible_child(self.main_view)
 
         self.datasets = None
         self.server_config = None
 
         self.thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
-    def _refresh_results(self):
-        results_widget = self.builder.get_object('search-results')
-        statusbar_widget = self.builder.get_object('main-statusbar')
+    async def _refresh_results(self):
+        if not self._auto_refresh:
+            self.main_stack.set_visible_child(self.main_view)
+            return
+
+        self.main_stack.set_visible_child(self.main_spinner)
+
         if self.datasets is not None and self.server_config:
-            statusbar_widget.push(0, f'{len(self.datasets)} datasets - '
+            self.statusbar_widget.push(0, f'{len(self.datasets)} datasets - '
                                      f'Connected to lookup server version '
                                      f"{self.server_config['version']}")
             if len(self.datasets) == 0:
-                self.main_stack.set_visible_child(
-                    self.builder.get_object('main-not-found'))
+                self.main_stack.set_visible_child(self.main_not_found)
                 return
         else:
-            statusbar_widget.push(0, 'Server connection failed')
-            self.main_stack.set_visible_child(
-                self.builder.get_object('main-not-found'))
+            self.statusbar_widget.push(0, 'Server connection failed')
+            self.main_stack.set_visible_child(self.main_not_found)
             return
 
-        for entry in results_widget:
+        for entry in self.results_widget:
             entry.destroy()
         first_row = None
         for dataset in sorted(self.datasets,
@@ -120,22 +162,23 @@ class SignalHandler:
             vbox.pack_start(label, True, True, 0)
             row.dataset = dataset
             row.add(vbox)
-            results_widget.add(row)
-        results_widget.select_row(first_row)
-        results_widget.show_all()
+            self.results_widget.add(row)
+        self.results_widget.select_row(first_row)
+        self.results_widget.show_all()
 
-        self.main_stack.set_visible_child(
-            self.builder.get_object('main-view'))
+        self.main_stack.set_visible_child(self.main_view)
 
+    # TODO: jlh, need to understand better which calls run truly asynchronous and which ones still block the GUI
     def refresh(self):
-        self._refresh_results()
+        if not self._sensitive:
+            return
+        self.event_loop.create_task(self._refresh_results())
 
     async def _fetch_readme(self, uri):
         self.error_bar.set_revealed(False)
-        self.readme_stack.set_visible_child(
-            self.builder.get_object('readme-spinner'))
+        self.readme_stack.set_visible_child(self.readme_spinner)
 
-        readme_view = self.builder.get_object('dataset-readme')
+        readme_view = self.dataset_readme
         store = readme_view.get_model()
         store.clear()
         self._readme = await self.lookup.readme(uri)
@@ -143,15 +186,13 @@ class SignalHandler:
         readme_view.columns_autosize()
         readme_view.show_all()
 
-        self.readme_stack.set_visible_child(
-            self.builder.get_object('readme-view'))
+        self.readme_stack.set_visible_child(self.readme_view)
 
     async def _fetch_manifest(self, uri):
         self.error_bar.set_revealed(False)
-        self.manifest_stack.set_visible_child(
-            self.builder.get_object('manifest-spinner'))
+        self.manifest_stack.set_visible_child(self.manifest_spinner)
 
-        manifest_view = self.builder.get_object('dataset-manifest')
+        manifest_view = self.dataset_manifest
         store = manifest_view.get_model()
         store.clear()
         self._manifest = await self.lookup.manifest(uri)
@@ -162,13 +203,11 @@ class SignalHandler:
         manifest_view.columns_autosize()
         manifest_view.show_all()
 
-        self.manifest_stack.set_visible_child(
-            self.builder.get_object('manifest-view'))
+        self.manifest_stack.set_visible_child(self.manifest_view)
 
     async def _compute_dependencies(self, uri):
         self.error_bar.set_revealed(False)
-        self.dependency_stack.set_visible_child(
-            self.builder.get_object('dependency-spinner'))
+        self.dependency_stack.set_visible_child(self.dependency_spinner)
 
         # Compute dependency graph
         self._dependency_graph = DependencyGraph()
@@ -184,18 +223,20 @@ class SignalHandler:
 
         # Create graph widget
         graph_widget = GraphWidget(self.builder, self._dependency_graph.graph)
-        dependency_view = self.builder.get_object('dependency-view')
-        for child in dependency_view:
+
+        for child in self.dependency_view:
             child.destroy()
-        dependency_view.pack_start(graph_widget, True, True, 0)
+        self.dependency_view.pack_start(graph_widget, True, True, 0)
         graph_widget.show()
 
-        self.dependency_stack.set_visible_child(dependency_view)
+        self.dependency_stack.set_visible_child(self.dependency_view)
 
-    async def connect(self):
+    def connect(self):
+        self.event_loop.create_task(self._connect())
+
+    async def _connect(self):
         self.error_bar.set_revealed(False)
-        self.main_stack.set_visible_child(
-            self.builder.get_object('main-spinner'))
+        self.main_stack.set_visible_child(self.main_spinner)
 
         self.lookup = ConfigurationBasedLookupClient()
         try:
@@ -207,12 +248,19 @@ class SignalHandler:
         except Exception as e:
             self.show_error(str(e))
             self.datasets = []
-        self._refresh_results()
+        self.refresh()
 
     def on_result_selected(self, list_box, list_box_row):
         if list_box_row is None:
             return
         self._selected_dataset = list_box_row.dataset
+
+        base_uri = self._selected_dataset['base_uri']
+        dataset_uri = self._selected_dataset['uri']
+        self.rhs_base_uri_inventory_group.base_uri_selector.set_uri(base_uri)
+        self.rhs_base_uri_inventory_group.dataset_uri_selector.set_uri(dataset_uri)
+        # TODO: extract base URI from URI and set
+
         self._readme = None
         self._manifest = None
         self._dependency_graph = None
@@ -230,7 +278,7 @@ class SignalHandler:
         self.builder.get_object('dataset-frozen-at').set_text(
             f'{datetime_to_string(self._selected_dataset["frozen_at"])}')
 
-        page = self.builder.get_object('dataset-notebook').get_property('page')
+        page = self.dataset_notebook.get_property('page')
         if page == 0:
             self._readme_task = asyncio.ensure_future(
                 self._fetch_readme(self._selected_dataset['uri']))
@@ -241,33 +289,35 @@ class SignalHandler:
             self._dependency_task = asyncio.ensure_future(
                 self._compute_dependencies(self._selected_dataset['uri']))
 
-    def on_search_entry_button_press(self, search_entry, event):
+    def on_search_entry_button_press(self, _, event):
         """"Display larger text box popover for multiline search queries on double-click in search bar."""
         if event.button == 1:
             if event.type == Gdk.EventType._2BUTTON_PRESS:
-                search_text_buffer = self.builder.get_object('search-text-buffer')
-                search_entry_buffer = self.builder.get_object('search-entry-buffer')
-                search_text = search_entry_buffer.get_text()
-                search_text_buffer.set_text(search_text, -1)
+                search_text = self.search_entry_buffer.get_text()
+                self.search_text_buffer.set_text(search_text, -1)
 
                 rect = Gdk.Rectangle()
                 rect.x, rect.y = event.x, event.y
                 self.search_popover.set_pointing_to(rect)
                 self.search_popover.popup()
 
+    def on_search_results_button_press(self, _, event):
+        """Download dataset on double-click."""
+        if event.button == 1:
+            if event.type == Gdk.EventType._2BUTTON_PRESS:
+                self.dataset_save_button.emit('clicked')  # mimic click on download button
+
+
     def on_search_button_clicked(self, button):
         """"Update search bar text when clicking search button in search popover."""
-        search_text_buffer = self.builder.get_object('search-text-buffer')
-        search_entry_buffer = self.builder.get_object('search-entry-buffer')
-        start_iter = search_text_buffer.get_start_iter()
-        end_iter = search_text_buffer.get_end_iter()
-        search_text = search_text_buffer.get_text(start_iter, end_iter, True)
-        search_entry_buffer.set_text(search_text, -1)
+        start_iter = self.search_text_buffer.get_start_iter()
+        end_iter = self.search_text_buffer.get_end_iter()
+        search_text = self.search_text_buffer.get_text(start_iter, end_iter, True)
+        self.search_entry_buffer.set_text(search_text, -1)
         self.search_popover.popdown()
 
     def on_search(self, search_entry):
-        self.main_stack.set_visible_child(
-            self.builder.get_object('main-spinner'))
+        self.main_stack.set_visible_child(self.main_spinner)
 
         async def fetch_search_result(keyword):
             if keyword:
@@ -287,7 +337,7 @@ class SignalHandler:
                     self.datasets = await self.lookup.search(keyword)
             else:
                 self.datasets = await self.lookup.all()
-            self._refresh_results()
+            self.refresh()
 
         if self._search_task is not None:
             self._search_task.cancel()
@@ -312,7 +362,7 @@ class SignalHandler:
         is_uuid = store.get_value(iter, 2)
         if is_uuid:
             uuid = store.get_value(iter, 1)
-            self.builder.get_object('search-entry').set_text(f'uuid:{uuid}')
+            self.search_entry.set_text(f'uuid:{uuid}')
             return True
         return False
 
@@ -343,7 +393,24 @@ class SignalHandler:
         asyncio.ensure_future(
             self.retrieve_item(self._selected_dataset['uri'], item, uuid))
 
+    def on_lookup_dataset_list_auto_refresh_toggled(self, checkbox):
+        self._auto_refresh = checkbox.get_active()
+        self.set_sensitive(self._auto_refresh)
+        self.refresh()
+
     def show_error(self, msg):
         self.error_label.set_text(msg)
         self.error_bar.show()
         self.error_bar.set_revealed(True)
+
+    def set_sensitive(self, sensitive=True):
+        sensitive = sensitive & self._auto_refresh
+        if not sensitive:
+            self.search_popover.popdown()
+        self.search_popover.set_sensitive(sensitive)
+        self.search_entry.set_sensitive(sensitive)
+        self._sensitive = sensitive
+
+
+
+
