@@ -21,13 +21,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-import gi
-gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk, Gio
 import concurrent.futures
 import logging
 import os.path
-import urllib.parse
 
 try:
     from StringIO import StringIO

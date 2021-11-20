@@ -36,7 +36,6 @@ from gi.repository import Gtk, Gdk, Gio
 
 from ruamel.yaml import YAML
 
-
 try:
     from StringIO import StringIO
 except ImportError:

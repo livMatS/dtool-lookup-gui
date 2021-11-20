@@ -52,23 +52,6 @@ class SignalHandler:
     def show(self):
         self.settings_window.show()
 
-    def _load_handlers(self, object):
-        """Scan object for signal handlers and add them to a (class-global) """
-        if isinstance(object, dict):
-            methods = object.items()
-        else:
-            methods = map(lambda n: (n, getattr(object, n, None)), dir(object))
-
-        for method_name, method in methods:
-            if method_name.startswith('_'):
-                continue
-            if callable(method):
-                logger.debug("Registering callback %s" % (method_name))
-                if method_name in self.handlers:
-                    self.handlers[method_name].append(method)
-                else:
-                    self.handlers[method_name] = Trampoline([method])
-
     def on_settings_window_show(self, widget):
         if Config.lookup_url is not None:
             self.builder.get_object('lookup-url-entry').set_text(Config.lookup_url)

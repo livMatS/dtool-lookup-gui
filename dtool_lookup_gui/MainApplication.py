@@ -169,7 +169,6 @@ class SignalHandler:
 
         self.refresh()
 
-
     def _load_handlers(self, object):
         """Scan object for signal handlers and add them to a (class-global) """
         if isinstance(object, dict):
