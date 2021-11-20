@@ -140,8 +140,8 @@ class SignalHandler:
         self.lhs_base_uri_inventory_group.set_error_callback(self.show_error)
         self.rhs_base_uri_inventory_group.set_error_callback(self.show_error)
 
-        self.lhs_base_uri_inventory_group.auto_refresh = GlobalConfig.auto_refresh_on
-        self.rhs_base_uri_inventory_group.auto_refresh = GlobalConfig.auto_refresh_on
+        self.lhs_base_uri_inventory_group.set_auto_refresh(GlobalConfig.auto_refresh_on)
+        self.rhs_base_uri_inventory_group.set_auto_refresh(False)
 
         self.error_bar.set_revealed(False)
 
@@ -151,6 +151,9 @@ class SignalHandler:
         self.direct_tab = DirectTab.SignalHandler(self)
         self.transfer_tab = TransferTab.SignalHandler(self)
         self.settings_dialog = SettingsDialog.SignalHandler(self)
+
+        self.rhs_base_uri_inventory_group.refresh()
+        self.lhs_base_uri_inventory_group.refresh()
 
         # Create a dictionary to hold the signal-handler pairs
         self.handlers = {}
@@ -232,12 +235,14 @@ class SignalHandler:
         if list_box_row is not None:
             self.rhs_base_uri_inventory_group.set_selected_dataset_row(list_box_row)
 
-    def on_lhs_dataset_list_auto_refresh_toggled(self, checkbox):
-        self.lhs_base_uri_inventory_group.auto_refresh = checkbox.get_active()
+    def on_lhs_dataset_list_auto_refresh_toggled(self, switch, state):
+        logger.debug(f"LHS dataset list refresh toggled {'on' if state else 'off'}")
+        self.lhs_base_uri_inventory_group.set_auto_refresh(state)
         self.lhs_base_uri_inventory_group.refresh()
 
-    def on_rhs_dataset_list_auto_refresh_toggled(self, checkbox):
-        self.rhs_base_uri_inventory_group.auto_refresh = checkbox.get_active()
+    def on_rhs_dataset_list_auto_refresh_toggled(self, switch, state):
+        logger.debug(f"RHS dataset list refresh toggled {'on' if state else 'off'}")
+        self.rhs_base_uri_inventory_group.set_auto_refresh(state)
         self.rhs_base_uri_inventory_group.refresh()
 
     def on_main_switch_page(self, notebook, page, page_num):

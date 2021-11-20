@@ -1396,7 +1396,7 @@
                           <object class="GtkSwitch" id="dataset-list-auto-refresh">
                             <property name="visible">True</property>
                             <property name="can-focus">True</property>
-                            <property name="tooltip-text" translatable="yes">Auto list and refresh all datasets at base URI. Can be slow for large numbers of datasets.</property>
+                            <property name="tooltip-text" translatable="yes">Auto list and refresh all search results. Can be slow for large numbers of datasets registered at the lookup server.</property>
                             <property name="active">True</property>
                             <signal name="state-set" handler="on_lookup_dataset_list_auto_refresh_toggled" swapped="no"/>
                           </object>
@@ -1410,7 +1410,7 @@
                           <object class="GtkLabel">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="label" translatable="yes">Auto list all datasets at base URI</property>
+                            <property name="label" translatable="yes">Auto update search results</property>
                           </object>
                           <packing>
                             <property name="expand">False</property>
@@ -2330,7 +2330,7 @@
                           <object class="GtkSwitch" id="direct-dataset-list-auto-refresh">
                             <property name="visible">True</property>
                             <property name="can-focus">True</property>
-                            <property name="tooltip-text" translatable="yes">Auto list and refresh all datasets at base URI. Can be slow for large numbers of datasets.</property>
+                            <property name="tooltip-text" translatable="yes">Auto list and refresh all datasets at base URI. Can be slow for large numbers of datasets. If switched off, only currently selected dataset shown.</property>
                             <property name="active">True</property>
                             <signal name="state-set" handler="on_lhs_dataset_list_auto_refresh_toggled" swapped="no"/>
                           </object>
@@ -2609,8 +2609,9 @@
                                   <object class="GtkSwitch" id="lhs-dataset-list-auto-refresh">
                                     <property name="visible">True</property>
                                     <property name="can-focus">True</property>
-                                    <property name="tooltip-text" translatable="yes">Auto list and refresh all datasets at local base URI. Can be slow for large numbers of datasets.</property>
+                                    <property name="tooltip-text" translatable="yes">Auto list and refresh all datasets at local base URI. Can be slow for large numbers of datasets. If switched off, only currently selected dataset shown.</property>
                                     <property name="active">True</property>
+                                    <signal name="state-set" handler="on_lhs_dataset_list_auto_refresh_toggled" swapped="no"/>
                                   </object>
                                   <packing>
                                     <property name="expand">False</property>
@@ -2745,7 +2746,8 @@
                                   <object class="GtkSwitch" id="rhs-dataset-list-auto-refresh">
                                     <property name="visible">True</property>
                                     <property name="can-focus">True</property>
-                                    <property name="tooltip-text" translatable="yes">Auto list and refresh all datasets at local base URI. Can be slow for large numbers of datasets.</property>
+                                    <property name="tooltip-text" translatable="yes">Auto list and refresh all datasets at remote base URI. Can be slow for large numbers of datasets. If switched off, only currently selected dataset shown.</property>
+                                    <signal name="state-set" handler="on_rhs_dataset_list_auto_refresh_toggled" swapped="no"/>
                                   </object>
                                   <packing>
                                     <property name="expand">False</property>

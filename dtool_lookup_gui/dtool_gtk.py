@@ -309,6 +309,7 @@ class BaseURIInventoryGroup:
         self._dataset_list_model = dataset_list_model
         self._error_callback = logger.warning
         self._dataset_list_box = []
+        self._auto_refresh_switch = []
         self._auto_refresh = False
         self._selected_row = None
 
@@ -343,6 +344,9 @@ class BaseURIInventoryGroup:
         self._auto_refresh = auto_refresh
         self._dataset_list_model.active_refresh = auto_refresh
 
+    def set_auto_refresh(self, state):
+        self.auto_refresh = state
+
     @property
     def dataset_model(self):
         return self._dataset_uri_selector.dataset_model
@@ -371,7 +375,11 @@ class BaseURIInventoryGroup:
 
     def append_dataset_list_box(self, dataset_list_box: DtoolDatasetListBox):
         self._dataset_list_box.append(dataset_list_box)
-        self.refresh()
+        # self.refresh()
+
+    def append_auto_refresh_switch(self, auto_refresh_switch: Gtk.Switch):
+        self._auto_refresh_switch.append(auto_refresh_switch)
+        # self.refresh()
 
     def get_selected_uri(self):
         return self._dataset_list_model.get_active_uri()
@@ -415,9 +423,6 @@ class BaseURIInventoryGroup:
         self._dataset_list_model.sort('name')
 
         for dataset_list_box in self._dataset_list_box:
-            for entry in dataset_list_box:
-                entry.destroy()
-
             # TODO: targeted modifications instead of whole rebuild
             selected_row = None
             for props in self._dataset_list_model.yield_properties():
@@ -436,13 +441,39 @@ class BaseURIInventoryGroup:
             # self._dataset_uri_selector.apply_uri()
             dataset_list_box.show_all()
 
-    def refresh(self, *args, **kwargs):
-        if not self._auto_refresh:
-            logger.debug("No auto refresh, skip.")
+    def clear(self):
+        for dataset_list_box in self._dataset_list_box:
+            for entry in dataset_list_box:
+                entry.destroy()
+
+    def populate_one(self):
+        if self.dataset_model.is_empty:
             return
 
-        # TODO: refine
-        self.populate(*args, **kwargs)
+        for dataset_list_box in self._dataset_list_box:
+            row = DtoolDatasetListBoxRow()
+            row.properties = self.dataset_model.dataset_info
+            row.fill()
+            dataset_list_box.add(row)
+
+            if row is not None:
+                self.set_selected_dataset_uri(row.dataset['uri'])
+                dataset_list_box.select_row(row)
+
+            dataset_list_box.show_all()
+
+    def refresh(self, *args, **kwargs):
+        for switch in self._auto_refresh_switch:
+            switch.set_state(self._auto_refresh)
+
+        self.clear()
+
+        if not self._auto_refresh:
+            logger.debug("No auto refresh, show only the currently selected dataset.")
+            self.populate_one()
+        else:
+            # TODO: refine the refresh, pretty crude an inefficient now
+            self.populate(*args, **kwargs)
 
 
 GObject.type_register(DtoolDatasetListBox)

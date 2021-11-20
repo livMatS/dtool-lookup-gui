@@ -23,8 +23,8 @@
 #
 import asyncio
 import concurrent.futures
+import logging
 import shutil
-import subprocess
 from functools import reduce
 
 from . import (
@@ -47,6 +47,9 @@ gbulb.install(gtk=True)
 
 from .Dependencies import DependencyGraph
 from .GraphWidget import GraphWidget
+
+
+logger = logging.getLogger(__name__)
 
 
 class SignalHandler:
@@ -78,6 +81,7 @@ class SignalHandler:
         self.main_spinner = self.builder.get_object('main-spinner')
         self.main_stack = self.builder.get_object('main-stack')
         self.main_view = self.builder.get_object('main-view')
+        self.main_window = self.builder.get_object('main-window')
         self.manifest_spinner = self.builder.get_object('manifest-spinner')
         self.manifest_stack = self.builder.get_object('manifest-stack')
         self.manifest_view = self.builder.get_object('manifest-view')
@@ -98,12 +102,6 @@ class SignalHandler:
 
         # models
         self.rhs_base_uri_inventory_group = parent.rhs_base_uri_inventory_group
-
-        # self.rhs_base_uri_inventory_group.base_uri_selector.append_file_chooser_button(
-        #    self.base_uri_file_chooser_button)
-
-        # self.rhs_base_uri_inventory_group.dataset_uri_selector.append_file_chooser_button(
-        #    self.dataset_uri_file_chooser_button)
 
         self.dataset_list_auto_refresh.set_active(self._auto_refresh)
 
@@ -307,7 +305,6 @@ class SignalHandler:
             if event.type == Gdk.EventType._2BUTTON_PRESS:
                 self.dataset_save_button.emit('clicked')  # mimic click on download button
 
-
     def on_search_button_clicked(self, button):
         """"Update search bar text when clicking search button in search popover."""
         start_iter = self.search_text_buffer.get_start_iter()
@@ -317,6 +314,9 @@ class SignalHandler:
         self.search_popover.popdown()
 
     def on_search(self, search_entry):
+        if not self._auto_refresh:
+            return
+
         self.main_stack.set_visible_child(self.main_spinner)
 
         async def fetch_search_result(keyword):
@@ -366,24 +366,40 @@ class SignalHandler:
             return True
         return False
 
-    def dtool_retrieve_item(self, uri, item_name, item_uuid):
+    def dtool_retrieve_item(self, uri, item_name, item_uuid, dest_file):
         dataset = dtoolcore.DataSet.from_uri(uri)
         if item_uuid in dataset.identifiers:
-            shutil.copyfile(dataset.item_content_abspath(item_uuid),
-                            f'/home/pastewka/Downloads/{item_name}')
-            subprocess.run(["xdg-open", f'/home/pastewka/Downloads/{item_name}'])
-            # The following lines should be more portable but don't run
-            #Gio.AppInfo.launch_default_for_uri(
-            #    dataset.item_content_abspath(uuid))
+            source_file = dataset.item_content_abspath(item_uuid)
+            logger.debug(f"Copy cached item {source_file} to {dest_file}.")
+            shutil.copyfile(source_file, dest_file)
         else:
             self.show_error(f'Cannot open item {item_name}, since the UUID {item_uuid} '
                             'appears to exist in the lookup server only.')
 
     async def retrieve_item(self, uri, item_name, item_uuid):
-        loop = asyncio.get_event_loop()
-        await asyncio.wait([
-            loop.run_in_executor(self.thread_pool, self.dtool_retrieve_item,
-                                 uri, item_name, item_uuid)])
+        dialog = Gtk.FileChooserDialog(
+            title=f"Download item {item_uuid}: {item_name}", parent=self.main_window,
+            action=Gtk.FileChooserAction.SAVE
+        )
+        dialog.add_buttons(
+            Gtk.STOCK_CANCEL,
+            Gtk.ResponseType.CANCEL,
+            Gtk.STOCK_OK,
+            Gtk.ResponseType.OK,
+        )
+        dialog.set_current_name(item_name)
+        dialog.set_do_overwrite_confirmation(True)
+
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            dest_file = dialog.get_filename()
+            loop = asyncio.get_event_loop()
+            await asyncio.wait([
+                loop.run_in_executor(self.thread_pool, self.dtool_retrieve_item,
+                                     uri, item_name, item_uuid, dest_file)])
+        elif response == Gtk.ResponseType.CANCEL:
+            pass
+        dialog.destroy()
 
     def on_manifest_row_activated(self, tree_view, path, column):
         store = tree_view.get_model()
@@ -393,15 +409,17 @@ class SignalHandler:
         asyncio.ensure_future(
             self.retrieve_item(self._selected_dataset['uri'], item, uuid))
 
-    def on_lookup_dataset_list_auto_refresh_toggled(self, checkbox):
-        self._auto_refresh = checkbox.get_active()
-        self.set_sensitive(self._auto_refresh)
-        self.refresh()
+    def on_lookup_dataset_list_auto_refresh_toggled(self, switch, state):
+        self._auto_refresh = state
+        if state:
+            self.search_entry.emit('search-changed')  # mimic search entry edit
+        # self.refresh()
 
     def show_error(self, msg):
         self.error_label.set_text(msg)
         self.error_bar.show()
         self.error_bar.set_revealed(True)
+
 
     def set_sensitive(self, sensitive=True):
         sensitive = sensitive & self._auto_refresh

@@ -1,7 +1,8 @@
 dtoolcore
+dtool-info
+dtool-lookup-api
 aiohttp
 gbulb
 pyyaml
 PyGObject
 scipy
-dtool-lookup-api

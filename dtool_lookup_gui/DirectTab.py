@@ -126,16 +126,6 @@ class SignalHandler:
         self.lhs_base_uri_inventory_group.dataset_uri_selector.append_file_chooser_button(
             self.dataset_uri_file_chooser_button)
 
-        # configure
-        self.dataset_list_auto_refresh.set_active(GlobalConfig.auto_refresh_on)
-        # self.dtool_dataset_list.auto_refresh = GlobalConfig.auto_refresh_on
-
-        dataset_uri = self.lhs_base_uri_inventory_group.get_selected_uri()
-        # print(self.dataset_list_model.base_uri)
-        if dataset_uri is not None:
-          self._show_dataset()
-
-
     # signal handles
 
     def on_lhs_dataset_uri_open(self,  button):
@@ -164,6 +154,7 @@ class SignalHandler:
             pass
         dialog.destroy()
 
+    # TODO: enable folder AND file selection in this dialog
     def on_dtool_item_add(self, button):
         dialog = Gtk.FileChooserDialog(
             title="Add items", parent=self.main_window,
@@ -206,7 +197,10 @@ class SignalHandler:
         if not self._sensitive:
             return
 
-        logger.debug("Refresh tab.")
+        logger.debug("Refresh direct tab.")
+
+        self._show_dataset()
+
         if not self.lhs_base_uri_inventory_group.dataset_model.is_empty:
             self.statusbar_widget.push(0, f'{len(self.lhs_base_uri_inventory_group.dataset_list_model._datasets)} '
                                      f'datasets - {self.lhs_base_uri_inventory_group.dataset_model.dataset.uri}')
@@ -249,9 +243,13 @@ class SignalHandler:
 
     def _show_dataset(self):
         """Display dataset info."""
+        uri = self.lhs_base_uri_inventory_group.get_selected_uri()
+        if uri is None:
+            return
+
+        logger.debug(f"Show dataset '{uri}'.")
         # TODO: use self.dataset_model.metadata_model instead of direct README content
         ds = self.lhs_base_uri_inventory_group.dataset_model.dataset
-        uri = self.lhs_base_uri_inventory_group.get_selected_uri()
         # TODO: move admin metadata into DataSetModel
         admin_metadata = dtoolcore._admin_metadata_from_uri(uri, config_path=None)
         self._readme = None

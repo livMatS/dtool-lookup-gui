@@ -108,7 +108,7 @@ class BaseURIModel():
 
 
 class DataSetModel(dtool_tk_models.DataSetModel):
-    "Model for both frozen and ProtoDataSet."
+    """Model for both frozen and ProtoDataSet."""
     def load_dataset(self, uri):
         """Load the dataset from a URI.
 
@@ -139,6 +139,13 @@ class DataSetModel(dtool_tk_models.DataSetModel):
     @property
     def dataset(self):
         return self._dataset
+
+    @property
+    def dataset_info(self):
+        if self.is_frozen:
+            return _dataset_info(self._dataset)
+        else:
+            return _proto_dataset_info(self._dataset)
 
 
 class DataSetListModel(dtool_tk_models.DataSetListModel):

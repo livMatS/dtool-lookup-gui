@@ -67,7 +67,7 @@ class SignalHandler:
         self.main_statusbar = self.builder.get_object('main-statusbar')
         self.rhs_base_uri_entry_buffer = self.builder.get_object('rhs-base-uri-entry-buffer')
         self.rhs_base_uri_file_chooser_button = self.builder.get_object('rhs-base-uri-chooser-button')
-        self.rhs_dataset_list_auto_refresh = self.builder.get_object('lhs-dataset-list-auto-refresh')
+        self.rhs_dataset_list_auto_refresh = self.builder.get_object('rhs-dataset-list-auto-refresh')
         self.rhs_dataset_uri_entry_buffer = self.builder.get_object('rhs-dataset-uri-entry-buffer')
         self.rhs_dataset_uri_file_chooser_button = self.builder.get_object('rhs-dataset-uri-chooser-button')
         self.rhs_dtool_ls_results = self.builder.get_object('dtool-ls-results-rhs')
@@ -102,14 +102,8 @@ class SignalHandler:
         self.rhs_base_uri_inventory_group.dataset_uri_selector.append_file_chooser_button(
             self.rhs_dataset_uri_file_chooser_button)
 
-        # configure
-        self.lhs_dataset_list_auto_refresh.set_active(GlobalConfig.auto_refresh_on)
-        self.rhs_dataset_list_auto_refresh.set_active(GlobalConfig.auto_refresh_on)
-        self.lhs_dtool_ls_results.auto_refresh = GlobalConfig.auto_refresh_on
-        self.rhs_dtool_ls_results.auto_refresh = GlobalConfig.auto_refresh_on
-
-        # self.lhs_dtool_ls_results.refresh()
-        # self.rhs_dtool_ls_results.refresh()
+        self.lhs_base_uri_inventory_group.append_auto_refresh_switch(self.lhs_dataset_list_auto_refresh)
+        self.rhs_base_uri_inventory_group.append_auto_refresh_switch(self.rhs_dataset_list_auto_refresh)
 
         self.thread_pool = concurrent.futures.ThreadPoolExecutor(max_workers=2)
 
