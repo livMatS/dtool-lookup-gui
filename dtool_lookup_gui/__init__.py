@@ -29,6 +29,7 @@ import os
 import uuid
 from contextlib import contextmanager
 from datetime import date, datetime
+from io import StringIO
 
 from ruamel.yaml import YAML
 from ruamel.yaml.parser import ParserError
@@ -178,3 +179,18 @@ def _validate_readme(readme_content):
     except (ParserError, DuplicateKeyError, ScannerError) as message:
         return None, str(message)
 
+
+def _standardize_readme(readme_content):
+    # Create YAML object to standardise the output formatting.
+    yaml = YAML()
+    yaml.explicit_start = True
+    yaml.indent(mapping=2, sequence=4, offset=2)
+
+    # Validate the YAML.
+    readme_formatted, error = _validate_readme(readme_content)
+    if error is not None:
+        raise ValueError(error)
+
+    stream = StringIO()
+    yaml.dump(readme_formatted, stream)
+    return stream.getvalue()
