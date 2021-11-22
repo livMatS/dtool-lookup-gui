@@ -164,7 +164,6 @@ class SignalHandler:
         self._load_handlers(self.lookup_tab)
         self._load_handlers(self.direct_tab)
         self._load_handlers(self.transfer_tab)
-        self._load_handlers(self)
 
         self.builder.connect_signals(self.handlers)
         self.main_window.show_all()

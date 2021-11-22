@@ -142,7 +142,7 @@ class SettingsDialog(Gtk.Window):
         # Reconnect since settings may have been changed
         asyncio.create_task(self.main_application.lookup_tab.connect())
 
-        # Return True to avoid destruction of the window
+        # Destroy window
         return False
 
     @Gtk.Template.Callback()
