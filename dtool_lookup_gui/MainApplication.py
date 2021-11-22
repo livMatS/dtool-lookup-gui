@@ -21,6 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
+
 import asyncio
 import concurrent.futures
 import logging
@@ -286,6 +287,11 @@ class SignalHandler:
 
 
 def run_gui():
+    #base_path = os.path.abspath(os.path.dirname(__file__))
+    #resource_path = os.path.join(base_path, '/de.uni-freiburg.dtool-lookup-gui.gresource')
+    #resource = Gio.Resource.load(resource_path)
+    #resource.register()
+
     # weird solution for registering custom widgets with gtk builder
     builder = Gtk.Builder()
     builder.add_from_file(os.path.dirname(__file__) + '/dtool-lookup-gui.glade')

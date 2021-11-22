@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/de/uni-freiburg/dtool-lookup-gui">
+    <file>views/authentication_dialog.ui</file>
+  </gresource>
+</gresources>

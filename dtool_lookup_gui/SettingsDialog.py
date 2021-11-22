@@ -30,6 +30,8 @@ from dtoolcore.utils import get_config_value, write_config_value_to_file, genero
 from dtool_lookup_api.core.config import Config
 from dtool_lookup_api.core.LookupClient import authenticate
 
+from .views.authentication_dialog import AuthenticationDialog
+
 
 def _is_configured(base_uri):
     if base_uri.scheme == 's3':
@@ -46,7 +48,6 @@ class SignalHandler:
         self.settings = parent.settings
 
         self.settings_window = self.builder.get_object('settings-window')
-        self.auth_dialog = self.builder.get_object('auth-dialog')
         self.s3_configuration_dialog = self.builder.get_object('s3-configuration-dialog')
 
     def show(self):
@@ -136,11 +137,16 @@ class SignalHandler:
         return True
 
     def on_renew_token_clicked(self, widget):
-        if Config.username is not None:
-            self.builder.get_object('username-entry').set_text(Config.username)
-        if Config.password is not None:
-            self.builder.get_object('password-entry').set_text(Config.password)
-        self.auth_dialog.show()
+        def authenticate(username, password):
+            asyncio.create_task(self.retrieve_token(
+                self.builder.get_object('authenticator-url-entry').get_text(),
+                username,
+                password))
+
+            # Reconnect since settings may have been changed
+            asyncio.create_task(self.main_application.lookup_tab.connect())
+
+        AuthenticationDialog(authenticate, Config.username, Config.password).show()
 
     async def retrieve_token(self, auth_url, username, password):
         self.main_application.error_bar.hide()
@@ -151,20 +157,6 @@ class SignalHandler:
             return
         self.builder.get_object('token-entry').set_text(token)
         await self._refresh_list_of_endpoints()
-
-    def on_auth_ok_clicked(self, widget):
-        self.auth_dialog.hide()
-        asyncio.create_task(self.retrieve_token(
-            self.builder.get_object('authenticator-url-entry').get_text(),
-            self.builder.get_object('username-entry').get_text(),
-            self.builder.get_object('password-entry').get_text()
-        ))
-
-        # Reconnect since settings may have been changed
-        asyncio.create_task(self.main_application.lookup_tab.connect())
-
-    def on_auth_cancel_clicked(self, widget):
-        self.auth_dialog.hide()
 
     def _edit_endpoint(self, s3_bucket=None, s3_endpoint='', s3_access_key='', s3_secret_key='', s3_prefix=''):
         s3_bucket_entry = self.builder.get_object('s3-bucket-entry')
