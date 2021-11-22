@@ -23,8 +23,10 @@
 #
 import asyncio
 import concurrent.futures
+import os
 import shutil
 import subprocess
+import sys
 from functools import reduce
 
 from . import (
@@ -370,8 +372,8 @@ class SignalHandler:
         dataset = dtoolcore.DataSet.from_uri(uri)
         if item_uuid in dataset.identifiers:
             shutil.copyfile(dataset.item_content_abspath(item_uuid),
-                            f'/home/pastewka/Downloads/{item_name}')
-            subprocess.run(["xdg-open", f'/home/pastewka/Downloads/{item_name}'])
+                            f'{os.environ["HOME"]}/Downloads/{item_name}')
+            subprocess.run(["open" if sys.platform == 'darwin' else "xdg-open", f'{os.environ["HOME"]}/Downloads/{item_name}'])
             # The following lines should be more portable but don't run
             #Gio.AppInfo.launch_default_for_uri(
             #    dataset.item_content_abspath(uuid))
