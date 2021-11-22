@@ -40,12 +40,12 @@ class AuthenticationDialog(Gtk.Window):
             self.username_entry.set_text(username)
         if password:
             self.password_entry.set_text(password)
-        self._apply = apply
+        self._apply = lambda username, password: None if apply is None else apply
 
     @Gtk.Template.Callback()
     def on_apply_clicked(self, widget):
-        self.destroy()
         self._apply(self.username_entry.get_text(), self.password_entry.get_text())
+        self.destroy()
 
     @Gtk.Template.Callback()
     def on_cancel_clicked(self, widget):

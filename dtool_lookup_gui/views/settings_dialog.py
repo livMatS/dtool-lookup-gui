@@ -23,14 +23,16 @@
 #
 
 import asyncio
+import os
 
-from gi.repository import Gtk
+from gi.repository import Gio, Gtk
 
 from dtoolcore.utils import get_config_value, write_config_value_to_file, generous_parse_uri, _get_config_dict_from_file
 from dtool_lookup_api.core.config import Config
 from dtool_lookup_api.core.LookupClient import authenticate
 
-from .views.authentication_dialog import AuthenticationDialog
+from .authentication_dialog import AuthenticationDialog
+from .s3_configuration_dialog import S3ConfigurationDialog
 
 
 def _is_configured(base_uri):
@@ -40,31 +42,39 @@ def _is_configured(base_uri):
         return False
 
 
-class SignalHandler:
-    def __init__(self, parent):
+@Gtk.Template(filename=f'{os.path.dirname(__file__)}/settings_dialog.ui')
+class SettingsDialog(Gtk.Window):
+    __gtype_name__ = 'DtoolSettingsDialog'
+
+    lookup_url_entry = Gtk.Template.Child()
+    token_entry = Gtk.Template.Child()
+    authenticator_url_entry = Gtk.Template.Child()
+    dependency_keys_entry = Gtk.Template.Child()
+    verify_ssl_certificate_switch = Gtk.Template.Child()
+    endpoints_list_box = Gtk.Template.Child()
+
+    def __init__(self, parent, **kwargs):
+        super().__init__(**kwargs)
         self.main_application = parent.main_application
         self.event_loop = parent.event_loop
-        self.builder = parent.builder
         self.settings = parent.settings
 
-        self.settings_window = self.builder.get_object('settings-window')
-        self.s3_configuration_dialog = self.builder.get_object('s3-configuration-dialog')
+        self.main_application.settings.settings.bind("dependency-keys",
+                                                     self.dependency_keys_entry, 'text',
+                                                     Gio.SettingsBindFlags.DEFAULT)
 
-    def show(self):
-        self.settings_window.show()
-
-    def on_settings_window_show(self, widget):
         if Config.lookup_url is not None:
-            self.builder.get_object('lookup-url-entry').set_text(Config.lookup_url)
+            self.lookup_url_entry.set_text(Config.lookup_url)
         if Config.token is not None:
-            self.builder.get_object('token-entry').set_text(Config.token)
+            self.token_entry.set_text(Config.token)
         if Config.auth_url is not None:
-            self.builder.get_object('authenticator-url-entry').set_text(Config.auth_url)
+            self.authenticator_url_entry.set_text(Config.auth_url)
+        if Config.verify_ssl is not None:
+            self.verify_ssl_certificate_switch.set_state(Config.verify_ssl)
         asyncio.create_task(self._refresh_list_of_endpoints())
 
     async def _refresh_list_of_endpoints(self):
-        endpoints_list_box = self.builder.get_object('endpoints-list-box')
-        for child in endpoints_list_box.get_children():
+        for child in self.endpoints_list_box.get_children():
             child.destroy()
         base_uris = await self.main_application.lookup_tab.lookup.list_base_uris()
         base_uris = {base_uri['base_uri']: base_uri | {'local': False, 'remote': True} for base_uri in base_uris}
@@ -106,7 +116,7 @@ class SignalHandler:
             button.base_uri = parsed_uri
             hbox.pack_end(button, False, False, 0)
             row.add(hbox)
-            endpoints_list_box.add(row)
+            self.endpoints_list_box.add(row)
 
         # Plus button for adding new endpoints
         row = Gtk.ListBoxRow()
@@ -117,29 +127,29 @@ class SignalHandler:
         image.set_margin_end(12)
         row.connect('state-changed', self.on_add_endpoint_state_changed)
         row.add(image)
-        endpoints_list_box.add(row)
+        self.endpoints_list_box.add(row)
 
-        endpoints_list_box.show_all()
+        self.endpoints_list_box.show_all()
 
-    def on_settings_window_delete(self, widget, event):
-        # Don't delete, simply hide the window
-        widget.hide()
-
+    @Gtk.Template.Callback()
+    def on_delete(self, widget, event):
         # Write back configuration
-        Config.lookup_url = self.builder.get_object('lookup-url-entry').get_text()
-        Config.token = self.builder.get_object('token-entry').get_text()
-        Config.auth_url = self.builder.get_object('authenticator-url-entry').get_text()
+        Config.lookup_url = self.lookup_url_entry.get_text()
+        Config.token = self.token_entry.get_text()
+        Config.auth_url = self.authenticator_url_entry.get_text()
+        Config.verify_ssl = self.verify_ssl_certificate_switch.get_state()
 
         # Reconnect since settings may have been changed
         asyncio.create_task(self.main_application.lookup_tab.connect())
 
         # Return True to avoid destruction of the window
-        return True
+        return False
 
+    @Gtk.Template.Callback()
     def on_renew_token_clicked(self, widget):
         def authenticate(username, password):
             asyncio.create_task(self.retrieve_token(
-                self.builder.get_object('authenticator-url-entry').get_text(),
+                self.authenticator_url_entry.get_text(),
                 username,
                 password))
 
@@ -158,55 +168,10 @@ class SignalHandler:
         self.builder.get_object('token-entry').set_text(token)
         await self._refresh_list_of_endpoints()
 
-    def _edit_endpoint(self, s3_bucket=None, s3_endpoint='', s3_access_key='', s3_secret_key='', s3_prefix=''):
-        s3_bucket_entry = self.builder.get_object('s3-bucket-entry')
-        if s3_bucket is None:
-            # This is a new endpoint; we can edit the bucket name
-            s3_bucket_entry.set_text('')
-            s3_bucket_entry.set_sensitive(True)
-        else:
-            # This is an existing endpoint; we do not allow editing the bucket name
-            s3_bucket_entry.set_text(s3_bucket)
-            s3_bucket_entry.set_sensitive(False)
-        if s3_endpoint is not None:
-            self.builder.get_object('s3-endpoint-url-entry').set_text(s3_endpoint)
-        if s3_access_key is not None:
-            self.builder.get_object('s3-access-key-entry').set_text(s3_access_key)
-        if s3_secret_key is not None:
-            self.builder.get_object('s3-secret-key-entry').set_text(s3_secret_key)
-        if s3_prefix is not None:
-            self.builder.get_object('s3-prefix-entry').set_text(s3_prefix)
-
-        self.s3_configuration_dialog.show()
-
     def on_configure_endpoint_clicked(self, widget):
-        base_uri = widget.base_uri
-        if base_uri.scheme == 's3':
-            s3_endpoint = get_config_value(f'DTOOL_S3_ENDPOINT_{base_uri.netloc}')
-            s3_access_key = get_config_value(f'DTOOL_S3_ACCESS_KEY_ID_{base_uri.netloc}')
-            s3_secret_key = get_config_value(f'DTOOL_S3_SECRET_ACCESS_KEY_{base_uri.netloc}')
-            s3_prefix = get_config_value(f'DTOOL_S3_DATASET_PREFIX')
-
-            self._edit_endpoint(base_uri.netloc, s3_endpoint, s3_access_key, s3_secret_key, s3_prefix)
+        S3ConfigurationDialog(lambda: asyncio.create_task(self._refresh_list_of_endpoints()),
+                              widget.base_uri.netloc).show()
 
     def on_add_endpoint_state_changed(self, widget, state):
         if state == Gtk.StateType.ACTIVE:
-            self._edit_endpoint()
-
-    def on_s3_configuration_apply_clicked(self, widget):
-        self.s3_configuration_dialog.hide()
-
-        bucket_name = self.builder.get_object('s3-bucket-entry').get_text()
-        write_config_value_to_file(f'DTOOL_S3_ENDPOINT_{bucket_name}',
-                                   self.builder.get_object('s3-endpoint-url-entry').get_text())
-        write_config_value_to_file(f'DTOOL_S3_ACCESS_KEY_ID_{bucket_name}',
-                                   self.builder.get_object('s3-access-key-entry').get_text())
-        write_config_value_to_file(f'DTOOL_S3_SECRET_ACCESS_KEY_{bucket_name}',
-                                   self.builder.get_object('s3-secret-key-entry').get_text())
-        write_config_value_to_file(f'DTOOL_S3_DATASET_PREFIX',
-                                   self.builder.get_object('s3-prefix-entry').get_text())
-
-        asyncio.create_task(self._refresh_list_of_endpoints())
-
-    def on_s3_configuration_cancel_clicked(self, widget):
-        self.s3_configuration_dialog.hide()
+            S3ConfigurationDialog(lambda: asyncio.create_task(self._refresh_list_of_endpoints())).show()
