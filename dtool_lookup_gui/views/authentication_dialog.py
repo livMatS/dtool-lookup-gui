@@ -34,13 +34,13 @@ class AuthenticationDialog(Gtk.Window):
     username_entry = Gtk.Template.Child()
     password_entry = Gtk.Template.Child()
 
-    def __init__(self, apply=None, username=None, password=None, **kwargs):
+    def __init__(self, apply=lambda username, password: None, username=None, password=None, **kwargs):
         super().__init__(**kwargs)
         if username:
             self.username_entry.set_text(username)
         if password:
             self.password_entry.set_text(password)
-        self._apply = lambda username, password: None if apply is None else apply
+        self._apply = apply
 
     @Gtk.Template.Callback()
     def on_apply_clicked(self, widget):
