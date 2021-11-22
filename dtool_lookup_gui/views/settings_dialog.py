@@ -35,11 +35,16 @@ from .authentication_dialog import AuthenticationDialog
 from .s3_configuration_dialog import S3ConfigurationDialog
 
 
-def _is_configured(base_uri):
-    if base_uri.scheme == 's3':
-        return get_config_value(f'DTOOL_S3_ENDPOINT_{base_uri.netloc}') is not None
-    else:
-        return False
+_DTOOL_CONFIG_PREFIXES = {
+    'DTOOL_S3_ENDPOINT_': 's3',
+    'DTOOL_SMB_SERVER_NAME_': 'smb',
+}
+
+def _get_base_uri(key):
+    for prefix, schema in _DTOOL_CONFIG_PREFIXES.items():
+        if key.startswith(prefix):
+            return f'{schema}://{key[len(prefix):]}'
+    return None
 
 
 @Gtk.Template(filename=f'{os.path.dirname(__file__)}/settings_dialog.ui')
@@ -81,8 +86,8 @@ class SettingsDialog(Gtk.Window):
 
         config_dict = _get_config_dict_from_file()
         for key, value in config_dict.items():
-            if key.startswith('DTOOL_S3_ENDPOINT'):
-                base_uri = f's3://{key[18:]}'
+            base_uri = _get_base_uri(key)
+            if base_uri is not None:
                 if base_uri not in base_uris:
                     base_uris[base_uri] = {'local': True, 'remote': False}
                 else:
