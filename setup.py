@@ -53,6 +53,7 @@ setup(
     use_scm_version=True,
     install_requires=[
         'dtoolcore>=3.17',
+        'dtool-create>=0.23.4',
         'dtool-info>=0.16.2',
         'dtool-lookup-api>=0.3',
         'aiohttp>=3.6',

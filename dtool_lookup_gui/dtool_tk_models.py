@@ -41,7 +41,7 @@ from ruamel.yaml import YAML
 from dtool_info.inventory import _dataset_info
 from dtool_info.utils import sizeof_fmt
 
-from dtool_gui_tk.metadata import MetadataSchemaItem
+from .dtool_tk_metadata import MetadataSchemaItem
 
 logger = logging.getLogger(__name__)
 
@@ -84,8 +84,8 @@ def metadata_model_from_dataset(dataset):
     the value extracted from the dataset is used.
 
     :param dataset: :class:`dtoolcore.DataSet`
-    :returns: :class:`dtool_gui_tk.models.MetadataModel` instance
-    :raises dtool_gui_tk.models.MetadataConflictError: if the values extracted
+    :returns: :class:`dtool_gui_models.MetadataModel` instance
+    :raises dtool_gui_models.MetadataConflictError: if the values extracted
         from the readme and annotations do not match for a particular key
     :raises dtool_gui_tk.models.UnsupportedTypeError: if the value is not
         supported, see :func:`dtool_gui_tk.models.get_json_schema_type`.
