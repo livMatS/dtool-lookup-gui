@@ -37,17 +37,17 @@ from gi.repository import Gtk, Gdk, Gio
 import gbulb
 gbulb.install(gtk=True)
 
-from .models import (
+from .models.dataset import (
     LocalBaseURIModel,
     RemoteBaseURIModel,
     DataSetListModel,
     DataSetModel,
 )
 
-from .dtool_gtk import BaseURISelector, DatasetURISelector, BaseURIInventoryGroup
-from . import GlobalConfig, LookupTab, DirectTab, TransferTab
-from .views.settings_dialog import SettingsDialog
 import dtool_lookup_gui.views.metadata_editor as MetadataEditor
+from . import GlobalConfig, LookupTab, DirectTab, TransferTab
+from .dtool_gtk import BaseURISelector, DatasetURISelector, BaseURIInventoryGroup
+from .views.settings_dialog import SettingsDialog
 
 logger = logging.getLogger(__name__)
 

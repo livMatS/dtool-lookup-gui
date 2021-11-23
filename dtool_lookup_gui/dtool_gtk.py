@@ -22,17 +22,17 @@
 # SOFTWARE.
 #
 # TODO: fill lists with one dataset when auto refresh toggled off
-import gi
-gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk, Gio, GObject
+
 import logging
 import os
 import urllib
-
 from abc import ABC, abstractmethod
 from contextlib import AbstractContextManager
+
+from gi.repository import Gtk, Gdk, Gio, GObject
+
 from . import date_to_string
-from .models import DataSetModel, DataSetListModel, BaseURIModel, UnsupportedTypeError
+from .models.dataset import DataSetModel, DataSetListModel, BaseURIModel, UnsupportedTypeError
 
 logger = logging.getLogger(__name__)
 

@@ -29,7 +29,7 @@ import numpy as np
 
 from gi.repository import GObject, Gdk, Gtk
 
-from .simple_graph import GraphLayout
+from ..models.simple_graph import GraphLayout
 
 
 def circle(context, x, y):

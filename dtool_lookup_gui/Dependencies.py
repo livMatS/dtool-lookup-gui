@@ -25,7 +25,7 @@ import json
 import logging
 
 from . import is_uuid
-from .widgets.simple_graph import SimpleGraph
+from .models.simple_graph import SimpleGraph
 
 
 logger = logging.getLogger(__name__)
