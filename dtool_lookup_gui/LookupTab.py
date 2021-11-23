@@ -366,12 +366,15 @@ class SignalHandler:
             return True
         return False
 
-    def dtool_retrieve_item(self, uri, item_name, item_uuid, dest_file):
+    def dtool_retrieve_item(self, uri, item_name, item_uuid, dest_file, app_launch_uri=None):
         dataset = dtoolcore.DataSet.from_uri(uri)
         if item_uuid in dataset.identifiers:
             source_file = dataset.item_content_abspath(item_uuid)
             logger.debug(f"Copy cached item {source_file} to {dest_file}.")
             shutil.copyfile(source_file, dest_file)
+            if app_launch_uri is not None:
+                Gio.AppInfo.launch_default_for_uri(app_launch_uri)
+
         else:
             self.show_error(f'Cannot open item {item_name}, since the UUID {item_uuid} '
                             'appears to exist in the lookup server only.')
@@ -393,10 +396,11 @@ class SignalHandler:
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
             dest_file = dialog.get_filename()
+            app_open_uri = dialog.get_uri()
             loop = asyncio.get_event_loop()
             await asyncio.wait([
                 loop.run_in_executor(self.thread_pool, self.dtool_retrieve_item,
-                                     uri, item_name, item_uuid, dest_file)])
+                                     uri, item_name, item_uuid, dest_file, app_open_uri)])
         elif response == Gtk.ResponseType.CANCEL:
             pass
         dialog.destroy()

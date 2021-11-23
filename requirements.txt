@@ -1,4 +1,5 @@
 dtoolcore
+dtool-create
 dtool-info
 dtool-lookup-api
 aiohttp

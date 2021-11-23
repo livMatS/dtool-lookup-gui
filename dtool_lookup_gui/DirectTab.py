@@ -31,7 +31,8 @@ import logging
 import os.path
 import urllib.parse
 
-from gi.repository import Gtk, Gdk, Gio
+import gi
+from gi.repository import Gtk, Gdk, Gio, GObject
 
 from ruamel.yaml import YAML
 
@@ -110,6 +111,7 @@ class SignalHandler:
         self.manifest_spinner =  self.builder.get_object('direct-manifest-spinner')
         self.manifest_stack = self.builder.get_object('direct-manifest-stack')
         self.manifest_view = self.builder.get_object('direct-manifest-view')
+        self.metadata_dialog = self.builder.get_object('metadata-dialog')
         self.readme_spinner = self.builder.get_object('direct-readme-spinner')
         self.readme_stack = self.builder.get_object('direct-readme-stack')
         self.readme_view = self.builder.get_object('direct-readme-view')
@@ -176,6 +178,9 @@ class SignalHandler:
         elif response == Gtk.ResponseType.CANCEL:
             pass
         dialog.destroy()
+
+    def on_edit_metadata_clicked(self, button):
+        self.main_application.metadata_editor.show()
 
     def on_dtool_freeze(self, button):
         if not self.lhs_base_uri_inventory_group.dataset_model.is_frozen:

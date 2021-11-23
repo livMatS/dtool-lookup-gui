@@ -3,6 +3,7 @@
 <interface>
   <requires lib="gtk+" version="3.22"/>
   <requires lib="dtool_gtk_catalog" version="0.1"/>
+  <requires lib="gtksourceview" version="4.0"/>
   <object class="GtkWindow">
     <property name="can-focus">False</property>
     <child>
@@ -350,6 +351,91 @@
         <property name="can-focus">False</property>
         <property name="label" translatable="yes">Show in file manager</property>
         <property name="use-underline">True</property>
+      </object>
+    </child>
+  </object>
+  <object class="GtkTextBuffer" id="metadata-buffer"/>
+  <object class="GtkDialog" id="metadata-dialog">
+    <property name="can-focus">False</property>
+    <property name="type-hint">dialog</property>
+    <property name="deletable">False</property>
+    <child internal-child="vbox">
+      <object class="GtkBox">
+        <property name="can-focus">False</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">2</property>
+        <child internal-child="action_area">
+          <object class="GtkButtonBox">
+            <property name="can-focus">False</property>
+            <property name="layout-style">end</property>
+            <child>
+              <placeholder/>
+            </child>
+            <child>
+              <placeholder/>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">False</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkSourceView" id="metadata-editor">
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="hexpand">True</property>
+            <property name="vexpand">True</property>
+            <property name="left-margin">2</property>
+            <property name="right-margin">2</property>
+            <property name="input-hints">GTK_INPUT_HINT_NO_EMOJI | GTK_INPUT_HINT_NONE</property>
+            <property name="show-line-numbers">True</property>
+            <property name="show-line-marks">True</property>
+            <property name="tab-width">4</property>
+            <property name="insert-spaces-instead-of-tabs">True</property>
+            <property name="show-right-margin">True</property>
+            <property name="smart-home-end">always</property>
+            <property name="highlight-current-line">True</property>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+      </object>
+    </child>
+    <child type="titlebar">
+      <object class="GtkHeaderBar">
+        <property name="visible">True</property>
+        <property name="can-focus">False</property>
+        <property name="title" translatable="yes">Edit metadata</property>
+        <property name="subtitle" translatable="yes">(README.yml)</property>
+        <child>
+          <object class="GtkButton">
+            <property name="label">gtk-cancel</property>
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
+            <property name="use-stock">True</property>
+            <signal name="clicked" handler="on_metadata_editor_cancel_clicked" swapped="no"/>
+          </object>
+        </child>
+        <child>
+          <object class="GtkButton">
+            <property name="label">gtk-apply</property>
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
+            <property name="use-stock">True</property>
+            <signal name="clicked" handler="on_metadata_editor_apply_clicked" swapped="no"/>
+          </object>
+          <packing>
+            <property name="pack-type">end</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
       </object>
     </child>
   </object>
@@ -776,33 +862,10 @@
                                       </packing>
                                     </child>
                                     <child>
-                                      <object class="GtkLabel">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="halign">start</property>
-                                        <property name="label" translatable="yes">Size</property>
-                                        <attributes>
-                                          <attribute name="weight" value="bold"/>
-                                        </attributes>
-                                      </object>
-                                      <packing>
-                                        <property name="expand">False</property>
-                                        <property name="fill">True</property>
-                                        <property name="position">2</property>
-                                      </packing>
+                                      <placeholder/>
                                     </child>
                                     <child>
-                                      <object class="GtkLabel" id="dataset-size-in-bytes">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="halign">start</property>
-                                        <property name="label" translatable="yes">label</property>
-                                      </object>
-                                      <packing>
-                                        <property name="expand">False</property>
-                                        <property name="fill">True</property>
-                                        <property name="position">3</property>
-                                      </packing>
+                                      <placeholder/>
                                     </child>
                                     <child>
                                       <placeholder/>
@@ -1490,6 +1553,7 @@
                                     <property name="visible">True</property>
                                     <property name="can-focus">True</property>
                                     <property name="receives-default">True</property>
+                                    <signal name="clicked" handler="on_edit_metadata_clicked" swapped="no"/>
                                   </object>
                                   <packing>
                                     <property name="left-attach">2</property>

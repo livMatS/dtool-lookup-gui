@@ -32,7 +32,7 @@ Config.interactive = False
 
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk, Gio, GObject
+from gi.repository import Gtk, Gdk, Gio
 
 import gbulb
 gbulb.install(gtk=True)
@@ -45,8 +45,10 @@ from .models import (
 )
 
 from .dtool_gtk import BaseURISelector, DatasetURISelector, BaseURIInventoryGroup
+from . import GlobalConfig, LookupTab, DirectTab, TransferTab, SettingsDialog
 from . import GlobalConfig, LookupTab, DirectTab, TransferTab
 from .views.settings_dialog import SettingsDialog
+from .views.metadata_editor import MetadataEditor
 
 logger = logging.getLogger(__name__)
 
@@ -105,6 +107,7 @@ class SignalHandler:
         self.rhs_dataset_uri_entry_buffer = self.builder.get_object('rhs-dataset-uri-entry-buffer')
 
         self.main_window = self.builder.get_object('main-window')
+        self.metadata_dialog = self.builder.get_object('metadata-dialog')
         self.settings_window = self.builder.get_object('settings-window')
         self.main_notebook = self.builder.get_object('main-notebook')
 
@@ -152,6 +155,8 @@ class SignalHandler:
         self.lookup_tab = LookupTab.SignalHandler(self)
         self.direct_tab = DirectTab.SignalHandler(self)
         self.transfer_tab = TransferTab.SignalHandler(self)
+        # self.settings_dialog = SettingsDialog.SignalHandler(self)
+        self.metadata_editor = MetadataEditor.SignalHandler(self)
 
         self.rhs_base_uri_inventory_group.refresh()
         self.lhs_base_uri_inventory_group.refresh()
@@ -164,6 +169,8 @@ class SignalHandler:
         self._load_handlers(self.lookup_tab)
         self._load_handlers(self.direct_tab)
         self._load_handlers(self.transfer_tab)
+        self._load_handlers(self.metadata_editor)
+        self._load_handlers(self)
 
         self.builder.connect_signals(self.handlers)
         self.main_window.show_all()

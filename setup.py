@@ -36,7 +36,7 @@ class CustomInstallCommand(install):
 
 
 url = 'https://github.com/IMTEK-Simulation/dtool-lookup-gui'
-readme = open('README.rst').read()
+readme = open('README.rst', encoding="utf8").read()
 
 setup(
     cmdclass={
@@ -53,6 +53,7 @@ setup(
     use_scm_version=True,
     install_requires=[
         'dtoolcore>=3.17',
+        'dtool-create>=0.23.4',
         'dtool-info>=0.16.2',
         'dtool-lookup-api>=0.3',
         'aiohttp>=3.6',
