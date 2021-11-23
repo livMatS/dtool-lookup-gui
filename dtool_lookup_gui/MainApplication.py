@@ -21,6 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
+
 import asyncio
 import concurrent.futures
 import logging
@@ -44,7 +45,10 @@ from .models import (
 )
 
 from .dtool_gtk import BaseURISelector, DatasetURISelector, BaseURIInventoryGroup
-from . import GlobalConfig, LookupTab, DirectTab, TransferTab, SettingsDialog, MetadataEditor
+from . import GlobalConfig, LookupTab, DirectTab, TransferTab, SettingsDialog
+from . import GlobalConfig, LookupTab, DirectTab, TransferTab
+from .views.settings_dialog import SettingsDialog
+from .views.metadata_editor import MetadataEditor
 
 logger = logging.getLogger(__name__)
 
@@ -151,7 +155,7 @@ class SignalHandler:
         self.lookup_tab = LookupTab.SignalHandler(self)
         self.direct_tab = DirectTab.SignalHandler(self)
         self.transfer_tab = TransferTab.SignalHandler(self)
-        self.settings_dialog = SettingsDialog.SignalHandler(self)
+        # self.settings_dialog = SettingsDialog.SignalHandler(self)
         self.metadata_editor = MetadataEditor.SignalHandler(self)
 
         self.rhs_base_uri_inventory_group.refresh()
@@ -165,7 +169,6 @@ class SignalHandler:
         self._load_handlers(self.lookup_tab)
         self._load_handlers(self.direct_tab)
         self._load_handlers(self.transfer_tab)
-        self._load_handlers(self.settings_dialog)
         self._load_handlers(self.metadata_editor)
         self._load_handlers(self)
 
@@ -252,8 +255,7 @@ class SignalHandler:
         self.refresh(page_num)
 
     def on_settings_clicked(self, widget):
-        #asyncio.create_task(self._fetch_users())
-        self.settings_dialog.show()
+        SettingsDialog(self).show()
 
     def on_jump_to_transfer_tab(self, button):
         self.main_notebook.set_current_page(TRANSFER_TAB)
@@ -289,6 +291,11 @@ class SignalHandler:
 
 
 def run_gui():
+    #base_path = os.path.abspath(os.path.dirname(__file__))
+    #resource_path = os.path.join(base_path, '/de.uni-freiburg.dtool-lookup-gui.gresource')
+    #resource = Gio.Resource.load(resource_path)
+    #resource.register()
+
     # weird solution for registering custom widgets with gtk builder
     builder = Gtk.Builder()
     builder.add_from_file(os.path.dirname(__file__) + '/dtool-lookup-gui.glade')
@@ -298,10 +305,6 @@ def run_gui():
     settings = Settings()
 
     signal_handler = SignalHandler(loop, builder, settings)
-
-    settings.settings.bind("dependency-keys",
-                           builder.get_object('dependency-keys-entry'), 'text',
-                           Gio.SettingsBindFlags.DEFAULT)
 
     # Connect to the lookup server upon startup
     signal_handler.lookup_tab.connect()
