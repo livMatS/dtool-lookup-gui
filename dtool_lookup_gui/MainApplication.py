@@ -37,6 +37,7 @@ from gi.repository import Gtk, Gdk, Gio
 import gbulb
 gbulb.install(gtk=True)
 
+
 from .models import (
     LocalBaseURIModel,
     RemoteBaseURIModel,
@@ -45,10 +46,9 @@ from .models import (
 )
 
 from .dtool_gtk import BaseURISelector, DatasetURISelector, BaseURIInventoryGroup
-from . import GlobalConfig, LookupTab, DirectTab, TransferTab, SettingsDialog
 from . import GlobalConfig, LookupTab, DirectTab, TransferTab
+from .views import metadata_editor
 from .views.settings_dialog import SettingsDialog
-from .views.metadata_editor import MetadataEditor
 
 logger = logging.getLogger(__name__)
 
@@ -156,7 +156,7 @@ class SignalHandler:
         self.direct_tab = DirectTab.SignalHandler(self)
         self.transfer_tab = TransferTab.SignalHandler(self)
         # self.settings_dialog = SettingsDialog.SignalHandler(self)
-        self.metadata_editor = MetadataEditor.SignalHandler(self)
+        self.metadata_editor = metadata_editor.SignalHandler(self)
 
         self.rhs_base_uri_inventory_group.refresh()
         self.lhs_base_uri_inventory_group.refresh()
