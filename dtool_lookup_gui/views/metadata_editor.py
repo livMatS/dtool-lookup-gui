@@ -29,7 +29,7 @@ import gi
 gi.require_version('GtkSource', '4')
 from gi.repository import Gtk, Gdk, Gio, GObject, GtkSource
 
-from . import _standardize_readme
+from .. import _standardize_readme
 
 GObject.type_register(GtkSource.View)
 

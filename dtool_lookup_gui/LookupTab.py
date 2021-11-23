@@ -46,7 +46,7 @@ import gbulb
 gbulb.install(gtk=True)
 
 from .Dependencies import DependencyGraph
-from .GraphWidget import GraphWidget
+from .widgets.graph_widget import GraphWidget
 
 
 logger = logging.getLogger(__name__)
@@ -432,7 +432,3 @@ class SignalHandler:
         self.search_popover.set_sensitive(sensitive)
         self.search_entry.set_sensitive(sensitive)
         self._sensitive = sensitive
-
-
-
-

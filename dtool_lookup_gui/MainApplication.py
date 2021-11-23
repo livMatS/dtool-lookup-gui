@@ -45,10 +45,9 @@ from .models import (
 )
 
 from .dtool_gtk import BaseURISelector, DatasetURISelector, BaseURIInventoryGroup
-from . import GlobalConfig, LookupTab, DirectTab, TransferTab, SettingsDialog
 from . import GlobalConfig, LookupTab, DirectTab, TransferTab
 from .views.settings_dialog import SettingsDialog
-from .views.metadata_editor import MetadataEditor
+import dtool_lookup_gui.views.metadata_editor as MetadataEditor
 
 logger = logging.getLogger(__name__)
 
@@ -170,7 +169,6 @@ class SignalHandler:
         self._load_handlers(self.direct_tab)
         self._load_handlers(self.transfer_tab)
         self._load_handlers(self.metadata_editor)
-        self._load_handlers(self)
 
         self.builder.connect_signals(self.handlers)
         self.main_window.show_all()

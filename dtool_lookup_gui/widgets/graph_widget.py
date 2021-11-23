@@ -29,7 +29,7 @@ import numpy as np
 
 from gi.repository import GObject, Gdk, Gtk
 
-from .SimpleGraph import GraphLayout
+from .simple_graph import GraphLayout
 
 
 def circle(context, x, y):
@@ -48,7 +48,10 @@ def triangle(context, x, y):
     context.line_to(x - 0.5, y + 0.5*height)
     context.close_path()
 
+
 class GraphWidget(Gtk.DrawingArea):
+    __gtype_name__ = 'DtoolGraphWidget'
+
     def __init__(self, builder, graph):
         super().__init__()
         self.graph = graph
@@ -201,3 +204,6 @@ class GraphWidget(Gtk.DrawingArea):
             print(e)
         self.queue_draw()
         return True
+
+
+GObject.type_register(GraphWidget)
