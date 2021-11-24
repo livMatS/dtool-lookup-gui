@@ -31,6 +31,7 @@ from dtoolcore.utils import get_config_value, write_config_value_to_file, genero
 from dtool_lookup_api.core.config import Config
 from dtool_lookup_api.core.LookupClient import authenticate
 
+import dtool_lookup_gui.models.base_uris as base_uri_models
 from .authentication_dialog import AuthenticationDialog
 from .s3_configuration_dialog import S3ConfigurationDialog
 
@@ -84,14 +85,11 @@ class SettingsDialog(Gtk.Window):
         base_uris = await self.main_application.lookup_tab.lookup.list_base_uris()
         base_uris = {base_uri['base_uri']: base_uri | {'local': False, 'remote': True} for base_uri in base_uris}
 
-        config_dict = _get_config_dict_from_file()
-        for key, value in config_dict.items():
-            base_uri = _get_base_uri(key)
-            if base_uri is not None:
-                if base_uri not in base_uris:
-                    base_uris[base_uri] = {'local': True, 'remote': False}
-                else:
-                    base_uris[base_uri]['local'] = True
+        for base_uri in base_uri_models.all():
+            if base_uri.base_uri not in base_uris:
+                base_uris[base_uri.base_uri] = {'local': True, 'remote': False}
+            else:
+                base_uris[base_uri.base_uri]['local'] = True
 
         for base_uri, info in base_uris.items():
             parsed_uri = generous_parse_uri(base_uri)

@@ -28,7 +28,7 @@ if __name__ == '__main__':
     import argparse
 
     from . import GlobalConfig
-    from .MainApplication import run_gui
+    from .main import run_gui
 
 
     # in order to have both:

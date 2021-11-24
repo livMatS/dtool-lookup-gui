@@ -32,7 +32,7 @@ from contextlib import AbstractContextManager
 from gi.repository import Gtk, Gdk, Gio, GObject
 
 from . import date_to_string
-from .models.dataset import DataSetModel, DataSetListModel, BaseURIModel, UnsupportedTypeError
+from .models.datasets import DataSetModel, DataSetListModel, BaseURIModel, UnsupportedTypeError
 
 logger = logging.getLogger(__name__)
 

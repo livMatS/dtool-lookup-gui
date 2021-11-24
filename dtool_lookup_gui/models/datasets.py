@@ -63,49 +63,7 @@ def _proto_dataset_info(dataset):
     return info
 
 
-class RemoteBaseURIModel(_ConfigFileVariableBaseModel):
-    "Model for managing local base URI."
 
-    KEY = "DTOOL_REMOTE_BASE_URI"
-
-    def get_base_uri(self):
-        """Return the base URI.
-
-        :returns: base URI where datasets will be read from and written to
-        """
-        return self._get()
-
-    def put_base_uri(self, base_uri):
-        """Put/update the base URI.
-
-        The value is updated in the config file.
-
-        :param base_uri: base URI
-        """
-        value = dtoolcore.utils.sanitise_uri(base_uri)
-        self._put(value)
-
-
-class BaseURIModel():
-    "Model for managing base URI."
-
-    def __init__(self, base_uri=os.path.curdir):
-        self.put_base_uri(base_uri)
-
-    def get_base_uri(self):
-        """Return the base URI.
-
-        :returns: base URI where datasets will be read from and written to
-        """
-        return self._base_uri
-
-    def put_base_uri(self, base_uri):
-        """Put/update the base URI.
-
-        :param base_uri: base URI
-        """
-        value = dtoolcore.utils.sanitise_uri(base_uri)
-        self._base_uri = value
 
 
 class DataSetModel(dtool_tk_models.DataSetModel):

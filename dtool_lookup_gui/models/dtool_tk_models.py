@@ -182,46 +182,7 @@ class UnsupportedTypeError(TypeError):
     pass
 
 
-class _ConfigFileVariableBaseModel(object):
 
-    def __init__(self, config_path=None):
-        self._config_path = config_path
-
-    def _get(self):
-        return dtoolcore.utils.get_config_value_from_file(
-            self.KEY,
-            self._config_path
-        )
-
-    def _put(self, value):
-        dtoolcore.utils.write_config_value_to_file(
-            self.KEY,
-            value,
-            self._config_path
-        )
-
-
-class LocalBaseURIModel(_ConfigFileVariableBaseModel):
-    "Model for managing local base URI."
-
-    KEY = "DTOOL_LOCAL_BASE_URI"
-
-    def get_base_uri(self):
-        """Return the base URI.
-
-        :returns: base URI where datasets will be read from and written to
-        """
-        return self._get()
-
-    def put_base_uri(self, base_uri):
-        """Put/update the base URI.
-
-        The value is updated in the config file.
-
-        :param base_uri: base URI
-        """
-        value = dtoolcore.utils.sanitise_uri(base_uri)
-        self._put(value)
 
 
 class MetadataSchemaListModel(_ConfigFileVariableBaseModel):

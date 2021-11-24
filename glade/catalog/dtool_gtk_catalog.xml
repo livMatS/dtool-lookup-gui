@@ -12,5 +12,8 @@
     <glade-widget-class title="dtool dataset list box row" name="DtoolDatasetListBoxRow" 
                         generic-name="DtoolDatasetListBoxRow" parent="GtkListBoxRow"
                         icon-name="widget-gtk-listboxrow"/>
+    <glade-widget-class title="dtool graph widget" name="DtoolGraphWidget"
+                        generic-name="DtoolGraphWidget" parent="GtkDrawingArea"
+                        icon-name="widget-gtk-drawing-area"/>
   </glade-widget-classes>
 </glade-catalog>
