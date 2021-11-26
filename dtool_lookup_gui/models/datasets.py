@@ -4,7 +4,7 @@
 # ### MIT license
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
-# of this software and associated documentation files (the "Software"), to deal
+# of this software and associated documentation files (the 'Software'), to deal
 # in the Software without restriction, including without limitation the rights
 # to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 # copies of the Software, and to permit persons to whom the Software is
@@ -13,7 +13,7 @@
 # The above copyright notice and this permission notice shall be included in
 # all copies or substantial portions of the Software.
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 # IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 # FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
@@ -39,13 +39,13 @@ def _proto_dataset_info(dataset):
     # Analogous to dtool_info.inventory._dataset_info
     info = {}
 
-    info["uri"] = dataset.uri
-    info["uuid"] = dataset.uuid
+    info['uri'] = dataset.uri
+    info['uuid'] = dataset.uuid
 
-    info["creator"] = dataset._admin_metadata["creator_username"]
-    info["name"] = dataset._admin_metadata["name"]
+    info['creator'] = dataset._admin_metadata['creator_username']
+    info['name'] = dataset._admin_metadata['name']
 
-    info["readme_content"] = dataset.get_readme_content()
+    info['readme_content'] = dataset.get_readme_content()
 
     return info
 
@@ -62,15 +62,23 @@ def _lookup_info(lookup_dict):
 
     info = {}
 
-    info["uri"] = lookup_dict["uri"]
-    info["uuid"] = lookup_dict["uuid"]
+    info['uri'] = lookup_dict['uri']
+    info['uuid'] = lookup_dict['uuid']
 
-    info["creator"] = lookup_dict["creator_username"]
-    info["name"] = lookup_dict["name"]
+    info['creator'] = lookup_dict['creator_username']
+    info['name'] = lookup_dict['name']
 
-    info["date"] = date_fmt(lookup_dict["frozen_at"])
+    info['date'] = date_fmt(lookup_dict['frozen_at'])
 
     return info
+
+
+def _mangle_lookup_manifest(manifest_dict):
+    """Convert dictionary returned from lookup server into a normalized manifest"""
+    manifest = []
+    for key, value in manifest_dict['items'].items():
+        manifest += [(key, value)]
+    return manifest
 
 
 class DatasetModel:
@@ -96,7 +104,7 @@ class DatasetModel:
     def __init__(self, uri=None, dataset=None, lookup_info=None):
         if uri is not None:
             if dataset is not None:
-                raise ValueError("Please provide either `uri`, `dataset` or `lookup_info` arguments.")
+                raise ValueError('Please provide either `uri`, `dataset` or `lookup_info` arguments.')
             self._load_dataset(uri)
         elif dataset is not None:
             self._dataset = dataset
@@ -118,13 +126,13 @@ class DatasetModel:
 
         :param uri: URI to a dtoolcore.DataSet
         """
-        logger.info("{} loading dataset from URI: {}".format(self, uri))
+        logger.info('{} loading dataset from URI: {}'.format(self, uri))
         self.clear()
 
         # determine from admin metadata whether this is a protodataset
         admin_metadata = dtoolcore._admin_metadata_from_uri(uri, None)
 
-        if admin_metadata["type"] == "protodataset":
+        if admin_metadata['type'] == 'protodataset':
             self._dataset = dtoolcore.ProtoDataSet.from_uri(uri)
         else:
             self._dataset = dtoolcore.DataSet.from_uri(uri)
@@ -147,15 +155,21 @@ class DatasetModel:
         return self._dataset_info
 
     async def readme(self):
-        if "readme_content" in self.dataset_info:
-            return self.dataset_info["readme_content"]
+        if 'readme_content' in self.dataset_info:
+            return self.dataset_info['readme_content']
         else:
             readme_dict = await self._lookup_client.readme(self.uri)
             return yaml.dump(readme_dict)
 
-    @property
-    def identifiers(self):
-        return self.dataset.identifiers
+    async def manifest(self):
+        if self.dataset is not None:
+            # Construct manifest from dtool dataset
+            manifest = []
+            for identifier in self.dataset.identifiers:
+                manifest += [(identifier, self.dataset.item_properties(identifier))]
+        else:
+            # Query manifest from lookup server
+            manifest_dict = await self._lookup_client.manifest(self.uri)
+            manifest = _mangle_lookup_manifest(manifest_dict)
+        return manifest
 
-    def item_properties(self, identifier):
-        return self.dataset.item_properties(identifier)

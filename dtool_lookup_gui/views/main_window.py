@@ -46,7 +46,7 @@ def human_readable_file_size(num, suffix='B'):
     return '{:3.1f}{}{}'.format(val, ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi'][magnitude], suffix)
 
 
-def _fill_manifest_tree_store(store, dataset, parent=None):
+def _fill_manifest_tree_store(store, manifest, parent=None):
     nodes = {}
 
     def find_or_create_parent_node(path, top_parent):
@@ -61,12 +61,7 @@ def _fill_manifest_tree_store(store, dataset, parent=None):
             nodes[path] = new_node
             return new_node
 
-    # List all identifiers
-    data = []
-    for identifier in dataset.identifiers:
-        data += [(identifier, dataset.item_properties(identifier))]
-
-    for uuid, values in sorted(data, key=lambda kv: kv[1]['relpath']):
+    for uuid, values in sorted(manifest, key=lambda kv: kv[1]['relpath']):
         head, tail = os.path.split(values['relpath'])
         store.append(find_or_create_parent_node(head, parent),
                      [tail,
@@ -134,11 +129,10 @@ class MainWindow(Gtk.ApplicationWindow):
         self.uri_label.set_text(dataset.uri)
         self.name_label.set_text(dataset.name)
         self.created_by_label.set_text(dataset.creator)
-        #self.created_at_label.set_text(dataset.created_at)
         self.frozen_at_label.set_text(dataset.date)
 
         self._update_readme(dataset)
-        #self._update_manifest(dataset)
+        self._update_manifest(dataset)
 
     def _update_readme(self, dataset):
         async def _fetch_readme(dataset):
@@ -147,4 +141,8 @@ class MainWindow(Gtk.ApplicationWindow):
         asyncio.create_task(_fetch_readme(dataset))
 
     def _update_manifest(self, dataset):
-        _fill_manifest_tree_store(self.manifest_tree_store, dataset)
+        async def _fetch_manifest(dataset):
+            self.manifest_tree_store.clear()
+            manifest = await dataset.manifest()
+            _fill_manifest_tree_store(self.manifest_tree_store, manifest)
+        asyncio.create_task(_fetch_manifest(dataset))
