@@ -22,37 +22,27 @@
 # SOFTWARE.
 #
 
-from gi.repository import GObject, Gtk
-
-from ..models.base_uris import all as all_base_uris
-from .base_uri_row import DtoolBaseURIRow
-from .search_results_row import DtoolSearchResultsRow
+from gi.repository import Gtk
 
 
-class DtoolBaseURIListBox(Gtk.ListBox):
-    __gtype_name__ = 'DtoolBaseURIListBox'
+class DtoolSearchResultsRow(Gtk.ListBoxRow):
+    __gtype_name__ = 'DtoolSearchResultsRow'
+
+    _margin = 3
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._search_results_row = None
 
-    def refresh(self, on_activate=None):
-        for row in self.get_children():
-            row.destroy()
-        self._search_results_row = DtoolSearchResultsRow()
-        self.add(self.search_results_row)
-        base_uris = all_base_uris()
-        for base_uri in base_uris:
-            self.add(DtoolBaseURIRow(base_uri, on_activate=on_activate))
-        self.show_all()
-
-    def select_search_results_row(self):
-        if self._search_results_row is not None:
-            self.select_row(self._search_results_row)
-
-    @property
-    def search_results_row(self):
-        return self._search_results_row
-
-
-GObject.type_register(DtoolBaseURIListBox)
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, margin_top=self._margin, margin_bottom=self._margin,
+                       margin_start=self._margin, margin_end=self._margin)
+        image = Gtk.Image.new_from_icon_name('edit-find-symbolic', Gtk.IconSize.BUTTON)
+        hbox.pack_start(image, True, True, 0)
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        label = Gtk.Label(xalign=0)
+        label.set_markup(f'<b>Search results</b>')
+        vbox.pack_start(label, True, True, 0)
+        label = Gtk.Label(xalign=0)
+        label.set_markup('(Lookup server)')
+        vbox.pack_start(label, True, True, 0)
+        hbox.pack_start(vbox, True, True, 0)
+        self.add(hbox)

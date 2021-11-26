@@ -32,6 +32,7 @@ from dtool_lookup_api.core.config import Config
 from dtool_lookup_api.core.LookupClient import authenticate
 
 from ..models.base_uris import all as all_base_uris
+from ..models.datasets import DatasetModel
 from ..models.settings import settings
 from .authentication_dialog import AuthenticationDialog
 from .s3_configuration_dialog import S3ConfigurationDialog
@@ -78,7 +79,8 @@ class SettingsDialog(Gtk.Window):
     async def _refresh_list_of_endpoints(self):
         for child in self.endpoints_list_box.get_children():
             child.destroy()
-        base_uris = await self.main_application.lookup_tab.lookup.list_base_uris()
+        base_uris = await DatasetModel._lookup_client.list_base_uris()
+        print(base_uris)
         base_uris = {base_uri['base_uri']: base_uri | {'local': False, 'remote': True} for base_uri in base_uris}
 
         for base_uri in all_base_uris():
@@ -153,26 +155,26 @@ class SettingsDialog(Gtk.Window):
                 password))
 
             # Reconnect since settings may have been changed
-            asyncio.create_task(self.main_application.lookup_tab.connect())
+            #asyncio.create_task(self.main_application.lookup_tab.connect())
 
         AuthenticationDialog(authenticate, Config.username, Config.password).show()
 
     async def retrieve_token(self, auth_url, username, password):
-        self.main_application.error_bar.hide()
+        #self.main_application.error_bar.hide()
         try:
             token = await authenticate(auth_url, username, password)
         except Exception as e:
-            self.main_application.show_error(str(e))
+            print(str(e))
+        #    self.main_application.show_error(str(e))
             return
-        self.builder.get_object('token-entry').set_text(token)
+        #self.builder.get_object('token-entry').set_text(token)
+        self.token_entry.set_text(token)
         await self._refresh_list_of_endpoints()
 
-    @Gtk.Template.Callback()
     def on_configure_endpoint_clicked(self, widget):
         S3ConfigurationDialog(lambda: asyncio.create_task(self._refresh_list_of_endpoints()),
                               widget.base_uri.netloc).show()
 
-    @Gtk.Template.Callback()
     def on_add_endpoint_state_changed(self, widget, state):
         if state == Gtk.StateType.ACTIVE:
             S3ConfigurationDialog(lambda: asyncio.create_task(self._refresh_list_of_endpoints())).show()

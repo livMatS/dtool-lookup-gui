@@ -22,6 +22,7 @@
 # SOFTWARE.
 #
 
+import asyncio
 import logging
 import math
 import os
@@ -88,7 +89,6 @@ class MainWindow(Gtk.ApplicationWindow):
     uri_label = Gtk.Template.Child()
     name_label = Gtk.Template.Child()
     created_by_label = Gtk.Template.Child()
-    created_at_label = Gtk.Template.Child()
     frozen_at_label = Gtk.Template.Child()
 
     readme_source_view = Gtk.Template.Child()
@@ -107,7 +107,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.readme_buffer.set_highlight_matching_brackets(True)
 
     @Gtk.Template.Callback()
-    def on_show_window(self, widget):
+    def on_window_show(self, widget):
         self.base_uri_list_box.refresh()
 
     @Gtk.Template.Callback()
@@ -116,11 +116,18 @@ class MainWindow(Gtk.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def on_base_uri_selected(self, list_box, row):
-        self.dataset_list_box.refresh(row.base_uri)
+        if hasattr(row, 'base_uri'):
+            self.dataset_list_box.from_base_uri(row.base_uri)
 
     @Gtk.Template.Callback()
     def on_dataset_selected(self, list_box, row):
-        self._update_dataset_view(row.dataset)
+        if row is not None:
+            self._update_dataset_view(row.dataset)
+
+    @Gtk.Template.Callback()
+    def on_search_activate(self, widget):
+        self.base_uri_list_box.select_search_results_row()
+        self.dataset_list_box.search(self.search_entry.get_text())
 
     def _update_dataset_view(self, dataset):
         self.uuid_label.set_text(dataset.uuid)
@@ -131,10 +138,13 @@ class MainWindow(Gtk.ApplicationWindow):
         self.frozen_at_label.set_text(dataset.date)
 
         self._update_readme(dataset)
-        self._update_manifest(dataset)
+        #self._update_manifest(dataset)
 
     def _update_readme(self, dataset):
-        self.readme_buffer.set_text(dataset.readme)
+        async def _fetch_readme(dataset):
+            readme = await dataset.readme()
+            self.readme_buffer.set_text(readme)
+        asyncio.create_task(_fetch_readme(dataset))
 
     def _update_manifest(self, dataset):
         _fill_manifest_tree_store(self.manifest_tree_store, dataset)

@@ -23,15 +23,15 @@
 #
 
 import logging
+import yaml
 
 import dtoolcore
+from dtool_info.utils import date_fmt
 
 from dtool_info.inventory import _dataset_info
 from dtool_lookup_api.core.LookupClient import ConfigurationBasedLookupClient
 
 logger = logging.getLogger(__name__)
-
-lookup_client = ConfigurationBasedLookupClient()
 
 
 def _proto_dataset_info(dataset):
@@ -42,12 +42,33 @@ def _proto_dataset_info(dataset):
     info["uri"] = dataset.uri
     info["uuid"] = dataset.uuid
 
-    # Computer and human readable size of dataset.
-
     info["creator"] = dataset._admin_metadata["creator_username"]
     info["name"] = dataset._admin_metadata["name"]
 
     info["readme_content"] = dataset.get_readme_content()
+
+    return info
+
+
+def _info(dataset):
+    if isinstance(dataset, dtoolcore.DataSet):
+        return _dataset_info(dataset)
+    else:
+        return _proto_dataset_info(dataset)
+
+
+def _lookup_info(lookup_dict):
+    """Mangle return dict of lookup server into a proper dataset info"""
+
+    info = {}
+
+    info["uri"] = lookup_dict["uri"]
+    info["uuid"] = lookup_dict["uuid"]
+
+    info["creator"] = lookup_dict["creator_username"]
+    info["name"] = lookup_dict["name"]
+
+    info["date"] = date_fmt(lookup_dict["frozen_at"])
 
     return info
 
@@ -57,6 +78,8 @@ class DatasetModel:
     Model for both frozen and proto datasets, either received from dtoolcore
     or the lookup server.
     """
+
+    _lookup_client = ConfigurationBasedLookupClient()
 
     @staticmethod
     def all(base_uri):
@@ -70,13 +93,22 @@ class DatasetModel:
 
         return datasets
 
-    def __init__(self, uri=None, dataset=None):
+    def __init__(self, uri=None, dataset=None, lookup_info=None):
         if uri is not None:
             if dataset is not None:
-                raise ValueError('Please provide either `uri` or `dataset` arguments.')
+                raise ValueError("Please provide either `uri`, `dataset` or `lookup_info` arguments.")
             self._load_dataset(uri)
         elif dataset is not None:
             self._dataset = dataset
+            self._dataset_info = _info(self._dataset)
+        elif lookup_info is not None:
+            self._dataset = None
+            self._dataset_info = _lookup_info(lookup_info)
+
+    @classmethod
+    async def search(cls, keyword):
+        datasets = await cls._lookup_client.search(keyword)
+        return [cls(lookup_info=dataset) for dataset in datasets]
 
     def __getattr__(self, name):
         return self.dataset_info[name]
@@ -104,7 +136,7 @@ class DatasetModel:
 
     @property
     def is_frozen(self):
-        return isinstance(self._dataset, dtoolcore.DataSet)
+        return self._dataset is None or isinstance(self._dataset, dtoolcore.DataSet)
 
     @property
     def dataset(self):
@@ -112,14 +144,14 @@ class DatasetModel:
 
     @property
     def dataset_info(self):
-        if self.is_frozen:
-            return _dataset_info(self._dataset)
-        else:
-            return _proto_dataset_info(self._dataset)
+        return self._dataset_info
 
-    @property
-    def readme(self):
-        return self.dataset_info['readme_content']
+    async def readme(self):
+        if "readme_content" in self.dataset_info:
+            return self.dataset_info["readme_content"]
+        else:
+            readme_dict = await self._lookup_client.readme(self.uri)
+            return yaml.dump(readme_dict)
 
     @property
     def identifiers(self):

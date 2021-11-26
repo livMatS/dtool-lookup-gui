@@ -22,20 +22,34 @@
 # SOFTWARE.
 #
 
+import asyncio
+
 from gi.repository import GObject, Gtk
 
+from ..models.datasets import DatasetModel
 from .dataset_row import DtoolDatasetRow
 
 
 class DtoolDatasetListBox(Gtk.ListBox):
     __gtype_name__ = 'DtoolDatasetListBox'
 
-    def refresh(self, base_uri):
+    _max_nb_datasets = 100
+
+    def _refresh(self, datasets):
         for row in self.get_children():
             row.destroy()
-        for dataset in base_uri.all_datasets():
+        for dataset in datasets:
             self.add(DtoolDatasetRow(dataset))
         self.show_all()
 
+    def from_base_uri(self, base_uri):
+        self._refresh(base_uri.all_datasets())
+
+    def search(self, keyword):
+        async def fetch_search_results(keyword):
+            datasets = await DatasetModel.search(keyword)
+            datasets = datasets[:self._max_nb_datasets]
+            self._refresh(datasets)
+        asyncio.create_task(fetch_search_results(keyword))
 
 GObject.type_register(DtoolDatasetListBox)

@@ -68,7 +68,7 @@
     <property name="height-request">700</property>
     <property name="can-focus">False</property>
     <property name="show-menubar">False</property>
-    <signal name="show" handler="on_show_window" swapped="no"/>
+    <signal name="show" handler="on_window_show" swapped="no"/>
     <child>
       <object class="GtkBox">
         <property name="visible">True</property>
@@ -291,7 +291,7 @@
                                     <property name="vexpand">True</property>
                                     <property name="orientation">vertical</property>
                                     <child>
-                                      <!-- n-columns=3 n-rows=6 -->
+                                      <!-- n-columns=3 n-rows=5 -->
                                       <object class="GtkGrid">
                                         <property name="visible">True</property>
                                         <property name="can-focus">False</property>
@@ -421,34 +421,6 @@
                                             <property name="visible">True</property>
                                             <property name="can-focus">False</property>
                                             <property name="halign">start</property>
-                                            <property name="label" translatable="yes">Created at</property>
-                                            <attributes>
-                                              <attribute name="weight" value="bold"/>
-                                            </attributes>
-                                          </object>
-                                          <packing>
-                                            <property name="left-attach">0</property>
-                                            <property name="top-attach">4</property>
-                                          </packing>
-                                        </child>
-                                        <child>
-                                          <object class="GtkLabel" id="created_at_label">
-                                            <property name="visible">True</property>
-                                            <property name="can-focus">False</property>
-                                            <property name="halign">start</property>
-                                            <property name="label" translatable="yes">label</property>
-                                            <property name="selectable">True</property>
-                                          </object>
-                                          <packing>
-                                            <property name="left-attach">1</property>
-                                            <property name="top-attach">4</property>
-                                          </packing>
-                                        </child>
-                                        <child>
-                                          <object class="GtkLabel">
-                                            <property name="visible">True</property>
-                                            <property name="can-focus">False</property>
-                                            <property name="halign">start</property>
                                             <property name="label" translatable="yes">Frozen at</property>
                                             <attributes>
                                               <attribute name="weight" value="bold"/>
@@ -456,7 +428,7 @@
                                           </object>
                                           <packing>
                                             <property name="left-attach">0</property>
-                                            <property name="top-attach">5</property>
+                                            <property name="top-attach">4</property>
                                           </packing>
                                         </child>
                                         <child>
@@ -469,11 +441,8 @@
                                           </object>
                                           <packing>
                                             <property name="left-attach">1</property>
-                                            <property name="top-attach">5</property>
+                                            <property name="top-attach">4</property>
                                           </packing>
-                                        </child>
-                                        <child>
-                                          <placeholder/>
                                         </child>
                                         <child>
                                           <placeholder/>
@@ -870,8 +839,7 @@
                 <property name="primary-icon-activatable">False</property>
                 <property name="primary-icon-sensitive">False</property>
                 <property name="placeholder-text" translatable="yes">Type to search, double-click to expand...</property>
-                <signal name="button-press-event" handler="on_search_entry_button_press" swapped="no"/>
-                <signal name="search-changed" handler="on_search" swapped="no"/>
+                <signal name="activate" handler="on_search_activate" swapped="no"/>
               </object>
               <packing>
                 <property name="expand">False</property>

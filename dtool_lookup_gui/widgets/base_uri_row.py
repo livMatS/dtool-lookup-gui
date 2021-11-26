@@ -28,6 +28,8 @@ from gi.repository import Gtk
 class DtoolBaseURIRow(Gtk.ListBoxRow):
     __gtype_name__ = 'DtoolBaseURIRow'
 
+    _margin = 3
+
     def __init__(self, base_uri, *args, **kwargs):
         self.base_uri = base_uri
         on_activate = kwargs.pop('on_activate', None)
@@ -35,11 +37,13 @@ class DtoolBaseURIRow(Gtk.ListBoxRow):
 
         super().__init__(*args, **kwargs)
 
-        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, margin_top=12, margin_bottom=12, margin_start=12,
-                       margin_end=12)
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, margin_top=self._margin, margin_bottom=self._margin,
+                       margin_start=self._margin, margin_end=self._margin)
+        image = Gtk.Image.new_from_icon_name('network-server-symbolic', Gtk.IconSize.BUTTON)
+        hbox.pack_start(image, True, True, 0)
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         label = Gtk.Label(xalign=0)
-        label.set_markup(f'<b>{base_uri}</b>')
+        label.set_markup(str(base_uri))
         vbox.pack_start(label, True, True, 0)
         label = Gtk.Label(xalign=0)
         #if info['local'] and info['remote']:
