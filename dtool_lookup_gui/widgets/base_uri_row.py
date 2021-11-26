@@ -39,7 +39,8 @@ class DtoolBaseURIRow(Gtk.ListBoxRow):
 
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, margin_top=self._margin, margin_bottom=self._margin,
                        margin_start=self._margin, margin_end=self._margin)
-        image = Gtk.Image.new_from_icon_name('network-server-symbolic', Gtk.IconSize.BUTTON)
+        image = Gtk.Image.new_from_icon_name('network-server-symbolic' if base_uri.remote else 'folder-symbolic',
+                                             Gtk.IconSize.BUTTON)
         image.set_padding(12, 12)
         hbox.pack_start(image, False, False, 0)
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)

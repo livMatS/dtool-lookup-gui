@@ -133,16 +133,48 @@
                 <property name="hexpand">True</property>
                 <property name="vexpand">True</property>
                 <child>
-                  <object class="GtkViewport">
+                  <object class="GtkBox">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
+                    <property name="orientation">vertical</property>
                     <child>
-                      <object class="DtoolBaseURIListBox" id="base_uri_list_box">
-                        <property name="width-request">200</property>
+                      <object class="GtkViewport">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
-                        <signal name="row-selected" handler="on_base_uri_selected" swapped="no"/>
+                        <property name="hexpand">True</property>
+                        <property name="vexpand">True</property>
+                        <child>
+                          <object class="DtoolBaseURIListBox" id="base_uri_list_box">
+                            <property name="width-request">200</property>
+                            <property name="visible">True</property>
+                            <property name="can-focus">False</property>
+                            <signal name="row-selected" handler="on_base_uri_selected" swapped="no"/>
+                          </object>
+                        </child>
                       </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">0</property>
+                      </packing>
+                    </child>
+                    <child>
+                      <object class="GtkButton">
+                        <property name="label" translatable="yes">Open local directory...</property>
+                        <property name="visible">True</property>
+                        <property name="can-focus">True</property>
+                        <property name="receives-default">True</property>
+                        <property name="margin-start">6</property>
+                        <property name="margin-end">6</property>
+                        <property name="margin-top">6</property>
+                        <property name="margin-bottom">6</property>
+                        <signal name="clicked" handler="on_open_local_directory_clicked" swapped="no"/>
+                      </object>
+                      <packing>
+                        <property name="expand">False</property>
+                        <property name="fill">True</property>
+                        <property name="position">1</property>
+                      </packing>
                     </child>
                   </object>
                   <packing>
@@ -573,7 +605,7 @@
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkStack" id="manifest-stack">
+                                  <object class="GtkStack" id="manifest_stack">
                                     <property name="visible">True</property>
                                     <property name="can-focus">False</property>
                                     <child>
@@ -680,7 +712,7 @@
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkStack" id="dependency-stack">
+                                  <object class="GtkStack" id="dependency_stack">
                                     <property name="visible">True</property>
                                     <property name="can-focus">False</property>
                                     <child>

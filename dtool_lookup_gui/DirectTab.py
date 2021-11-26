@@ -59,24 +59,6 @@ DATASET_NOTEBOOK_MANIFEST_PAGE = 1
 logger = logging.getLogger(__name__)
 
 
-class DatasetNameDialog(Gtk.Dialog):
-    def __init__(self, parent, default_name=''):
-        super().__init__(title="Specify dataset name", transient_for=parent, flags=0)
-        self.add_buttons(
-            Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OK, Gtk.ResponseType.OK
-        )
-
-        self.set_default_size(150, -1)
-
-        label = Gtk.Label(label="name:")
-        self.entry = Gtk.Entry()
-        self.entry.set_text(default_name)
-        box = self.get_content_area()
-        hbox = Gtk.Box.new(Gtk.Orientation.HORIZONTAL, 6)
-        box.add(hbox)
-        hbox.pack_start(label, False, False, 0)
-        hbox.pack_start(self.entry, True, True, 0)
-        self.show_all()
 
 
 class SignalHandler:

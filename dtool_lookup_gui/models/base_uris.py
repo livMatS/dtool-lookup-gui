@@ -22,16 +22,51 @@
 # SOFTWARE.
 #
 
-from dtoolcore.utils import get_config_value, write_config_value_to_file, _get_config_dict_from_file
+from dtoolcore.utils import get_config_value, write_config_value_to_file, _get_config_dict_from_file, generous_parse_uri
 
 from .datasets import DatasetModel
 
 
-class ConfigBaseURIModel:
-    """Model for config-file based base URIs"""
+class BaseURI:
+    """Model for all base URIs"""
 
     def __init__(self, uri_name):
+        print(uri_name)
         self._uri_name = uri_name
+
+    def __str__(self):
+        return f'{self._scheme}://{self._uri_name}'
+
+    def all_datasets(self):
+        return DatasetModel.all(str(self))
+
+
+class LocalBaseURIModel(BaseURI):
+    """Model for directory on local system"""
+
+    remote = False
+
+    _scheme = 'file'
+
+    _local_base_uris = []
+
+    @classmethod
+    def add_directory(cls, path):
+        base_uri = generous_parse_uri(path)
+        if base_uri.scheme != cls._scheme:
+            raise ValueError(f"The URI provided specified schema '{base_uri.schema}', but this base URI model "
+                             f"supports '{cls._schama}'.")
+        cls._local_base_uris += [base_uri.path]
+
+    @classmethod
+    def all(cls):
+        return [cls(base_uri) for base_uri in cls._local_base_uris]
+
+
+class ConfigBaseURIModel(BaseURI):
+    """Model for dtool config-file based base URIs"""
+
+    remote = True
 
     @classmethod
     def all(cls):
@@ -40,9 +75,6 @@ class ConfigBaseURIModel:
             if key.startswith(cls._prefix):
                 base_uris += [cls(key[len(cls._prefix):])]
         return base_uris
-
-    def __str__(self):
-        return f'{self._schema}://{self._uri_name}'
 
     def __getattr__(self, name):
         if name.startswith('_'):
@@ -60,13 +92,11 @@ class ConfigBaseURIModel:
         except KeyError:
             raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'" )
 
-    def all_datasets(self):
-        return DatasetModel.all(str(self))
 
 class S3BaseURIModel(ConfigBaseURIModel):
     """Model for managing S3 base URIs."""
 
-    _schema = 's3'
+    _scheme = 's3'
     _prefix = 'DTOOL_S3_ENDPOINT_'
     _properties = {
         'endpoint': 'DTOOL_S3_ENDPOINT_{}',
@@ -79,7 +109,7 @@ class S3BaseURIModel(ConfigBaseURIModel):
 class SMBBaseURIModel(ConfigBaseURIModel):
     """Model for managing SMB base URIs."""
 
-    _schema = 'smb'
+    _scheme = 'smb'
     _prefix = 'DTOOL_SMB_SERVER_NAME_'
     _properties = {
         'server_name': 'DTOOL_SMB_SERVER_NAME_{}',
@@ -92,7 +122,7 @@ class SMBBaseURIModel(ConfigBaseURIModel):
     }
 
 
-_base_uri_models = [S3BaseURIModel, SMBBaseURIModel]
+_base_uri_models = [S3BaseURIModel, SMBBaseURIModel, LocalBaseURIModel]
 
 
 def all():
