@@ -23,7 +23,10 @@
 #
 
 import asyncio
+import logging
 import os
+
+logger = logging.getLogger(__name__)
 
 from gi.repository import Gio, Gtk
 
@@ -79,10 +82,27 @@ class SettingsDialog(Gtk.Window):
         asyncio.create_task(self._refresh_list_of_endpoints())
 
     async def _refresh_list_of_endpoints(self):
+        username = Config.username
+        if username is None:
+            self.main_application.show_error("Cannot retrieve base URIs without username configured.")
+            return
+
+        user_info = await self.main_application.lookup_tab.lookup.user_info(username)
+        if 'search_permissions_on_base_uris' not in user_info:
+            self.main_application.show_error(f"Request for user '{username}' info failed, possibly not authenticated.")
+            return
+
+        bare_base_uris = user_info['search_permissions_on_base_uris']
+
         for child in self.endpoints_list_box.get_children():
             child.destroy()
-        base_uris = await self.main_application.lookup_tab.lookup.list_base_uris()
-        base_uris = {base_uri['base_uri']: base_uri | {'local': False, 'remote': True} for base_uri in base_uris}
+
+        user_info = await self.main_application.lookup_tab.lookup.user_info(username)
+        logger.debug(user_info)
+        bare_base_uris = user_info['search_permissions_on_base_uris']
+        logger.debug(f"Base URIs listed on server: {bare_base_uris}")
+
+        base_uris = {base_uri: {'local': False, 'remote': True} for base_uri in bare_base_uris}
 
         config_dict = _get_config_dict_from_file()
         for key, value in config_dict.items():
@@ -145,7 +165,7 @@ class SettingsDialog(Gtk.Window):
         Config.verify_ssl = self.verify_ssl_certificate_switch.get_state()
 
         # Reconnect since settings may have been changed
-        asyncio.create_task(self.main_application.lookup_tab.connect())
+        asyncio.create_task(self.main_application.lookup_tab._connect())
 
         # Destroy window
         return False
@@ -159,7 +179,7 @@ class SettingsDialog(Gtk.Window):
                 password))
 
             # Reconnect since settings may have been changed
-            asyncio.create_task(self.main_application.lookup_tab.connect())
+            asyncio.create_task(self.main_application.lookup_tab._connect())
 
         AuthenticationDialog(authenticate, Config.username, Config.password).show()
 
@@ -170,7 +190,8 @@ class SettingsDialog(Gtk.Window):
         except Exception as e:
             self.main_application.show_error(str(e))
             return
-        self.builder.get_object('token-entry').set_text(token)
+        Config.token = token  # cache token in dtool.json now, not just when closing the settings dialog
+        self.token_entry.set_text(token)
         await self._refresh_list_of_endpoints()
 
     def on_configure_endpoint_clicked(self, widget):
