@@ -25,13 +25,13 @@
 from dtoolcore.utils import get_config_value, write_config_value_to_file, _get_config_dict_from_file, generous_parse_uri
 
 from .datasets import DatasetModel
+from .settings import settings
 
 
 class BaseURI:
     """Model for all base URIs"""
 
     def __init__(self, uri_name):
-        print(uri_name)
         self._uri_name = uri_name
 
     def __str__(self):
@@ -39,6 +39,14 @@ class BaseURI:
 
     def all_datasets(self):
         return DatasetModel.all(str(self))
+
+    @property
+    def scheme(self):
+        return self._scheme
+
+    @property
+    def uri_name(self):
+        return self._uri_name
 
 
 class LocalBaseURIModel(BaseURI):
@@ -48,7 +56,7 @@ class LocalBaseURIModel(BaseURI):
 
     _scheme = 'file'
 
-    _local_base_uris = []
+    _local_base_uris = settings.local_base_uris
 
     @classmethod
     def add_directory(cls, path):
@@ -57,6 +65,16 @@ class LocalBaseURIModel(BaseURI):
             raise ValueError(f"The URI provided specified schema '{base_uri.schema}', but this base URI model "
                              f"supports '{cls._schama}'.")
         cls._local_base_uris += [base_uri.path]
+        # Store such that they will reappear when restarting the program
+        settings.local_base_uris = cls._local_base_uris
+
+    @classmethod
+    def remove(cls, base_uri):
+        i = cls._local_base_uris.index(base_uri.uri_name)
+        if i >= 0:
+            del cls._local_base_uris[i]
+            # Store such that they will be removed when restarting the program
+            settings.local_base_uris = cls._local_base_uris
 
     @classmethod
     def all(cls):

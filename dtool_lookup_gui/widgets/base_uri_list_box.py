@@ -24,7 +24,7 @@
 
 from gi.repository import GObject, Gtk
 
-from ..models.base_uris import all as all_base_uris
+from ..models.base_uris import all, LocalBaseURIModel
 from .base_uri_row import DtoolBaseURIRow
 from .search_results_row import DtoolSearchResultsRow
 
@@ -41,14 +41,22 @@ class DtoolBaseURIListBox(Gtk.ListBox):
             row.destroy()
         self._search_results_row = DtoolSearchResultsRow()
         self.add(self.search_results_row)
-        base_uris = all_base_uris()
+        base_uris = all()
         for base_uri in base_uris:
-            self.add(DtoolBaseURIRow(base_uri, on_activate=on_activate))
+            if base_uri.remote:
+                self.add(DtoolBaseURIRow(base_uri, on_activate=on_activate))
+            else:
+                self.add(DtoolBaseURIRow(base_uri, on_activate=on_activate, on_remove=self.on_remove))
         self.show_all()
 
     def select_search_results_row(self):
         if self._search_results_row is not None:
             self.select_row(self._search_results_row)
+
+    def on_remove(self, button):
+        row = button.get_parent().get_parent()
+        LocalBaseURIModel.remove(row.base_uri)
+        row.destroy()
 
     @property
     def search_results_row(self):

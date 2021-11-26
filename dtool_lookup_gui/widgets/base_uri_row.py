@@ -34,6 +34,7 @@ class DtoolBaseURIRow(Gtk.ListBoxRow):
         self.base_uri = base_uri
         on_activate = kwargs.pop('on_activate', None)
         on_configure = kwargs.pop('on_configure', None)
+        on_remove = kwargs.pop('on_remove', None)
 
         super().__init__(*args, **kwargs)
 
@@ -63,6 +64,10 @@ class DtoolBaseURIRow(Gtk.ListBoxRow):
             # We currently can only configure S3 endpoints through the GUI
             #button.set_sensitive(parsed_uri.scheme == 's3')
             #button.base_uri = parsed_uri
+            hbox.pack_end(button, False, False, 0)
+        if on_remove is not None:
+            button = Gtk.Button(image=Gtk.Image.new_from_icon_name('window-close-symbolic', Gtk.IconSize.BUTTON))
+            button.connect('clicked', on_remove)
             hbox.pack_end(button, False, False, 0)
         self.add(hbox)
 

@@ -39,4 +39,12 @@ class Settings:
     def dependency_keys(self):
         return self.settings.get_string('dependency-keys')
 
+    @property
+    def local_base_uris(self):
+        return self.settings.get_strv('local-base-uris')
+
+    @local_base_uris.setter
+    def local_base_uris(self, value):
+        self.settings.set_strv('local-base-uris', value)
+
 settings = Settings()
