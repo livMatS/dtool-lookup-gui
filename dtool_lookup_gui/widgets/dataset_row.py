@@ -24,7 +24,7 @@
 
 from gi.repository import Gtk
 
-from ..utils.date import date_to_string
+from dtool_info.utils import date_fmt
 
 
 class DtoolDatasetRow(Gtk.ListBoxRow):
@@ -47,8 +47,8 @@ class DtoolDatasetRow(Gtk.ListBoxRow):
         vbox.pack_start(label, True, True, 0)
         label = Gtk.Label(xalign=0)
         label.set_markup(
-            f'<small>Created by: {dataset.creator}, '
-            f'frozen at: '
-            f'{date_to_string(dataset.date)}</small>')
+            f'<small>Created by {dataset.creator}, '
+            f'frozen at: {dataset.date}, '
+            f'{dataset.size_str.strip()}</small>')
         vbox.pack_start(label, True, True, 0)
         self.add(vbox)

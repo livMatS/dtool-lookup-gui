@@ -87,6 +87,7 @@ class MainWindow(Gtk.ApplicationWindow):
     name_label = Gtk.Template.Child()
     created_by_label = Gtk.Template.Child()
     frozen_at_label = Gtk.Template.Child()
+    size_label = Gtk.Template.Child()
 
     readme_source_view = Gtk.Template.Child()
     manifest_tree_view = Gtk.Template.Child()
@@ -139,6 +140,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.name_label.set_text(dataset.name)
         self.created_by_label.set_text(dataset.creator)
         self.frozen_at_label.set_text(dataset.date)
+        self.size_label.set_text(dataset.size_str.strip())
 
         self._update_readme(dataset)
         self._update_manifest(dataset)
