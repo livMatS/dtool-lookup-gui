@@ -48,7 +48,7 @@ class DtoolDatasetRow(Gtk.ListBoxRow):
         label = Gtk.Label(xalign=0)
         label.set_markup(
             f'<small>Created by {dataset.creator}, '
-            f'frozen at: {dataset.date}, '
+            f'frozen at {dataset.date}, '
             f'{dataset.size_str.strip()}</small>')
         vbox.pack_start(label, True, True, 0)
         self.add(vbox)

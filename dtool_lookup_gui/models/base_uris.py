@@ -52,8 +52,6 @@ class BaseURI:
 class LocalBaseURIModel(BaseURI):
     """Model for directory on local system"""
 
-    remote = False
-
     _scheme = 'file'
 
     _local_base_uris = settings.local_base_uris
@@ -83,8 +81,6 @@ class LocalBaseURIModel(BaseURI):
 
 class ConfigBaseURIModel(BaseURI):
     """Model for dtool config-file based base URIs"""
-
-    remote = True
 
     @classmethod
     def all(cls):

@@ -43,10 +43,10 @@ class DtoolBaseURIListBox(Gtk.ListBox):
         self.add(self.search_results_row)
         base_uris = all()
         for base_uri in base_uris:
-            if base_uri.remote:
-                self.add(DtoolBaseURIRow(base_uri, on_activate=on_activate))
-            else:
+            if base_uri.scheme == 'file':
                 self.add(DtoolBaseURIRow(base_uri, on_activate=on_activate, on_remove=self.on_remove))
+            else:
+                self.add(DtoolBaseURIRow(base_uri, on_activate=on_activate))
         self.show_all()
 
     def select_search_results_row(self):

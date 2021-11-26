@@ -138,26 +138,17 @@
                     <property name="can-focus">False</property>
                     <property name="orientation">vertical</property>
                     <child>
-                      <object class="GtkScrolledWindow">
+                      <object class="GtkViewport">
                         <property name="width-request">200</property>
                         <property name="visible">True</property>
-                        <property name="can-focus">True</property>
+                        <property name="can-focus">False</property>
                         <property name="hexpand">True</property>
                         <property name="vexpand">True</property>
-                        <property name="shadow-type">in</property>
                         <child>
-                          <object class="GtkViewport">
+                          <object class="DtoolBaseURIListBox" id="base_uri_list_box">
                             <property name="visible">True</property>
                             <property name="can-focus">False</property>
-                            <property name="hexpand">True</property>
-                            <property name="vexpand">True</property>
-                            <child>
-                              <object class="DtoolBaseURIListBox" id="base_uri_list_box">
-                                <property name="visible">True</property>
-                                <property name="can-focus">False</property>
-                                <signal name="row-selected" handler="on_base_uri_selected" swapped="no"/>
-                              </object>
-                            </child>
+                            <signal name="row-selected" handler="on_base_uri_selected" swapped="no"/>
                           </object>
                         </child>
                       </object>

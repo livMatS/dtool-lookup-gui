@@ -22,7 +22,7 @@
 # SOFTWARE.
 #
 
-from gi.repository import Gtk
+from gi.repository import Gtk, Pango
 
 
 class DtoolBaseURIRow(Gtk.ListBoxRow):
@@ -40,16 +40,21 @@ class DtoolBaseURIRow(Gtk.ListBoxRow):
 
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, margin_top=self._margin, margin_bottom=self._margin,
                        margin_start=self._margin, margin_end=self._margin)
-        image = Gtk.Image.new_from_icon_name('network-server-symbolic' if base_uri.remote else 'folder-symbolic',
-                                             Gtk.IconSize.BUTTON)
+        image = Gtk.Image.new_from_icon_name('folder-symbolic' if base_uri.scheme == 'file'
+                                             else 'network-server-symbolic', Gtk.IconSize.BUTTON)
         image.set_padding(12, 12)
         hbox.pack_start(image, False, False, 0)
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         label = Gtk.Label(xalign=0)
-        label.set_markup(f'<b>{base_uri}</b>')
+        if base_uri.scheme == 'file':
+            label.set_markup(f'<b>{base_uri.uri_name}</b>')
+        else:
+            label.set_markup(f'<b>{base_uri}</b>')
+        label.set_ellipsize(Pango.EllipsizeMode.END)
         vbox.pack_start(label, True, True, 0)
         self._info_label = Gtk.Label(xalign=0)
         self._info_label.set_text('---')
+        self._info_label.set_ellipsize(Pango.EllipsizeMode.END)
         #if info['local'] and info['remote']:
         #    label.set_markup('This endpoint is reported by the lookup server and it is configured locally.')
         #elif not info['local'] and info['remote']:
