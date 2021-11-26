@@ -1,5 +1,5 @@
 #
-# Copyright 2020 Lars Pastewka, Johanns Hoermann
+# Copyright 2021 Johannes Hoermann, Lars Pastewka
 #
 # ### MIT license
 #
@@ -22,42 +22,21 @@
 # SOFTWARE.
 #
 
-import asyncio
-import sys
+import os
 
-import gi
-gi.require_version('Gtk', '3.0')
-gi.require_version('GtkSource', '4')
-from gi.repository import GObject, Gio, Gtk, GtkSource
-
-import gbulb
-gbulb.install(gtk=True)
-
-from .views.main_window import MainWindow
-
-# The following import are need to register dtype with the GObject type system
-import dtool_lookup_gui.widgets.base_uri_list_box
-import dtool_lookup_gui.widgets.dataset_list_box
-import dtool_lookup_gui.widgets.graph_widget
+from gi.repository import Gio
 
 
-class Application(Gtk.Application):
+class Settings:
     def __init__(self):
-        super().__init__(application_id='de.uni-freiburg.dtool-lookup-gui',
-                         flags=Gio.ApplicationFlags.FLAGS_NONE)
+        schema_source = Gio.SettingsSchemaSource.new_from_directory(
+            f'{os.path.dirname(__file__)}/..', Gio.SettingsSchemaSource.get_default(), False)
+        schema = Gio.SettingsSchemaSource.lookup(
+            schema_source, "de.uni-freiburg.dtool-lookup-gui", False)
+        self.settings = Gio.Settings.new_full(schema, None, None)
 
-    def do_activate(self):
-        win = self.props.active_window
-        if not win:
-            win = MainWindow(application=self)
-        loop = asyncio.get_event_loop()
-        win.connect('destroy', lambda _: loop.stop())
-        win.show()
-        loop.run_forever()
+    @property
+    def dependency_keys(self):
+        return self.settings.get_string('dependency-keys')
 
-
-def run_gui():
-    GObject.type_register(GtkSource.View)
-
-    app = Application()
-    return app.run(sys.argv)
+settings = Settings()

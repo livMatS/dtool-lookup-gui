@@ -49,23 +49,26 @@ def triangle(context, x, y):
     context.close_path()
 
 
-class GraphWidget(Gtk.DrawingArea):
+class DtoolGraphWidget(Gtk.DrawingArea):
     __gtype_name__ = 'DtoolGraphWidget'
 
-    def __init__(self, builder, graph):
+    def __init__(self):
         super().__init__()
+
+    def set_graph(self, graph):
         self.graph = graph
         self.graph.set_vertex_properties('state',
                                          np.zeros(self.graph.nb_vertices,
                                                   dtype=bool))
         self.layout = GraphLayout(self.graph)
 
+    def set_popover(self, popover):
         # Popover widget
-        self.popover = builder.get_object('dependency-popover')
+        self.popover = popover
         self.popover.set_relative_to(self)
-        self.uuid_label = builder.get_object('dependency-uuid')
-        self.name_label = builder.get_object('dependency-name')
-        self.search_entry = builder.get_object('search-entry')
+        #self.uuid_label = builder.get_object('dependency-uuid')
+        #self.name_label = builder.get_object('dependency-name')
+        #self.search_entry = builder.get_object('search-entry')
 
         self._current_uuid = None
 
@@ -206,4 +209,4 @@ class GraphWidget(Gtk.DrawingArea):
         return True
 
 
-GObject.type_register(GraphWidget)
+GObject.type_register(DtoolGraphWidget)

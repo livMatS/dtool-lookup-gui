@@ -24,6 +24,8 @@
 
 from dtoolcore.utils import get_config_value, write_config_value_to_file, _get_config_dict_from_file
 
+from .datasets import DatasetModel
+
 
 class ConfigBaseURIModel:
     """Model for config-file based base URIs"""
@@ -34,27 +36,32 @@ class ConfigBaseURIModel:
     @classmethod
     def all(cls):
         base_uris = []
-        for key, value in _get_config_dict_from_file():
+        for key, value in _get_config_dict_from_file().items():
             if key.startswith(cls._prefix):
-                base_uris += cls(value[len(key):])
+                base_uris += [cls(key[len(cls._prefix):])]
         return base_uris
 
-    @property
-    def base_uri(self):
+    def __str__(self):
         return f'{self._schema}://{self._uri_name}'
 
     def __getattr__(self, name):
+        if name.startswith('_'):
+            return super().__getattr__(name)
         try:
             return get_config_value(self._properties[name].format(self._name), default='')
         except KeyError:
             raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'" )
 
     def __setattr__(self, name, value):
+        if name.startswith('_'):
+            return super().__setattr__(name, value)
         try:
             return write_config_value_to_file(self._properties[name].format(self._name), value)
         except KeyError:
             raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'" )
 
+    def all_datasets(self):
+        return DatasetModel.all(str(self))
 
 class S3BaseURIModel(ConfigBaseURIModel):
     """Model for managing S3 base URIs."""
@@ -69,7 +76,7 @@ class S3BaseURIModel(ConfigBaseURIModel):
     }
 
 
-class SMBBaseURIModel:
+class SMBBaseURIModel(ConfigBaseURIModel):
     """Model for managing SMB base URIs."""
 
     _schema = 'smb'

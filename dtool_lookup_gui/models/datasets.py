@@ -22,27 +22,16 @@
 # SOFTWARE.
 #
 
-import os
 import logging
 
 import dtoolcore
 
-from . import dtool_tk_models
-
-from .dtool_tk_models import (
-    _ConfigFileVariableBaseModel,
-    LocalBaseURIModel,
-    # DataSetListModel,
-    DataSetModel,
-    ProtoDataSetModel,
-    MetadataSchemaListModel,
-    UnsupportedTypeError,
-    metadata_model_from_dataset
-)
-
 from dtool_info.inventory import _dataset_info
+from dtool_lookup_api.core.LookupClient import ConfigurationBasedLookupClient
 
 logger = logging.getLogger(__name__)
+
+lookup_client = ConfigurationBasedLookupClient()
 
 
 def _proto_dataset_info(dataset):
@@ -63,12 +52,33 @@ def _proto_dataset_info(dataset):
     return info
 
 
+class DatasetModel:
+    """Model for both frozen and proto datasets."""
 
+    @staticmethod
+    def all(base_uri):
+        """Return all datasets at base URI"""
+        datasets = []
+        for dataset in dtoolcore.iter_proto_datasets_in_base_uri(base_uri):
+            datasets += [DatasetModel(dataset=dataset)]
 
+        for dataset in dtoolcore.iter_datasets_in_base_uri(base_uri):
+            datasets += [DatasetModel(dataset=dataset)]
 
-class DataSetModel(dtool_tk_models.DataSetModel):
-    """Model for both frozen and ProtoDataSet."""
-    def load_dataset(self, uri):
+        return datasets
+
+    def __init__(self, uri=None, dataset=None):
+        if uri is not None:
+            if dataset is not None:
+                raise ValueError('Please provide either `uri` or `dataset` arguments.')
+            self._load_dataset(uri)
+        elif dataset is not None:
+            self._dataset = dataset
+
+    def __getattr__(self, name):
+        return self.dataset_info[name]
+
+    def _load_dataset(self, uri):
         """Load the dataset from a URI.
 
         :param uri: URI to a dtoolcore.DataSet
@@ -84,12 +94,10 @@ class DataSetModel(dtool_tk_models.DataSetModel):
         else:
             self._dataset = dtoolcore.DataSet.from_uri(uri)
 
-        self._metadata_model = metadata_model_from_dataset(self._dataset)
-
     def reload(self):
         uri = self.dataset.uri
         self.clear()
-        self.load_dataset(uri)
+        self._load_dataset(uri)
 
     @property
     def is_frozen(self):
@@ -105,103 +113,3 @@ class DataSetModel(dtool_tk_models.DataSetModel):
             return _dataset_info(self._dataset)
         else:
             return _proto_dataset_info(self._dataset)
-
-
-class DataSetListModel(dtool_tk_models.DataSetListModel):
-    "Model for managing all (frozen and proto) datasets in a base URI."
-
-    def __init__(self, *args, **kwargs):
-        self._active_refresh = False
-        super().__init__(*args, **kwargs)
-
-    @property
-    def active_refresh(self):
-        return self._active_refresh
-
-    @active_refresh.setter
-    def active_refresh(self, active):
-        self._active_refresh = active
-        if active:
-            self.reindex()
-
-    def activate_refresh(self):
-        self._active_refresh = True
-        self.reindex()
-
-    def deactivate_refresh(self):
-        self._active_refresh = False
-
-    def reindex(self):
-        """Index the base URI."""
-        if not self._active_refresh:
-            logger.debug("Refresh deactivated, skip.")
-            return
-
-        self._datasets = []
-        self._datasets_info = []
-        self._active_index = None
-        self._all_tags = set()
-        base_uri = self._base_uri_model.get_base_uri()
-        if base_uri is None:
-            return
-
-        # iter through proto datasets
-        for ds in dtoolcore.iter_proto_datasets_in_base_uri(base_uri):
-            append_okay = True
-            ds_tags = set(ds.list_tags())
-            self._all_tags.update(ds_tags)
-            if self.tag_filter is not None and self.tag_filter not in ds_tags:
-                append_okay = False
-            if append_okay:
-                try:
-                    ds_info = _proto_dataset_info(ds)
-                except FileNotFoundError as err:  # README might not exist
-                    logger.warning(err.__str__())
-                else:
-                    self._datasets.append(ds)
-                    self._datasets_info.append(ds_info)
-
-        # iter through frozen datasets
-        for ds in dtoolcore.iter_datasets_in_base_uri(base_uri):
-            append_okay = True
-            ds_tags = set(ds.list_tags())
-            self._all_tags.update(ds_tags)
-            if self.tag_filter is not None and self.tag_filter not in ds_tags:
-                append_okay = False
-            if append_okay:
-                self._datasets.append(ds)
-                self._datasets_info.append(_dataset_info(ds))
-
-        # The initial active index is 0 if there are datasets in the model.
-        if len(self._datasets) > 0:
-            self._active_index = 0
-
-        self._rebuild_mappings()
-
-    def _rebuild_mappings(self):
-        """Make datasets and indices in lit accessible via URI and UUID."""
-        self._datasets_by_uuid = {}
-        self._datasets_by_uri = {}
-        self._index_by_uuid = {}
-        self._index_by_uri = {}
-        for i, ds in enumerate(self._datasets):
-            if ds.uuid not in self._datasets_by_uuid:
-                self._datasets_by_uuid[ds.uuid] = []
-                self._index_by_uuid[ds.uuid] = []
-            self._datasets_by_uuid[ds.uuid].append(ds)
-            self._index_by_uuid[ds.uuid].append(i)
-
-            self._datasets_by_uri[ds.uri] = ds
-            self._index_by_uri[ds.uri] = i
-
-    def sort(self, *args, **kwargs):
-        """Sort the datasets by items properties."""
-        super().sort(*args, **kwargs)
-        self._rebuild_mappings()
-
-    def get_index_by_uri(self, uri):
-       return self._index_by_uri[uri]
-
-    def set_active_index_by_uri(self, uri):
-       index = self.get_index_by_uri(uri)
-       self.set_active_index(index)

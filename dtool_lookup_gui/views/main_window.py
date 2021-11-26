@@ -32,15 +32,25 @@ from .settings_dialog import SettingsDialog
 logger = logging.getLogger(__name__)
 
 
+class MainMenu(Gtk.PopoverMenu):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
+                       margin_top=12, margin_bottom=12, margin_start=12, margin_end=12)
+        vbox.add(Gtk.ModelButton(text='Settings'))
+        vbox.add(Gtk.ModelButton(text='About dtool-lookup-gui'))
+        self.add(vbox)
+
+
 @Gtk.Template(filename=f'{os.path.dirname(__file__)}/main_window.ui')
 class MainWindow(Gtk.ApplicationWindow):
     __gtype_name__ = 'DtoolMainWindow'
 
-    base_uri_button = Gtk.Template.Child()
     menu_button = Gtk.Template.Child()
     search_entry = Gtk.Template.Child()
 
-    search_results_listbox = Gtk.Template.Child()
+    base_uri_list_box = Gtk.Template.Child()
+    dataset_list_box = Gtk.Template.Child()
 
     uuid_label = Gtk.Template.Child()
     uri_label = Gtk.Template.Child()
@@ -50,93 +60,30 @@ class MainWindow(Gtk.ApplicationWindow):
     frozen_at_label = Gtk.Template.Child()
 
     readme_treeview = Gtk.Template.Child()
-    manufest_treeview = Gtk.Template.Child()
+    manifest_treeview = Gtk.Template.Child()
 
+    settings_button = Gtk.Template.Child()
 
-    def _load_handlers(self, object):
-        """Scan object for signal handlers and add them to a (class-global) """
-        if isinstance(object, dict):
-            methods = object.items()
-        else:
-            methods = map(lambda n: (n, getattr(object, n, None)), dir(object))
+    @Gtk.Template.Callback()
+    def on_show_window(self, widget):
+        self.base_uri_list_box.refresh()
 
-        for method_name, method in methods:
-            if method_name.startswith('_'):
-                continue
-            if callable(method):
-                if method_name in self.handlers:
-                    logger.debug("Registering additional callback for '%s'" % (method_name))
-                    self.handlers[method_name].append(method)
-                else:
-                    logger.debug("Registering callback for '%s'" % (method_name))
-                    self.handlers[method_name] = Trampoline([method])
-
-    # signal handlers
-
-    def on_lhs_base_uri_set(self, file_chooser_button):
-        """Base URI directory selected with file chooser."""
-        base_uri = file_chooser_button.get_uri()
-        logger.debug(f"Selected lhs base URI '{base_uri}' via file chooser.")
-        self.lhs_base_uri_inventory_group.set_base_uri_from_file_chooser_button(file_chooser_button)
-
-    def on_rhs_base_uri_set(self, file_chooser_button):
-        """Base URI directory selected with file chooser."""
-        base_uri = file_chooser_button.get_uri()
-        logger.debug(f"Selected rhs base URI '{base_uri}' via file chooser.")
-        self.rhs_base_uri_inventory_group.set_base_uri_from_file_chooser_button(file_chooser_button)
-
-    def on_lhs_base_uri_open(self, button):
-        """Open base URI button clicked."""
-        self.lhs_base_uri_inventory_group.apply_base_uri()
-
-    def on_rhs_base_uri_open(self, button):
-        """Open base URI button clicked."""
-        self.rhs_base_uri_inventory_group.apply_base_uri()
-
-    def on_lhs_dataset_uri_set(self, file_chooser_button):
-        self.lhs_base_uri_inventory_group.set_dataset_uri_from_file_chooser_button(file_chooser_button)
-
-    def on_rhs_dataset_uri_set(self, file_chooser_button):
-        self.rhs_base_uri_inventory_group.set_dataset_uri_from_file_chooser_button(file_chooser_button)
-
-    def on_lhs_dataset_uri_open(self, button):
-        """Select and display dataset when URI specified in text box 'dataset URI' and button 'open' clicked."""
-        self.lhs_base_uri_inventory_group.apply_dataset_uri()
-
-    def on_rhs_dataset_uri_open(self, button):
-        """Select and display dataset when URI specified in text box 'dataset URI' and button 'open' clicked."""
-        self.rhs_base_uri_inventory_group.apply_dataset_uri()
-
-    def on_lhs_dataset_selected_from_list(self, list_box, list_box_row):
-        """Select and display dataset when selected in left hand side list."""
-        if list_box_row is not None:
-            self.lhs_base_uri_inventory_group.set_selected_dataset_row(list_box_row)
-
-    def on_rhs_dataset_selected_from_list(self, list_box, list_box_row):
-        """Select and dataset when selected in right hand side list."""
-        if list_box_row is not None:
-            self.rhs_base_uri_inventory_group.set_selected_dataset_row(list_box_row)
-
-    def on_lhs_dataset_list_auto_refresh_toggled(self, switch, state):
-        logger.debug(f"LHS dataset list refresh toggled {'on' if state else 'off'}")
-        self.lhs_base_uri_inventory_group.set_auto_refresh(state)
-        self.lhs_base_uri_inventory_group.refresh()
-
-    def on_rhs_dataset_list_auto_refresh_toggled(self, switch, state):
-        logger.debug(f"RHS dataset list refresh toggled {'on' if state else 'off'}")
-        self.rhs_base_uri_inventory_group.set_auto_refresh(state)
-        self.rhs_base_uri_inventory_group.refresh()
-
-    def on_main_switch_page(self, notebook, page, page_num):
-        self.refresh(page_num)
-
+    @Gtk.Template.Callback()
     def on_settings_clicked(self, widget):
         SettingsDialog(self).show()
 
-    def show_error(self, msg):
-        self.error_label.set_text(msg)
-        self.error_bar.show()
-        self.error_bar.set_revealed(True)
+    @Gtk.Template.Callback()
+    def on_base_uri_selected(self, list_box, row):
+        self.dataset_list_box.refresh(row.base_uri)
 
-    def on_window_destroy(self, *args):
-        self.event_loop.stop()
+    @Gtk.Template.Callback()
+    def on_dataset_selected(self, list_box, row):
+        self._update_dataset_view(row.dataset)
+
+    def _update_dataset_view(self, dataset):
+        self.uuid_label.set_text(dataset.uuid)
+        self.uri_label.set_text(dataset.uri)
+        self.name_label.set_text(dataset.name)
+        self.created_by_label.set_text(dataset.creator)
+        #self.created_at_label.set_text(dataset.created_at)
+        self.frozen_at_label.set_text(dataset.date)

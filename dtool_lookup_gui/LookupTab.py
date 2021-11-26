@@ -46,7 +46,7 @@ import gbulb
 gbulb.install(gtk=True)
 
 from .Dependencies import DependencyGraph
-from .widgets.graph_widget import GraphWidget
+from .widgets.graph_widget import DtoolGraphWidget
 
 
 logger = logging.getLogger(__name__)
@@ -220,7 +220,7 @@ class SignalHandler:
                             'in the database: {}'.format(reduce(lambda a, b: a + ', ' + b, missing_uuids)))
 
         # Create graph widget
-        graph_widget = GraphWidget(self.builder, self._dependency_graph.graph)
+        graph_widget = DtoolGraphWidget(self.builder, self._dependency_graph.graph)
 
         for child in self.dependency_view:
             child.destroy()

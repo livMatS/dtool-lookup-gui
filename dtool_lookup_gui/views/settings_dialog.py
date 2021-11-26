@@ -27,11 +27,12 @@ import os
 
 from gi.repository import Gio, Gtk
 
-from dtoolcore.utils import get_config_value, write_config_value_to_file, generous_parse_uri, _get_config_dict_from_file
+from dtoolcore.utils import generous_parse_uri
 from dtool_lookup_api.core.config import Config
 from dtool_lookup_api.core.LookupClient import authenticate
 
-import dtool_lookup_gui.models.base_uris as base_uri_models
+from ..models.base_uris import all as all_base_uris
+from ..models.settings import settings
 from .authentication_dialog import AuthenticationDialog
 from .s3_configuration_dialog import S3ConfigurationDialog
 
@@ -61,13 +62,8 @@ class SettingsDialog(Gtk.Window):
 
     def __init__(self, parent, **kwargs):
         super().__init__(**kwargs)
-        self.main_application = parent.main_application
-        self.event_loop = parent.event_loop
-        self.settings = parent.settings
 
-        self.main_application.settings.settings.bind("dependency-keys",
-                                                     self.dependency_keys_entry, 'text',
-                                                     Gio.SettingsBindFlags.DEFAULT)
+        settings.settings.bind("dependency-keys", self.dependency_keys_entry, 'text', Gio.SettingsBindFlags.DEFAULT)
 
         if Config.lookup_url is not None:
             self.lookup_url_entry.set_text(Config.lookup_url)
@@ -85,7 +81,7 @@ class SettingsDialog(Gtk.Window):
         base_uris = await self.main_application.lookup_tab.lookup.list_base_uris()
         base_uris = {base_uri['base_uri']: base_uri | {'local': False, 'remote': True} for base_uri in base_uris}
 
-        for base_uri in base_uri_models.all():
+        for base_uri in all_base_uris():
             if base_uri.base_uri not in base_uris:
                 base_uris[base_uri.base_uri] = {'local': True, 'remote': False}
             else:
@@ -143,7 +139,7 @@ class SettingsDialog(Gtk.Window):
         Config.verify_ssl = self.verify_ssl_certificate_switch.get_state()
 
         # Reconnect since settings may have been changed
-        asyncio.create_task(self.main_application.lookup_tab.connect())
+        #asyncio.create_task(self.main_application.lookup_tab.connect())
 
         # Destroy window
         return False
@@ -171,10 +167,12 @@ class SettingsDialog(Gtk.Window):
         self.builder.get_object('token-entry').set_text(token)
         await self._refresh_list_of_endpoints()
 
+    @Gtk.Template.Callback()
     def on_configure_endpoint_clicked(self, widget):
         S3ConfigurationDialog(lambda: asyncio.create_task(self._refresh_list_of_endpoints()),
                               widget.base_uri.netloc).show()
 
+    @Gtk.Template.Callback()
     def on_add_endpoint_state_changed(self, widget, state):
         if state == Gtk.StateType.ACTIVE:
             S3ConfigurationDialog(lambda: asyncio.create_task(self._refresh_list_of_endpoints())).show()
