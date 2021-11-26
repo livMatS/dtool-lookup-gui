@@ -162,6 +162,10 @@ class DatasetModel:
     def dataset_info(self):
         return self._dataset_info
 
+    @property
+    def has_dependencies(self):
+        return self.dataset is None
+
     async def readme(self):
         if 'readme_content' in self.dataset_info:
             return self.dataset_info['readme_content']

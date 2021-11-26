@@ -110,17 +110,19 @@ class MainWindow(Gtk.ApplicationWindow):
             total_size = sum([dataset.size_int for dataset in datasets])
             row.info_label.set_text(f'{len(datasets)} datasets, {sizeof_fmt(total_size).strip()}')
         if hasattr(row, 'base_uri'):
-            self.dependency_stack.hide()
             self.dataset_list_box.from_base_uri(row.base_uri, on_show=update_base_uri_summary)
         elif hasattr(row, 'search_results'):
             # This is the search result
-            self.dependency_stack.show()
             self.dataset_list_box.fill(row.search_results)
 
     @Gtk.Template.Callback()
     def on_dataset_selected(self, list_box, row):
         if row is not None:
             self._update_dataset_view(row.dataset)
+            if row.dataset.has_dependencies:
+                self.dependency_stack.show()
+            else:
+                self.dependency_stack.hide()
 
     @Gtk.Template.Callback()
     def on_search_activate(self, widget):
