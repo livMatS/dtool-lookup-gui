@@ -35,7 +35,7 @@ class DtoolDatasetListBox(Gtk.ListBox):
 
     _max_nb_datasets = 100
 
-    def _refresh(self, datasets, on_show=None):
+    def fill(self, datasets, on_show=None):
         for row in self.get_children():
             row.destroy()
         for dataset in datasets:
@@ -45,13 +45,13 @@ class DtoolDatasetListBox(Gtk.ListBox):
             on_show(datasets)
 
     def from_base_uri(self, base_uri, on_show=None):
-        self._refresh(base_uri.all_datasets(), on_show=on_show)
+        self.fill(base_uri.all_datasets(), on_show=on_show)
 
     def search(self, keyword, on_show=None):
         async def fetch_search_results(keyword, on_show=None):
             datasets = await DatasetModel.search(keyword)
             datasets = datasets[:self._max_nb_datasets]
-            self._refresh(datasets, on_show=on_show)
+            self.fill(datasets, on_show=on_show)
         asyncio.create_task(fetch_search_results(keyword, on_show=on_show))
 
 GObject.type_register(DtoolDatasetListBox)

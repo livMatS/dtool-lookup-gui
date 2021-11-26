@@ -119,6 +119,9 @@ class MainWindow(Gtk.ApplicationWindow):
             row.info_label.set_text(f'{len(datasets)} datasets, {sizeof_fmt(total_size).strip()}')
         if hasattr(row, 'base_uri'):
             self.dataset_list_box.from_base_uri(row.base_uri, on_show=update_base_uri_summary)
+        elif hasattr(row, 'search_results'):
+            # This is the search result
+            self.dataset_list_box.fill(row.search_results)
 
     @Gtk.Template.Callback()
     def on_dataset_selected(self, list_box, row):
@@ -129,6 +132,7 @@ class MainWindow(Gtk.ApplicationWindow):
     def on_search_activate(self, widget):
         def update_search_summary(datasets):
             total_size = sum([dataset.size_int for dataset in datasets])
+            self.base_uri_list_box.search_results_row.search_results = datasets
             self.base_uri_list_box.search_results_row.info_label \
                 .set_text(f'{len(datasets)} datasets, {sizeof_fmt(total_size).strip()}')
         self.base_uri_list_box.select_search_results_row()
