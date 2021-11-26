@@ -29,6 +29,8 @@ import os
 
 from gi.repository import Gtk, GtkSource
 
+from dtool_info.utils import sizeof_fmt
+
 from ..utils.date import date_to_string
 from .settings_dialog import SettingsDialog
 
@@ -111,8 +113,11 @@ class MainWindow(Gtk.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def on_base_uri_selected(self, list_box, row):
+        def update_base_uri_summary(datasets):
+            total_size = sum([dataset.size_int for dataset in datasets])
+            row.info_label.set_text(f'{len(datasets)} datasets, {sizeof_fmt(total_size).strip()}')
         if hasattr(row, 'base_uri'):
-            self.dataset_list_box.from_base_uri(row.base_uri)
+            self.dataset_list_box.from_base_uri(row.base_uri, on_show=update_base_uri_summary)
 
     @Gtk.Template.Callback()
     def on_dataset_selected(self, list_box, row):
@@ -121,8 +126,12 @@ class MainWindow(Gtk.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def on_search_activate(self, widget):
+        def update_search_summary(datasets):
+            total_size = sum([dataset.size_int for dataset in datasets])
+            self.base_uri_list_box.search_results_row.info_label \
+                .set_text(f'{len(datasets)} datasets, {sizeof_fmt(total_size).strip()}')
         self.base_uri_list_box.select_search_results_row()
-        self.dataset_list_box.search(self.search_entry.get_text())
+        self.dataset_list_box.search(self.search_entry.get_text(), on_show=update_search_summary)
 
     def _update_dataset_view(self, dataset):
         self.uuid_label.set_text(dataset.uuid)

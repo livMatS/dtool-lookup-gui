@@ -43,16 +43,16 @@ class DtoolBaseURIRow(Gtk.ListBoxRow):
         hbox.pack_start(image, True, True, 0)
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         label = Gtk.Label(xalign=0)
-        label.set_markup(str(base_uri))
+        label.set_markup(f'<b>{base_uri}</b>')
         vbox.pack_start(label, True, True, 0)
-        label = Gtk.Label(xalign=0)
+        self._info_label = Gtk.Label(xalign=0)
         #if info['local'] and info['remote']:
         #    label.set_markup('This endpoint is reported by the lookup server and it is configured locally.')
         #elif not info['local'] and info['remote']:
         #    label.set_markup('This endpoint is reported by the lookup server, but it is not configured locally.')
         #else:
         #    label.set_markup('This endpoint is configured locally.')
-        vbox.pack_start(label, True, True, 0)
+        vbox.pack_start(self._info_label, True, True, 0)
         hbox.pack_start(vbox, True, True, 0)
         if on_configure is not None:
             button = Gtk.Button(image=Gtk.Image.new_from_icon_name('emblem-system-symbolic', Gtk.IconSize.BUTTON))
@@ -65,3 +65,7 @@ class DtoolBaseURIRow(Gtk.ListBoxRow):
 
         if on_activate is not None:
             self.connect('activate', on_activate)
+
+    @property
+    def info_label(self):
+        return self._info_label

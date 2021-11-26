@@ -41,8 +41,12 @@ class DtoolSearchResultsRow(Gtk.ListBoxRow):
         label = Gtk.Label(xalign=0)
         label.set_markup(f'<b>Search results</b>')
         vbox.pack_start(label, True, True, 0)
-        label = Gtk.Label(xalign=0)
-        label.set_markup('(Lookup server)')
-        vbox.pack_start(label, True, True, 0)
+        self._info_label = Gtk.Label(xalign=0)
+        self._info_label.set_markup('(Lookup server)')
+        vbox.pack_start(self._info_label, True, True, 0)
         hbox.pack_start(vbox, True, True, 0)
         self.add(hbox)
+
+    @property
+    def info_label(self):
+        return self._info_label

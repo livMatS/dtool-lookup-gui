@@ -26,7 +26,7 @@ import logging
 import yaml
 
 import dtoolcore
-from dtool_info.utils import date_fmt
+from dtool_info.utils import date_fmt, sizeof_fmt
 
 from dtool_info.inventory import _dataset_info
 from dtool_lookup_api.core.LookupClient import ConfigurationBasedLookupClient
@@ -41,6 +41,11 @@ def _proto_dataset_info(dataset):
 
     info['uri'] = dataset.uri
     info['uuid'] = dataset.uuid
+
+    tot_size = sum([dataset.item_properties(i)["size_in_bytes"]
+                    for i in dataset.identifiers])
+    info["size_int"] = tot_size
+    info["size_str"] = sizeof_fmt(tot_size)
 
     info['creator'] = dataset._admin_metadata['creator_username']
     info['name'] = dataset._admin_metadata['name']
@@ -64,6 +69,9 @@ def _lookup_info(lookup_dict):
 
     info['uri'] = lookup_dict['uri']
     info['uuid'] = lookup_dict['uuid']
+
+    info["size_int"] = lookup_dict['size_in_bytes']
+    info["size_str"] = sizeof_fmt(lookup_dict['size_in_bytes'])
 
     info['creator'] = lookup_dict['creator_username']
     info['name'] = lookup_dict['name']
