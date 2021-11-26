@@ -3,6 +3,7 @@
 <interface>
   <requires lib="gtk+" version="3.22"/>
   <requires lib="dtool_gtk_catalog" version="1.0"/>
+  <requires lib="gtksourceview" version="4.0"/>
   <object class="GtkPopoverMenu" id="DtoolMainMenu">
     <property name="can-focus">False</property>
     <child>
@@ -50,7 +51,7 @@
       </packing>
     </child>
   </object>
-  <object class="GtkTreeStore" id="lookup-manifest-treestore">
+  <object class="GtkTreeStore" id="manifest_tree_store">
     <columns>
       <!-- column-name name -->
       <column type="gchararray"/>
@@ -59,18 +60,6 @@
       <!-- column-name date -->
       <column type="gchararray"/>
       <!-- column-name uuid -->
-      <column type="gchararray"/>
-    </columns>
-  </object>
-  <object class="GtkTreeStore" id="lookup-readme-treestore">
-    <columns>
-      <!-- column-name key -->
-      <column type="gchararray"/>
-      <!-- column-name value -->
-      <column type="gchararray"/>
-      <!-- column-name is_uuid -->
-      <column type="gboolean"/>
-      <!-- column-name markup -->
       <column type="gchararray"/>
     </columns>
   </object>
@@ -512,43 +501,21 @@
                                                 <property name="visible">True</property>
                                                 <property name="can-focus">False</property>
                                                 <child>
-                                                  <object class="GtkTreeView" id="readme_treeview">
+                                                  <object class="GtkSourceView" id="readme_source_view">
                                                     <property name="visible">True</property>
                                                     <property name="can-focus">True</property>
+                                                    <property name="hexpand">True</property>
                                                     <property name="vexpand">True</property>
-                                                    <property name="model">lookup-readme-treestore</property>
-                                                    <property name="search-column">0</property>
-                                                    <property name="enable-tree-lines">True</property>
-                                                    <signal name="row-activated" handler="on_readme_row_activated" swapped="no"/>
-                                                    <child internal-child="selection">
-                                                      <object class="GtkTreeSelection"/>
-                                                    </child>
-                                                    <child>
-                                                      <object class="GtkTreeViewColumn" id="readme-column1">
-                                                        <property name="title" translatable="yes">Key</property>
-                                                        <child>
-                                                          <object class="GtkCellRendererText" id="readme-renderer1"/>
-                                                          <attributes>
-                                                            <attribute name="text">0</attribute>
-                                                          </attributes>
-                                                        </child>
-                                                      </object>
-                                                    </child>
-                                                    <child>
-                                                      <object class="GtkTreeViewColumn" id="readme-column2">
-                                                        <property name="title" translatable="yes">Value</property>
-                                                        <child>
-                                                          <object class="GtkCellRendererText" id="readme-renderer2">
-                                                            <property name="editable">True</property>
-                                                            <property name="ellipsize">end</property>
-                                                            <property name="wrap-mode">word</property>
-                                                          </object>
-                                                          <attributes>
-                                                            <attribute name="markup">3</attribute>
-                                                          </attributes>
-                                                        </child>
-                                                      </object>
-                                                    </child>
+                                                    <property name="left-margin">2</property>
+                                                    <property name="right-margin">2</property>
+                                                    <property name="input-hints">GTK_INPUT_HINT_NO_EMOJI | GTK_INPUT_HINT_NONE</property>
+                                                    <property name="show-line-numbers">True</property>
+                                                    <property name="show-line-marks">True</property>
+                                                    <property name="tab-width">4</property>
+                                                    <property name="insert-spaces-instead-of-tabs">True</property>
+                                                    <property name="show-right-margin">True</property>
+                                                    <property name="smart-home-end">always</property>
+                                                    <property name="highlight-current-line">True</property>
                                                   </object>
                                                 </child>
                                               </object>
@@ -607,10 +574,10 @@
                                             <property name="visible">True</property>
                                             <property name="can-focus">False</property>
                                             <child>
-                                              <object class="GtkTreeView" id="manifest_treeview">
+                                              <object class="GtkTreeView" id="manifest_tree_view">
                                                 <property name="visible">True</property>
                                                 <property name="can-focus">True</property>
-                                                <property name="model">lookup-manifest-treestore</property>
+                                                <property name="model">manifest_tree_store</property>
                                                 <property name="search-column">0</property>
                                                 <signal name="row-activated" handler="on_manifest_row_activated" swapped="no"/>
                                                 <child internal-child="selection">

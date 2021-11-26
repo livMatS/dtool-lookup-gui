@@ -22,43 +22,9 @@
 # SOFTWARE.
 #
 
-import locale
-from contextlib import contextmanager
-from datetime import date, datetime
-
 from gi.repository import Gtk
 
-import dtoolcore.utils
-
-
-@contextmanager
-def time_locale(name):
-    # This code snippet was taken from:
-    # https://stackoverflow.com/questions/18593661/how-do-i-strftime-a-date-object-in-a-different-locale
-    saved = locale.setlocale(locale.LC_TIME)
-    try:
-        yield locale.setlocale(locale.LC_TIME, name)
-    finally:
-        locale.setlocale(locale.LC_TIME, saved)
-
-
-def to_timestamp(d):
-    """
-    Convert a string or a timestamp to a timestamp. This is a dirty fix necessary
-    because the /dataset/list route return timestamps but /dataset/search
-    returns strings in older versions of the lookup server (before 0.15.0).
-    """
-    if type(d) is str:
-        try:
-            with time_locale('C'):
-                d = dtoolcore.utils.timestamp(datetime.strptime(d, '%a, %d %b %Y %H:%M:%S %Z'))
-        except ValueError as e:
-            d = -1
-    return d
-
-
-def date_to_string(d):
-    return date.fromtimestamp(to_timestamp(d))
+from ..utils.date import date_to_string
 
 
 class DtoolDatasetRow(Gtk.ListBoxRow):

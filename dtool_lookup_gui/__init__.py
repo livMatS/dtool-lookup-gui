@@ -91,15 +91,6 @@ def date_to_string(d):
     return date.fromtimestamp(to_timestamp(d))
 
 
-def human_readable_file_size(num, suffix='B'):
-    # From: https://gist.github.com/cbwar/d2dfbc19b140bd599daccbe0fe925597
-    if num == 0:
-        return '0B'
-    magnitude = int(math.floor(math.log(num, 1024)))
-    val = num / math.pow(1024, magnitude)
-    if magnitude > 7:
-        return '{:.1f}{}{}'.format(val, 'Yi', suffix)
-    return '{:3.1f}{}{}'.format(val, ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi'][magnitude], suffix)
 
 
 def fill_readme_tree_store(store, data, parent=None):
@@ -143,30 +134,6 @@ def fill_readme_tree_store(store, data, parent=None):
                 fill_readme_tree_store(store, value, parent=current)
             else:
                 append_entry(store, entry, value, parent)
-
-
-def fill_manifest_tree_store(store, data, parent=None):
-    nodes = {}
-
-    def find_or_create_parent_node(path, top_parent):
-        if not path:
-            return top_parent
-        try:
-            return nodes[path]
-        except KeyError:
-            head, tail = os.path.split(path)
-            parent = find_or_create_parent_node(head, top_parent)
-            new_node = store.append(parent, [tail, '', '', ''])
-            nodes[path] = new_node
-            return new_node
-
-    for uuid, values in sorted(data.items(), key=lambda kv: kv[1]['relpath']):
-        head, tail = os.path.split(values['relpath'])
-        store.append(find_or_create_parent_node(head, parent),
-                     [tail,
-                      human_readable_file_size(values['size_in_bytes']),
-                      f'{date_to_string(values["utc_timestamp"])}',
-                      uuid])
 
 
 def _validate_readme(readme_content):

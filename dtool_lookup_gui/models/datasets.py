@@ -53,7 +53,10 @@ def _proto_dataset_info(dataset):
 
 
 class DatasetModel:
-    """Model for both frozen and proto datasets."""
+    """
+    Model for both frozen and proto datasets, either received from dtoolcore
+    or the lookup server.
+    """
 
     @staticmethod
     def all(base_uri):
@@ -113,3 +116,14 @@ class DatasetModel:
             return _dataset_info(self._dataset)
         else:
             return _proto_dataset_info(self._dataset)
+
+    @property
+    def readme(self):
+        return self.dataset_info['readme_content']
+
+    @property
+    def identifiers(self):
+        return self.dataset.identifiers
+
+    def item_properties(self, identifier):
+        return self.dataset.item_properties(identifier)

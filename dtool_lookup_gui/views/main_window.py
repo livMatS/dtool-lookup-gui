@@ -23,23 +23,55 @@
 #
 
 import logging
+import math
 import os
 
-from gi.repository import Gtk
+from gi.repository import Gtk, GtkSource
 
+from ..utils.date import date_to_string
 from .settings_dialog import SettingsDialog
 
 logger = logging.getLogger(__name__)
 
 
-class MainMenu(Gtk.PopoverMenu):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL,
-                       margin_top=12, margin_bottom=12, margin_start=12, margin_end=12)
-        vbox.add(Gtk.ModelButton(text='Settings'))
-        vbox.add(Gtk.ModelButton(text='About dtool-lookup-gui'))
-        self.add(vbox)
+def human_readable_file_size(num, suffix='B'):
+    # From: https://gist.github.com/cbwar/d2dfbc19b140bd599daccbe0fe925597
+    if num == 0:
+        return '0B'
+    magnitude = int(math.floor(math.log(num, 1024)))
+    val = num / math.pow(1024, magnitude)
+    if magnitude > 7:
+        return '{:.1f}{}{}'.format(val, 'Yi', suffix)
+    return '{:3.1f}{}{}'.format(val, ['', 'Ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi'][magnitude], suffix)
+
+
+def _fill_manifest_tree_store(store, dataset, parent=None):
+    nodes = {}
+
+    def find_or_create_parent_node(path, top_parent):
+        if not path:
+            return top_parent
+        try:
+            return nodes[path]
+        except KeyError:
+            head, tail = os.path.split(path)
+            parent = find_or_create_parent_node(head, top_parent)
+            new_node = store.append(parent, [tail, '', '', ''])
+            nodes[path] = new_node
+            return new_node
+
+    # List all identifiers
+    data = []
+    for identifier in dataset.identifiers:
+        data += [(identifier, dataset.item_properties(identifier))]
+
+    for uuid, values in sorted(data, key=lambda kv: kv[1]['relpath']):
+        head, tail = os.path.split(values['relpath'])
+        store.append(find_or_create_parent_node(head, parent),
+                     [tail,
+                      human_readable_file_size(values['size_in_bytes']),
+                      f'{date_to_string(values["utc_timestamp"])}',
+                      uuid])
 
 
 @Gtk.Template(filename=f'{os.path.dirname(__file__)}/main_window.ui')
@@ -59,10 +91,20 @@ class MainWindow(Gtk.ApplicationWindow):
     created_at_label = Gtk.Template.Child()
     frozen_at_label = Gtk.Template.Child()
 
-    readme_treeview = Gtk.Template.Child()
-    manifest_treeview = Gtk.Template.Child()
+    readme_source_view = Gtk.Template.Child()
+    manifest_tree_view = Gtk.Template.Child()
+    manifest_tree_store = Gtk.Template.Child()
 
     settings_button = Gtk.Template.Child()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.readme_buffer = self.readme_source_view.get_buffer()
+        lang_manager = GtkSource.LanguageManager()
+        self.readme_buffer.set_language(lang_manager.get_language("yaml"))
+        self.readme_buffer.set_highlight_syntax(True)
+        self.readme_buffer.set_highlight_matching_brackets(True)
 
     @Gtk.Template.Callback()
     def on_show_window(self, widget):
@@ -87,3 +129,12 @@ class MainWindow(Gtk.ApplicationWindow):
         self.created_by_label.set_text(dataset.creator)
         #self.created_at_label.set_text(dataset.created_at)
         self.frozen_at_label.set_text(dataset.date)
+
+        self._update_readme(dataset)
+        self._update_manifest(dataset)
+
+    def _update_readme(self, dataset):
+        self.readme_buffer.set_text(dataset.readme)
+
+    def _update_manifest(self, dataset):
+        _fill_manifest_tree_store(self.manifest_tree_store, dataset)
