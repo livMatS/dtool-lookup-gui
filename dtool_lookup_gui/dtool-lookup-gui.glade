@@ -305,8 +305,8 @@
             <property name="visible">True</property>
             <property name="can-focus">True</property>
             <property name="receives-default">True</property>
+            <property name="action-name">app.settings</property>
             <property name="text" translatable="yes">Settings</property>
-            <signal name="clicked" handler="on_settings_clicked" swapped="no"/>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -319,6 +319,7 @@
             <property name="visible">True</property>
             <property name="can-focus">True</property>
             <property name="receives-default">True</property>
+            <property name="action-name">app.about</property>
             <property name="text" translatable="yes">About dtool-lookup-gui</property>
           </object>
           <packing>

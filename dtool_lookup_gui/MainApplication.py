@@ -22,10 +22,12 @@
 # SOFTWARE.
 #
 
+import argparse
 import asyncio
 import concurrent.futures
 import logging
 import os
+import sys
 
 from dtool_lookup_api.core.config import Config
 Config.interactive = False
@@ -36,7 +38,6 @@ from gi.repository import Gtk, Gdk, Gio
 
 import gbulb
 gbulb.install(gtk=True)
-
 
 from .models import (
     LocalBaseURIModel,
@@ -108,7 +109,7 @@ class SignalHandler:
 
         self.main_window = self.builder.get_object('main-window')
         self.metadata_dialog = self.builder.get_object('metadata-dialog')
-        self.settings_window = self.builder.get_object('settings-window')
+        # self.settings_window = self.builder.get_object('settings-window')
         self.main_notebook = self.builder.get_object('main-notebook')
 
         self.error_bar = self.builder.get_object('error-bar')
@@ -254,9 +255,6 @@ class SignalHandler:
     def on_main_switch_page(self, notebook, page, page_num):
         self.refresh(page_num)
 
-    def on_settings_clicked(self, widget):
-        SettingsDialog(self).show()
-
     def on_jump_to_transfer_tab(self, button):
         self.main_notebook.set_current_page(TRANSFER_TAB)
 
@@ -290,23 +288,127 @@ class SignalHandler:
             self.transfer_tab.refresh()
 
 
+# adapted from https://python-gtk-3-tutorial.readthedocs.io/en/latest/popover.html#menu-popover
+class Application(Gtk.Application):
+    def __init__(self, *args, loop=None, **kwargs):
+        super().__init__(*args,
+                         application_id="org.dtool.gui",
+                         flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE, **kwargs)
+        self.loop = loop
+        self.args = None
+        self.window = None
+        self.signal_handler = None
+
+    def do_activate(self):
+        if self.window is None:
+            # Windows are associated with the application
+            # when the last one is closed the application shuts down
+            # self.window = AppWindow(application=self, title="Main Window")
+            logger.debug("Build GUI.")
+            self.builder = Gtk.Builder()
+            self.builder.set_application(self)
+            self.builder.add_from_file(os.path.dirname(__file__) + '/dtool-lookup-gui.glade')
+
+            self.window = self.builder.get_object('main-window')
+            self.window.set_application(self)
+
+            settings = Settings()
+            self.signal_handler = SignalHandler(self.loop, self.builder, settings)
+
+            # Connect to the lookup server upon startup
+            self.signal_handler.lookup_tab.connect()
+
+        logger.debug("Present main window.")
+        self.window.present()
+
+    # adapted from http://fedorarules.blogspot.com/2013/09/how-to-handle-command-line-options-in.html
+    # and https://python-gtk-3-tutorial.readthedocs.io/en/latest/application.html#example
+    def do_command_line(self, args):
+        """Handle command line options from within Gtk Application.
+
+        Gtk.Application command line handler called if
+        Gio.ApplicationFlags.HANDLES_COMMAND_LINE set.
+        Must call self.activate() to get the application up and running."""
+
+        Gtk.Application.do_command_line(self, args)  # call the default commandline handler
+
+        # in order to have both:
+        # * preformatted help text and ...
+        # * automatic display of defaults
+        class ArgumentDefaultsAndRawDescriptionHelpFormatter(
+            argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter):
+            pass
+
+        parser = argparse.ArgumentParser(description=__doc__,
+                                         formatter_class=ArgumentDefaultsAndRawDescriptionHelpFormatter)
+
+        parser.add_argument('--verbose', '-v', action='count', dest='verbose',
+                            default=0, help='Make terminal output more verbose')
+        parser.add_argument('--all-auto-refresh-off', action='store_true',
+                            dest='all_auto_refresh_off', default=False,
+                            help='Do not load any dataset lists at launch.')
+        parser.add_argument('--debug', action='store_true',
+                            help='Print debug info')
+
+        # argcomplete might not make much sense that deeply embedded
+        try:
+            import argcomplete
+            argcomplete.autocomplete(parser)
+        except ModuleNotFoundError as err:
+            pass
+
+        # parse the command line stored in args, but skip the first element (the filename)
+        self.args = parser.parse_args(args.get_arguments()[1:])
+
+        loglevel = logging.ERROR
+
+        if self.args.verbose > 0:
+            loglevel = logging.WARN
+        if self.args.verbose > 1:
+            loglevel = logging.INFO
+        if self.args.debug or (self.args.verbose > 2):
+            loglevel = logging.DEBUG
+
+        # explicitly modify the root logger
+        logging.basicConfig(level=loglevel)
+        logger = logging.getLogger()
+        logger.setLevel(loglevel)
+        logger = logging.getLogger(__name__)
+
+        if self.args.all_auto_refresh_off:
+            logger.debug("All auto refresh turned off via CLI flag.")
+            GlobalConfig.auto_refresh_on = False
+
+        self.activate()
+        return 0
+
+    def do_startup(self):
+        """Create a few custom actions at application statup, runs before anything else."""
+        Gtk.Application.do_startup(self)
+
+        action = Gio.SimpleAction(name="settings", parameter_type=None)
+        action.connect("activate", self.on_settings)
+        self.add_action(action)
+
+        action = Gio.SimpleAction(name="about", parameter_type=None)
+        action.connect("activate", self.on_about)
+        self.add_action(action)
+
+    # action handlers
+    def on_settings(self, action, param):
+        """Open settings dialog."""
+        SettingsDialog(self.signal_handler).show()
+
+    def on_about(self, action, param):
+        """Not yet implemented"""
+        pass
+
+    def on_quit(self, action, param):  # not yet used
+        self.quit()  # quit the application
+
+
 def run_gui():
-    #base_path = os.path.abspath(os.path.dirname(__file__))
-    #resource_path = os.path.join(base_path, '/de.uni-freiburg.dtool-lookup-gui.gresource')
-    #resource = Gio.Resource.load(resource_path)
-    #resource.register()
-
-    # weird solution for registering custom widgets with gtk builder
-    builder = Gtk.Builder()
-    builder.add_from_file(os.path.dirname(__file__) + '/dtool-lookup-gui.glade')
-
     loop = asyncio.get_event_loop()
-
-    settings = Settings()
-
-    signal_handler = SignalHandler(loop, builder, settings)
-
-    # Connect to the lookup server upon startup
-    signal_handler.lookup_tab.connect()
-
-    loop.run_forever()
+    app = Application(loop=loop)
+    # see https://github.com/beeware/gbulb#gapplicationgtkapplication-event-loop
+    loop.run_forever(application=app, argv=sys.argv)
