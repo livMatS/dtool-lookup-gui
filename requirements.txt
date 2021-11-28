@@ -7,5 +7,6 @@ dtool-smb
 aiohttp
 gbulb
 pyyaml
+ruamel.yaml
 PyGObject
 scipy

@@ -24,15 +24,17 @@
 
 import asyncio
 import logging
-import math
 import os
+import urllib.parse
 
-from gi.repository import Gtk, GtkSource
+from gi.repository import Gio, Gtk, GtkSource
 
+import dtoolcore.utils
 from dtool_info.utils import sizeof_fmt
 
 from ..models.base_uris import LocalBaseURIModel
 from ..utils.date import date_to_string
+from .dataset_name_dialog import DatasetNameDialog
 from .settings_dialog import SettingsDialog
 
 logger = logging.getLogger(__name__)
@@ -66,7 +68,9 @@ def _fill_manifest_tree_store(store, manifest, parent=None):
 class MainWindow(Gtk.ApplicationWindow):
     __gtype_name__ = 'DtoolMainWindow'
 
+    create_dataset_button = Gtk.Template.Child()
     menu_button = Gtk.Template.Child()
+
     search_entry = Gtk.Template.Child()
 
     base_uri_list_box = Gtk.Template.Child()
@@ -107,13 +111,15 @@ class MainWindow(Gtk.ApplicationWindow):
     @Gtk.Template.Callback()
     def on_base_uri_selected(self, list_box, row):
         def update_base_uri_summary(datasets):
-            total_size = sum([dataset.size_int for dataset in datasets])
+            total_size = sum([0 if dataset.size_int is None else dataset.size_int for dataset in datasets])
             row.info_label.set_text(f'{len(datasets)} datasets, {sizeof_fmt(total_size).strip()}')
         if hasattr(row, 'base_uri'):
             self.dataset_list_box.from_base_uri(row.base_uri, on_show=update_base_uri_summary)
+            self.create_dataset_button.set_sensitive(row.base_uri.scheme == 'file')
         elif hasattr(row, 'search_results'):
             # This is the search result
             self.dataset_list_box.fill(row.search_results)
+            self.create_dataset_button.set_sensitive(False)
 
     @Gtk.Template.Callback()
     def on_dataset_selected(self, list_box, row):
@@ -161,6 +167,49 @@ class MainWindow(Gtk.ApplicationWindow):
 
         # Refresh view of base URIs
         self.base_uri_list_box.refresh()
+
+    @Gtk.Template.Callback()
+    def on_create_dataset_clicked(self, widget):
+        DatasetNameDialog(on_confirmation=self._create_dataset).show()
+
+    @Gtk.Template.Callback()
+    def on_show_clicked(self, widget):
+        Gio.AppInfo.launch_default_for_uri(str(self.dataset_list_box.get_selected_row().dataset))
+
+    @Gtk.Template.Callback()
+    def on_add_items_clicked(self, widget):
+        dialog = Gtk.FileChooserDialog(
+            title="Add items", parent=self,
+            action=Gtk.FileChooserAction.OPEN
+        )
+        dialog.add_buttons(
+            Gtk.STOCK_CANCEL,
+            Gtk.ResponseType.CANCEL,
+            Gtk.STOCK_OPEN,
+            Gtk.ResponseType.OK,
+        )
+        dialog.set_select_multiple(True)
+
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            uris = dialog.get_uris()
+            for uri in uris:
+                self._add_item(uri)
+        elif response == Gtk.ResponseType.CANCEL:
+            pass
+        dialog.destroy()
+
+    def _add_item(self, uri):
+        p = urllib.parse.urlparse(uri)
+        fpath = os.path.abspath(os.path.join(p.netloc, p.path))
+        handle = os.path.basename(fpath)
+        handle = dtoolcore.utils.windows_to_unix_path(handle)  # NOQA
+        self.dataset_list_box.get_selected_row().dataset.dataset.put_item(fpath, handle)
+
+    def _create_dataset(self, name):
+        base_uri = self.base_uri_list_box.get_selected_row()
+        if base_uri is not None:
+            self.dataset_list_box.add_dataset(base_uri.base_uri.create_dataset(name))
 
     def _update_dataset_view(self, dataset):
         self.uuid_label.set_text(dataset.uuid)

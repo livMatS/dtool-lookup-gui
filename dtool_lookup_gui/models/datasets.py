@@ -23,7 +23,7 @@
 #
 
 import logging
-import yaml
+import ruamel
 
 import dtoolcore
 from dtool_info.utils import date_fmt, sizeof_fmt
@@ -42,13 +42,13 @@ def _proto_dataset_info(dataset):
     info['uri'] = dataset.uri
     info['uuid'] = dataset.uuid
 
-    tot_size = sum([dataset.item_properties(i)["size_in_bytes"]
-                    for i in dataset.identifiers])
-    info["size_int"] = tot_size
-    info["size_str"] = sizeof_fmt(tot_size)
+    info["size_int"] = None
+    info["size_str"] = 'unknown'
 
     info['creator'] = dataset._admin_metadata['creator_username']
     info['name'] = dataset._admin_metadata['name']
+
+    info["date"] = 'not yet frozen'
 
     info['readme_content'] = dataset.get_readme_content()
 
@@ -126,6 +126,9 @@ class DatasetModel:
         datasets = await cls._lookup_client.search(keyword)
         return [cls(lookup_info=dataset) for dataset in datasets]
 
+    def __str__(self):
+        return self._dataset.uri
+
     def __getattr__(self, name):
         return self.dataset_info[name]
 
@@ -171,14 +174,15 @@ class DatasetModel:
             return self.dataset_info['readme_content']
         else:
             readme_dict = await self._lookup_client.readme(self.uri)
-            return yaml.dump(readme_dict)
+            return ruamel.dump(readme_dict)
 
     async def manifest(self):
         if self.dataset is not None:
             # Construct manifest from dtool dataset
             manifest = []
-            for identifier in self.dataset.identifiers:
-                manifest += [(identifier, self.dataset.item_properties(identifier))]
+            if self.is_frozen:
+                for identifier in self.dataset._identifiers():
+                    manifest += [(identifier, self.dataset.item_properties(identifier))]
         else:
             # Query manifest from lookup server
             manifest_dict = await self._lookup_client.manifest(self.uri)

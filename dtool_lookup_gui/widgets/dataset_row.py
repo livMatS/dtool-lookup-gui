@@ -33,22 +33,29 @@ class DtoolDatasetRow(Gtk.ListBoxRow):
     _margin = 3
 
     def __init__(self, dataset, *args, **kwargs):
-        self.dataset = dataset
+        self._dataset = dataset
 
         super().__init__(*args, **kwargs)
 
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_top=self._margin, margin_bottom=self._margin,
                        margin_start=self._margin, margin_end=self._margin)
         label = Gtk.Label(xalign=0)
-        label.set_markup(f'<b>{dataset.uuid}</b>')
+        if dataset.is_frozen:
+            label.set_markup(f'<b>{dataset.uuid}</b>')
+        else:
+            label.set_markup(f'<b>* {dataset.uuid}</b>')
         vbox.pack_start(label, True, True, 0)
         label = Gtk.Label(xalign=0)
         label.set_markup(f'{dataset.name}')
         vbox.pack_start(label, True, True, 0)
         label = Gtk.Label(xalign=0)
         label.set_markup(
-            f'<small>Created by {dataset.creator}, '
-            f'frozen at {dataset.date}, '
-            f'{dataset.size_str.strip()}</small>')
+            f'<small>Created by {dataset.creator}, ' +
+            (f'frozen at {dataset.date}, {dataset.size_str.strip()}' if dataset.is_frozen else 'not yet frozen') +
+            f'</small>')
         vbox.pack_start(label, True, True, 0)
         self.add(vbox)
+
+    @property
+    def dataset(self):
+        return self._dataset

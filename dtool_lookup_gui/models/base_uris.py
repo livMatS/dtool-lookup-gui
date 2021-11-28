@@ -22,7 +22,14 @@
 # SOFTWARE.
 #
 
-from dtoolcore.utils import get_config_value, write_config_value_to_file, _get_config_dict_from_file, generous_parse_uri
+from io import StringIO
+
+from ruamel.yaml import YAML
+
+from dtoolcore import generate_admin_metadata, generate_proto_dataset
+from dtoolcore.utils import get_config_value, write_config_value_to_file, _get_config_dict_from_file, \
+    generous_parse_uri, name_is_valid, NAME_VALID_CHARS_LIST
+from dtool_create.dataset import _get_readme_template
 
 from .datasets import DatasetModel
 from .settings import settings
@@ -40,9 +47,10 @@ class BaseURI:
     def all_datasets(self):
         return DatasetModel.all(str(self))
 
+    @classmethod
     @property
-    def scheme(self):
-        return self._scheme
+    def scheme(cls):
+        return cls._scheme
 
     @property
     def uri_name(self):
@@ -77,6 +85,43 @@ class LocalBaseURIModel(BaseURI):
     @classmethod
     def all(cls):
         return [cls(base_uri) for base_uri in cls._local_base_uris]
+
+    def create_dataset(self, name, readme_template_path=None):
+        """Create a proto dataset."""
+        # Adopted from https://github.com/jic-dtool/dtool-create/blob/master/dtool_create/dataset.py#L133
+
+        # Check that the name is valid
+        if not name_is_valid(name):
+            valid_chars = " ".join(NAME_VALID_CHARS_LIST)
+            raise ValueError(f"Invalid dataset name '{name}'. "
+                             f"Name must be 80 characters or less. "
+                             f"Dataset names may only contain the characters: {valid_chars}")
+
+        # Administrative metadata (dtool version, etc.)
+        admin_metadata = generate_admin_metadata(name)
+
+        # Create the dataset
+        proto_dataset = generate_proto_dataset(
+            admin_metadata=admin_metadata,
+            base_uri=f'{self.scheme}:{self.uri_name}')
+        proto_dataset.create()  # May raise StorageBrokerOSError
+
+        # Initialize with template README.yml
+        try:
+            readme_template = _get_readme_template(readme_template_path)
+        except FileNotFoundError:
+            # FIXME: Show an error that template could not be found
+            readme_template = ''
+        yaml = YAML()
+        yaml.explicit_start = True
+        yaml.indent(mapping=2, sequence=4, offset=2)
+        descriptive_metadata = yaml.load(readme_template)
+        stream = StringIO()
+        yaml.dump(descriptive_metadata, stream)
+        proto_dataset.put_readme(stream.getvalue())
+
+        # Wrap in dataset model
+        return DatasetModel(dataset=proto_dataset)
 
 
 class ConfigBaseURIModel(BaseURI):

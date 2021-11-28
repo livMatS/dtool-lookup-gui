@@ -22,23 +22,33 @@
 # SOFTWARE.
 #
 
+import os
+
 from gi.repository import Gtk
 
+from dtoolcore.utils import NAME_VALID_CHARS_LIST
+
+
+@Gtk.Template(filename=f'{os.path.dirname(__file__)}/dataset_name_dialog.ui')
 class DatasetNameDialog(Gtk.Window):
-    def __init__(self, parent, default_name=''):
-        super().__init__(title="Specify dataset name", transient_for=parent, flags=0)
-        self.add_buttons(
-            Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL, Gtk.STOCK_OK, Gtk.ResponseType.OK
-        )
+    __gtype_name__ = 'DtoolDatasetNameDialog'
 
-        self.set_default_size(150, -1)
+    name_label = Gtk.Template.Child()
+    name_entry = Gtk.Template.Child()
 
-        label = Gtk.Label(label="name:")
-        self.entry = Gtk.Entry()
-        self.entry.set_text(default_name)
-        box = self.get_content_area()
-        hbox = Gtk.Box.new(Gtk.Orientation.HORIZONTAL, 6)
-        box.add(hbox)
-        hbox.pack_start(label, False, False, 0)
-        hbox.pack_start(self.entry, True, True, 0)
-        self.show_all()
+    def __init__(self, *args, **kwargs):
+        self._on_confirmation = kwargs.pop('on_confirmation')
+        super().__init__(*args, **kwargs)
+        valid_chars = ' '.join(NAME_VALID_CHARS_LIST)
+        self.name_label.set_text(f'Please provide a name for the new dataset. The name must be unique to the local '
+                                 f'directory where the dataset is created by must not be unique across a cloud '
+                                 f'storage system. The name may only contain the following characters: {valid_chars}')
+
+    @Gtk.Template.Callback()
+    def on_apply_clicked(self, widget):
+        self._on_confirmation(self.name_entry.get_text())
+        self.destroy()
+
+    @Gtk.Template.Callback()
+    def on_cancel_clicked(self, widget):
+        self.destroy()

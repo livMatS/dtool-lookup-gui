@@ -54,4 +54,11 @@ class DtoolDatasetListBox(Gtk.ListBox):
             self.fill(datasets, on_show=on_show)
         asyncio.create_task(fetch_search_results(keyword, on_show=on_show))
 
+    def add_dataset(self, dataset):
+        # Create row for new dataset
+        row = DtoolDatasetRow(dataset)
+        self.add(row)
+        # Select new dataset
+        self.select_row(row)
+
 GObject.type_register(DtoolDatasetListBox)

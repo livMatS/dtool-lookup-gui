@@ -31,7 +31,7 @@ class DtoolBaseURIRow(Gtk.ListBoxRow):
     _margin = 3
 
     def __init__(self, base_uri, *args, **kwargs):
-        self.base_uri = base_uri
+        self._base_uri = base_uri
         on_activate = kwargs.pop('on_activate', None)
         on_configure = kwargs.pop('on_configure', None)
         on_remove = kwargs.pop('on_remove', None)
@@ -78,6 +78,11 @@ class DtoolBaseURIRow(Gtk.ListBoxRow):
 
         if on_activate is not None:
             self.connect('activate', on_activate)
+
+
+    @property
+    def base_uri(self):
+        return self._base_uri
 
     @property
     def info_label(self):
