@@ -83,6 +83,11 @@ class MainWindow(Gtk.ApplicationWindow):
     frozen_at_label = Gtk.Template.Child()
     size_label = Gtk.Template.Child()
 
+    show_button = Gtk.Template.Child()
+    add_items_button = Gtk.Template.Child()
+    freeze_button = Gtk.Template.Child()
+    transfer_button = Gtk.Template.Child()
+
     dependency_stack = Gtk.Template.Child()
 
     readme_source_view = Gtk.Template.Child()
@@ -125,10 +130,6 @@ class MainWindow(Gtk.ApplicationWindow):
     def on_dataset_selected(self, list_box, row):
         if row is not None:
             self._update_dataset_view(row.dataset)
-            if row.dataset.has_dependencies:
-                self.dependency_stack.show()
-            else:
-                self.dependency_stack.hide()
 
     @Gtk.Template.Callback()
     def on_search_activate(self, widget):
@@ -199,6 +200,10 @@ class MainWindow(Gtk.ApplicationWindow):
             pass
         dialog.destroy()
 
+    @Gtk.Template.Callback()
+    def on_edit_readme_state_set(self, widget, state):
+        self.readme_source_view.set_editable(state)
+
     def _add_item(self, uri):
         p = urllib.parse.urlparse(uri)
         fpath = os.path.abspath(os.path.join(p.netloc, p.path))
@@ -218,6 +223,22 @@ class MainWindow(Gtk.ApplicationWindow):
         self.created_by_label.set_text(dataset.creator)
         self.frozen_at_label.set_text(dataset.date)
         self.size_label.set_text(dataset.size_str.strip())
+
+        if dataset.scheme == 'file':
+            self.show_button.set_sensitive(True)
+            self.add_items_button.set_sensitive(not dataset.is_frozen)
+            self.freeze_button.set_sensitive(not dataset.is_frozen)
+            self.transfer_button.set_label('Upload')
+        else:
+            self.show_button.set_sensitive(False)
+            self.add_items_button.set_sensitive(False)
+            self.freeze_button.set_sensitive(False)
+            self.transfer_button.set_label('Download')
+
+        if dataset.has_dependencies:
+            self.dependency_stack.show()
+        else:
+            self.dependency_stack.hide()
 
         self._update_readme(dataset)
         self._update_manifest(dataset)

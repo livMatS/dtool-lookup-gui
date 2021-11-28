@@ -23,9 +23,10 @@
 #
 
 import logging
-import ruamel
+import yaml
 
 import dtoolcore
+from dtoolcore.utils import generous_parse_uri
 from dtool_info.utils import date_fmt, sizeof_fmt
 
 from dtool_info.inventory import _dataset_info
@@ -114,12 +115,14 @@ class DatasetModel:
             if dataset is not None:
                 raise ValueError('Please provide either `uri`, `dataset` or `lookup_info` arguments.')
             self._load_dataset(uri)
+            self._dataset_info = _info(self._dataset)
         elif dataset is not None:
             self._dataset = dataset
             self._dataset_info = _info(self._dataset)
         elif lookup_info is not None:
             self._dataset = None
             self._dataset_info = _lookup_info(lookup_info)
+        self._uri = generous_parse_uri(self._dataset_info['uri'])
 
     @classmethod
     async def search(cls, keyword):
@@ -154,6 +157,10 @@ class DatasetModel:
         self._load_dataset(uri)
 
     @property
+    def scheme(self):
+        return self._uri.scheme
+
+    @property
     def is_frozen(self):
         return self._dataset is None or isinstance(self._dataset, dtoolcore.DataSet)
 
@@ -174,7 +181,7 @@ class DatasetModel:
             return self.dataset_info['readme_content']
         else:
             readme_dict = await self._lookup_client.readme(self.uri)
-            return ruamel.dump(readme_dict)
+            return yaml.dump(readme_dict)
 
     async def manifest(self):
         if self.dataset is not None:
