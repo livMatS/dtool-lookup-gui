@@ -36,14 +36,18 @@ class DtoolTransferPopoverMenu(Gtk.PopoverMenu):
                        margin_start=self._margin, margin_end=self._margin)
         self.add(self.vbox)
 
-    def update(self, destinations):
+    def update(self, destinations, on_copy=None):
         for child in self.vbox.get_children():
             child.destroy()
         label = Gtk.Label(xalign=0, margin_top=self._margin, margin_bottom=self._margin)
         self.vbox.pack_start(label, True, False, 0)
         label.set_markup('<b>Select destination</b>')
         for destination in destinations:
-            self.vbox.pack_start(Gtk.ModelButton(text=destination), True, False, 0)
+            button = Gtk.ModelButton(text=destination)
+            self.vbox.pack_start(button, True, False, 0)
+            button.destination = destination
+            if on_copy is not None:
+                button.connect('clicked', on_copy)
         self.show_all()
 
 GObject.type_register(DtoolTransferPopoverMenu)

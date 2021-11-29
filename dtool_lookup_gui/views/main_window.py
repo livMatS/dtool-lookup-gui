@@ -76,6 +76,14 @@ class MainWindow(Gtk.ApplicationWindow):
     base_uri_list_box = Gtk.Template.Child()
     dataset_list_box = Gtk.Template.Child()
 
+    main_stack = Gtk.Template.Child()
+    main_paned = Gtk.Template.Child()
+    main_label = Gtk.Template.Child()
+
+    dataset_stack = Gtk.Template.Child()
+    dataset_box = Gtk.Template.Child()
+    dataset_label = Gtk.Template.Child()
+
     uuid_label = Gtk.Template.Child()
     uri_label = Gtk.Template.Child()
     name_label = Gtk.Template.Child()
@@ -101,6 +109,9 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        self.main_stack.set_visible_child(self.main_label)
+        self.dataset_stack.set_visible_child(self.dataset_label)
 
         self.readme_buffer = self.readme_source_view.get_buffer()
         lang_manager = GtkSource.LanguageManager()
@@ -130,10 +141,14 @@ class MainWindow(Gtk.ApplicationWindow):
             self.dataset_list_box.fill(row.search_results)
             self.create_dataset_button.set_sensitive(False)
 
+        self.main_stack.set_visible_child(self.main_paned)
+        self.dataset_stack.set_visible_child(self.dataset_label)
+
     @Gtk.Template.Callback()
     def on_dataset_selected(self, list_box, row):
         if row is not None:
             self._update_dataset_view(row.dataset)
+            self.dataset_stack.set_visible_child(self.dataset_box)
 
     @Gtk.Template.Callback()
     def on_search_activate(self, widget):
@@ -223,6 +238,10 @@ class MainWindow(Gtk.ApplicationWindow):
     @Gtk.Template.Callback()
     def on_freeze_clicked(self, widget):
         self.dataset_list_box.get_selected_row().freeze()
+        self._update_dataset_view(self.dataset_list_box.get_selected_row().dataset)
+
+    def on_copy_clicked(self, widget):
+        self.dataset_list_box.get_selected_row().dataset.copy(widget.destination)
 
     def _add_item(self, uri):
         p = urllib.parse.urlparse(uri)
@@ -235,6 +254,7 @@ class MainWindow(Gtk.ApplicationWindow):
         base_uri = self.base_uri_list_box.get_selected_row()
         if base_uri is not None:
             self.dataset_list_box.add_dataset(base_uri.base_uri.create_dataset(name))
+            self.dataset_list_box.show_all()
 
     def _update_dataset_view(self, dataset):
         self.uuid_label.set_text(dataset.uuid)
@@ -285,4 +305,4 @@ class MainWindow(Gtk.ApplicationWindow):
         for base_uri in all():
             if str(base_uri) != str(selected_dataset.base_uri):
                 destinations += [str(base_uri)]
-        self.copy_button.get_popover().update(destinations)
+        self.copy_button.get_popover().update(destinations, self.on_copy_clicked)

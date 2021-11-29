@@ -47,26 +47,27 @@ class DtoolDatasetRow(Gtk.ListBoxRow):
         # Update row contents
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_top=self._margin, margin_bottom=self._margin,
                        margin_start=self._margin, margin_end=self._margin)
-        label = Gtk.Label(xalign=0)
+        self.uuid_label = Gtk.Label(xalign=0)
+        vbox.pack_start(self.uuid_label, True, True, 0)
+        self.name_label = Gtk.Label(xalign=0)
+        vbox.pack_start(self.name_label, True, True, 0)
+        self.info_label = Gtk.Label(xalign=0)
+        vbox.pack_start(self.info_label, True, True, 0)
+        self.add(vbox)
+
+        self._refresh()
+
+    def _refresh(self):
         if self._dataset.is_frozen:
-            label.set_markup(f'<b>{self._dataset.uuid}</b>')
+            self.uuid_label.set_markup(f'<b>{self._dataset.uuid}</b>')
         else:
-            label.set_markup(f'<b>* {self._dataset.uuid}</b>')
-        vbox.pack_start(label, True, True, 0)
-        label = Gtk.Label(xalign=0)
-        label.set_markup(f'{self._dataset.name}')
-        vbox.pack_start(label, True, True, 0)
-        label = Gtk.Label(xalign=0)
-        label.set_markup(
+            self.uuid_label.set_markup(f'<b>* {self._dataset.uuid}</b>')
+        self.name_label.set_markup(f'{self._dataset.name}')
+        self.info_label.set_markup(
             f'<small>Created by {self._dataset.creator}, ' +
             (f'frozen at {self._dataset.date}, {self._dataset.size_str.strip()}'
              if self._dataset.is_frozen else 'not yet frozen') +
             f'</small>')
-        vbox.pack_start(label, True, True, 0)
-        self.add(vbox)
-
-    def _refresh(self):
-        pass
 
     @property
     def dataset(self):

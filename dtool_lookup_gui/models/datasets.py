@@ -23,6 +23,7 @@
 #
 
 import logging
+import os
 import yaml
 
 import dtoolcore
@@ -156,6 +157,43 @@ class DatasetModel:
         uri = self.dataset.uri
         self.clear()
         self._load_dataset(uri)
+
+    def copy(self, target_base_uri, resume=False, auto_resume=True, progressbar=None):
+        """Copy a dataset."""
+
+        # TODO: try to copy without resume flag, if failed, then ask whether
+        # try to resume
+
+        dest_uri = dtoolcore._generate_uri(
+            admin_metadata=self._dataset._admin_metadata,
+            base_uri=target_base_uri
+        )
+
+        copy_func = dtoolcore.copy
+        is_dataset = dtoolcore._is_dataset(dest_uri, config_path=None)
+        if resume or (auto_resume and is_dataset):
+            # copy resume
+            copy_func = dtoolcore.copy_resume
+        elif is_dataset:
+            # don't resume
+            raise FileExistsError("Dataset already exists: {}".format(dest_uri))
+        else:
+            # If the destination URI is a "file" dataset one needs to check if
+            # the path already exists and exit gracefully if true.
+            parsed_dataset_uri = dtoolcore.utils.generous_parse_uri(dest_uri)
+            if parsed_dataset_uri.scheme == "file":
+                if os.path.exists(parsed_dataset_uri.path):
+                    raise FileExistsError(
+                        "Path already exists: {}".format(parsed_dataset_uri.path))
+
+        dest_uri = copy_func(
+            src_uri=self.uri,
+            dest_base_uri=target_base_uri,
+            config_path=None,
+            progressbar=progressbar
+        )
+
+        return dest_uri
 
     @property
     def base_uri(self):
