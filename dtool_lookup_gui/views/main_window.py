@@ -285,5 +285,4 @@ class MainWindow(Gtk.ApplicationWindow):
         for base_uri in all():
             if str(base_uri) != str(selected_dataset.base_uri):
                 destinations += [str(base_uri)]
-        print(destinations)
         self.copy_button.get_popover().update(destinations)
