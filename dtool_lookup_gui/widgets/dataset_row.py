@@ -37,25 +37,41 @@ class DtoolDatasetRow(Gtk.ListBoxRow):
 
         super().__init__(*args, **kwargs)
 
+        self._build()
+
+    def _build(self):
+        # Clear current contents
+        for child in self.get_children():
+            child.destroy()
+
+        # Update row contents
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_top=self._margin, margin_bottom=self._margin,
                        margin_start=self._margin, margin_end=self._margin)
         label = Gtk.Label(xalign=0)
-        if dataset.is_frozen:
-            label.set_markup(f'<b>{dataset.uuid}</b>')
+        if self._dataset.is_frozen:
+            label.set_markup(f'<b>{self._dataset.uuid}</b>')
         else:
-            label.set_markup(f'<b>* {dataset.uuid}</b>')
+            label.set_markup(f'<b>* {self._dataset.uuid}</b>')
         vbox.pack_start(label, True, True, 0)
         label = Gtk.Label(xalign=0)
-        label.set_markup(f'{dataset.name}')
+        label.set_markup(f'{self._dataset.name}')
         vbox.pack_start(label, True, True, 0)
         label = Gtk.Label(xalign=0)
         label.set_markup(
-            f'<small>Created by {dataset.creator}, ' +
-            (f'frozen at {dataset.date}, {dataset.size_str.strip()}' if dataset.is_frozen else 'not yet frozen') +
+            f'<small>Created by {self._dataset.creator}, ' +
+            (f'frozen at {self._dataset.date}, {self._dataset.size_str.strip()}'
+             if self._dataset.is_frozen else 'not yet frozen') +
             f'</small>')
         vbox.pack_start(label, True, True, 0)
         self.add(vbox)
 
+    def _refresh(self):
+        pass
+
     @property
     def dataset(self):
         return self._dataset
+
+    def freeze(self):
+        self._dataset.freeze()
+        self._refresh()

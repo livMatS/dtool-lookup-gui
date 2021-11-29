@@ -32,7 +32,7 @@ from gi.repository import Gio, Gtk, GtkSource
 import dtoolcore.utils
 from dtool_info.utils import sizeof_fmt
 
-from ..models.base_uris import LocalBaseURIModel
+from ..models.base_uris import all, LocalBaseURIModel
 from ..utils.date import date_to_string
 from .dataset_name_dialog import DatasetNameDialog
 from .settings_dialog import SettingsDialog
@@ -86,7 +86,10 @@ class MainWindow(Gtk.ApplicationWindow):
     show_button = Gtk.Template.Child()
     add_items_button = Gtk.Template.Child()
     freeze_button = Gtk.Template.Child()
-    transfer_button = Gtk.Template.Child()
+    copy_button = Gtk.Template.Child()
+
+    edit_readme_switch = Gtk.Template.Child()
+    save_metadata_button = Gtk.Template.Child()
 
     dependency_stack = Gtk.Template.Child()
 
@@ -118,6 +121,7 @@ class MainWindow(Gtk.ApplicationWindow):
         def update_base_uri_summary(datasets):
             total_size = sum([0 if dataset.size_int is None else dataset.size_int for dataset in datasets])
             row.info_label.set_text(f'{len(datasets)} datasets, {sizeof_fmt(total_size).strip()}')
+
         if hasattr(row, 'base_uri'):
             self.dataset_list_box.from_base_uri(row.base_uri, on_show=update_base_uri_summary)
             self.create_dataset_button.set_sensitive(row.base_uri.scheme == 'file')
@@ -138,6 +142,7 @@ class MainWindow(Gtk.ApplicationWindow):
             self.base_uri_list_box.search_results_row.search_results = datasets
             self.base_uri_list_box.search_results_row.info_label \
                 .set_text(f'{len(datasets)} datasets, {sizeof_fmt(total_size).strip()}')
+
         self.base_uri_list_box.select_search_results_row()
         self.dataset_list_box.search(self.search_entry.get_text(), on_show=update_search_summary)
 
@@ -203,6 +208,21 @@ class MainWindow(Gtk.ApplicationWindow):
     @Gtk.Template.Callback()
     def on_edit_readme_state_set(self, widget, state):
         self.readme_source_view.set_editable(state)
+        self.save_metadata_button.set_sensitive(state)
+        if not state:
+            # We need to save the metadata
+            text = self.readme_buffer.get_text(self.readme_buffer.get_start_iter(),
+                                               self.readme_buffer.get_end_iter(),
+                                               False)
+            self.dataset_list_box.get_selected_row().dataset.put_readme(text)
+
+    @Gtk.Template.Callback()
+    def on_save_metadata_button_clicked(self, widget):
+        self.edit_readme_switch.set_state(False)
+
+    @Gtk.Template.Callback()
+    def on_freeze_clicked(self, widget):
+        self.dataset_list_box.get_selected_row().freeze()
 
     def _add_item(self, uri):
         p = urllib.parse.urlparse(uri)
@@ -228,17 +248,19 @@ class MainWindow(Gtk.ApplicationWindow):
             self.show_button.set_sensitive(True)
             self.add_items_button.set_sensitive(not dataset.is_frozen)
             self.freeze_button.set_sensitive(not dataset.is_frozen)
-            self.transfer_button.set_label('Upload')
+            self.copy_button.set_sensitive(dataset.is_frozen)
         else:
             self.show_button.set_sensitive(False)
             self.add_items_button.set_sensitive(False)
             self.freeze_button.set_sensitive(False)
-            self.transfer_button.set_label('Download')
+            self.copy_button.set_sensitive(True)
 
         if dataset.has_dependencies:
             self.dependency_stack.show()
         else:
             self.dependency_stack.hide()
+
+        self._update_copy_button(dataset)
 
         self._update_readme(dataset)
         self._update_manifest(dataset)
@@ -247,6 +269,7 @@ class MainWindow(Gtk.ApplicationWindow):
         async def _fetch_readme(dataset):
             readme = await dataset.readme()
             self.readme_buffer.set_text(readme)
+
         asyncio.create_task(_fetch_readme(dataset))
 
     def _update_manifest(self, dataset):
@@ -254,4 +277,13 @@ class MainWindow(Gtk.ApplicationWindow):
             self.manifest_tree_store.clear()
             manifest = await dataset.manifest()
             _fill_manifest_tree_store(self.manifest_tree_store, manifest)
+
         asyncio.create_task(_fetch_manifest(dataset))
+
+    def _update_copy_button(self, selected_dataset):
+        destinations = []
+        for base_uri in all():
+            if str(base_uri) != str(selected_dataset.base_uri):
+                destinations += [str(base_uri)]
+        print(destinations)
+        self.copy_button.get_popover().update(destinations)

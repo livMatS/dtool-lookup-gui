@@ -103,14 +103,15 @@ class DatasetModel:
         """Return all datasets at base URI"""
         datasets = []
         for dataset in dtoolcore.iter_proto_datasets_in_base_uri(base_uri):
-            datasets += [DatasetModel(dataset=dataset)]
+            datasets += [DatasetModel(dataset=dataset, base_uri=base_uri)]
 
         for dataset in dtoolcore.iter_datasets_in_base_uri(base_uri):
-            datasets += [DatasetModel(dataset=dataset)]
+            datasets += [DatasetModel(dataset=dataset, base_uri=base_uri)]
 
         return datasets
 
-    def __init__(self, uri=None, dataset=None, lookup_info=None):
+    def __init__(self, uri=None, dataset=None, lookup_info=None, base_uri=None):
+        self._base_uri = base_uri
         if uri is not None:
             if dataset is not None:
                 raise ValueError('Please provide either `uri`, `dataset` or `lookup_info` arguments.')
@@ -157,6 +158,10 @@ class DatasetModel:
         self._load_dataset(uri)
 
     @property
+    def base_uri(self):
+        return self._base_uri
+
+    @property
     def scheme(self):
         return self._uri.scheme
 
@@ -175,6 +180,13 @@ class DatasetModel:
     @property
     def has_dependencies(self):
         return self.dataset is None
+
+    def freeze(self):
+        return self._dataset.freeze()
+
+    def put_readme(self, text):
+        self.dataset_info['readme_content'] = text
+        return self._dataset.put_readme(text)
 
     async def readme(self):
         if 'readme_content' in self.dataset_info:

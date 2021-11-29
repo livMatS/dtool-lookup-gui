@@ -12,6 +12,9 @@
     <glade-widget-class title="dtool base URI list box" name="DtoolDatasetListBox"
                         generic-name="DtoolDatasetListBox" parent="GtkListBox"
                         icon-name="widget-gtk-listbox"/>
+    <glade-widget-class title="dtool transfer popover" name="DtoolTransferPopoverMenu"
+                        generic-name="DtoolTransferPopoverMenu" parent="GtkPopoverMenu"
+                        icon-name="widget-gtk-popover-menu"/>
     <glade-widget-class title="dtool graph widget" name="DtoolGraphWidget"
                         generic-name="DtoolGraphWidget" parent="GtkDrawingArea"
                         icon-name="widget-gtk-drawing-area"/>

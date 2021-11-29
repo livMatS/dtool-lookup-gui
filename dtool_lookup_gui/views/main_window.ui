@@ -51,6 +51,12 @@
       </packing>
     </child>
   </object>
+  <object class="DtoolTransferPopoverMenu" id="copy_menu">
+    <property name="can-focus">False</property>
+    <child>
+      <placeholder/>
+    </child>
+  </object>
   <object class="GtkTreeStore" id="manifest_tree_store">
     <columns>
       <!-- column-name name -->
@@ -64,6 +70,7 @@
     </columns>
   </object>
   <template class="DtoolMainWindow" parent="GtkApplicationWindow">
+    <property name="height-request">700</property>
     <property name="can-focus">False</property>
     <property name="show-menubar">False</property>
     <signal name="show" handler="on_window_show" swapped="no"/>
@@ -259,19 +266,6 @@
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkButton" id="transfer_button">
-                                    <property name="label" translatable="yes">Download</property>
-                                    <property name="visible">True</property>
-                                    <property name="can-focus">True</property>
-                                    <property name="receives-default">True</property>
-                                    <signal name="clicked" handler="on_transfer_clicked" swapped="no"/>
-                                  </object>
-                                  <packing>
-                                    <property name="left-attach">3</property>
-                                    <property name="top-attach">0</property>
-                                  </packing>
-                                </child>
-                                <child>
                                   <object class="GtkButton" id="add_items_button">
                                     <property name="label" translatable="yes">Add items...</property>
                                     <property name="visible">True</property>
@@ -294,6 +288,26 @@
                                   </object>
                                   <packing>
                                     <property name="left-attach">0</property>
+                                    <property name="top-attach">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkMenuButton" id="copy_button">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="focus-on-click">False</property>
+                                    <property name="receives-default">True</property>
+                                    <property name="popover">copy_menu</property>
+                                    <child>
+                                      <object class="GtkLabel" id="copy_button_label">
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">False</property>
+                                        <property name="label" translatable="yes">Copy...</property>
+                                      </object>
+                                    </child>
+                                  </object>
+                                  <packing>
+                                    <property name="left-attach">3</property>
                                     <property name="top-attach">0</property>
                                   </packing>
                                 </child>
@@ -524,79 +538,117 @@
                                       </packing>
                                     </child>
                                     <child>
-                                      <object class="GtkBox">
-                                        <property name="visible">True</property>
-                                        <property name="can-focus">False</property>
-                                        <property name="margin-start">6</property>
-                                        <property name="margin-end">6</property>
-                                        <property name="margin-top">6</property>
-                                        <property name="margin-bottom">6</property>
-                                        <property name="spacing">6</property>
-                                        <child>
-                                          <object class="GtkSwitch" id="edit_readme_switch">
-                                            <property name="visible">True</property>
-                                            <property name="can-focus">True</property>
-                                            <signal name="state-set" handler="on_edit_readme_state_set" swapped="no"/>
-                                          </object>
-                                          <packing>
-                                            <property name="expand">False</property>
-                                            <property name="fill">True</property>
-                                            <property name="position">0</property>
-                                          </packing>
-                                        </child>
-                                        <child>
-                                          <object class="GtkLabel">
-                                            <property name="visible">True</property>
-                                            <property name="can-focus">False</property>
-                                            <property name="label" translatable="yes">Enable editing metadata (README.yml)</property>
-                                          </object>
-                                          <packing>
-                                            <property name="expand">False</property>
-                                            <property name="fill">True</property>
-                                            <property name="position">1</property>
-                                          </packing>
-                                        </child>
-                                      </object>
-                                      <packing>
-                                        <property name="expand">False</property>
-                                        <property name="fill">True</property>
-                                        <property name="position">1</property>
-                                      </packing>
-                                    </child>
-                                    <child>
                                       <object class="GtkStack" id="readme-stack">
                                         <property name="visible">True</property>
                                         <property name="can-focus">False</property>
+                                        <property name="hexpand">True</property>
+                                        <property name="vexpand">True</property>
                                         <child>
-                                          <object class="GtkScrolledWindow" id="readme-view">
+                                          <object class="GtkBox">
                                             <property name="visible">True</property>
-                                            <property name="can-focus">True</property>
-                                            <property name="shadow-type">in</property>
-                                            <property name="propagate-natural-width">True</property>
-                                            <property name="propagate-natural-height">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="hexpand">True</property>
+                                            <property name="vexpand">True</property>
+                                            <property name="orientation">vertical</property>
                                             <child>
-                                              <object class="GtkViewport">
+                                              <object class="GtkScrolledWindow" id="readme-view">
                                                 <property name="visible">True</property>
-                                                <property name="can-focus">False</property>
+                                                <property name="can-focus">True</property>
+                                                <property name="hexpand">True</property>
+                                                <property name="vexpand">True</property>
+                                                <property name="shadow-type">in</property>
+                                                <property name="propagate-natural-width">True</property>
+                                                <property name="propagate-natural-height">True</property>
                                                 <child>
-                                                  <object class="GtkSourceView" id="readme_source_view">
+                                                  <object class="GtkViewport">
                                                     <property name="visible">True</property>
-                                                    <property name="can-focus">True</property>
-                                                    <property name="hexpand">True</property>
-                                                    <property name="vexpand">True</property>
-                                                    <property name="editable">False</property>
-                                                    <property name="left-margin">2</property>
-                                                    <property name="right-margin">2</property>
-                                                    <property name="input-hints">GTK_INPUT_HINT_NO_EMOJI | GTK_INPUT_HINT_NONE</property>
-                                                    <property name="show-line-numbers">True</property>
-                                                    <property name="show-line-marks">True</property>
-                                                    <property name="tab-width">4</property>
-                                                    <property name="insert-spaces-instead-of-tabs">True</property>
-                                                    <property name="smart-home-end">always</property>
-                                                    <property name="highlight-current-line">True</property>
+                                                    <property name="can-focus">False</property>
+                                                    <child>
+                                                      <object class="GtkSourceView" id="readme_source_view">
+                                                        <property name="visible">True</property>
+                                                        <property name="can-focus">True</property>
+                                                        <property name="hexpand">True</property>
+                                                        <property name="vexpand">True</property>
+                                                        <property name="editable">False</property>
+                                                        <property name="left-margin">2</property>
+                                                        <property name="right-margin">2</property>
+                                                        <property name="input-hints">GTK_INPUT_HINT_NO_EMOJI | GTK_INPUT_HINT_NONE</property>
+                                                        <property name="show-line-numbers">True</property>
+                                                        <property name="show-line-marks">True</property>
+                                                        <property name="tab-width">4</property>
+                                                        <property name="insert-spaces-instead-of-tabs">True</property>
+                                                        <property name="smart-home-end">always</property>
+                                                        <property name="highlight-current-line">True</property>
+                                                      </object>
+                                                    </child>
                                                   </object>
                                                 </child>
                                               </object>
+                                              <packing>
+                                                <property name="expand">False</property>
+                                                <property name="fill">True</property>
+                                                <property name="position">0</property>
+                                              </packing>
+                                            </child>
+                                            <child>
+                                              <object class="GtkBox">
+                                                <property name="visible">True</property>
+                                                <property name="can-focus">False</property>
+                                                <property name="margin-left">6</property>
+                                                <property name="margin-right">6</property>
+                                                <property name="margin-start">6</property>
+                                                <property name="margin-end">6</property>
+                                                <property name="margin-top">6</property>
+                                                <property name="margin-bottom">6</property>
+                                                <property name="spacing">6</property>
+                                                <child>
+                                                  <object class="GtkSwitch" id="edit_readme_switch">
+                                                    <property name="visible">True</property>
+                                                    <property name="can-focus">True</property>
+                                                    <property name="margin-top">6</property>
+                                                    <property name="margin-bottom">6</property>
+                                                    <signal name="state-set" handler="on_edit_readme_state_set" swapped="no"/>
+                                                  </object>
+                                                  <packing>
+                                                    <property name="expand">False</property>
+                                                    <property name="fill">True</property>
+                                                    <property name="position">0</property>
+                                                  </packing>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkLabel">
+                                                    <property name="visible">True</property>
+                                                    <property name="can-focus">False</property>
+                                                    <property name="label" translatable="yes">Enable editing metadata (README.yml)</property>
+                                                  </object>
+                                                  <packing>
+                                                    <property name="expand">False</property>
+                                                    <property name="fill">True</property>
+                                                    <property name="position">1</property>
+                                                  </packing>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkButton" id="save_metadata_button">
+                                                    <property name="label" translatable="yes">Save metadata</property>
+                                                    <property name="visible">True</property>
+                                                    <property name="sensitive">False</property>
+                                                    <property name="can-focus">True</property>
+                                                    <property name="receives-default">True</property>
+                                                    <signal name="clicked" handler="on_save_metadata_button_clicked" swapped="no"/>
+                                                  </object>
+                                                  <packing>
+                                                    <property name="expand">False</property>
+                                                    <property name="fill">True</property>
+                                                    <property name="pack-type">end</property>
+                                                    <property name="position">2</property>
+                                                  </packing>
+                                                </child>
+                                              </object>
+                                              <packing>
+                                                <property name="expand">False</property>
+                                                <property name="fill">True</property>
+                                                <property name="position">1</property>
+                                              </packing>
                                             </child>
                                           </object>
                                           <packing>
@@ -620,7 +672,7 @@
                                       <packing>
                                         <property name="expand">True</property>
                                         <property name="fill">True</property>
-                                        <property name="position">2</property>
+                                        <property name="position">1</property>
                                       </packing>
                                     </child>
                                   </object>

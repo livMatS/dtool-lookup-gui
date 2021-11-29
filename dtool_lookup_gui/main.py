@@ -38,6 +38,7 @@ from .views.main_window import MainWindow
 # The following import are need to register dtype with the GObject type system
 import dtool_lookup_gui.widgets.base_uri_list_box
 import dtool_lookup_gui.widgets.dataset_list_box
+import dtool_lookup_gui.widgets.transfer_popover_menu
 import dtool_lookup_gui.widgets.graph_widget
 
 
