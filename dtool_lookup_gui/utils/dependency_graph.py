@@ -24,8 +24,8 @@
 import json
 import logging
 
-from . import is_uuid
-from .models.simple_graph import SimpleGraph
+from dtool_lookup_gui import is_uuid
+from dtool_lookup_gui.models.simple_graph import SimpleGraph
 
 
 logger = logging.getLogger(__name__)
