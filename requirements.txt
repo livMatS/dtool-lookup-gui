@@ -10,3 +10,4 @@ pyyaml
 ruamel.yaml
 PyGObject
 scipy
+pyjwt

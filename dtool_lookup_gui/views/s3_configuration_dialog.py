@@ -44,7 +44,7 @@ class S3ConfigurationDialog(Gtk.Window):
 
         if bucket is not None:
             self.bucket_entry.set_text(bucket)
-            self.bucket_entry.set_sensitive(False)  # Don't allow edit if we alread know the bucket name
+            self.bucket_entry.set_sensitive(False)  # Don't allow edit if we already know the bucket name
             self.endpoint_url_entry.set_text(get_config_value(f'DTOOL_S3_ENDPOINT_{bucket}', default=''))
             self.access_key_entry.set_text(get_config_value(f'DTOOL_S3_ACCESS_KEY_ID_{bucket}', default=''))
             self.secret_key_entry.set_text(get_config_value(f'DTOOL_S3_SECRET_ACCESS_KEY_{bucket}', default=''))

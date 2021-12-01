@@ -25,17 +25,17 @@
 import asyncio
 import os
 
+import jwt
+
 from gi.repository import Gio, Gtk
 
-from dtoolcore.utils import generous_parse_uri
 from dtool_lookup_api.core.config import Config
 from dtool_lookup_api.core.LookupClient import authenticate
 
-from ..models.base_uris import all as all_base_uris
-from ..models.datasets import DatasetModel
 from ..models.settings import settings
 from .authentication_dialog import AuthenticationDialog
 from .s3_configuration_dialog import S3ConfigurationDialog
+from .smb_configuration_dialog import SMBConfigurationDialog
 
 
 _DTOOL_CONFIG_PREFIXES = {
@@ -59,7 +59,7 @@ class SettingsDialog(Gtk.Window):
     authenticator_url_entry = Gtk.Template.Child()
     dependency_keys_entry = Gtk.Template.Child()
     verify_ssl_certificate_switch = Gtk.Template.Child()
-    endpoints_list_box = Gtk.Template.Child()
+    base_uris_list_box = Gtk.Template.Child()
 
     def __init__(self, parent, **kwargs):
         super().__init__(**kwargs)
@@ -77,47 +77,8 @@ class SettingsDialog(Gtk.Window):
         asyncio.create_task(self._refresh_list_of_endpoints())
 
     async def _refresh_list_of_endpoints(self):
-        for child in self.endpoints_list_box.get_children():
-            child.destroy()
-        base_uris = await DatasetModel._lookup_client.list_base_uris()
-        print(base_uris)
-        base_uris = {base_uri['base_uri']: base_uri | {'local': False, 'remote': True} for base_uri in base_uris}
-
-        for base_uri in all_base_uris():
-            if base_uri.base_uri not in base_uris:
-                base_uris[base_uri.base_uri] = {'local': True, 'remote': False}
-            else:
-                base_uris[base_uri.base_uri]['local'] = True
-
-        for base_uri, info in base_uris.items():
-            parsed_uri = generous_parse_uri(base_uri)
-            row = Gtk.ListBoxRow()
-            hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-            hbox.set_margin_top(12)
-            hbox.set_margin_bottom(12)
-            hbox.set_margin_start(12)
-            hbox.set_margin_end(12)
-            vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-            label = Gtk.Label(xalign=0)
-            label.set_markup(f'<b>{base_uri}</b>')
-            vbox.pack_start(label, True, True, 0)
-            label = Gtk.Label(xalign=0)
-            if info['local'] and info['remote']:
-                label.set_markup('This endpoint is reported by the lookup server and it is configured locally.')
-            elif not info['local'] and info['remote']:
-                label.set_markup('This endpoint is reported by the lookup server, but it is not configured locally.')
-            else:
-                label.set_markup('This endpoint is configured locally.')
-            vbox.pack_start(label, True, True, 0)
-            hbox.pack_start(vbox, True, True, 0)
-            button = Gtk.Button(image=Gtk.Image.new_from_icon_name('emblem-system-symbolic', Gtk.IconSize.BUTTON))
-            button.connect('clicked', self.on_configure_endpoint_clicked)
-            # We currently can only configure S3 endpoints through the GUI
-            button.set_sensitive(parsed_uri.scheme == 's3')
-            button.base_uri = parsed_uri
-            hbox.pack_end(button, False, False, 0)
-            row.add(hbox)
-            self.endpoints_list_box.add(row)
+        #header = jwt.decode(Config.token, options={"verify_signature": False})
+        await self.base_uris_list_box.refresh(on_configure=self.on_configure_base_uri_clicked, local=False) #, lookup=header['sub'])
 
         # Plus button for adding new endpoints
         row = Gtk.ListBoxRow()
@@ -126,11 +87,11 @@ class SettingsDialog(Gtk.Window):
         image.set_margin_bottom(20)
         image.set_margin_start(12)
         image.set_margin_end(12)
-        row.connect('state-changed', self.on_add_endpoint_state_changed)
+        row.connect('state-changed', self.on_base_uri_state_changed)
         row.add(image)
-        self.endpoints_list_box.add(row)
+        self.base_uris_list_box.add(row)
 
-        self.endpoints_list_box.show_all()
+        self.base_uris_list_box.show_all()
 
     @Gtk.Template.Callback()
     def on_delete(self, widget, event):
@@ -171,10 +132,16 @@ class SettingsDialog(Gtk.Window):
         self.token_entry.set_text(token)
         await self._refresh_list_of_endpoints()
 
-    def on_configure_endpoint_clicked(self, widget):
-        S3ConfigurationDialog(lambda: asyncio.create_task(self._refresh_list_of_endpoints()),
-                              widget.base_uri.netloc).show()
+    _configuration_dialogs = {
+        's3': S3ConfigurationDialog,
+        'smb': SMBConfigurationDialog,
+    }
 
-    def on_add_endpoint_state_changed(self, widget, state):
+    def on_configure_base_uri_clicked(self, widget):
+        base_uri = widget.get_parent().get_parent().base_uri
+        self._configuration_dialogs[base_uri.scheme](
+            lambda: asyncio.create_task(self._refresh_list_of_endpoints()), base_uri.uri_name).show()
+
+    def on_base_uri_state_changed(self, widget, state):
         if state == Gtk.StateType.ACTIVE:
             S3ConfigurationDialog(lambda: asyncio.create_task(self._refresh_list_of_endpoints())).show()

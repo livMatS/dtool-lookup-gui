@@ -30,6 +30,7 @@ from dtoolcore import generate_admin_metadata, generate_proto_dataset
 from dtoolcore.utils import get_config_value, write_config_value_to_file, _get_config_dict_from_file, \
     generous_parse_uri, name_is_valid, NAME_VALID_CHARS_LIST
 from dtool_create.dataset import _get_readme_template
+from dtool_lookup_api.core.LookupClient import ConfigurationBasedLookupClient
 
 from .datasets import DatasetModel
 from .settings import settings
@@ -43,6 +44,9 @@ class BaseURI:
 
     def __str__(self):
         return f'{self._scheme}://{self._uri_name}'
+
+    def __eq__(self, other):
+        return self.scheme == other.scheme and self.uri_name == other.uri_name
 
     def all_datasets(self):
         return DatasetModel.all(str(self))
@@ -181,11 +185,55 @@ class SMBBaseURIModel(ConfigBaseURIModel):
     }
 
 
-_base_uri_models = [S3BaseURIModel, SMBBaseURIModel, LocalBaseURIModel]
+class LookupBaseURIModel(BaseURI):
+    """Model for base URIs obtained from lookup server"""
+
+    @classmethod
+    async def all(cls, username):
+        async with ConfigurationBasedLookupClient() as lookup_client:
+            user_info = await lookup_client.user_info(username)
+        if 'search_permissions_on_base_uris' not in user_info:
+            raise RuntimeError(f"Request for user '{username}' info failed, possibly not authenticated.")
+
+        base_uris = user_info['search_permissions_on_base_uris']
+        print(base_uris)
+
+        return [cls(base_uri) for base_uri in base_uris]
+
+    def __init__(self, base_uri):
+        p = generous_parse_uri(base_uri)
+        self._scheme = p.scheme
+        self._uri_name = p.netloc
 
 
-def all():
+_base_uri_models = [S3BaseURIModel, SMBBaseURIModel]
+
+
+async def all(local=True, lookup=None):
+    """
+    Discover base URIs, either local or remote.
+
+    Parameters
+    ----------
+    local : bool, optional
+        List local base URIs. (Default: true)
+    lookup : str, optional
+        Query lookup server for additional base URIs registered with the
+        lookup server but not registered locally. The `lookup` parameter
+        receives the username used for authentication. (Default: None)
+
+    Returns
+    -------
+    base_uris : list of :obj:`BaseURI`
+        List of all discovered base URIs
+    """
     base_uris = []
     for model in _base_uri_models:
         base_uris += model.all()
+    if local:
+        base_uris += LocalBaseURIModel.all()
+    if lookup is not None:
+        for base_uri in await LookupBaseURIModel.all(lookup):
+            if not base_uri in base_uris:
+                base_uris += [base_uri]
     return base_uris

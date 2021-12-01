@@ -62,7 +62,8 @@ setup(
         'ruamel.yaml',
         'PyGObject>=3.36',
         'scipy>=1.5',
-        'numpy'
+        'numpy',
+        'pyjwt'
     ],
     setup_requires=[
         'setuptools_scm>=3.5.0'

@@ -53,6 +53,7 @@ class Application(Gtk.Application):
             win = MainWindow(application=self)
         loop = asyncio.get_event_loop()
         win.connect('destroy', lambda _: loop.stop())
+        loop.call_soon(win.refresh)  # Populate widgets after event loop starts
         win.show()
         loop.run_forever()
 

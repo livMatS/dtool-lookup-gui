@@ -119,9 +119,8 @@ class MainWindow(Gtk.ApplicationWindow):
         self.readme_buffer.set_highlight_syntax(True)
         self.readme_buffer.set_highlight_matching_brackets(True)
 
-    @Gtk.Template.Callback()
-    def on_window_show(self, widget):
-        self.base_uri_list_box.refresh()
+    def refresh(self):
+        asyncio.create_task(self.base_uri_list_box.refresh())
 
     @Gtk.Template.Callback()
     def on_settings_clicked(self, widget):
@@ -147,7 +146,7 @@ class MainWindow(Gtk.ApplicationWindow):
     @Gtk.Template.Callback()
     def on_dataset_selected(self, list_box, row):
         if row is not None:
-            self._update_dataset_view(row.dataset)
+            asyncio.create_task(self._update_dataset_view(row.dataset))
             self.dataset_stack.set_visible_child(self.dataset_box)
 
     @Gtk.Template.Callback()
@@ -238,7 +237,7 @@ class MainWindow(Gtk.ApplicationWindow):
     @Gtk.Template.Callback()
     def on_freeze_clicked(self, widget):
         self.dataset_list_box.get_selected_row().freeze()
-        self._update_dataset_view(self.dataset_list_box.get_selected_row().dataset)
+        asyncio.create_taks(self._update_dataset_view(self.dataset_list_box.get_selected_row().dataset))
 
     def on_copy_clicked(self, widget):
         self.dataset_list_box.get_selected_row().dataset.copy(widget.destination)
@@ -256,7 +255,7 @@ class MainWindow(Gtk.ApplicationWindow):
             self.dataset_list_box.add_dataset(base_uri.base_uri.create_dataset(name))
             self.dataset_list_box.show_all()
 
-    def _update_dataset_view(self, dataset):
+    async def _update_dataset_view(self, dataset):
         self.uuid_label.set_text(dataset.uuid)
         self.uri_label.set_text(dataset.uri)
         self.name_label.set_text(dataset.name)
@@ -280,7 +279,7 @@ class MainWindow(Gtk.ApplicationWindow):
         else:
             self.dependency_stack.hide()
 
-        self._update_copy_button(dataset)
+        await self._update_copy_button(dataset)
 
         self._update_readme(dataset)
         self._update_manifest(dataset)
@@ -300,9 +299,9 @@ class MainWindow(Gtk.ApplicationWindow):
 
         asyncio.create_task(_fetch_manifest(dataset))
 
-    def _update_copy_button(self, selected_dataset):
+    async def _update_copy_button(self, selected_dataset):
         destinations = []
-        for base_uri in all():
+        for base_uri in await all():
             if str(base_uri) != str(selected_dataset.base_uri):
                 destinations += [str(base_uri)]
         self.copy_button.get_popover().update(destinations, self.on_copy_clicked)
