@@ -48,6 +48,7 @@ class DtoolTransferPopoverMenu(Gtk.PopoverMenu):
             button.destination = destination
             if on_copy is not None:
                 button.connect('clicked', on_copy)
-        self.show_all()
+        for child in self.get_children():
+            child.show_all()
 
 GObject.type_register(DtoolTransferPopoverMenu)
