@@ -107,6 +107,9 @@ class MainWindow(Gtk.ApplicationWindow):
 
     settings_button = Gtk.Template.Child()
 
+    error_bar = Gtk.Template.Child()
+    error_label = Gtk.Template.Child()
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -118,6 +121,8 @@ class MainWindow(Gtk.ApplicationWindow):
         self.readme_buffer.set_language(lang_manager.get_language("yaml"))
         self.readme_buffer.set_highlight_syntax(True)
         self.readme_buffer.set_highlight_matching_brackets(True)
+
+        self.error_bar.hide()
 
     def refresh(self):
         asyncio.create_task(self.base_uri_list_box.refresh())
@@ -132,16 +137,19 @@ class MainWindow(Gtk.ApplicationWindow):
             total_size = sum([0 if dataset.size_int is None else dataset.size_int for dataset in datasets])
             row.info_label.set_text(f'{len(datasets)} datasets, {sizeof_fmt(total_size).strip()}')
 
-        if hasattr(row, 'base_uri'):
-            self.dataset_list_box.from_base_uri(row.base_uri, on_show=update_base_uri_summary)
-            self.create_dataset_button.set_sensitive(row.base_uri.scheme == 'file')
-        elif hasattr(row, 'search_results'):
-            # This is the search result
-            self.dataset_list_box.fill(row.search_results)
-            self.create_dataset_button.set_sensitive(False)
+        async def _select_base_uri():
+            if hasattr(row, 'base_uri'):
+                await self.dataset_list_box.from_base_uri(row.base_uri, on_show=update_base_uri_summary)
+                self.create_dataset_button.set_sensitive(row.base_uri.scheme == 'file')
+            elif hasattr(row, 'search_results'):
+                # This is the search result
+                self.dataset_list_box.fill(row.search_results)
+                self.create_dataset_button.set_sensitive(False)
 
-        self.main_stack.set_visible_child(self.main_paned)
-        self.dataset_stack.set_visible_child(self.dataset_label)
+            self.main_stack.set_visible_child(self.main_paned)
+            self.dataset_stack.set_visible_child(self.dataset_label)
+
+        asyncio.create_task(_select_base_uri())
 
     @Gtk.Template.Callback()
     def on_dataset_selected(self, list_box, row):
@@ -283,30 +291,15 @@ class MainWindow(Gtk.ApplicationWindow):
             self.freeze_button.set_sensitive(False)
             self.copy_button.set_sensitive(True)
 
-        if dataset.has_dependencies:
-            self.dependency_stack.show()
-        else:
-            self.dependency_stack.hide()
+        self.readme_buffer.set_text(dataset.readme_content)
+        _fill_manifest_tree_store(self.manifest_tree_store, dataset.manifest)
+
+        #if dataset.has_dependencies:
+        #    self.dependency_stack.show()
+        #else:
+        #    self.dependency_stack.hide()
 
         await self._update_copy_button(dataset)
-
-        self._update_readme(dataset)
-        self._update_manifest(dataset)
-
-    def _update_readme(self, dataset):
-        async def _fetch_readme(dataset):
-            readme = await dataset.readme()
-            self.readme_buffer.set_text(readme)
-
-        asyncio.create_task(_fetch_readme(dataset))
-
-    def _update_manifest(self, dataset):
-        async def _fetch_manifest(dataset):
-            self.manifest_tree_store.clear()
-            manifest = await dataset.manifest()
-            _fill_manifest_tree_store(self.manifest_tree_store, manifest)
-
-        asyncio.create_task(_fetch_manifest(dataset))
 
     async def _update_copy_button(self, selected_dataset):
         destinations = []
@@ -314,3 +307,8 @@ class MainWindow(Gtk.ApplicationWindow):
             if str(base_uri) != str(selected_dataset.base_uri):
                 destinations += [str(base_uri)]
         self.copy_button.get_popover().update(destinations, self.on_copy_clicked)
+
+    def show_error(self, exception):
+        self.error_label.set_text(str(exception))
+        self.error_bar.show()
+        self.error_bar.set_revealed(True)

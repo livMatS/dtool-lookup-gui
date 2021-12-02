@@ -44,8 +44,8 @@ class DtoolDatasetListBox(Gtk.ListBox):
         if on_show is not None:
             on_show(datasets)
 
-    def from_base_uri(self, base_uri, on_show=None):
-        self.fill(base_uri.all_datasets(), on_show=on_show)
+    async def from_base_uri(self, base_uri, on_show=None):
+        self.fill(await base_uri.all_datasets(), on_show=on_show)
 
     def search(self, keyword, on_show=None):
         async def fetch_search_results(keyword, on_show=None):

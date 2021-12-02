@@ -22,9 +22,11 @@
 # SOFTWARE.
 #
 
+import asyncio
 import logging
 import os
 import yaml
+from concurrent.futures import ProcessPoolExecutor
 
 import dtoolcore
 from dtoolcore.utils import generous_parse_uri
@@ -36,12 +38,16 @@ from dtool_lookup_api.core.LookupClient import ConfigurationBasedLookupClient
 logger = logging.getLogger(__name__)
 
 
+_lookup_client = ConfigurationBasedLookupClient()
+
+
 def _proto_dataset_info(dataset):
     """Return information about proto dataset as a dict."""
     # Analogous to dtool_info.inventory._dataset_info
     info = {}
 
     info['uri'] = dataset.uri
+
     info['uuid'] = dataset.uuid
 
     info["size_int"] = None
@@ -59,26 +65,20 @@ def _proto_dataset_info(dataset):
 
 def _info(dataset):
     if isinstance(dataset, dtoolcore.DataSet):
-        return _dataset_info(dataset)
+        info = _dataset_info(dataset)
+        info['is_frozen'] = True
+
+        manifest = []
+        for identifier in dataset._identifiers():
+            manifest += [(identifier, dataset.item_properties(identifier))]
+        info['manifest'] = manifest
     else:
-        return _proto_dataset_info(dataset)
+        info = _proto_dataset_info(dataset)
+        info['is_frozen'] = False
 
-
-def _lookup_info(lookup_dict):
-    """Mangle return dict of lookup server into a proper dataset info"""
-
-    info = {}
-
-    info['uri'] = lookup_dict['uri']
-    info['uuid'] = lookup_dict['uuid']
-
-    info["size_int"] = lookup_dict['size_in_bytes']
-    info["size_str"] = sizeof_fmt(lookup_dict['size_in_bytes'])
-
-    info['creator'] = lookup_dict['creator_username']
-    info['name'] = lookup_dict['name']
-
-    info['date'] = date_fmt(lookup_dict['frozen_at'])
+    p = generous_parse_uri(info['uri'])
+    info['scheme'] = p.scheme
+    info['base_uri'] = p.path if p.netloc is None else p.netloc
 
     return info
 
@@ -91,80 +91,145 @@ def _mangle_lookup_manifest(manifest_dict):
     return manifest
 
 
+async def _lookup_info(lookup_dict):
+    """Mangle return dict of lookup server into a proper dataset info"""
+
+    info = {}
+
+    uri = lookup_dict['uri']
+
+    info['uri'] = uri
+    p = generous_parse_uri(uri)
+    info['scheme'] = p.scheme
+    info['base_uri'] = p.path if p.netloc is None else p.netloc
+
+    info['uuid'] = lookup_dict['uuid']
+
+    info["size_int"] = lookup_dict['size_in_bytes']
+    info["size_str"] = sizeof_fmt(lookup_dict['size_in_bytes'])
+
+    info['creator'] = lookup_dict['creator_username']
+    info['name'] = lookup_dict['name']
+
+    info['date'] = date_fmt(lookup_dict['frozen_at'])
+
+    info['is_frozen'] = True
+
+    readme_dict = await _lookup_client.readme(uri)
+    manifest_dict = await _lookup_client.manifest(uri)
+    info['readme_content'] = yaml.dump(readme_dict)
+    info['manifest'] = _mangle_lookup_manifest(manifest_dict)
+
+    return info
+
+
+def _list_proto_datasets(base_uri):
+    datasets = []
+    for dataset in dtoolcore.iter_proto_datasets_in_base_uri(base_uri):
+        datasets += [DatasetModel.from_dataset(dataset)]
+    return datasets
+
+
+def _list_datasets(base_uri):
+    datasets = []
+    for dataset in dtoolcore.iter_datasets_in_base_uri(base_uri):
+        datasets += [DatasetModel.from_dataset(dataset)]
+    return datasets
+
+
 class DatasetModel:
     """
     Model for both frozen and proto datasets, either received from dtoolcore
     or the lookup server.
     """
 
-    _lookup_client = ConfigurationBasedLookupClient()
-
     @staticmethod
-    def all(base_uri):
+    async def all(base_uri):
         """Return all datasets at base URI"""
-        datasets = []
-        for dataset in dtoolcore.iter_proto_datasets_in_base_uri(base_uri):
-            datasets += [DatasetModel(dataset=dataset, base_uri=base_uri)]
 
-        for dataset in dtoolcore.iter_datasets_in_base_uri(base_uri):
-            datasets += [DatasetModel(dataset=dataset, base_uri=base_uri)]
+        datasets = []
+
+        loop = asyncio.get_running_loop()
+        datasets = []
+        with ProcessPoolExecutor(2) as executor:
+            datasets += await loop.run_in_executor(executor, _list_proto_datasets, base_uri)
+            datasets += await loop.run_in_executor(executor, _list_datasets, base_uri)
 
         return datasets
 
-    def __init__(self, uri=None, dataset=None, lookup_info=None, base_uri=None):
-        self._base_uri = base_uri
+    @classmethod
+    def from_uri(cls, uri):
+        return cls(uri=uri)
+
+    @classmethod
+    def from_dataset(cls, dataset):
+        return cls(dataset_info=_info(dataset))
+
+    @classmethod
+    async def from_lookup(cls, lookup_dict):
+        return cls(dataset_info=await _lookup_info(lookup_dict))
+
+    def __init__(self, uri=None, dataset_info=None):
         if uri is not None:
-            if dataset is not None:
-                raise ValueError('Please provide either `uri`, `dataset` or `lookup_info` arguments.')
-            self._load_dataset(uri)
-        elif dataset is not None:
-            self._dataset = dataset
-            self._dataset_info = _info(self._dataset)
-        elif lookup_info is not None:
-            self._dataset = None
-            self._dataset_info = _lookup_info(lookup_info)
-        self._uri = generous_parse_uri(self._dataset_info['uri'])
+            self.reload(uri)
+        elif dataset_info is not None:
+            self._dataset_info = dataset_info
+        else:
+            raise ValueError('Please provide either `uri` or `dateset_info`.')
 
     @classmethod
     async def search(cls, keyword):
-        datasets = await cls._lookup_client.search(keyword)
-        return [cls(lookup_info=dataset) for dataset in datasets]
+        datasets = await _lookup_client.search(keyword)
+        return [await cls.from_lookup(lookup_dict) for lookup_dict in datasets]
 
     def __str__(self):
-        return self._dataset.uri
+        return self._dataset_info['uri']
 
     def __getattr__(self, name):
-        return self.dataset_info[name]
+        return self._dataset_info[name]
 
-    def _load_dataset(self, uri):
-        """Load the dataset from a URI.
+    def __setattr__(self, name, value):
+        if name.startswith('_'):
+            super().__setattr__(name, value)
+        else:
+            self._dataset_info[name] = value
 
-        :param uri: URI to a dtoolcore.DataSet
-        """
+    def __getstate__(self):
+        return self._dataset_info
+
+    def __setstate__(self, state):
+        self._dataset_info = state
+
+    def _load_dataset(self, uri=None):
+        if uri is None:
+            uri = str(self)
+
         logger.info('{} loading dataset from URI: {}'.format(self, uri))
 
         # determine from admin metadata whether this is a protodataset
         admin_metadata = dtoolcore._admin_metadata_from_uri(uri, None)
 
         if admin_metadata['type'] == 'protodataset':
-            self._dataset = dtoolcore.ProtoDataSet.from_uri(uri)
+            dataset = dtoolcore.ProtoDataSet.from_uri(uri)
         else:
-            self._dataset = dtoolcore.DataSet.from_uri(uri)
+            dataset = dtoolcore.DataSet.from_uri(uri)
 
-        self._dataset_info = _info(self._dataset)
+        return dataset
 
-    def reload(self):
-        uri = self.dataset.uri
-        self._load_dataset(uri)
+    def reload(self, uri=None):
+        """Load the dataset from a URI.
+
+        :param uri: URI to a dtoolcore.DataSet
+        """
+        self._dataset_info = _info(self._load_dataset(uri))
 
     def copy(self, target_base_uri, resume=False, auto_resume=True, progressbar=None):
         """Copy a dataset."""
 
-        # TODO: try to copy without resume flag, if failed, then ask whether
-        # try to resume
+        dataset = self._load_dataset()
 
         dest_uri = dtoolcore._generate_uri(
-            admin_metadata=self._dataset._admin_metadata,
+            admin_metadata=dataset._admin_metadata,
             base_uri=target_base_uri
         )
 
@@ -194,57 +259,12 @@ class DatasetModel:
 
         return dest_uri
 
-    @property
-    def base_uri(self):
-        return self._base_uri
-
-    @property
-    def scheme(self):
-        return self._uri.scheme
-
-    @property
-    def is_frozen(self):
-        return self._dataset is None or isinstance(self._dataset, dtoolcore.DataSet)
-
-    @property
-    def dataset(self):
-        return self._dataset
-
-    @property
-    def dataset_info(self):
-        return self._dataset_info
-
-    @property
-    def has_dependencies(self):
-        return self.dataset is None
-
     def freeze(self):
-        self._dataset.freeze()
+        self._load_dataset().freeze()
         # We need to reread dataset after freezing, since _data is currently
         # a dtoolcore.ProtoDataSet but should not become a dtoolcore.DataSet
         self.reload()
 
     def put_readme(self, text):
-        self.dataset_info['readme_content'] = text
-        return self._dataset.put_readme(text)
-
-    async def readme(self):
-        if 'readme_content' in self.dataset_info:
-            return self.dataset_info['readme_content']
-        else:
-            readme_dict = await self._lookup_client.readme(self.uri)
-            return yaml.dump(readme_dict)
-
-    async def manifest(self):
-        if self.dataset is not None:
-            # Construct manifest from dtool dataset
-            manifest = []
-            if self.is_frozen:
-                for identifier in self.dataset._identifiers():
-                    manifest += [(identifier, self.dataset.item_properties(identifier))]
-        else:
-            # Query manifest from lookup server
-            manifest_dict = await self._lookup_client.manifest(self.uri)
-            manifest = _mangle_lookup_manifest(manifest_dict)
-        return manifest
-
+        self.readme_content = text
+        return self._load_dataset().put_readme(text)

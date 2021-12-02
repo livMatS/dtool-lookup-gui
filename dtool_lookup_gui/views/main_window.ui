@@ -86,11 +86,12 @@
             <property name="vexpand">True</property>
             <property name="orientation">vertical</property>
             <child>
-              <object class="GtkInfoBar" id="error-bar">
+              <object class="GtkInfoBar" id="error_bar">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
                 <property name="orientation">vertical</property>
                 <property name="message-type">error</property>
+                <property name="show-close-button">True</property>
                 <child internal-child="action_area">
                   <object class="GtkButtonBox">
                     <property name="can-focus">False</property>
@@ -105,7 +106,7 @@
                   <object class="GtkBox">
                     <property name="can-focus">False</property>
                     <child>
-                      <object class="GtkLabel" id="error-label">
+                      <object class="GtkLabel" id="error_label">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
                         <property name="label" translatable="yes">label</property>
@@ -714,6 +715,9 @@
                                                     <property name="model">manifest_tree_store</property>
                                                     <property name="search-column">0</property>
                                                     <signal name="row-activated" handler="on_manifest_row_activated" swapped="no"/>
+                                                    <child internal-child="selection">
+                                                      <object class="GtkTreeSelection"/>
+                                                    </child>
                                                     <child>
                                                       <object class="GtkTreeViewColumn" id="manifest-column1">
                                                         <property name="title" translatable="yes">Name</property>

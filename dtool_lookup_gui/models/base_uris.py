@@ -48,8 +48,8 @@ class BaseURI:
     def __eq__(self, other):
         return self.scheme == other.scheme and self.uri_name == other.uri_name
 
-    def all_datasets(self):
-        return DatasetModel.all(str(self))
+    async def all_datasets(self):
+        return await DatasetModel.all(str(self))
 
     @classmethod
     @property
@@ -125,7 +125,7 @@ class LocalBaseURIModel(BaseURI):
         proto_dataset.put_readme(stream.getvalue())
 
         # Wrap in dataset model
-        return DatasetModel(dataset=proto_dataset)
+        return DatasetModel.from_dataset(proto_dataset)
 
 
 class ConfigBaseURIModel(BaseURI):
