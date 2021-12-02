@@ -25,6 +25,7 @@
 import asyncio
 import logging
 import os
+import traceback
 import urllib.parse
 
 from gi.repository import Gio, Gtk, GtkSource
@@ -37,7 +38,7 @@ from ..utils.date import date_to_string
 from .dataset_name_dialog import DatasetNameDialog
 from .settings_dialog import SettingsDialog
 
-logger = logging.getLogger(__name__)
+_logger = logging.getLogger(__name__)
 
 
 def _fill_manifest_tree_store(store, manifest, parent=None):
@@ -139,7 +140,10 @@ class MainWindow(Gtk.ApplicationWindow):
 
         async def _select_base_uri():
             if hasattr(row, 'base_uri'):
-                await self.dataset_list_box.from_base_uri(row.base_uri, on_show=update_base_uri_summary)
+                try:
+                    await self.dataset_list_box.from_base_uri(row.base_uri, on_show=update_base_uri_summary)
+                except Exception as e:
+                    self.show_error(e)
                 self.create_dataset_button.set_sensitive(row.base_uri.scheme == 'file')
             elif hasattr(row, 'search_results'):
                 # This is the search result
@@ -166,7 +170,8 @@ class MainWindow(Gtk.ApplicationWindow):
                 .set_text(f'{len(datasets)} datasets, {sizeof_fmt(total_size).strip()}')
 
         self.base_uri_list_box.select_search_results_row()
-        self.dataset_list_box.search(self.search_entry.get_text(), on_show=update_search_summary)
+        self.dataset_list_box.search(self.search_entry.get_text(), on_show=update_search_summary,
+                                     on_error=self.show_error)
 
     @Gtk.Template.Callback()
     def on_open_local_directory_clicked(self, widget):
@@ -309,6 +314,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.copy_button.get_popover().update(destinations, self.on_copy_clicked)
 
     def show_error(self, exception):
+        _logger.error(traceback.format_exc())
         self.error_label.set_text(str(exception))
         self.error_bar.show()
         self.error_bar.set_revealed(True)
