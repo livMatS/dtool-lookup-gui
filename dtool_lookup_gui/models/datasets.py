@@ -117,7 +117,6 @@ class DatasetModel:
             if dataset is not None:
                 raise ValueError('Please provide either `uri`, `dataset` or `lookup_info` arguments.')
             self._load_dataset(uri)
-            self._dataset_info = _info(self._dataset)
         elif dataset is not None:
             self._dataset = dataset
             self._dataset_info = _info(self._dataset)
@@ -143,7 +142,6 @@ class DatasetModel:
         :param uri: URI to a dtoolcore.DataSet
         """
         logger.info('{} loading dataset from URI: {}'.format(self, uri))
-        self.clear()
 
         # determine from admin metadata whether this is a protodataset
         admin_metadata = dtoolcore._admin_metadata_from_uri(uri, None)
@@ -153,9 +151,10 @@ class DatasetModel:
         else:
             self._dataset = dtoolcore.DataSet.from_uri(uri)
 
+        self._dataset_info = _info(self._dataset)
+
     def reload(self):
         uri = self.dataset.uri
-        self.clear()
         self._load_dataset(uri)
 
     def copy(self, target_base_uri, resume=False, auto_resume=True, progressbar=None):
@@ -220,7 +219,10 @@ class DatasetModel:
         return self.dataset is None
 
     def freeze(self):
-        return self._dataset.freeze()
+        self._dataset.freeze()
+        # We need to reread dataset after freezing, since _data is currently
+        # a dtoolcore.ProtoDataSet but should not become a dtoolcore.DataSet
+        self.reload()
 
     def put_readme(self, text):
         self.dataset_info['readme_content'] = text

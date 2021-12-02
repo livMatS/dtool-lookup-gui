@@ -236,8 +236,17 @@ class MainWindow(Gtk.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def on_freeze_clicked(self, widget):
-        self.dataset_list_box.get_selected_row().freeze()
-        asyncio.create_taks(self._update_dataset_view(self.dataset_list_box.get_selected_row().dataset))
+        row = self.dataset_list_box.get_selected_row()
+        dialog = Gtk.MessageDialog(self, Gtk.DialogFlags.MODAL, Gtk.MessageType.QUESTION, Gtk.ButtonsType.OK_CANCEL,
+                                   f'You are about to freeze dataset "{row.dataset.name}". Items can no longer be '
+                                   'added, removed or modified after freezing the dataset. (You will still be able to '
+                                   'edit the metadata README.yml.) Please confirm freezing of this dataset.')
+        response = dialog.run()
+        dialog.destroy()
+        if response == Gtk.ResponseType.OK:
+            row.freeze()
+            self.dataset_list_box.show_all()
+            asyncio.create_task(self._update_dataset_view(self.dataset_list_box.get_selected_row().dataset))
 
     def on_copy_clicked(self, widget):
         self.dataset_list_box.get_selected_row().dataset.copy(widget.destination)
