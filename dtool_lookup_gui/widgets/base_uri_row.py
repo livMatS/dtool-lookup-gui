@@ -32,6 +32,8 @@ class DtoolBaseURIRow(Gtk.ListBoxRow):
 
     def __init__(self, base_uri, *args, **kwargs):
         self._base_uri = base_uri
+        self._task = None
+
         on_activate = kwargs.pop('on_activate', None)
         on_configure = kwargs.pop('on_configure', None)
         on_remove = kwargs.pop('on_remove', None)
@@ -55,20 +57,23 @@ class DtoolBaseURIRow(Gtk.ListBoxRow):
         self._info_label = Gtk.Label(xalign=0)
         self._info_label.set_text('---')
         self._info_label.set_ellipsize(Pango.EllipsizeMode.END)
-        #if info['local'] and info['remote']:
+        # if info['local'] and info['remote']:
         #    label.set_markup('This endpoint is reported by the lookup server and it is configured locally.')
-        #elif not info['local'] and info['remote']:
+        # elif not info['local'] and info['remote']:
         #    label.set_markup('This endpoint is reported by the lookup server, but it is not configured locally.')
-        #else:
+        # else:
         #    label.set_markup('This endpoint is configured locally.')
         vbox.pack_start(self._info_label, True, True, 0)
         hbox.pack_start(vbox, True, True, 0)
+        self._spinner = Gtk.Spinner(margin_top=self._margin, margin_bottom=self._margin,
+                                    margin_start=self._margin, margin_end=self._margin)
+        hbox.pack_start(self._spinner, False, False, 0)
         if on_configure is not None:
             button = Gtk.Button(image=Gtk.Image.new_from_icon_name('emblem-system-symbolic', Gtk.IconSize.BUTTON))
             button.connect('clicked', on_configure)
             # We currently can only configure S3 endpoints through the GUI
-            #button.set_sensitive(parsed_uri.scheme == 's3')
-            #button.base_uri = parsed_uri
+            # button.set_sensitive(parsed_uri.scheme == 's3')
+            # button.base_uri = parsed_uri
             hbox.pack_end(button, False, False, 0)
         if on_remove is not None:
             button = Gtk.Button(image=Gtk.Image.new_from_icon_name('window-close-symbolic', Gtk.IconSize.BUTTON))
@@ -79,7 +84,6 @@ class DtoolBaseURIRow(Gtk.ListBoxRow):
         if on_activate is not None:
             self.connect('activate', on_activate)
 
-
     @property
     def base_uri(self):
         return self._base_uri
@@ -87,3 +91,17 @@ class DtoolBaseURIRow(Gtk.ListBoxRow):
     @property
     def info_label(self):
         return self._info_label
+
+    def start_spinner(self):
+        self._spinner.start()
+
+    def stop_spinner(self):
+        self._spinner.stop()
+
+    @property
+    def task(self):
+        return self._task
+
+    @task.setter
+    def task(self, task):
+        self._taks = task

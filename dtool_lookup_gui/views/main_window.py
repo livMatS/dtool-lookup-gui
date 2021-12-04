@@ -139,6 +139,9 @@ class MainWindow(Gtk.ApplicationWindow):
             row.info_label.set_text(f'{len(datasets)} datasets, {sizeof_fmt(total_size).strip()}')
 
         async def _select_base_uri():
+            row = self.base_uri_list_box.get_selected_row()
+            row.start_spinner()
+
             if hasattr(row, 'base_uri'):
                 try:
                     await self.dataset_list_box.from_base_uri(row.base_uri, on_show=update_base_uri_summary)
@@ -153,7 +156,12 @@ class MainWindow(Gtk.ApplicationWindow):
             self.main_stack.set_visible_child(self.main_paned)
             self.dataset_stack.set_visible_child(self.dataset_label)
 
-        asyncio.create_task(_select_base_uri())
+            row.stop_spinner()
+            row.task = None
+
+        row = self.base_uri_list_box.get_selected_row()
+        if row.task is None:
+            row.task = asyncio.create_task(_select_base_uri())
 
     @Gtk.Template.Callback()
     def on_dataset_selected(self, list_box, row):
