@@ -46,6 +46,8 @@ def _proto_dataset_info(dataset):
     # Analogous to dtool_info.inventory._dataset_info
     info = {}
 
+    info['_type'] = 'dtool-proto'
+
     info['uri'] = dataset.uri
 
     info['uuid'] = dataset.uuid
@@ -66,6 +68,7 @@ def _proto_dataset_info(dataset):
 def _info(dataset):
     if isinstance(dataset, dtoolcore.DataSet):
         info = _dataset_info(dataset)
+        info['_type'] = 'dtool-dataset'
         info['is_frozen'] = True
 
         manifest = []
@@ -98,6 +101,8 @@ async def _lookup_info(lookup_dict):
 
     uri = lookup_dict['uri']
 
+    info['_type'] = 'lookup'
+
     info['uri'] = uri
     p = generous_parse_uri(uri)
     info['scheme'] = p.scheme
@@ -114,11 +119,6 @@ async def _lookup_info(lookup_dict):
     info['date'] = date_fmt(lookup_dict['frozen_at'])
 
     info['is_frozen'] = True
-
-    readme_dict = await _lookup_client.readme(uri)
-    manifest_dict = await _lookup_client.manifest(uri)
-    info['readme_content'] = yaml.dump(readme_dict)
-    info['manifest'] = _mangle_lookup_manifest(manifest_dict)
 
     return info
 
@@ -268,3 +268,17 @@ class DatasetModel:
     def put_readme(self, text):
         self.readme_content = text
         return self._load_dataset().put_readme(text)
+
+    async def get_readme(self):
+        if 'readme_content' in self._dataset_info:
+            return self._dataset_info['readme_content']
+        readme_dict = await _lookup_client.readme(self.uri)
+        self._dataset_info['readme_content'] = yaml.dump(readme_dict)
+        return self._dataset_info['readme_content']
+
+    async def get_manifest(self):
+        if 'manifest' in self._dataset_info:
+            return self._dataset_info['manifest']
+        manifest_dict = await _lookup_client.manifest(self.uri)
+        self._dataset_info['manifest'] = _mangle_lookup_manifest(manifest_dict)
+        self._dataset_info['manifest']

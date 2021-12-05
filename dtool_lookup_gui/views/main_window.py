@@ -34,6 +34,7 @@ import dtoolcore.utils
 from dtool_info.utils import sizeof_fmt
 
 from ..models.base_uris import all, LocalBaseURIModel
+from ..models.datasets import DatasetModel
 from ..utils.date import date_to_string
 from .dataset_name_dialog import DatasetNameDialog
 from .settings_dialog import SettingsDialog
@@ -68,6 +69,8 @@ def _fill_manifest_tree_store(store, manifest, parent=None):
 @Gtk.Template(filename=f'{os.path.dirname(__file__)}/main_window.ui')
 class MainWindow(Gtk.ApplicationWindow):
     __gtype_name__ = 'DtoolMainWindow'
+
+    _max_nb_datasets = 100
 
     create_dataset_button = Gtk.Template.Child()
     menu_button = Gtk.Template.Child()
@@ -154,8 +157,9 @@ class MainWindow(Gtk.ApplicationWindow):
                 self.create_dataset_button.set_sensitive(row.base_uri.scheme == 'file')
             elif hasattr(row, 'search_results'):
                 # This is the search result
-                self.dataset_list_box.fill(row.search_results)
-                self.create_dataset_button.set_sensitive(False)
+                if row.search_results is not None:
+                    self.dataset_list_box.fill(row.search_results)
+                    self.create_dataset_button.set_sensitive(False)
 
             self.main_stack.set_visible_child(self.main_paned)
 
@@ -168,22 +172,40 @@ class MainWindow(Gtk.ApplicationWindow):
             row.task = asyncio.create_task(_select_base_uri())
 
     @Gtk.Template.Callback()
+    def on_search_activate(self, widget):
+        def update_search_summary(datasets):
+            row = self.base_uri_list_box.search_results_row
+            total_size = sum([dataset.size_int for dataset in datasets])
+            row.info_label.set_text(f'{len(datasets)} datasets, {sizeof_fmt(total_size).strip()}')
+
+        async def fetch_search_results(keyword, on_show=None):
+            row = self.base_uri_list_box.search_results_row
+            row.start_spinner()
+            try:
+                datasets = await DatasetModel.search(keyword)
+                datasets = datasets[:self._max_nb_datasets]  # Limit number of datasets that are shown
+                row.search_results = datasets  # Cache datasets
+                update_search_summary(datasets)
+                if self.base_uri_list_box.get_selected_row() == row:
+                    # Only update if the row is still selected
+                    self.dataset_list_box.fill(datasets, on_show=on_show)
+            except Exception as e:
+                self.show_error(e)
+
+            self.base_uri_list_box.select_search_results_row()
+            self.main_stack.set_visible_child(self.main_paned)
+            row.stop_spinner()
+
+        self.main_stack.set_visible_child(self.main_spinner)
+        row = self.base_uri_list_box.search_results_row
+        row.search_results = None
+        asyncio.create_task(fetch_search_results(self.search_entry.get_text()))
+
+    @Gtk.Template.Callback()
     def on_dataset_selected(self, list_box, row):
         if row is not None:
             asyncio.create_task(self._update_dataset_view(row.dataset))
             self.dataset_stack.set_visible_child(self.dataset_box)
-
-    @Gtk.Template.Callback()
-    def on_search_activate(self, widget):
-        def update_search_summary(datasets):
-            total_size = sum([dataset.size_int for dataset in datasets])
-            self.base_uri_list_box.search_results_row.search_results = datasets
-            self.base_uri_list_box.search_results_row.info_label \
-                .set_text(f'{len(datasets)} datasets, {sizeof_fmt(total_size).strip()}')
-
-        self.base_uri_list_box.select_search_results_row()
-        self.dataset_list_box.search(self.search_entry.get_text(), on_show=update_search_summary,
-                                     on_error=self.show_error)
 
     @Gtk.Template.Callback()
     def on_open_local_directory_clicked(self, widget):
@@ -308,8 +330,12 @@ class MainWindow(Gtk.ApplicationWindow):
             self.freeze_button.set_sensitive(False)
             self.copy_button.set_sensitive(True)
 
-        self.readme_buffer.set_text(dataset.readme_content)
-        _fill_manifest_tree_store(self.manifest_tree_store, dataset.manifest)
+        async def _get_readme():
+            self.readme_buffer.set_text(await dataset.get_readme())
+        async def _get_manifest():
+            _fill_manifest_tree_store(self.manifest_tree_store, await dataset.get_manifest())
+        asyncio.create_task(_get_readme())
+        asyncio.create_task(_get_manifest())
 
         #if dataset.has_dependencies:
         #    self.dependency_stack.show()

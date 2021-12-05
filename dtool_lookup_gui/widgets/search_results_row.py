@@ -69,4 +69,4 @@ class DtoolSearchResultsRow(Gtk.ListBoxRow):
 
     @task.setter
     def task(self, task):
-        self._taks = task
+        self._task = task

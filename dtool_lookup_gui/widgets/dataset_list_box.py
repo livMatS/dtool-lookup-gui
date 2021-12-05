@@ -22,18 +22,13 @@
 # SOFTWARE.
 #
 
-import asyncio
-
 from gi.repository import GObject, Gtk
 
-from ..models.datasets import DatasetModel
 from .dataset_row import DtoolDatasetRow
 
 
 class DtoolDatasetListBox(Gtk.ListBox):
     __gtype_name__ = 'DtoolDatasetListBox'
-
-    _max_nb_datasets = 100
 
     def fill(self, datasets, on_show=None):
         for row in self.get_children():
@@ -43,19 +38,6 @@ class DtoolDatasetListBox(Gtk.ListBox):
         self.show_all()
         if on_show is not None:
             on_show(datasets)
-
-    def search(self, keyword, on_show=None, on_error=None):
-        async def fetch_search_results(keyword, on_show=None):
-            try:
-                datasets = await DatasetModel.search(keyword)
-                datasets = datasets[:self._max_nb_datasets]
-                self.fill(datasets, on_show=on_show)
-            except Exception as e:
-                if on_error is not None:
-                    on_error(e)
-                else:
-                    raise
-        asyncio.create_task(fetch_search_results(keyword, on_show=on_show))
 
     def add_dataset(self, dataset):
         # Create row for new dataset
