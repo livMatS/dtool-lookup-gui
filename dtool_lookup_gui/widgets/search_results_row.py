@@ -33,6 +33,8 @@ class DtoolSearchResultsRow(Gtk.ListBoxRow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self._task = None
+
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, margin_top=self._margin, margin_bottom=self._margin,
                        margin_start=self._margin, margin_end=self._margin)
         image = Gtk.Image.new_from_icon_name('edit-find-symbolic', Gtk.IconSize.BUTTON)
@@ -46,8 +48,25 @@ class DtoolSearchResultsRow(Gtk.ListBoxRow):
         self._info_label.set_text('---')
         vbox.pack_start(self._info_label, True, True, 0)
         hbox.pack_start(vbox, True, True, 0)
+        self._spinner = Gtk.Spinner(margin_top=self._margin, margin_bottom=self._margin,
+                                    margin_start=self._margin, margin_end=self._margin)
+        hbox.pack_start(self._spinner, False, False, 0)
         self.add(hbox)
 
     @property
     def info_label(self):
         return self._info_label
+
+    def start_spinner(self):
+        self._spinner.start()
+
+    def stop_spinner(self):
+        self._spinner.stop()
+
+    @property
+    def task(self):
+        return self._task
+
+    @task.setter
+    def task(self, task):
+        self._taks = task

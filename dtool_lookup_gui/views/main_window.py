@@ -80,6 +80,7 @@ class MainWindow(Gtk.ApplicationWindow):
     main_stack = Gtk.Template.Child()
     main_paned = Gtk.Template.Child()
     main_label = Gtk.Template.Child()
+    main_spinner = Gtk.Template.Child()
 
     dataset_stack = Gtk.Template.Child()
     dataset_box = Gtk.Template.Child()
@@ -139,12 +140,15 @@ class MainWindow(Gtk.ApplicationWindow):
             row.info_label.set_text(f'{len(datasets)} datasets, {sizeof_fmt(total_size).strip()}')
 
         async def _select_base_uri():
-            row = self.base_uri_list_box.get_selected_row()
             row.start_spinner()
 
             if hasattr(row, 'base_uri'):
                 try:
-                    await self.dataset_list_box.from_base_uri(row.base_uri, on_show=update_base_uri_summary)
+                    datasets = await row.base_uri.all_datasets()
+                    update_base_uri_summary(datasets)
+                    if self.base_uri_list_box.get_selected_row() == row:
+                        # Only update if the row is still selected
+                        self.dataset_list_box.fill(datasets)
                 except Exception as e:
                     self.show_error(e)
                 self.create_dataset_button.set_sensitive(row.base_uri.scheme == 'file')
@@ -154,11 +158,11 @@ class MainWindow(Gtk.ApplicationWindow):
                 self.create_dataset_button.set_sensitive(False)
 
             self.main_stack.set_visible_child(self.main_paned)
-            self.dataset_stack.set_visible_child(self.dataset_label)
 
             row.stop_spinner()
             row.task = None
 
+        self.main_stack.set_visible_child(self.main_spinner)
         row = self.base_uri_list_box.get_selected_row()
         if row.task is None:
             row.task = asyncio.create_task(_select_base_uri())
