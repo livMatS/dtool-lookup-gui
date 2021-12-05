@@ -41,6 +41,7 @@ class BaseURI:
 
     def __init__(self, uri_name):
         self._uri_name = uri_name
+        self._cache = None
 
     def __str__(self):
         return f'{self._scheme}://{self._uri_name}'
@@ -49,7 +50,9 @@ class BaseURI:
         return self.scheme == other.scheme and self.uri_name == other.uri_name
 
     async def all_datasets(self):
-        return await DatasetModel.all(str(self))
+        if self._cache is None or not self._use_cache:
+            self._cache = await DatasetModel.all(str(self))
+        return self._cache
 
     @classmethod
     @property
@@ -65,6 +68,7 @@ class LocalBaseURIModel(BaseURI):
     """Model for directory on local system"""
 
     _scheme = 'file'
+    _use_cache = False
 
     _local_base_uris = settings.local_base_uris
 
@@ -130,6 +134,8 @@ class LocalBaseURIModel(BaseURI):
 
 class ConfigBaseURIModel(BaseURI):
     """Model for dtool config-file based base URIs"""
+
+    _use_cache = True
 
     @classmethod
     def all(cls):
