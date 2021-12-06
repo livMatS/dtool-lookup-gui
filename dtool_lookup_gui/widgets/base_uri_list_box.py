@@ -36,11 +36,12 @@ class DtoolBaseURIListBox(Gtk.ListBox):
         super().__init__(*args, **kwargs)
         self._search_results_row = None
 
-    async def refresh(self, on_activate=None, on_configure=None, local=True, lookup=None):
+    async def refresh(self, on_activate=None, on_configure=None, local=True, lookup=None, search_results=True):
         for row in self.get_children():
             row.destroy()
-        self._search_results_row = DtoolSearchResultsRow()
-        self.add(self.search_results_row)
+        if search_results:
+            self._search_results_row = DtoolSearchResultsRow()
+            self.add(self.search_results_row)
         base_uris = await all(local=local, lookup=lookup)
         for base_uri in base_uris:
             if base_uri.scheme == 'file':

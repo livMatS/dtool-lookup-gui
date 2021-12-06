@@ -77,8 +77,8 @@ class SettingsDialog(Gtk.Window):
         asyncio.create_task(self._refresh_list_of_endpoints())
 
     async def _refresh_list_of_endpoints(self):
-        #header = jwt.decode(Config.token, options={"verify_signature": False})
-        await self.base_uris_list_box.refresh(on_configure=self.on_configure_base_uri_clicked, local=False) #, lookup=header['sub'])
+        await self.base_uris_list_box.refresh(on_configure=self.on_configure_base_uri_clicked, local=False,
+                                              search_results=False)
 
         # Plus button for adding new endpoints
         row = Gtk.ListBoxRow()
