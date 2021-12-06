@@ -296,7 +296,7 @@ class MainWindow(Gtk.ApplicationWindow):
             asyncio.create_task(self._update_dataset_view(self.dataset_list_box.get_selected_row().dataset))
 
     def on_copy_clicked(self, widget):
-        self.dataset_list_box.get_selected_row().dataset.copy(widget.destination)
+        asyncio.create_task(self.dataset_list_box.get_selected_row().dataset.copy(widget.destination))
 
     def _add_item(self, uri):
         p = urllib.parse.urlparse(uri)

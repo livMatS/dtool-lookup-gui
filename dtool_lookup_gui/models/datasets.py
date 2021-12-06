@@ -137,6 +137,55 @@ def _list_datasets(base_uri):
     return datasets
 
 
+def _load_dataset(uri):
+    logger.info('Loading dataset from URI: {}'.format(uri))
+
+    # determine from admin metadata whether this is a protodataset
+    admin_metadata = dtoolcore._admin_metadata_from_uri(uri, None)
+
+    if admin_metadata['type'] == 'protodataset':
+        dataset = dtoolcore.ProtoDataSet.from_uri(uri)
+    else:
+        dataset = dtoolcore.DataSet.from_uri(uri)
+
+    return dataset
+
+
+def _copy_dataset(uri, target_base_uri, resume, auto_resume):
+    dataset = _load_dataset(uri)
+
+    dest_uri = dtoolcore._generate_uri(
+        admin_metadata=dataset._admin_metadata,
+        base_uri=target_base_uri
+    )
+
+    copy_func = dtoolcore.copy
+    is_dataset = dtoolcore._is_dataset(dest_uri, config_path=None)
+    if resume or (auto_resume and is_dataset):
+        # copy resume
+        copy_func = dtoolcore.copy_resume
+    elif is_dataset:
+        # don't resume
+        raise FileExistsError("Dataset already exists: {}".format(dest_uri))
+    else:
+        # If the destination URI is a "file" dataset one needs to check if
+        # the path already exists and exit gracefully if true.
+        parsed_dataset_uri = dtoolcore.utils.generous_parse_uri(dest_uri)
+        if parsed_dataset_uri.scheme == "file":
+            if os.path.exists(parsed_dataset_uri.path):
+                raise FileExistsError(
+                    "Path already exists: {}".format(parsed_dataset_uri.path))
+
+    dest_uri = copy_func(
+        src_uri=uri,
+        dest_base_uri=target_base_uri,
+        config_path=None
+        #progressbar=progressbar
+    )
+
+    return dest_uri
+
+
 class DatasetModel:
     """
     Model for both frozen and proto datasets, either received from dtoolcore
@@ -200,74 +249,29 @@ class DatasetModel:
     def __setstate__(self, state):
         self._dataset_info = state
 
-    def _load_dataset(self, uri=None):
-        if uri is None:
-            uri = str(self)
-
-        logger.info('{} loading dataset from URI: {}'.format(self, uri))
-
-        # determine from admin metadata whether this is a protodataset
-        admin_metadata = dtoolcore._admin_metadata_from_uri(uri, None)
-
-        if admin_metadata['type'] == 'protodataset':
-            dataset = dtoolcore.ProtoDataSet.from_uri(uri)
-        else:
-            dataset = dtoolcore.DataSet.from_uri(uri)
-
-        return dataset
-
     def reload(self, uri=None):
         """Load the dataset from a URI.
 
         :param uri: URI to a dtoolcore.DataSet
         """
-        self._dataset_info = _info(self._load_dataset(uri))
+        self._dataset_info = _info(_load_dataset(uri))
 
-    def copy(self, target_base_uri, resume=False, auto_resume=True, progressbar=None):
+    async def copy(self, target_base_uri, resume=False, auto_resume=True, progressbar=None):
         """Copy a dataset."""
 
-        dataset = self._load_dataset()
-
-        dest_uri = dtoolcore._generate_uri(
-            admin_metadata=dataset._admin_metadata,
-            base_uri=target_base_uri
-        )
-
-        copy_func = dtoolcore.copy
-        is_dataset = dtoolcore._is_dataset(dest_uri, config_path=None)
-        if resume or (auto_resume and is_dataset):
-            # copy resume
-            copy_func = dtoolcore.copy_resume
-        elif is_dataset:
-            # don't resume
-            raise FileExistsError("Dataset already exists: {}".format(dest_uri))
-        else:
-            # If the destination URI is a "file" dataset one needs to check if
-            # the path already exists and exit gracefully if true.
-            parsed_dataset_uri = dtoolcore.utils.generous_parse_uri(dest_uri)
-            if parsed_dataset_uri.scheme == "file":
-                if os.path.exists(parsed_dataset_uri.path):
-                    raise FileExistsError(
-                        "Path already exists: {}".format(parsed_dataset_uri.path))
-
-        dest_uri = copy_func(
-            src_uri=self.uri,
-            dest_base_uri=target_base_uri,
-            config_path=None,
-            progressbar=progressbar
-        )
-
-        return dest_uri
+        loop = asyncio.get_running_loop()
+        with ProcessPoolExecutor(1) as executor:
+            return await loop.run_in_executor(executor, _copy_dataset, self.uri, target_base_uri, resume, auto_resume)
 
     def freeze(self):
-        self._load_dataset().freeze()
+        _load_dataset(str(self)).freeze()
         # We need to reread dataset after freezing, since _data is currently
         # a dtoolcore.ProtoDataSet but should not become a dtoolcore.DataSet
         self.reload()
 
     def put_readme(self, text):
         self.readme_content = text
-        return self._load_dataset().put_readme(text)
+        return _load_dataset(str(self)).put_readme(text)
 
     async def get_readme(self):
         if 'readme_content' in self._dataset_info:
