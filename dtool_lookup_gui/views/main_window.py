@@ -310,7 +310,10 @@ class MainWindow(Gtk.ApplicationWindow):
     def on_copy_clicked(self, widget):
         async def _copy():
             self.copy_dataset_spinner.start()
-            await self.dataset_list_box.get_selected_row().dataset.copy(widget.destination)
+            try:
+                await self.dataset_list_box.get_selected_row().dataset.copy(widget.destination)
+            except Exception as e:
+                self.show_error(e)
             self.copy_dataset_spinner.stop()
 
         asyncio.create_task(_copy())
