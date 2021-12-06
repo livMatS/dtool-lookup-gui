@@ -27,15 +27,20 @@ import logging
 import os
 import traceback
 import urllib.parse
+from functools import reduce
 
 from gi.repository import Gio, Gtk, GtkSource
 
 import dtoolcore.utils
 from dtool_info.utils import sizeof_fmt
 
+from dtool_lookup_api.core.LookupClient import ConfigurationBasedLookupClient
+
 from ..models.base_uris import all, LocalBaseURIModel
 from ..models.datasets import DatasetModel
+from ..models.settings import settings
 from ..utils.date import date_to_string
+from ..utils.dependency_graph import DependencyGraph
 from .dataset_name_dialog import DatasetNameDialog
 from .settings_dialog import SettingsDialog
 
@@ -107,6 +112,9 @@ class MainWindow(Gtk.ApplicationWindow):
     save_metadata_button = Gtk.Template.Child()
 
     dependency_stack = Gtk.Template.Child()
+    dependency_view = Gtk.Template.Child()
+    dependency_spinner = Gtk.Template.Child()
+    dependency_graph_widget = Gtk.Template.Child()
 
     readme_source_view = Gtk.Template.Child()
     manifest_tree_view = Gtk.Template.Child()
@@ -346,10 +354,11 @@ class MainWindow(Gtk.ApplicationWindow):
         asyncio.create_task(_get_readme())
         asyncio.create_task(_get_manifest())
 
-        #if dataset.has_dependencies:
-        #    self.dependency_stack.show()
-        #else:
-        #    self.dependency_stack.hide()
+        if dataset.type == 'lookup':
+            self.dependency_stack.show()
+            asyncio.create_task(self._compute_dependencies(dataset))
+        else:
+            self.dependency_stack.hide()
 
         await self._update_copy_button(dataset)
 
@@ -359,6 +368,24 @@ class MainWindow(Gtk.ApplicationWindow):
             if str(base_uri) != str(selected_dataset.base_uri):
                 destinations += [str(base_uri)]
         self.copy_button.get_popover().update(destinations, self.on_copy_clicked)
+
+    async def _compute_dependencies(self, dataset):
+        self.error_bar.set_revealed(False)
+        self.dependency_stack.set_visible_child(self.dependency_spinner)
+
+        # Compute dependency graph
+        dependency_graph = DependencyGraph()
+        async with ConfigurationBasedLookupClient() as lookup:
+            await dependency_graph.trace_dependencies(lookup, dataset.uuid, dependency_keys=settings.dependency_keys)
+
+        # Show message if uuids are missing
+        missing_uuids = dependency_graph.missing_uuids
+        if missing_uuids:
+            self.show_error('The following UUIDs were found during dependency graph calculation but are not present '
+                            'in the database: {}'.format(reduce(lambda a, b: a + ', ' + b, missing_uuids)))
+
+        self.dependency_graph_widget.graph = dependency_graph.graph
+        self.dependency_stack.set_visible_child(self.dependency_view)
 
     def show_error(self, exception):
         _logger.error(traceback.format_exc())

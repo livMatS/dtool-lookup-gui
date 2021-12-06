@@ -807,14 +807,16 @@
                                         <property name="visible">True</property>
                                         <property name="can-focus">False</property>
                                         <child>
-                                          <object class="GtkBox" id="dependency-view">
+                                          <object class="GtkBox" id="dependency_view">
                                             <property name="visible">True</property>
                                             <property name="can-focus">False</property>
                                             <property name="orientation">vertical</property>
                                             <child>
-                                              <object class="DtoolGraphWidget">
+                                              <object class="DtoolGraphWidget" id="dependency_graph_widget">
                                                 <property name="visible">True</property>
                                                 <property name="can-focus">False</property>
+                                                <property name="hexpand">True</property>
+                                                <property name="vexpand">True</property>
                                               </object>
                                               <packing>
                                                 <property name="expand">False</property>
@@ -829,7 +831,7 @@
                                           </packing>
                                         </child>
                                         <child>
-                                          <object class="GtkSpinner" id="dependency-spinner">
+                                          <object class="GtkSpinner" id="dependency_spinner">
                                             <property name="visible">True</property>
                                             <property name="can-focus">False</property>
                                             <property name="active">True</property>
