@@ -281,4 +281,4 @@ class DatasetModel:
             return self._dataset_info['manifest']
         manifest_dict = await _lookup_client.manifest(self.uri)
         self._dataset_info['manifest'] = _mangle_lookup_manifest(manifest_dict)
-        self._dataset_info['manifest']
+        return self._dataset_info['manifest']
