@@ -123,29 +123,9 @@ class Application(Gtk.Application):
         return 0
 
     def do_startup(self):
-        """Create a few custom actions at application statup, runs before anything else."""
+        """Stub, runs before anything else, create custom actions here."""
         logger.debug("do_startup")
         Gtk.Application.do_startup(self)
-
-    #    action = Gio.SimpleAction(name="settings", parameter_type=None)
-    #    action.connect("activate", self.on_settings)
-    #    self.add_action(action)
-
-    #    action = Gio.SimpleAction(name="about", parameter_type=None)
-    #    action.connect("activate", self.on_about)
-    #    self.add_action(action)
-
-    # action handlers
-    # def on_settings(self, action, param):
-    #    """Open settings dialog."""
-    #    SettingsDialog(self.signal_handler).show()
-
-    # def on_about(self, action, param):
-    #    """Not yet implemented"""
-    #    pass
-
-    # def on_quit(self, action, param):  # not yet used
-    #    self.quit()  # quit the application
 
 
 def run_gui():
