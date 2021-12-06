@@ -33,7 +33,7 @@ class DtoolTransferPopoverMenu(Gtk.PopoverMenu):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, margin_top=self._margin, margin_bottom=self._margin,
-                       margin_start=self._margin, margin_end=self._margin)
+                            margin_start=self._margin, margin_end=self._margin)
         self.add(self.vbox)
 
     def update(self, destinations, on_copy=None):
@@ -50,5 +50,6 @@ class DtoolTransferPopoverMenu(Gtk.PopoverMenu):
                 button.connect('clicked', on_copy)
         for child in self.get_children():
             child.show_all()
+
 
 GObject.type_register(DtoolTransferPopoverMenu)
