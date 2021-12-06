@@ -30,6 +30,7 @@ import numpy as np
 from gi.repository import GObject, Gdk, Gtk
 
 from ..models.simple_graph import GraphLayout
+from .graph_popover import DtoolGraphPopover
 
 
 def circle(context, x, y):
@@ -52,14 +53,21 @@ def triangle(context, x, y):
 class DtoolGraphWidget(Gtk.DrawingArea):
     __gtype_name__ = 'DtoolGraphWidget'
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._timer = None
         self._graph = None
         self._layout = None
 
+        self._on_show_clicked = None
+
+        self._popover = DtoolGraphPopover(on_show_clicked=self.on_show_clicked)
+        self._popover.set_relative_to(self)
+
         self.connect('realize', self.on_realize)
         self.connect('draw', self.on_draw)
+        self.connect('motion-notify-event', self.on_motion_notify)
+        self.set_events(Gdk.EventMask.POINTER_MOTION_MASK)
 
     @property
     def graph(self):
@@ -72,27 +80,6 @@ class DtoolGraphWidget(Gtk.DrawingArea):
         self._layout = GraphLayout(self._graph)
         if self._timer is None:
             self._timer = GObject.timeout_add(10, self.on_timeout, self)
-
-    def set_popover(self, popover):
-        # Popover widget
-        self.popover = popover
-        self.popover.set_relative_to(self)
-        #self.uuid_label = builder.get_object('dependency-uuid')
-        #self.name_label = builder.get_object('dependency-name')
-        #self.search_entry = builder.get_object('search-entry')
-
-        self._current_uuid = None
-
-        # Event signals
-        self.connect('motion-notify-event', self.on_motion_notify)
-
-        self.set_events(Gdk.EventMask.POINTER_MOTION_MASK)
-
-        self.connect('realize', self.on_realize)
-        self.connect('draw', self.on_draw)
-
-        #builder.get_object('dependency-show-dataset-button').connect(
-        #    'clicked', self.on_show_clicked)
 
     def __del__(self):
         if self._timer is not None:
@@ -199,19 +186,20 @@ class DtoolGraphWidget(Gtk.DrawingArea):
                 x, y = positions[state][0]
                 rect = Gdk.Rectangle()
                 rect.x, rect.y = context.user_to_device(x, y + 0.5)
-                self.popover.set_pointing_to(rect)
+                self._popover.set_pointing_to(rect)
                 self._current_uuid = uuids[state][0]
-                self.uuid_label.set_text(self._current_uuid)
-                self.name_label.set_text(names[state][0])
-                self.popover.show()
+                self._popover.uuid = self._current_uuid
+                self._popover.name = names[state][0]
+                self._popover.show()
 
         if not np.any(state):
             # Hide popover if no node is active
-            self.popover.hide()
+            self._popover.hide()
 
     def on_show_clicked(self, user_data):
-        self.popover.hide()
-        self.search_entry.set_text(f'uuid:{self._current_uuid}')
+        self._popover.hide()
+        if self._on_show_clicked is not None:
+            self._on_show_clicked(self._current_uuid)
 
     def on_timeout(self, user_data):
         try:
