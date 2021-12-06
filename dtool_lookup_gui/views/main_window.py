@@ -77,6 +77,8 @@ class MainWindow(Gtk.ApplicationWindow):
 
     search_entry = Gtk.Template.Child()
 
+    copy_dataset_spinner = Gtk.Template.Child()
+
     base_uri_list_box = Gtk.Template.Child()
     dataset_list_box = Gtk.Template.Child()
 
@@ -155,13 +157,15 @@ class MainWindow(Gtk.ApplicationWindow):
                 except Exception as e:
                     self.show_error(e)
                 self.create_dataset_button.set_sensitive(row.base_uri.scheme == 'file')
+                self.main_stack.set_visible_child(self.main_paned)
             elif hasattr(row, 'search_results'):
                 # This is the search result
                 if row.search_results is not None:
                     self.dataset_list_box.fill(row.search_results)
                     self.create_dataset_button.set_sensitive(False)
-
-            self.main_stack.set_visible_child(self.main_paned)
+                    self.main_stack.set_visible_child(self.main_paned)
+                else:
+                    self.main_stack.set_visible_child(self.main_label)
 
             row.stop_spinner()
             row.task = None
@@ -296,7 +300,12 @@ class MainWindow(Gtk.ApplicationWindow):
             asyncio.create_task(self._update_dataset_view(self.dataset_list_box.get_selected_row().dataset))
 
     def on_copy_clicked(self, widget):
-        asyncio.create_task(self.dataset_list_box.get_selected_row().dataset.copy(widget.destination))
+        async def _copy():
+            self.copy_dataset_spinner.start()
+            await self.dataset_list_box.get_selected_row().dataset.copy(widget.destination)
+            self.copy_dataset_spinner.stop()
+
+        asyncio.create_task(_copy())
 
     def _add_item(self, uri):
         p = urllib.parse.urlparse(uri)

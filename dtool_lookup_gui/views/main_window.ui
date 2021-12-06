@@ -913,7 +913,9 @@
                       <object class="GtkLabel" id="main_label">
                         <property name="visible">True</property>
                         <property name="can-focus">False</property>
-                        <property name="label" translatable="yes">Please select a storage location</property>
+                        <property name="label" translatable="yes">Please select a storage location
+or search for a dataset</property>
+                        <property name="justify">center</property>
                         <attributes>
                           <attribute name="weight" value="bold"/>
                           <attribute name="scale" value="2"/>
@@ -1080,6 +1082,16 @@
           </object>
           <packing>
             <property name="position">2</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkSpinner" id="copy_dataset_spinner">
+            <property name="visible">True</property>
+            <property name="can-focus">False</property>
+          </object>
+          <packing>
+            <property name="pack-type">end</property>
+            <property name="position">3</property>
           </packing>
         </child>
       </object>

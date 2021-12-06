@@ -138,7 +138,7 @@ def _list_datasets(base_uri):
 
 
 def _load_dataset(uri):
-    logger.info('Loading dataset from URI: {}'.format(uri))
+    logger.info(f'Loading dataset from URI: {uri}')
 
     # determine from admin metadata whether this is a protodataset
     admin_metadata = dtoolcore._admin_metadata_from_uri(uri, None)
@@ -152,6 +152,8 @@ def _load_dataset(uri):
 
 
 def _copy_dataset(uri, target_base_uri, resume, auto_resume):
+    logger.info(f'Copying dataset from URI {uri} to {target_base_uri}...')
+
     dataset = _load_dataset(uri)
 
     dest_uri = dtoolcore._generate_uri(
@@ -182,6 +184,8 @@ def _copy_dataset(uri, target_base_uri, resume, auto_resume):
         config_path=None
         #progressbar=progressbar
     )
+
+    logger.info(f'Dataset successfully copied from {uri} to {target_base_uri}.')
 
     return dest_uri
 
