@@ -48,6 +48,8 @@ from ..utils.date import date_to_string
 from ..utils.dependency_graph import DependencyGraph
 from .dataset_name_dialog import DatasetNameDialog
 from .settings_dialog import SettingsDialog
+from .log_window import LogWindow
+
 
 _logger = logging.getLogger(__name__)
 
@@ -150,6 +152,10 @@ class MainWindow(Gtk.ApplicationWindow):
     @Gtk.Template.Callback()
     def on_settings_clicked(self, widget):
         SettingsDialog(self).show()
+
+    @Gtk.Template.Callback()
+    def on_logging_clicked(self, widget):
+        LogWindow(self).show()
 
     @Gtk.Template.Callback()
     def on_base_uri_selected(self, list_box, row):
