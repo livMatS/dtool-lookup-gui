@@ -1,6 +1,5 @@
 #
-# PYTHON_ARGCOMPLETE_OK
-# Copyright 2020 Lars Pastewka
+# Copyright 2021 Lars Pastewka, Johanns Hoermann
 #
 # ### MIT license
 #
@@ -23,6 +22,28 @@
 # SOFTWARE.
 #
 
-if __name__ == '__main__':
-    from .main import run_gui
-    run_gui()
+from gi.repository import GObject, Gtk
+
+from .dataset_row import DtoolDatasetRow
+
+
+class DtoolDatasetListBox(Gtk.ListBox):
+    __gtype_name__ = 'DtoolDatasetListBox'
+
+    def fill(self, datasets, on_show=None):
+        for row in self.get_children():
+            row.destroy()
+        for dataset in datasets:
+            self.add(DtoolDatasetRow(dataset))
+        self.show_all()
+        if on_show is not None:
+            on_show(datasets)
+
+    def add_dataset(self, dataset):
+        # Create row for new dataset
+        row = DtoolDatasetRow(dataset)
+        self.add(row)
+        # Select new dataset
+        self.select_row(row)
+
+GObject.type_register(DtoolDatasetListBox)

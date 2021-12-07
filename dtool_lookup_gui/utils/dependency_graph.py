@@ -21,11 +21,12 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
+
 import json
 import logging
 
-from . import is_uuid
-from .SimpleGraph import SimpleGraph
+from dtool_lookup_gui import is_uuid
+from dtool_lookup_gui.models.simple_graph import SimpleGraph
 
 
 logger = logging.getLogger(__name__)
@@ -40,8 +41,12 @@ class DependencyGraph:
     def __init__(self):
         self._reset_graph()
 
+    @property
+    def graph(self):
+        return self._graph
+
     def _reset_graph(self):
-        self.graph = SimpleGraph()
+        self._graph = SimpleGraph()
         self._uuid_to_vertex = {}
         self._missing_uuids = []
 
@@ -65,7 +70,7 @@ class DependencyGraph:
             # and this field is unique:
             uuid = dataset['uuid']
             if 'uuid' in dataset and uuid not in self._uuid_to_vertex:
-                v = self.graph.add_vertex(
+                v = self._graph.add_vertex(
                     uuid=uuid,
                     name=dataset['name'],
                     kind='root' if uuid == root_uuid else 'dependent')
@@ -77,14 +82,14 @@ class DependencyGraph:
                     if is_uuid(parent_uuid):
                         if parent_uuid not in self._uuid_to_vertex:
                             # This UUID is present in the graph but not in the database
-                            v = self.graph.add_vertex(
+                            v = self._graph.add_vertex(
                                 uuid=parent_uuid,
                                 name='Dataset does not exist in database.',
                                 kind='does-not-exist')
                             self._uuid_to_vertex[parent_uuid] = v
                             self._missing_uuids += [parent_uuid]
 
-                        self.graph.add_edge(
+                        self._graph.add_edge(
                             self._uuid_to_vertex[dataset['uuid']],
                             self._uuid_to_vertex[parent_uuid])
                     else:

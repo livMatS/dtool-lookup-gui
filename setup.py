@@ -59,9 +59,11 @@ setup(
         'aiohttp>=3.6',
         'gbulb>=0.6',
         'pyyaml>=5.3',
+        'ruamel.yaml',
         'PyGObject>=3.36',
         'scipy>=1.5',
-        'numpy'
+        'numpy',
+        'pyjwt'
     ],
     setup_requires=[
         'setuptools_scm>=3.5.0'

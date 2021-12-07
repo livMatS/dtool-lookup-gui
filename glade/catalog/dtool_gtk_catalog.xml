@@ -1,16 +1,26 @@
 <glade-catalog name="dtool_gtk_catalog" 
-               library="dtool_gtk"
-               domain="glade-3" 
+               domain="glade-3"
                depends="gtk+" 
-               version="0.1"
+               version="1.0"
                supports="gtkbuilder"
                language="python">
+  <init-function>glade_python_init</init-function>
   <glade-widget-classes>
-    <glade-widget-class title="dtool dataset list box" name="DtoolDatasetListBox" 
+    <glade-widget-class title="dtool base URI list box" name="DtoolBaseURIListBox"
+                        generic-name="DtoolBaseURIListBox" parent="GtkListBox"
+                        icon-name="widget-gtk-listbox"/>
+    <glade-widget-class title="dtool base URI list box" name="DtoolDatasetListBox"
                         generic-name="DtoolDatasetListBox" parent="GtkListBox"
                         icon-name="widget-gtk-listbox"/>
-    <glade-widget-class title="dtool dataset list box row" name="DtoolDatasetListBoxRow" 
-                        generic-name="DtoolDatasetListBoxRow" parent="GtkListBoxRow"
-                        icon-name="widget-gtk-listboxrow"/>
+    <glade-widget-class title="dtool transfer popover" name="DtoolTransferPopoverMenu"
+                        generic-name="DtoolTransferPopoverMenu" parent="GtkPopoverMenu"
+                        icon-name="widget-gtk-popover-menu"/>
+    <glade-widget-class title="dtool graph widget" name="DtoolGraphWidget"
+                        generic-name="DtoolGraphWidget" parent="GtkDrawingArea"
+                        icon-name="widget-gtk-drawing-area"/>
   </glade-widget-classes>
+  <glade-widget-group title="Dtool" name="dtool">
+      <glade-widget-class-ref name="DtoolBaseURIListBox" />
+      <glade-widget-class-ref name="DtoolGraphWidget" />
+  </glade-widget-group>
 </glade-catalog>

@@ -1,6 +1,5 @@
 #
-# PYTHON_ARGCOMPLETE_OK
-# Copyright 2020 Lars Pastewka
+# Copyright 2021 Johannes Hoermann, Lars Pastewka
 #
 # ### MIT license
 #
@@ -23,6 +22,29 @@
 # SOFTWARE.
 #
 
-if __name__ == '__main__':
-    from .main import run_gui
-    run_gui()
+import os
+
+from gi.repository import Gio
+
+
+class Settings:
+    def __init__(self):
+        schema_source = Gio.SettingsSchemaSource.new_from_directory(
+            f'{os.path.dirname(__file__)}/..', Gio.SettingsSchemaSource.get_default(), False)
+        schema = Gio.SettingsSchemaSource.lookup(
+            schema_source, "de.uni-freiburg.dtool-lookup-gui", False)
+        self.settings = Gio.Settings.new_full(schema, None, None)
+
+    @property
+    def dependency_keys(self):
+        return self.settings.get_string('dependency-keys')
+
+    @property
+    def local_base_uris(self):
+        return self.settings.get_strv('local-base-uris')
+
+    @local_base_uris.setter
+    def local_base_uris(self, value):
+        self.settings.set_strv('local-base-uris', value)
+
+settings = Settings()

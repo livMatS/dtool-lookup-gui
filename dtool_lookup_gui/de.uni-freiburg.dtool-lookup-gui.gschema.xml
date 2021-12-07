@@ -4,29 +4,14 @@
 
     <schema path="/de/uni-freiburg/dtool-lookup-gui/" id="de.uni-freiburg.dtool-lookup-gui">
 
-        <key name='lookup-url' type='s'>
-            <default>"https://lookup-url/"</default>
-            <summary>URL of dtool lookup server</summary>
-        </key>
-
-        <key name='authenticator-url' type='s'>
-            <default>"https://authenticator-url/"</default>
-            <summary>URL of authentication server</summary>
-        </key>
-
-        <key name='lookup-username' type='s'>
-            <default>"username"</default>
-            <summary>Username for dtool lookup server</summary>
-        </key>
-
-        <key name='lookup-password' type='s'>
-            <default>"password"</default>
-            <summary>Password for dtool lookup server</summary>
-        </key>
-
         <key name='dependency-keys' type='s'>
             <default>'["readme.derived_from.uuid","annotations.source_dataset_uuid"]'</default>
             <summary>Fields that may identify source datasets for querying dependency graphs.</summary>
+        </key>
+
+        <key name='local-base-uris' type='as'>
+            <default>[]</default>
+            <summary>Local directories displayed in the base URI list.</summary>
         </key>
 
     </schema>
