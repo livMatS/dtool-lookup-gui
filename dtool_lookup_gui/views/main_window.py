@@ -34,7 +34,12 @@ from gi.repository import Gio, Gtk, GtkSource
 import dtoolcore.utils
 from dtool_info.utils import sizeof_fmt
 
+import dtool_lookup_api.core.config
 from dtool_lookup_api.core.LookupClient import ConfigurationBasedLookupClient
+# As of dtool-lookup-api 0.5.0, the following line still is a necessity to
+# disable prompting for credentials on the command line. This behavior
+# will change in future versions.
+dtool_lookup_api.core.config.Config.interactive = False
 
 from ..models.base_uris import all, LocalBaseURIModel
 from ..models.datasets import DatasetModel
