@@ -55,7 +55,7 @@ setup(
         'dtoolcore>=3.17',
         'dtool-create>=0.23.4',
         'dtool-info>=0.16.2',
-        'dtool-lookup-api>=0.3',
+        'dtool-lookup-api>=0.5',
         'aiohttp>=3.6',
         'gbulb>=0.6',
         'pyyaml>=5.3',
