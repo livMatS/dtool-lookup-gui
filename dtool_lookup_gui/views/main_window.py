@@ -41,6 +41,7 @@ from ..models.datasets import DatasetModel
 from ..models.settings import settings
 from ..utils.date import date_to_string
 from ..utils.dependency_graph import DependencyGraph
+from ..widgets.search_results_row import DtoolSearchResultsRow
 from .dataset_name_dialog import DatasetNameDialog
 from .settings_dialog import SettingsDialog
 
@@ -164,13 +165,11 @@ class MainWindow(Gtk.ApplicationWindow):
                         self.dataset_list_box.fill(datasets)
                 except Exception as e:
                     self.show_error(e)
-                self.create_dataset_button.set_sensitive(row.base_uri.scheme == 'file')
                 self.main_stack.set_visible_child(self.main_paned)
             elif hasattr(row, 'search_results'):
                 # This is the search result
                 if row.search_results is not None:
                     self.dataset_list_box.fill(row.search_results)
-                    self.create_dataset_button.set_sensitive(False)
                     self.main_stack.set_visible_child(self.main_paned)
                 else:
                     self.main_stack.set_visible_child(self.main_label)
@@ -179,7 +178,8 @@ class MainWindow(Gtk.ApplicationWindow):
             row.task = None
 
         self.main_stack.set_visible_child(self.main_spinner)
-        row = self.base_uri_list_box.get_selected_row()
+        self.create_dataset_button.set_sensitive(not isinstance(row, DtoolSearchResultsRow) and
+                                                 row.base_uri.scheme == 'file')
         if row.task is None:
             row.task = asyncio.create_task(_select_base_uri())
 
