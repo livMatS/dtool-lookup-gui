@@ -143,7 +143,7 @@ class LogWindow(Gtk.Window):
         tree_iter = combo.get_active_iter()
         model = combo.get_model()
         loglevel, loglevel_label = model[tree_iter][:2]
-        print(f"Selected ID: {loglevel}, loglevel: {loglevel_label}")
+        logger.debug(f"Selected ID: {loglevel}, loglevel: {loglevel_label}")
         # This explicitly evokes the according action when loglevel selected
         # in combo box turned, see
         # https://lazka.github.io/pgi-docs/Gio-2.0/classes/ActionGroup.html#Gio.ActionGroup.list_actions
