@@ -25,12 +25,13 @@
 import argparse
 import asyncio
 import logging
+import os.path
 import sys
 
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('GtkSource', '4')
-from gi.repository import GObject, Gio, Gtk, GtkSource
+from gi.repository import GLib, GObject, Gio, Gtk, GtkSource
 
 import gbulb
 gbulb.install(gtk=True)
@@ -123,10 +124,42 @@ class Application(Gtk.Application):
         return 0
 
     def do_startup(self):
-        """Stub, runs before anything else, create custom actions here."""
+        """Runs before anything else, create custom actions here."""
         logger.debug("do_startup")
+
+        root_logger = logging.getLogger()
+
+        # toggle-logging
+        toggle_logging_variant = GLib.Variant.new_boolean(False)
+        toggle_logging_action = Gio.SimpleAction.new_stateful(
+            "toggle-logging", toggle_logging_variant.get_type(), toggle_logging_variant
+        )
+        toggle_logging_action.connect("change-state", self.do_toggle_logging)
+        self.add_action(toggle_logging_action)
+
+        # change-loglevel
+        loglevel_variant = GLib.Variant.new_uint16(root_logger.level)
+        loglevel_action = Gio.SimpleAction.new_stateful(
+            "change-loglevel", loglevel_variant.get_type(), loglevel_variant
+        )
+        loglevel_action.connect("change-state", self.do_change_loglevel)
+        self.add_action(loglevel_action)
+
         Gtk.Application.do_startup(self)
 
+    # custom actions
+    def do_toggle_logging(self, action, value):
+        action.set_state(value)
+        if value.get_boolean():
+            logging.disable(logging.WARNING)
+        else:
+            logging.disable(logging.NOTSET)
+
+    # actions
+    def do_change_loglevel(self, action, value):
+        action.set_state(value)
+        root_logger = logging.getLogger()
+        root_logger.setLevel(value)
 
 def run_gui():
     GObject.type_register(GtkSource.View)

@@ -25,68 +25,61 @@
 import logging
 import os
 
-from gi.repository import GLib, Gio, Gtk, GtkSource
+from gi.repository import Gio, Gtk, GtkSource
 
-from ..utils.logging import GtkTextBufferHandler
+from ..utils.logging import FormattedGtkTextBufferHandler
 
-_logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 @Gtk.Template(filename=f'{os.path.dirname(__file__)}/log_window.ui')
-class LogWindow(Gtk.ApplicationWindow):
+class LogWindow(Gtk.Window):
     __gtype_name__ = 'DtoolLogWindow'
 
     log_text_view = Gtk.Template.Child()
 
     clear_button = Gtk.Template.Child()
     copy_button = Gtk.Template.Child()
-    save_file_chooser_button = Gtk.Template.Child()
+    save_button = Gtk.Template.Child()
 
-    enable_logging_switch = Gtk.Template.Child()
+    log_switch = Gtk.Template.Child()
+    loglevel_entry = Gtk.Template.Child()
     loglevel_combo_box = Gtk.Template.Child()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        root_logger = logging.getLogger()
-
-        # toggle-logging
-        toggle_logging_variant = GLib.Variant.new_bool(False)
-        toggle_logging_action = Gio.SimpleAction.new_stateful(
-            "toggle_logging", toggle_logging_variant.get_type(), toggle_logging_variant
-        )
-        toggle_logging_action.connect("change-state", self.on_toggle_logging)
-        self.add_action(toggle_logging_action)
-
-        # change-loglevel
-        loglevel_variant = GLib.Variant.new_uint16(root_logger.level)
-        loglevel_action = Gio.SimpleAction.new_stateful(
-            "change_loglevel", loglevel_variant.get_type(), loglevel_variant
-        )
-        loglevel_action.connect("change-state", self.on_change_loglevel)
-        self.add_action(loglevel_action)
-
         self.log_buffer = self.log_text_view.get_buffer()
-
-        self.log_handler = GtkTextBufferHandler(self.log_buffer)
-
-        # logger = logging.getLogger()
-        # root_logger.addHandler(self.log_handler)
+        self.log_handler = FormattedGtkTextBufferHandler(text_buffer=self.log_buffer)
 
         lang_manager = GtkSource.LanguageManager()
         self.log_buffer.set_language(lang_manager.get_language("python"))
         self.log_buffer.set_highlight_syntax(True)
         self.log_buffer.set_highlight_matching_brackets(True)
 
-    def toggle_logging(self, action, value):
-        action.set_state(value)
         root_logger = logging.getLogger()
-        if value.get_boolean():
-            if not self.log_handler in root_logger.handlers:
-                root_logger.addHandler(self.log_handler)
-        else:
-            if self.log_handler in root_logger.handlers:
-                root_logger.removeHandler(self.log_handler)
+        if self.log_handler not in root_logger.handlers:
+            logger.debug("Append GtkTextBufferHandler to root logger.")
+            root_logger.addHandler(self.log_handler)
+
+        root_logger.debug("Added handler.")
+
+    # signal handlers
+    @Gtk.Template.Callback()
+    def on_show(self, widget):
+        root_logger = logging.getLogger()
+        if self.log_handler not in root_logger.handlers:
+            root_logger.addHandler(self.log_handler)
+
+    @Gtk.Template.Callback()
+    def on_delete(self, widget, event):
+        return self.hide_on_delete()
+
+    @Gtk.Template.Callback()
+    def on_destroy(self, widget):
+        root_logger = logging.getLogger()
+        if self.log_handler in root_logger.handlers:
+            root_logger.removeHandler(self.log_handler)
 
     @Gtk.Template.Callback()
     def on_log_switch_activate(self, widget):
