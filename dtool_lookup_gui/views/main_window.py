@@ -245,7 +245,7 @@ class MainWindow(Gtk.ApplicationWindow):
         LocalBaseURIModel.add_directory(uri)
 
         # Refresh view of base URIs
-        self.base_uri_list_box.refresh()
+        asyncio.create_task(self.base_uri_list_box.refresh())
 
     @Gtk.Template.Callback()
     def on_create_dataset_clicked(self, widget):
