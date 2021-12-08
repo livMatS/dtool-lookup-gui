@@ -130,19 +130,19 @@ class Application(Gtk.Application):
         root_logger = logging.getLogger()
 
         # toggle-logging
-        toggle_logging_variant = GLib.Variant.new_boolean(False)
+        toggle_logging_variant = GLib.Variant.new_boolean(True)
         toggle_logging_action = Gio.SimpleAction.new_stateful(
-            "toggle-logging", toggle_logging_variant.get_type(), toggle_logging_variant
+            "toggle-logging", None, toggle_logging_variant
         )
         toggle_logging_action.connect("change-state", self.do_toggle_logging)
         self.add_action(toggle_logging_action)
 
-        # change-loglevel
+        # set-loglevel
         loglevel_variant = GLib.Variant.new_uint16(root_logger.level)
         loglevel_action = Gio.SimpleAction.new_stateful(
-            "change-loglevel", loglevel_variant.get_type(), loglevel_variant
+            "set-loglevel", loglevel_variant.get_type(), loglevel_variant
         )
-        loglevel_action.connect("change-state", self.do_change_loglevel)
+        loglevel_action.connect("change-state", self.do_set_loglevel)
         self.add_action(loglevel_action)
 
         Gtk.Application.do_startup(self)
@@ -151,12 +151,20 @@ class Application(Gtk.Application):
     def do_toggle_logging(self, action, value):
         action.set_state(value)
         if value.get_boolean():
-            logging.disable(logging.WARNING)
-        else:
+            logger.debug("Return to default logging configuration.")
             logging.disable(logging.NOTSET)
+            logger.debug("Returned to default logging configuration.")
 
-    # actions
-    def do_change_loglevel(self, action, value):
+        else:
+            logger.debug("Disable all logging below WARNING.")
+            logging.disable(logging.WARNING)
+            logger.debug("Disabled all logging below WARNING.")
+
+    def do_set_loglevel(self, action, value):
+
+        if action.get_state().get_uint16() == value.get_uint16():
+            logger.debug("Desired loglevel and current log level are equivalent.")
+            return
         action.set_state(value)
         root_logger = logging.getLogger()
         root_logger.setLevel(value.get_uint16())
