@@ -63,7 +63,7 @@ setup(
         'PyGObject>=3.36',
         'scipy>=1.5',
         'numpy',
-        'pyjwt'
+        'jwt'
     ],
     setup_requires=[
         'setuptools_scm>=3.5.0'
