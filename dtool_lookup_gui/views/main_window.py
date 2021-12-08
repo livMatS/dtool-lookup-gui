@@ -147,6 +147,8 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self.error_bar.hide()
 
+        self.log_window = LogWindow(application=self.application)
+
         _logger.debug(f"Constructed main window for app '{self.application.get_application_id()}'")
 
     def refresh(self):
@@ -158,7 +160,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def on_logging_clicked(self, widget):
-        LogWindow(application=self.application).show()
+        self.log_window.show()
 
     @Gtk.Template.Callback()
     def on_base_uri_selected(self, list_box, row):

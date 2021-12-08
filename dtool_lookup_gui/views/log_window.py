@@ -21,7 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-
+import datetime
 import logging
 import os
 
@@ -83,15 +83,16 @@ class LogWindow(Gtk.Window):
         self.log_handler = FormattedPrependingGtkTextBufferHandler(
             text_buffer=self.log_buffer)
 
+        # set up some pseudo highlighting for the log window
         lang_manager = GtkSource.LanguageManager()
         self.log_buffer.set_language(lang_manager.get_language("python"))
         self.log_buffer.set_highlight_syntax(True)
         self.log_buffer.set_highlight_matching_brackets(True)
 
-        if self.log_handler not in root_logger.handlers:
-            logger.debug("Append GtkTextBufferHandler to root logger.")
-            root_logger.addHandler(self.log_handler)
+        logger.debug("Append GtkTextBufferHandler to root logger.")
+        root_logger.addHandler(self.log_handler)
 
+        # bind another handler to th application-level action 'set-loglevel'
         set_loglevel_action = self.get_application().lookup_action('set-loglevel')
         set_loglevel_action.connect("change-state", self.do_loglevel_changed)
 
@@ -99,6 +100,7 @@ class LogWindow(Gtk.Window):
 
     # action handlers
     def do_loglevel_changed(self, action, value):
+        """Keep entry ot loglevel combobox in sync with actual action state."""
         new_loglevel = value.get_uint16()
         logger.debug(f"Loglevel changed to {new_loglevel}, update combo box entry if necessary.")
         tree_iter = self.loglevel_combo_box.get_active_iter()
@@ -112,16 +114,17 @@ class LogWindow(Gtk.Window):
     # signal handlers
     @Gtk.Template.Callback()
     def on_show(self, widget):
+        logger.debug("Show.")
         root_logger = logging.getLogger()
-        if self.log_handler not in root_logger.handlers:
-            root_logger.addHandler(self.log_handler)
 
     @Gtk.Template.Callback()
     def on_delete(self, widget, event):
+        logger.debug("Hide on delete.")
         return self.hide_on_delete()
 
     @Gtk.Template.Callback()
     def on_destroy(self, widget):
+        logger.debug("Destroy.")
         root_logger = logging.getLogger()
         if self.log_handler in root_logger.handlers:
             root_logger.removeHandler(self.log_handler)
@@ -136,24 +139,26 @@ class LogWindow(Gtk.Window):
 
     @Gtk.Template.Callback()
     def on_loglevel_combo_box_changed(self, combo):
+        """Selected loglevel from combo box."""
         tree_iter = combo.get_active_iter()
-        if tree_iter is not None:
-            model = combo.get_model()
-            loglevel, loglevel_label = model[tree_iter][:2]
-            print(f"Selected ID={loglevel}, loglevel={loglevel_label}")
-            # This explicitly evokes the according action when loglevel selected
-            # in combo box turned, see
-            # https://lazka.github.io/pgi-docs/Gio-2.0/classes/ActionGroup.html#Gio.ActionGroup.list_actions
-            # There might be more elegant mechanism to connect a switch with an
-            # app-central action, but the Gtk docs are sparse on actions...
-            self.get_application().activate_action('set-loglevel', GLib.Variant.new_uint16(loglevel))
+        model = combo.get_model()
+        loglevel, loglevel_label = model[tree_iter][:2]
+        print(f"Selected ID: {loglevel}, loglevel: {loglevel_label}")
+        # This explicitly evokes the according action when loglevel selected
+        # in combo box turned, see
+        # https://lazka.github.io/pgi-docs/Gio-2.0/classes/ActionGroup.html#Gio.ActionGroup.list_actions
+        # There might be more elegant mechanism to connect a switch with an
+        # app-central action, but the Gtk docs are sparse on actions...
+        self.get_application().activate_action('set-loglevel', GLib.Variant.new_uint16(loglevel))
 
     @Gtk.Template.Callback()
     def on_clear_clicked(self, widget):
+        """Clear contents of log window."""
         self.log_buffer.set_text("")
 
     @Gtk.Template.Callback()
     def on_copy_clicked(self, widget):
+        """Copy contents of log window to clipboard."""
         start_iter = self.log_buffer.get_start_iter()
         end_iter = self.log_buffer.get_end_iter()
         self.log_buffer.select_range(start_iter, end_iter)
@@ -162,4 +167,26 @@ class LogWindow(Gtk.Window):
 
     @Gtk.Template.Callback()
     def on_save_clicked(self, widget):
-        pass
+        """Open file chooser dialog and save contents of log window to file."""
+        dialog = Gtk.FileChooserDialog(title=f"Save log", parent=self,
+                                       action=Gtk.FileChooserAction.SAVE)
+        dialog.add_buttons(Gtk.STOCK_CANCEL,
+                           Gtk.ResponseType.CANCEL,
+                           Gtk.STOCK_OK,
+                           Gtk.ResponseType.OK)
+        suggested_file_name = f"{datetime.datetime.now().isoformat()}-{self.get_application().get_application_id()}.log"
+        dialog.set_current_name(suggested_file_name)
+        dialog.set_do_overwrite_confirmation(True)
+
+        response = dialog.run()
+
+        if response == Gtk.ResponseType.OK:
+            start_iter = self.log_buffer.get_start_iter()
+            end_iter = self.log_buffer.get_end_iter()
+            dest_filename = dialog.get_filename()
+            with open(dest_filename, "w") as file:
+                file.write(self.log_buffer.get_text(start_iter, end_iter, include_hidden_chars=False))
+
+        elif response == Gtk.ResponseType.CANCEL:
+            pass
+        dialog.destroy()
