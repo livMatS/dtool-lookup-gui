@@ -159,7 +159,7 @@ class Application(Gtk.Application):
     def do_change_loglevel(self, action, value):
         action.set_state(value)
         root_logger = logging.getLogger()
-        root_logger.setLevel(value)
+        root_logger.setLevel(value.get_uint16())
 
 def run_gui():
     GObject.type_register(GtkSource.View)

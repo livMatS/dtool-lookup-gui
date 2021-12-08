@@ -25,9 +25,9 @@
 import logging
 import os
 
-from gi.repository import Gio, Gtk, GtkSource
+from gi.repository import GLib, Gio, Gtk, GtkSource
 
-from ..utils.logging import FormattedGtkTextBufferHandler
+from ..utils.logging import FormattedPrependingGtkTextBufferHandler
 
 logger = logging.getLogger(__name__)
 
@@ -46,11 +46,17 @@ class LogWindow(Gtk.Window):
     loglevel_entry = Gtk.Template.Child()
     loglevel_combo_box = Gtk.Template.Child()
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, application=None, **kwargs):
         super().__init__(*args, **kwargs)
 
+        # this reintroduces passing the application down the window hierarchy,
+        # but I did not find a better way to access the application instance
+        # from here
+        self.set_application(application)
+
         self.log_buffer = self.log_text_view.get_buffer()
-        self.log_handler = FormattedGtkTextBufferHandler(text_buffer=self.log_buffer)
+        self.log_handler = FormattedPrependingGtkTextBufferHandler(
+            text_buffer=self.log_buffer)
 
         lang_manager = GtkSource.LanguageManager()
         self.log_buffer.set_language(lang_manager.get_language("python"))
@@ -62,7 +68,7 @@ class LogWindow(Gtk.Window):
             logger.debug("Append GtkTextBufferHandler to root logger.")
             root_logger.addHandler(self.log_handler)
 
-        root_logger.debug("Added handler.")
+        root_logger.debug("Created log window.")
 
     # signal handlers
     @Gtk.Template.Callback()
@@ -82,8 +88,13 @@ class LogWindow(Gtk.Window):
             root_logger.removeHandler(self.log_handler)
 
     @Gtk.Template.Callback()
-    def on_log_switch_activate(self, widget):
-        pass
+    def on_log_switch_state_set(self, widget, state):
+        # This explicitly toggles the according action when switch turned, see
+        # https://lazka.github.io/pgi-docs/Gio-2.0/classes/ActionGroup.html#Gio.ActionGroup.list_actions
+        # There might be more elegant mechanism to connect a switch with an
+        # app-central action, but the Gtk docs are sparse on actions...
+        self.get_application().activate_action(
+            'toggle-logging', GLib.Variant.new_boolean(state))
 
     @Gtk.Template.Callback()
     def on_loglevel_combo_box_changed(self, widget):

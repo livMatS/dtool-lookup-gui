@@ -134,6 +134,8 @@ class MainWindow(Gtk.ApplicationWindow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.application = self.get_application()
+
         self.main_stack.set_visible_child(self.main_label)
         self.dataset_stack.set_visible_child(self.dataset_label)
 
@@ -145,6 +147,8 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self.error_bar.hide()
 
+        _logger.debug(f"Constructed main window for app '{self.application.get_application_id()}'")
+
     def refresh(self):
         asyncio.create_task(self.base_uri_list_box.refresh())
 
@@ -154,7 +158,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def on_logging_clicked(self, widget):
-        LogWindow().show()
+        LogWindow(application=self.application).show()
 
     @Gtk.Template.Callback()
     def on_base_uri_selected(self, list_box, row):
