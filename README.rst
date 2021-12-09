@@ -20,7 +20,7 @@ On Ubuntu (20.04),
 
 .. code:: bash
 
-    apt install -y libgtksourceview-4-0
+    apt install -y gir1.2-gtksource-4
 
 suffices to to install these dependencies from the standard system package repositories.
 
