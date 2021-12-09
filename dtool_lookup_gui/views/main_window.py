@@ -46,6 +46,7 @@ from ..models.datasets import DatasetModel
 from ..models.settings import settings
 from ..utils.date import date_to_string
 from ..utils.dependency_graph import DependencyGraph
+from ..utils.logging import FormattedSingleMessageGtkInfoBarHandler
 from ..utils.query import (is_valid_query)
 from ..widgets.base_uri_row import DtoolBaseURIRow
 from ..widgets.search_popover import DtoolSearchPopover
@@ -150,6 +151,10 @@ class MainWindow(Gtk.ApplicationWindow):
         self.readme_buffer.set_highlight_matching_brackets(True)
 
         self.error_bar.hide()
+
+        root_logger = logging.getLogger()
+        self.log_handler = FormattedSingleMessageGtkInfoBarHandler(info_bar=self.error_bar, label=self.error_label)
+        root_logger.addHandler(self.log_handler)
 
         # connect a search popover with search entry
         self.search_popover = DtoolSearchPopover(search_entry=self.search_entry)
@@ -312,8 +317,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def on_show_clicked(self, widget):
-        # Gio.AppInfo.launch_default_for_uri(str(self.dataset_list_box.get_selected_row().dataset))
-        self.search_popover.popup()
+        Gio.AppInfo.launch_default_for_uri(str(self.dataset_list_box.get_selected_row().dataset))
 
     @Gtk.Template.Callback()
     def on_add_items_clicked(self, widget):
@@ -366,6 +370,16 @@ class MainWindow(Gtk.ApplicationWindow):
             row.freeze()
             self.dataset_list_box.show_all()
             asyncio.create_task(self._update_dataset_view(self.dataset_list_box.get_selected_row().dataset))
+
+    @Gtk.Template.Callback()
+    def on_error_bar_close(self, widget):
+        _logger.debug("Hide error bar.")
+        self.error_bar.set_revealed(False)
+
+    @Gtk.Template.Callback()
+    def on_error_bar_response(self, widget, response_id):
+        if response_id == Gtk.ResponseType.CLOSE:
+            self.error_bar.set_revealed(False)
 
     def on_copy_clicked(self, widget):
         async def _copy():
@@ -444,7 +458,7 @@ class MainWindow(Gtk.ApplicationWindow):
         # Show message if uuids are missing
         missing_uuids = dependency_graph.missing_uuids
         if missing_uuids:
-            self.show_error('The following UUIDs were found during dependency graph calculation but are not present '
+            _logger.warning('The following UUIDs were found during dependency graph calculation but are not present '
                             'in the database: {}'.format(reduce(lambda a, b: a + ', ' + b, missing_uuids)))
 
         self.dependency_graph_widget.graph = dependency_graph.graph
@@ -452,6 +466,3 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def show_error(self, exception):
         _logger.error(traceback.format_exc())
-        self.error_label.set_text(str(exception))
-        self.error_bar.show()
-        self.error_bar.set_revealed(True)

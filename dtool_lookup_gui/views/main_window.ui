@@ -106,6 +106,8 @@
                 <property name="orientation">vertical</property>
                 <property name="message-type">error</property>
                 <property name="show-close-button">True</property>
+                <signal name="close" handler="on_error_bar_close" swapped="no"/>
+                <signal name="response" handler="on_error_bar_response" swapped="no"/>
                 <child internal-child="action_area">
                   <object class="GtkButtonBox">
                     <property name="can-focus">False</property>

@@ -25,7 +25,6 @@
 import argparse
 import asyncio
 import logging
-import os.path
 import sys
 
 import gi
@@ -99,24 +98,24 @@ class Application(Gtk.Application):
                             default=0, help='Make terminal output more verbose')
         parser.add_argument('--debug', action='store_true',
                             help='Print debug info')
+        parser.add_argument('--quiet','-q', action='store_true',
+                            help='Print debug info')
 
         # parse the command line stored in args, but skip the first element (the filename)
         self.args = parser.parse_args(args.get_arguments()[1:])
 
-        loglevel = logging.ERROR
+        loglevel = logging.WARNING
 
+        if self.args.quiet:
+            loglevel = logging.ERROR
         if self.args.verbose > 0:
-            loglevel = logging.WARN
-        if self.args.verbose > 1:
             loglevel = logging.INFO
-        if self.args.debug or (self.args.verbose > 2):
+        if self.args.debug or (self.args.verbose > 1):
             loglevel = logging.DEBUG
 
         # explicitly modify the root logger
         logging.basicConfig(level=loglevel)
-        logger = logging.getLogger()
-        logger.setLevel(loglevel)
-        logger = logging.getLogger(__name__) # override global logger after modifying logging settings
+        self.activate_action('set-loglevel', GLib.Variant.new_uint16(loglevel))
 
         logger.debug("Parsed CLI options {}".format(self.args))
 
