@@ -46,6 +46,7 @@ from ..models.datasets import DatasetModel
 from ..models.settings import settings
 from ..utils.date import date_to_string
 from ..utils.dependency_graph import DependencyGraph
+from ..utils.query import is_valid_query
 from ..widgets.base_uri_row import DtoolBaseURIRow
 from ..widgets.search_results_row import DtoolSearchResultsRow
 from .dataset_name_dialog import DatasetNameDialog
@@ -166,14 +167,39 @@ class MainWindow(Gtk.ApplicationWindow):
     async def fetch_search_results(self, keyword, on_show=None):
         row = self.base_uri_list_box.search_results_row
         row.start_spinner()
+
         try:
-            datasets = await DatasetModel.search(keyword)
+            # datasets = await DatasetModel.search(keyword)
+            if keyword:
+                if is_valid_query(keyword):
+                    _logger.debug("Valid query specified.")
+                    datasets = await DatasetModel.query(keyword)
+                else:
+                    _logger.debug("Specified search text is not a valid query, just perform free text search.")
+                    # NOTE: server side allows a dict with the key-value pairs
+                    # "free_text", "creator_usernames", "base_uris", "uuids", "tags",
+                    # via route '/dataset/search', where all except "free_text"
+                    # can be lists and are translated to logical "and" or "or"
+                    # constructs on the server side. With the special treatment
+                    # of the 'uuid' keyword above, should we introduce similar
+                    # options for the other available keywords?
+                    datasets = await DatasetModel.search(keyword)
+            else:
+                _logger.debug("No keyword specified, list all datasets.")
+                datasets = await DatasetModel.all()
+
+            if len(datasets) > self._max_nb_datasets:
+                _logger.warning(
+                    f"{len(datasets)} search results exceed allowed displayed maximum of {self._max_nb_datasets}. "
+                    f"Only the first {self._max_nb_datasets} results are shown. Narrow down your search.")
             datasets = datasets[:self._max_nb_datasets]  # Limit number of datasets that are shown
             row.search_results = datasets  # Cache datasets
             self.update_search_summary(datasets)
             if self.base_uri_list_box.get_selected_row() == row:
                 # Only update if the row is still selected
                 self.dataset_list_box.fill(datasets, on_show=on_show)
+
+
         except Exception as e:
             self.show_error(e)
 

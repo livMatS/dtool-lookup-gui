@@ -241,6 +241,20 @@ class DatasetModel:
 
         return [await cls.from_lookup(lookup_dict) for lookup_dict in datasets]
 
+    @classmethod
+    async def query(cls, query_text):
+        async with ConfigurationBasedLookupClient() as lookup:
+            datasets = await lookup.by_query(query_text)
+
+        return [await cls.from_lookup(lookup_dict) for lookup_dict in datasets]
+
+    @classmethod
+    async def all(cls):
+        async with ConfigurationBasedLookupClient() as lookup:
+            datasets = await lookup.all()
+
+        return [await cls.from_lookup(lookup_dict) for lookup_dict in datasets]
+
     def __str__(self):
         return self._dataset_info['uri']
 
