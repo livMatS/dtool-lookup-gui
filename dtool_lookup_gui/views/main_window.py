@@ -156,6 +156,32 @@ class MainWindow(Gtk.ApplicationWindow):
     def refresh(self):
         asyncio.create_task(self.base_uri_list_box.refresh())
 
+    # removed these utility functions from inner scope of on_search_activate
+    # in order to decouple actual signal handler and functionality
+    def update_search_summary(self, datasets):
+        row = self.base_uri_list_box.search_results_row
+        total_size = sum([0 if dataset.size_int is None else dataset.size_int for dataset in datasets])
+        row.info_label.set_text(f'{len(datasets)} datasets, {sizeof_fmt(total_size).strip()}')
+
+    async def fetch_search_results(self, keyword, on_show=None):
+        row = self.base_uri_list_box.search_results_row
+        row.start_spinner()
+        try:
+            datasets = await DatasetModel.search(keyword)
+            datasets = datasets[:self._max_nb_datasets]  # Limit number of datasets that are shown
+            row.search_results = datasets  # Cache datasets
+            self.update_search_summary(datasets)
+            if self.base_uri_list_box.get_selected_row() == row:
+                # Only update if the row is still selected
+                self.dataset_list_box.fill(datasets, on_show=on_show)
+        except Exception as e:
+            self.show_error(e)
+
+        self.base_uri_list_box.select_search_results_row()
+        self.main_stack.set_visible_child(self.main_paned)
+        row.stop_spinner()
+
+    # signal handlers
     @Gtk.Template.Callback()
     def on_settings_clicked(self, widget):
         SettingsDialog(self).show()
@@ -210,37 +236,13 @@ class MainWindow(Gtk.ApplicationWindow):
             _logger.debug("Spawn select_base_uri task.")
             row.task = asyncio.create_task(_select_base_uri())
 
-
-
     @Gtk.Template.Callback()
     def on_search_activate(self, widget):
-        def update_search_summary(datasets):
-            row = self.base_uri_list_box.search_results_row
-            total_size = sum([0 if dataset.size_int is None else dataset.size_int for dataset in datasets])
-            row.info_label.set_text(f'{len(datasets)} datasets, {sizeof_fmt(total_size).strip()}')
-
-        async def fetch_search_results(keyword, on_show=None):
-            row = self.base_uri_list_box.search_results_row
-            row.start_spinner()
-            try:
-                datasets = await DatasetModel.search(keyword)
-                datasets = datasets[:self._max_nb_datasets]  # Limit number of datasets that are shown
-                row.search_results = datasets  # Cache datasets
-                update_search_summary(datasets)
-                if self.base_uri_list_box.get_selected_row() == row:
-                    # Only update if the row is still selected
-                    self.dataset_list_box.fill(datasets, on_show=on_show)
-            except Exception as e:
-                self.show_error(e)
-
-            self.base_uri_list_box.select_search_results_row()
-            self.main_stack.set_visible_child(self.main_paned)
-            row.stop_spinner()
-
+        """Search activated (usually by hitting Enter after typing in the search entry)."""
         self.main_stack.set_visible_child(self.main_spinner)
         row = self.base_uri_list_box.search_results_row
         row.search_results = None
-        asyncio.create_task(fetch_search_results(self.search_entry.get_text()))
+        asyncio.create_task(self.fetch_search_results(self.search_entry.get_text()))
 
     @Gtk.Template.Callback()
     def on_dataset_selected(self, list_box, row):
