@@ -29,7 +29,7 @@ import traceback
 import urllib.parse
 from functools import reduce
 
-from gi.repository import Gio, Gtk, GtkSource
+from gi.repository import Gdk, Gio, Gtk, GtkSource
 
 import dtoolcore.utils
 from dtool_info.utils import sizeof_fmt
@@ -46,8 +46,9 @@ from ..models.datasets import DatasetModel
 from ..models.settings import settings
 from ..utils.date import date_to_string
 from ..utils.dependency_graph import DependencyGraph
-from ..utils.query import is_valid_query
+from ..utils.query import (is_valid_query)
 from ..widgets.base_uri_row import DtoolBaseURIRow
+from ..widgets.search_popover import DtoolSearchPopover
 from ..widgets.search_results_row import DtoolSearchResultsRow
 from .dataset_name_dialog import DatasetNameDialog
 from .settings_dialog import SettingsDialog
@@ -150,6 +151,8 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self.error_bar.hide()
 
+        # connect a search popover with search entry
+        self.search_popover = DtoolSearchPopover(search_entry=self.search_entry)
         self.log_window = LogWindow(application=self.application)
 
         _logger.debug(f"Constructed main window for app '{self.application.get_application_id()}'")
@@ -186,7 +189,7 @@ class MainWindow(Gtk.ApplicationWindow):
                     datasets = await DatasetModel.search(keyword)
             else:
                 _logger.debug("No keyword specified, list all datasets.")
-                datasets = await DatasetModel.all()
+                datasets = await DatasetModel.query_all()
 
             if len(datasets) > self._max_nb_datasets:
                 _logger.warning(
@@ -198,7 +201,6 @@ class MainWindow(Gtk.ApplicationWindow):
             if self.base_uri_list_box.get_selected_row() == row:
                 # Only update if the row is still selected
                 self.dataset_list_box.fill(datasets, on_show=on_show)
-
 
         except Exception as e:
             self.show_error(e)
@@ -310,7 +312,8 @@ class MainWindow(Gtk.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def on_show_clicked(self, widget):
-        Gio.AppInfo.launch_default_for_uri(str(self.dataset_list_box.get_selected_row().dataset))
+        # Gio.AppInfo.launch_default_for_uri(str(self.dataset_list_box.get_selected_row().dataset))
+        self.search_popover.popup()
 
     @Gtk.Template.Callback()
     def on_add_items_clicked(self, widget):

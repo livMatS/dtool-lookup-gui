@@ -249,7 +249,8 @@ class DatasetModel:
         return [await cls.from_lookup(lookup_dict) for lookup_dict in datasets]
 
     @classmethod
-    async def all(cls):
+    async def query_all(cls):
+        """Query all datasets from lookup server."""
         async with ConfigurationBasedLookupClient() as lookup:
             datasets = await lookup.all()
 

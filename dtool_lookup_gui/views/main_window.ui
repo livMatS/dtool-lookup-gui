@@ -1036,6 +1036,7 @@ or search for a dataset</property>
                 <property name="primary-icon-sensitive">False</property>
                 <property name="placeholder-text" translatable="yes">Type to search, double-click to expand...</property>
                 <signal name="activate" handler="on_search_activate" swapped="no"/>
+                <signal name="button-press-event" handler="on_search_entry_button_press" swapped="no"/>
               </object>
               <packing>
                 <property name="expand">False</property>

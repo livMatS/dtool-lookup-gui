@@ -5,13 +5,22 @@ def load_query_text(text):
     return json.loads(text)
 
 
-def dump_query_text(query):
+def dump_single_line_query_text(query):
+    return json.dumps(query)
+
+
+def dump_multi_line_query_text(query):
     return json.dumps(query, indent=4)
 
 
-def sanitize_query_text(text):
+def single_line_sanitize_query_text(text):
     """Formats a query text coherently."""
-    return dump_query_text(load_query_text(text))
+    return dump_single_line_query_text(load_query_text(text))
+
+
+def multi_line_sanitize_query_text(text):
+    """Formats a query text coherently."""
+    return dump_multi_line_query_text(load_query_text(text))
 
 
 def is_valid_query(text):
