@@ -34,6 +34,7 @@ class DtoolSearchResultsRow(Gtk.ListBoxRow):
         super().__init__(*args, **kwargs)
 
         self._task = None
+        self._search_results = None
 
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, margin_top=self._margin, margin_bottom=self._margin,
                        margin_start=self._margin, margin_end=self._margin)
@@ -52,6 +53,14 @@ class DtoolSearchResultsRow(Gtk.ListBoxRow):
                                     margin_start=self._margin, margin_end=self._margin)
         hbox.pack_start(self._spinner, False, False, 0)
         self.add(hbox)
+
+    @property
+    def search_results(self):
+        return self._search_results
+
+    @search_results.setter
+    def search_results(self, search_results):
+        self._search_results = search_results
 
     @property
     def info_label(self):

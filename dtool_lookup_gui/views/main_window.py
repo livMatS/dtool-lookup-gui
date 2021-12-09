@@ -46,6 +46,8 @@ from ..models.datasets import DatasetModel
 from ..models.settings import settings
 from ..utils.date import date_to_string
 from ..utils.dependency_graph import DependencyGraph
+from ..widgets.base_uri_row import DtoolBaseURIRow
+from ..widgets.search_results_row import DtoolSearchResultsRow
 from .dataset_name_dialog import DatasetNameDialog
 from .settings_dialog import SettingsDialog
 from .log_window import LogWindow
@@ -171,7 +173,8 @@ class MainWindow(Gtk.ApplicationWindow):
         async def _select_base_uri():
             row.start_spinner()
 
-            if hasattr(row, 'base_uri'):
+            if isinstance(row, DtoolBaseURIRow):
+                _logger.debug("Selected base URI.")
                 try:
                     datasets = await row.base_uri.all_datasets()
                     update_base_uri_summary(datasets)
@@ -182,14 +185,21 @@ class MainWindow(Gtk.ApplicationWindow):
                     self.show_error(e)
                 self.create_dataset_button.set_sensitive(row.base_uri.scheme == 'file')
                 self.main_stack.set_visible_child(self.main_paned)
-            elif hasattr(row, 'search_results'):
+            elif isinstance(row, DtoolSearchResultsRow):
+                _logger.debug("Selected search results.")
                 # This is the search result
                 if row.search_results is not None:
+                    _logger.debug(f"Fill dataset list with {len(row.search_results)} search results.")
                     self.dataset_list_box.fill(row.search_results)
                     self.create_dataset_button.set_sensitive(False)
                     self.main_stack.set_visible_child(self.main_paned)
                 else:
+                    _logger.debug("No search results cached (likely first activation after app startup).")
+                    _logger.debug("Mock emit search_entry activate signal once.")
                     self.main_stack.set_visible_child(self.main_label)
+                    self.search_entry.emit("activate")
+            else:
+                raise TypeError(f"Handling of {type(row)} not implemented.")
 
             row.stop_spinner()
             row.task = None
@@ -197,13 +207,16 @@ class MainWindow(Gtk.ApplicationWindow):
         self.main_stack.set_visible_child(self.main_spinner)
         row = self.base_uri_list_box.get_selected_row()
         if row.task is None:
+            _logger.debug("Spawn select_base_uri task.")
             row.task = asyncio.create_task(_select_base_uri())
+
+
 
     @Gtk.Template.Callback()
     def on_search_activate(self, widget):
         def update_search_summary(datasets):
             row = self.base_uri_list_box.search_results_row
-            total_size = sum([dataset.size_int for dataset in datasets])
+            total_size = sum([0 if dataset.size_int is None else dataset.size_int for dataset in datasets])
             row.info_label.set_text(f'{len(datasets)} datasets, {sizeof_fmt(total_size).strip()}')
 
         async def fetch_search_results(keyword, on_show=None):
