@@ -34,7 +34,12 @@ from gi.repository import Gio, Gtk, GtkSource
 import dtoolcore.utils
 from dtool_info.utils import sizeof_fmt
 
+import dtool_lookup_api.core.config
 from dtool_lookup_api.core.LookupClient import ConfigurationBasedLookupClient
+# As of dtool-lookup-api 0.5.0, the following line still is a necessity to
+# disable prompting for credentials on the command line. This behavior
+# will change in future versions.
+dtool_lookup_api.core.config.Config.interactive = False
 
 from ..models.base_uris import all, LocalBaseURIModel
 from ..models.datasets import DatasetModel
@@ -43,6 +48,7 @@ from ..utils.date import date_to_string
 from ..utils.dependency_graph import DependencyGraph
 from .dataset_name_dialog import DatasetNameDialog
 from .settings_dialog import SettingsDialog
+from .log_window import LogWindow
 
 _logger = logging.getLogger(__name__)
 
@@ -128,6 +134,8 @@ class MainWindow(Gtk.ApplicationWindow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.application = self.get_application()
+
         self.main_stack.set_visible_child(self.main_label)
         self.dataset_stack.set_visible_child(self.dataset_label)
 
@@ -139,12 +147,20 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self.error_bar.hide()
 
+        self.log_window = LogWindow(application=self.application)
+
+        _logger.debug(f"Constructed main window for app '{self.application.get_application_id()}'")
+
     def refresh(self):
         asyncio.create_task(self.base_uri_list_box.refresh())
 
     @Gtk.Template.Callback()
     def on_settings_clicked(self, widget):
         SettingsDialog(self).show()
+
+    @Gtk.Template.Callback()
+    def on_logging_clicked(self, widget):
+        self.log_window.show()
 
     @Gtk.Template.Callback()
     def on_base_uri_selected(self, list_box, row):
