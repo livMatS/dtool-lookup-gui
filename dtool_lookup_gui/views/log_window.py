@@ -46,13 +46,8 @@ class LogWindow(Gtk.Window):
     # loglevel_entry = Gtk.Template.Child()
     loglevel_combo_box = Gtk.Template.Child()
 
-    def __init__(self, *args, application=None, **kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        # this reintroduces passing the application down the window hierarchy,
-        # but I did not find a better way to access the application instance
-        # from here
-        self.set_application(application)
 
         root_logger = logging.getLogger()
 
@@ -93,7 +88,7 @@ class LogWindow(Gtk.Window):
         root_logger.addHandler(self.log_handler)
 
         # bind another handler to th application-level action 'set-loglevel'
-        set_loglevel_action = self.get_application().lookup_action('set-loglevel')
+        set_loglevel_action = self.get_action_group("app").lookup_action('set-loglevel')
         set_loglevel_action.connect("change-state", self.do_loglevel_changed)
 
         root_logger.debug("Created log window.")
