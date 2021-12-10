@@ -242,7 +242,6 @@ class MainWindow(Gtk.ApplicationWindow):
                         self.dataset_list_box.fill(datasets)
                 except Exception as e:
                     self.show_error(e)
-                self.create_dataset_button.set_sensitive(row.base_uri.scheme == 'file')
                 self.main_stack.set_visible_child(self.main_paned)
             elif isinstance(row, DtoolSearchResultsRow):
                 _logger.debug("Selected search results.")
@@ -250,7 +249,6 @@ class MainWindow(Gtk.ApplicationWindow):
                 if row.search_results is not None:
                     _logger.debug(f"Fill dataset list with {len(row.search_results)} search results.")
                     self.dataset_list_box.fill(row.search_results)
-                    self.create_dataset_button.set_sensitive(False)
                     self.main_stack.set_visible_child(self.main_paned)
                 else:
                     _logger.debug("No search results cached (likely first activation after app startup).")
@@ -264,7 +262,8 @@ class MainWindow(Gtk.ApplicationWindow):
             row.task = None
 
         self.main_stack.set_visible_child(self.main_spinner)
-        row = self.base_uri_list_box.get_selected_row()
+        self.create_dataset_button.set_sensitive(not isinstance(row, DtoolSearchResultsRow) and
+                                                 row.base_uri.scheme == 'file')
         if row.task is None:
             _logger.debug("Spawn select_base_uri task.")
             row.task = asyncio.create_task(_select_base_uri())
@@ -309,7 +308,7 @@ class MainWindow(Gtk.ApplicationWindow):
         LocalBaseURIModel.add_directory(uri)
 
         # Refresh view of base URIs
-        self.base_uri_list_box.refresh()
+        asyncio.create_task(self.base_uri_list_box.refresh())
 
     @Gtk.Template.Callback()
     def on_create_dataset_clicked(self, widget):

@@ -1,2 +1,2 @@
-include dtool_lookup_gui/dtool-lookup-gui.glade
+recursive-include dtool_lookup_gui *.ui
 include dtool_lookup_gui/de.uni-freiburg.dtool-lookup-gui.gschema.xml
