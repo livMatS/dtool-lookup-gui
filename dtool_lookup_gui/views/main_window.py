@@ -29,21 +29,31 @@ import traceback
 import urllib.parse
 from functools import reduce
 
-from gi.repository import Gio, Gtk, GtkSource
+from gi.repository import Gdk, Gio, Gtk, GtkSource
 
 import dtoolcore.utils
 from dtool_info.utils import sizeof_fmt
 
+import dtool_lookup_api.core.config
 from dtool_lookup_api.core.LookupClient import ConfigurationBasedLookupClient
+# As of dtool-lookup-api 0.5.0, the following line still is a necessity to
+# disable prompting for credentials on the command line. This behavior
+# will change in future versions.
+dtool_lookup_api.core.config.Config.interactive = False
 
 from ..models.base_uris import all, LocalBaseURIModel
 from ..models.datasets import DatasetModel
 from ..models.settings import settings
 from ..utils.date import date_to_string
 from ..utils.dependency_graph import DependencyGraph
+from ..utils.logging import FormattedSingleMessageGtkInfoBarHandler
+from ..utils.query import (is_valid_query)
+from ..widgets.base_uri_row import DtoolBaseURIRow
+from ..widgets.search_popover import DtoolSearchPopover
 from ..widgets.search_results_row import DtoolSearchResultsRow
 from .dataset_name_dialog import DatasetNameDialog
 from .settings_dialog import SettingsDialog
+from .log_window import LogWindow
 
 _logger = logging.getLogger(__name__)
 
@@ -129,6 +139,8 @@ class MainWindow(Gtk.ApplicationWindow):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.application = self.get_application()
+
         self.main_stack.set_visible_child(self.main_label)
         self.dataset_stack.set_visible_child(self.dataset_label)
 
@@ -140,12 +152,76 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self.error_bar.hide()
 
+        root_logger = logging.getLogger()
+        self.log_handler = FormattedSingleMessageGtkInfoBarHandler(info_bar=self.error_bar, label=self.error_label)
+        root_logger.addHandler(self.log_handler)
+
+        # connect a search popover with search entry
+        self.search_popover = DtoolSearchPopover(search_entry=self.search_entry)
+        self.log_window = LogWindow(application=self.application)
+
+        _logger.debug(f"Constructed main window for app '{self.application.get_application_id()}'")
+
     def refresh(self):
         asyncio.create_task(self.base_uri_list_box.refresh())
 
+    # removed these utility functions from inner scope of on_search_activate
+    # in order to decouple actual signal handler and functionality
+    def update_search_summary(self, datasets):
+        row = self.base_uri_list_box.search_results_row
+        total_size = sum([0 if dataset.size_int is None else dataset.size_int for dataset in datasets])
+        row.info_label.set_text(f'{len(datasets)} datasets, {sizeof_fmt(total_size).strip()}')
+
+    async def fetch_search_results(self, keyword, on_show=None):
+        row = self.base_uri_list_box.search_results_row
+        row.start_spinner()
+
+        try:
+            # datasets = await DatasetModel.search(keyword)
+            if keyword:
+                if is_valid_query(keyword):
+                    _logger.debug("Valid query specified.")
+                    datasets = await DatasetModel.query(keyword)
+                else:
+                    _logger.debug("Specified search text is not a valid query, just perform free text search.")
+                    # NOTE: server side allows a dict with the key-value pairs
+                    # "free_text", "creator_usernames", "base_uris", "uuids", "tags",
+                    # via route '/dataset/search', where all except "free_text"
+                    # can be lists and are translated to logical "and" or "or"
+                    # constructs on the server side. With the special treatment
+                    # of the 'uuid' keyword above, should we introduce similar
+                    # options for the other available keywords?
+                    datasets = await DatasetModel.search(keyword)
+            else:
+                _logger.debug("No keyword specified, list all datasets.")
+                datasets = await DatasetModel.query_all()
+
+            if len(datasets) > self._max_nb_datasets:
+                _logger.warning(
+                    f"{len(datasets)} search results exceed allowed displayed maximum of {self._max_nb_datasets}. "
+                    f"Only the first {self._max_nb_datasets} results are shown. Narrow down your search.")
+            datasets = datasets[:self._max_nb_datasets]  # Limit number of datasets that are shown
+            row.search_results = datasets  # Cache datasets
+            self.update_search_summary(datasets)
+            if self.base_uri_list_box.get_selected_row() == row:
+                # Only update if the row is still selected
+                self.dataset_list_box.fill(datasets, on_show=on_show)
+
+        except Exception as e:
+            self.show_error(e)
+
+        self.base_uri_list_box.select_search_results_row()
+        self.main_stack.set_visible_child(self.main_paned)
+        row.stop_spinner()
+
+    # signal handlers
     @Gtk.Template.Callback()
     def on_settings_clicked(self, widget):
         SettingsDialog(self).show()
+
+    @Gtk.Template.Callback()
+    def on_logging_clicked(self, widget):
+        self.log_window.show()
 
     @Gtk.Template.Callback()
     def on_base_uri_selected(self, list_box, row):
@@ -156,7 +232,8 @@ class MainWindow(Gtk.ApplicationWindow):
         async def _select_base_uri():
             row.start_spinner()
 
-            if hasattr(row, 'base_uri'):
+            if isinstance(row, DtoolBaseURIRow):
+                _logger.debug("Selected base URI.")
                 try:
                     datasets = await row.base_uri.all_datasets()
                     update_base_uri_summary(datasets)
@@ -166,13 +243,20 @@ class MainWindow(Gtk.ApplicationWindow):
                 except Exception as e:
                     self.show_error(e)
                 self.main_stack.set_visible_child(self.main_paned)
-            elif hasattr(row, 'search_results'):
+            elif isinstance(row, DtoolSearchResultsRow):
+                _logger.debug("Selected search results.")
                 # This is the search result
                 if row.search_results is not None:
+                    _logger.debug(f"Fill dataset list with {len(row.search_results)} search results.")
                     self.dataset_list_box.fill(row.search_results)
                     self.main_stack.set_visible_child(self.main_paned)
                 else:
+                    _logger.debug("No search results cached (likely first activation after app startup).")
+                    _logger.debug("Mock emit search_entry activate signal once.")
                     self.main_stack.set_visible_child(self.main_label)
+                    self.search_entry.emit("activate")
+            else:
+                raise TypeError(f"Handling of {type(row)} not implemented.")
 
             row.stop_spinner()
             row.task = None
@@ -181,37 +265,16 @@ class MainWindow(Gtk.ApplicationWindow):
         self.create_dataset_button.set_sensitive(not isinstance(row, DtoolSearchResultsRow) and
                                                  row.base_uri.scheme == 'file')
         if row.task is None:
+            _logger.debug("Spawn select_base_uri task.")
             row.task = asyncio.create_task(_select_base_uri())
 
     @Gtk.Template.Callback()
     def on_search_activate(self, widget):
-        def update_search_summary(datasets):
-            row = self.base_uri_list_box.search_results_row
-            total_size = sum([dataset.size_int for dataset in datasets])
-            row.info_label.set_text(f'{len(datasets)} datasets, {sizeof_fmt(total_size).strip()}')
-
-        async def fetch_search_results(keyword, on_show=None):
-            row = self.base_uri_list_box.search_results_row
-            row.start_spinner()
-            try:
-                datasets = await DatasetModel.search(keyword)
-                datasets = datasets[:self._max_nb_datasets]  # Limit number of datasets that are shown
-                row.search_results = datasets  # Cache datasets
-                update_search_summary(datasets)
-                if self.base_uri_list_box.get_selected_row() == row:
-                    # Only update if the row is still selected
-                    self.dataset_list_box.fill(datasets, on_show=on_show)
-            except Exception as e:
-                self.show_error(e)
-
-            self.base_uri_list_box.select_search_results_row()
-            self.main_stack.set_visible_child(self.main_paned)
-            row.stop_spinner()
-
+        """Search activated (usually by hitting Enter after typing in the search entry)."""
         self.main_stack.set_visible_child(self.main_spinner)
         row = self.base_uri_list_box.search_results_row
         row.search_results = None
-        asyncio.create_task(fetch_search_results(self.search_entry.get_text()))
+        asyncio.create_task(self.fetch_search_results(self.search_entry.get_text()))
 
     @Gtk.Template.Callback()
     def on_dataset_selected(self, list_box, row):
@@ -307,6 +370,16 @@ class MainWindow(Gtk.ApplicationWindow):
             self.dataset_list_box.show_all()
             asyncio.create_task(self._update_dataset_view(self.dataset_list_box.get_selected_row().dataset))
 
+    @Gtk.Template.Callback()
+    def on_error_bar_close(self, widget):
+        _logger.debug("Hide error bar.")
+        self.error_bar.set_revealed(False)
+
+    @Gtk.Template.Callback()
+    def on_error_bar_response(self, widget, response_id):
+        if response_id == Gtk.ResponseType.CLOSE:
+            self.error_bar.set_revealed(False)
+
     def on_copy_clicked(self, widget):
         async def _copy():
             self.copy_dataset_spinner.start()
@@ -384,7 +457,7 @@ class MainWindow(Gtk.ApplicationWindow):
         # Show message if uuids are missing
         missing_uuids = dependency_graph.missing_uuids
         if missing_uuids:
-            self.show_error('The following UUIDs were found during dependency graph calculation but are not present '
+            _logger.warning('The following UUIDs were found during dependency graph calculation but are not present '
                             'in the database: {}'.format(reduce(lambda a, b: a + ', ' + b, missing_uuids)))
 
         self.dependency_graph_widget.graph = dependency_graph.graph
@@ -392,6 +465,3 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def show_error(self, exception):
         _logger.error(traceback.format_exc())
-        self.error_label.set_text(str(exception))
-        self.error_bar.show()
-        self.error_bar.set_revealed(True)

@@ -10,6 +10,20 @@ dtool-lookup-server-dependency-graph-plugin_ written in Python_ and GTK_.
 
 .. image:: data/screenshots/screenshot1.png
 
+
+Requirements
+------------
+
+This application requires Gtk_ 3 and GtkSourceView_ 4.
+
+On Ubuntu (20.04),
+
+.. code:: bash
+
+    apt install -y gir1.2-gtksource-4
+
+suffices to to install these dependencies from the standard system package repositories.
+
 Installation
 ------------
 
@@ -34,19 +48,19 @@ When already clone into a local directly via `git`, either use pip_ or install v
 For an editable install,
 
 
-..code:: bash
+.. code:: bash
 
    pip install -e .
 
 also run
 
-..code:: bash
+.. code:: bash
 
    glib-compile-schemas .
 
 from within subdirectory `dtool_lookup_gui`. Otherwise, GUI launch fails with
 
-..code::
+.. code::
 
    gi.repository.GLib.Error: g-file-error-quark: Failed to open file “/path/to/repository/dtool_lookup_gui/gschemas.compiled”: open() failed: No such file or directory (4)
 
@@ -64,21 +78,6 @@ Note that when you run the GUI for the first time, you will need to configure
 the URL of the lookup and the authentication server as well as provide a
 username and a password. To do this, click on the "Burger" symbol and select
 *Settings*.
-
-.. _dtool: https://github.com/jic-dtool/dtool
-
-.. _dtool-lookup-server: https://github.com/jic-dtool/dtool-lookup-server
-
-.. _dtool-lookup-server-dependency-graph-plugin: https://github.com/IMTEK-Simulation/dtool-lookup-server-dependency-graph-plugin
-
-.. _Python: https://www.python.org/
-
-.. _GTK: https://www.gtk.org/
-
-.. _pip: https://pip.pypa.io/en/stable/
-
-.. _setuptools: https://setuptools.readthedocs.io/en/latest/
-
 
 Installation on MacOS
 ---------------------
@@ -157,4 +156,21 @@ The GUI uses custom Gtk widgets. To edit the the XML UI definition files with
 Glade_, add the directory ``glade/catalog`` to `Extra Catalog & Template paths`
 within Glade's preferences dialog.
 
+
+.. _dtool: https://github.com/jic-dtool/dtool
+
+.. _dtool-lookup-server: https://github.com/jic-dtool/dtool-lookup-server
+
+.. _dtool-lookup-server-dependency-graph-plugin: https://github.com/IMTEK-Simulation/dtool-lookup-server-dependency-graph-plugin
+
 .. _Glade: https://glade.gnome.org/
+
+.. _GTK: https://www.gtk.org/
+
+.. _GtkSourceView: https://wiki.gnome.org/Projects/GtkSourceView
+
+.. _pip: https://pip.pypa.io/en/stable/
+
+.. _Python: https://www.python.org/
+
+.. _setuptools: https://setuptools.readthedocs.io/en/latest/

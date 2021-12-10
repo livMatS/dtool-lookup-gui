@@ -22,6 +22,8 @@
 # SOFTWARE.
 #
 
+import logging
+
 from math import pi, sqrt
 _sqrt3 = sqrt(3)
 
@@ -32,6 +34,8 @@ from gi.repository import GObject, Gdk, Gtk
 from ..models.simple_graph import GraphLayout
 from .graph_popover import DtoolGraphPopover
 
+
+logger = logging.getLogger(__name__)
 
 def circle(context, x, y):
     context.arc(x, y, 0.5, 0, 2 * pi)
@@ -205,7 +209,7 @@ class DtoolGraphWidget(Gtk.DrawingArea):
         try:
             self._layout.iterate()
         except Exception as e:
-            print(e)
+            logger.error(str(e))
         self.queue_draw()
         return True
 
