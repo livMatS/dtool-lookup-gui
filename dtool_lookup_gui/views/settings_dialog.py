@@ -23,6 +23,7 @@
 #
 
 import asyncio
+import logging
 import os
 
 import jwt
@@ -42,6 +43,10 @@ _DTOOL_CONFIG_PREFIXES = {
     'DTOOL_S3_ENDPOINT_': 's3',
     'DTOOL_SMB_SERVER_NAME_': 'smb',
 }
+
+
+logger = logging.getLogger(__name__)
+
 
 def _get_base_uri(key):
     for prefix, schema in _DTOOL_CONFIG_PREFIXES.items():
@@ -125,8 +130,7 @@ class SettingsDialog(Gtk.Window):
         try:
             token = await authenticate(auth_url, username, password)
         except Exception as e:
-            print(str(e))
-        #    self.main_application.show_error(str(e))
+            logger.error(str(e))
             return
         #self.builder.get_object('token-entry').set_text(token)
         self.token_entry.set_text(token)

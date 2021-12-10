@@ -202,7 +202,6 @@ class LookupBaseURIModel(BaseURI):
             raise RuntimeError(f"Request for user '{username}' info failed, possibly not authenticated.")
 
         base_uris = user_info['search_permissions_on_base_uris']
-        print(base_uris)
 
         return [cls(base_uri) for base_uri in base_uris]
 

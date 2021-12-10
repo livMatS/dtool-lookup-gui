@@ -31,6 +31,7 @@ SINGLE_MESSAGE_FORMATTER = logging.Formatter('%(levelname)s: %(message)s')
 
 DEFAULT_TEXT_BUFFER_MAX_LINES = 1000
 DEFAULT_ENTRY_MAX_LINES = 5
+DEFAULT_LABEL_MAX_LINES = 1
 
 
 # formatter mixins
@@ -116,6 +117,16 @@ class GtkEntryBufferHandler(GtkBufferHandler):
         Limit maximum number of lines if max_lines set to int."""
         super().__init__(*args, max_lines=max_lines, **kwargs)
         self._buffer = entry_buffer
+
+
+class GtkLabelHandler(GtkBufferHandler):
+    def __init__(self, *args, label: Gtk.Label,
+                 max_lines: Optional[int] = DEFAULT_LABEL_MAX_LINES, **kwargs):
+        """Tie a logging handler to a Gtk.EntryBuffer.
+
+        Limit maximum number of lines if max_lines set to int."""
+        super().__init__(*args, max_lines=max_lines, **kwargs)
+        self._buffer = label
 
 
 class AppendingGtkTextBufferHandler(GtkTextBufferHandler):
@@ -204,6 +215,31 @@ class SingleMessageGtkEntryBufferHandler(GtkEntryBufferHandler):
         self._buffer.set_text(new_text)
 
 
+class SingleMessageGtkLabelHandler(GtkLabelHandler):
+    """Show last line of log message on Gtk.Label."""
+    def _insert_into_buffer(self, msg):
+        """Store log message in Gtk.Label."""
+
+        # shorten message if too long
+        if len(msg.splitlines()) > self._max_lines:
+            new_text = "\n".join(msg.splitlines()[-self._max_lines:])
+        else:
+            new_text = msg
+        self._buffer.set_text(new_text)
+
+
+class SingleMessageGtkInfoBarHandler(SingleMessageGtkLabelHandler):
+    """Reveal attached Gtk.InfoBar when logging."""
+    def __init__(self, *args, info_bar: Gtk.InfoBar, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._info_bar = info_bar
+
+    def emit(self, record):
+        super().emit(record)
+        self._info_bar.show()
+        self._info_bar.set_revealed(True)
+
+
 class FormattedAppendingGtkTextBufferHandler(FormattedHandlerMixin, AppendingGtkTextBufferHandler):
     pass
 
@@ -212,6 +248,9 @@ class FormattedPrependingGtkTextBufferHandler(FormattedHandlerMixin, PrependingG
     pass
 
 
-class FormattedSingleMessageGtkEntryBufferHandler(
-        SingleMessageFormatHandlerMixin, SingleMessageGtkEntryBufferHandler):
+class FormattedSingleMessageGtkLabelHandler(SingleMessageFormatHandlerMixin, SingleMessageGtkLabelHandler):
+    pass
+
+
+class FormattedSingleMessageGtkInfoBarHandler(SingleMessageFormatHandlerMixin, SingleMessageGtkInfoBarHandler):
     pass

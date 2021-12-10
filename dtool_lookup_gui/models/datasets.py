@@ -107,8 +107,15 @@ async def _lookup_info(lookup_dict):
 
     info['uuid'] = lookup_dict['uuid']
 
-    info["size_int"] = lookup_dict['size_in_bytes']
-    info["size_str"] = sizeof_fmt(lookup_dict['size_in_bytes'])
+    # The server does not include these fields in response as of 0.17.2
+    # They will be available in next release,
+    # https://github.com/jic-dtool/dtool-lookup-server/pull/21
+    try:
+        info["size_int"] = lookup_dict['size_in_bytes']
+        info["size_str"] = sizeof_fmt(lookup_dict['size_in_bytes'])
+    except KeyError:
+        info["size_int"] = None
+        info["size_str"] = 'unknown'
 
     info['creator'] = lookup_dict['creator_username']
     info['name'] = lookup_dict['name']
@@ -231,6 +238,22 @@ class DatasetModel:
     async def search(cls, keyword):
         async with ConfigurationBasedLookupClient() as lookup:
             datasets = await lookup.search(keyword)
+
+        return [await cls.from_lookup(lookup_dict) for lookup_dict in datasets]
+
+    @classmethod
+    async def query(cls, query_text):
+        async with ConfigurationBasedLookupClient() as lookup:
+            datasets = await lookup.by_query(query_text)
+
+        return [await cls.from_lookup(lookup_dict) for lookup_dict in datasets]
+
+    @classmethod
+    async def query_all(cls):
+        """Query all datasets from lookup server."""
+        async with ConfigurationBasedLookupClient() as lookup:
+            datasets = await lookup.all()
+
         return [await cls.from_lookup(lookup_dict) for lookup_dict in datasets]
 
     def __str__(self):
