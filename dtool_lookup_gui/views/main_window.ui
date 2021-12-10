@@ -342,7 +342,7 @@
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkNotebook" id="dataset-notebook">
+                                  <object class="GtkNotebook" id="dataset_notebook">
                                     <property name="visible">True</property>
                                     <property name="can-focus">True</property>
                                     <property name="vexpand">True</property>
@@ -561,20 +561,20 @@
                                           </packing>
                                         </child>
                                         <child>
-                                          <object class="GtkStack" id="readme-stack">
+                                          <object class="GtkStack" id="readme_stack">
                                             <property name="visible">True</property>
                                             <property name="can-focus">False</property>
                                             <property name="hexpand">True</property>
                                             <property name="vexpand">True</property>
                                             <child>
-                                              <object class="GtkBox">
+                                              <object class="GtkBox" id="readme_view">
                                                 <property name="visible">True</property>
                                                 <property name="can-focus">False</property>
                                                 <property name="hexpand">True</property>
                                                 <property name="vexpand">True</property>
                                                 <property name="orientation">vertical</property>
                                                 <child>
-                                                  <object class="GtkScrolledWindow" id="readme-view">
+                                                  <object class="GtkScrolledWindow">
                                                     <property name="visible">True</property>
                                                     <property name="can-focus">True</property>
                                                     <property name="hexpand">True</property>
@@ -680,7 +680,7 @@
                                               </packing>
                                             </child>
                                             <child>
-                                              <object class="GtkSpinner" id="readme-spinner">
+                                              <object class="GtkSpinner" id="readme_spinner">
                                                 <property name="visible">True</property>
                                                 <property name="can-focus">False</property>
                                                 <property name="active">True</property>
@@ -718,7 +718,7 @@
                                         <property name="visible">True</property>
                                         <property name="can-focus">False</property>
                                         <child>
-                                          <object class="GtkScrolledWindow" id="manifest-view">
+                                          <object class="GtkScrolledWindow" id="manifest_view">
                                             <property name="visible">True</property>
                                             <property name="can-focus">True</property>
                                             <property name="shadow-type">in</property>
@@ -793,7 +793,7 @@
                                           </packing>
                                         </child>
                                         <child>
-                                          <object class="GtkSpinner" id="manifest-spinner">
+                                          <object class="GtkSpinner" id="manifest_spinner">
                                             <property name="visible">True</property>
                                             <property name="can-focus">False</property>
                                             <property name="active">True</property>
