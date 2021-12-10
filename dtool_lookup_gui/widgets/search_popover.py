@@ -26,7 +26,7 @@ import logging
 import logging
 import os
 
-from gi.repository import Gdk, Gtk, GtkSource
+from gi.repository import GLib, Gdk, Gtk, GtkSource
 
 from ..utils.query import (
     single_line_sanitize_query_text,
@@ -98,7 +98,7 @@ class DtoolSearchPopover(Gtk.Popover):
             sanitized_search_text = search_text
         self.search_entry_buffer.set_text(sanitized_search_text, -1)
         self.popdown()
-        self.search_entry.emit("activate")  # mock activation
+        self.get_action_group("win").activate_action('search', GLib.Variant.new_string(sanitized_search_text))
 
     @Gtk.Template.Callback()
     def on_cancel_button_clicked(self, button):

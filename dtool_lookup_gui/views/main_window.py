@@ -29,7 +29,7 @@ import traceback
 import urllib.parse
 from functools import reduce
 
-from gi.repository import Gdk, Gio, Gtk, GtkSource
+from gi.repository import Gdk, Gio, GLib, Gtk, GtkSource
 
 import dtoolcore.utils
 from dtool_info.utils import sizeof_fmt
@@ -47,7 +47,7 @@ from ..models.settings import settings
 from ..utils.date import date_to_string
 from ..utils.dependency_graph import DependencyGraph
 from ..utils.logging import FormattedSingleMessageGtkInfoBarHandler
-from ..utils.query import (is_valid_query)
+from ..utils.query import (is_valid_query, dump_single_line_query_text)
 from ..widgets.base_uri_row import DtoolBaseURIRow
 from ..widgets.search_popover import DtoolSearchPopover
 from ..widgets.search_results_row import DtoolSearchResultsRow
@@ -152,6 +152,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self.error_bar.hide()
 
+        # connect log handler to error bar
         root_logger = logging.getLogger()
         self.log_handler = FormattedSingleMessageGtkInfoBarHandler(info_bar=self.error_bar, label=self.error_label)
         root_logger.addHandler(self.log_handler)
@@ -160,8 +161,16 @@ class MainWindow(Gtk.ApplicationWindow):
         self.search_popover = DtoolSearchPopover(search_entry=self.search_entry)
         self.log_window = LogWindow(application=self.application)
 
+        # window-scoped actions
+        search_text_variant = GLib.Variant.new_string("dummy")
+        search_action = Gio.SimpleAction.new("search", search_text_variant.get_type())
+        search_action.connect("activate", self.do_search)
+        self.add_action(search_action)
+
+        self.dependency_graph_widget.search_by_uuid = self._search_by_uuid
         _logger.debug(f"Constructed main window for app '{self.application.get_application_id()}'")
 
+    # utility methods
     def refresh(self):
         asyncio.create_task(self.base_uri_list_box.refresh())
 
@@ -213,6 +222,23 @@ class MainWindow(Gtk.ApplicationWindow):
         self.base_uri_list_box.select_search_results_row()
         self.main_stack.set_visible_child(self.main_paned)
         row.stop_spinner()
+
+    def _search_by_uuid(self, uuid):
+        search_text = dump_single_line_query_text({"uuid": uuid})
+        self._search_by_search_text(search_text)
+
+    def _search_by_search_text(self, search_text):
+        self.activate_action('search', GLib.Variant.new_string(search_text))
+
+    # actions
+    def do_search(self, action, value):
+        """Evoke search tas for specific search text."""
+        search_text = value.get_string()
+        _logger.debug(f"Evoke search with search text {search_text}.")
+        self.main_stack.set_visible_child(self.main_spinner)
+        row = self.base_uri_list_box.search_results_row
+        row.search_results = None
+        asyncio.create_task(self.fetch_search_results(search_text))
 
     # signal handlers
     @Gtk.Template.Callback()
@@ -271,10 +297,8 @@ class MainWindow(Gtk.ApplicationWindow):
     @Gtk.Template.Callback()
     def on_search_activate(self, widget):
         """Search activated (usually by hitting Enter after typing in the search entry)."""
-        self.main_stack.set_visible_child(self.main_spinner)
-        row = self.base_uri_list_box.search_results_row
-        row.search_results = None
-        asyncio.create_task(self.fetch_search_results(self.search_entry.get_text()))
+        search_text = self.search_entry.get_text()
+        self._search_by_search_text(search_text)
 
     @Gtk.Template.Callback()
     def on_dataset_selected(self, list_box, row):

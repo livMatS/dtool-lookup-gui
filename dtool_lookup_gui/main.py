@@ -146,7 +146,7 @@ class Application(Gtk.Application):
 
         Gtk.Application.do_startup(self)
 
-    # custom actions
+    # custom application-scoped actions
     def do_toggle_logging(self, action, value):
         action.set_state(value)
         if value.get_boolean():
