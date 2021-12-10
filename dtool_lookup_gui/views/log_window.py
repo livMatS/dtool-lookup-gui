@@ -149,7 +149,7 @@ class LogWindow(Gtk.Window):
         # https://lazka.github.io/pgi-docs/Gio-2.0/classes/ActionGroup.html#Gio.ActionGroup.list_actions
         # There might be more elegant mechanism to connect a switch with an
         # app-central action, but the Gtk docs are sparse on actions...
-        self.get_application().activate_action('set-loglevel', GLib.Variant.new_uint16(loglevel))
+        self.get_action_group("app").activate_action('set-loglevel', GLib.Variant.new_uint16(loglevel))
 
     @Gtk.Template.Callback()
     def on_clear_clicked(self, widget):

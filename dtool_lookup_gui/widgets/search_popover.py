@@ -98,7 +98,7 @@ class DtoolSearchPopover(Gtk.Popover):
             sanitized_search_text = search_text
         self.search_entry_buffer.set_text(sanitized_search_text, -1)
         self.popdown()
-        self.get_action_group("win").activate_action('search', GLib.Variant.new_string(sanitized_search_text))
+        self.get_action_group("win").activate_action('search-select-show', GLib.Variant.new_string(sanitized_search_text))
 
     @Gtk.Template.Callback()
     def on_cancel_button_clicked(self, button):

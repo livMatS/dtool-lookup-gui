@@ -29,9 +29,11 @@ _sqrt3 = sqrt(3)
 
 import numpy as np
 
-from gi.repository import GObject, Gdk, Gtk
+from gi.repository import GLib, GObject, Gdk, Gtk
 
 from ..models.simple_graph import GraphLayout
+from ..utils.query import dump_single_line_query_text
+
 from .graph_popover import DtoolGraphPopover
 
 
@@ -210,8 +212,9 @@ class DtoolGraphWidget(Gtk.DrawingArea):
 
     def on_show_clicked(self, user_data):
         self._popover.hide()
-        if self._search_by_uuid is not None:
-            self._search_by_uuid(self._current_uuid)
+        # use an action to evoke search. If an according action does not exist, then nothing happens.
+        search_text = dump_single_line_query_text({"uuid": self._current_uuid})
+        self.get_action_group("win").activate_action('search-select-show', GLib.Variant.new_string(search_text))
 
     def on_timeout(self, user_data):
         try:

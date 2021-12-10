@@ -162,10 +162,30 @@ class MainWindow(Gtk.ApplicationWindow):
         self.log_window = LogWindow(application=self.application)
 
         # window-scoped actions
+
+        # search action
         search_text_variant = GLib.Variant.new_string("dummy")
         search_action = Gio.SimpleAction.new("search", search_text_variant.get_type())
         search_action.connect("activate", self.do_search)
         self.add_action(search_action)
+
+        # select row by row index in dataset list box action
+        row_index_variant = GLib.Variant.new_uint32(0)
+        select_dataset_action = Gio.SimpleAction.new("select-dataset", row_index_variant.get_type())
+        select_dataset_action.connect("activate", self.do_select_dataset_row_by_row_index)
+        self.add_action(select_dataset_action)
+
+        # show details of dataset by row index in dataset list box action
+        row_index_variant = GLib.Variant.new_uint32(0)
+        show_dataset_action = Gio.SimpleAction.new("show-dataset", row_index_variant.get_type())
+        show_dataset_action.connect("activate", self.do_show_dataset_details_by_row_index)
+        self.add_action(show_dataset_action)
+
+        # search, select and show first search result subsequently
+        row_index_variant = GLib.Variant.new_string("dummy")
+        search_select_show_action = Gio.SimpleAction.new("search-select-show", row_index_variant.get_type())
+        search_select_show_action.connect("activate", self.do_search_select_and_show)
+        self.add_action(search_select_show_action)
 
         self.dependency_graph_widget.search_by_uuid = self._search_by_uuid
         _logger.debug(f"Constructed main window for app '{self.application.get_application_id()}'")
@@ -176,12 +196,12 @@ class MainWindow(Gtk.ApplicationWindow):
 
     # removed these utility functions from inner scope of on_search_activate
     # in order to decouple actual signal handler and functionality
-    def update_search_summary(self, datasets):
+    def _update_search_summary(self, datasets):
         row = self.base_uri_list_box.search_results_row
         total_size = sum([0 if dataset.size_int is None else dataset.size_int for dataset in datasets])
         row.info_label.set_text(f'{len(datasets)} datasets, {sizeof_fmt(total_size).strip()}')
 
-    async def fetch_search_results(self, keyword, on_show=None):
+    async def _fetch_search_results(self, keyword, on_show=None):
         row = self.base_uri_list_box.search_results_row
         row.start_spinner()
 
@@ -211,7 +231,7 @@ class MainWindow(Gtk.ApplicationWindow):
                     f"Only the first {self._max_nb_datasets} results are shown. Narrow down your search.")
             datasets = datasets[:self._max_nb_datasets]  # Limit number of datasets that are shown
             row.search_results = datasets  # Cache datasets
-            self.update_search_summary(datasets)
+            self._update_search_summary(datasets)
             if self.base_uri_list_box.get_selected_row() == row:
                 # Only update if the row is still selected
                 self.dataset_list_box.fill(datasets, on_show=on_show)
@@ -228,17 +248,64 @@ class MainWindow(Gtk.ApplicationWindow):
         self._search_by_search_text(search_text)
 
     def _search_by_search_text(self, search_text):
-        self.activate_action('search', GLib.Variant.new_string(search_text))
+        self.activate_action('search-select-show', GLib.Variant.new_string(search_text))
+
+    # utility methods - dataset selection
+    def _select_dataset_row_by_row_index(self, index):
+        """Select dataset row in dataset list box by index."""
+        row = self.dataset_list_box.get_row_at_index(index)
+        if row is not None:
+            _logger.debug(f"{row} selected.")
+            self.dataset_list_box.select_row(row)
+        else:
+            _logger.info(f"No row with index {index} available for selection.")
+
+    def _show_dataset_details(self, dataset):
+        asyncio.create_task(self._update_dataset_view(dataset))
+        self.dataset_stack.set_visible_child(self.dataset_box)
+
+    def _show_dataset_details_by_row_index(self, index):
+        row = self.dataset_list_box.get_row_at_index(index)
+        if row is not None:
+            _logger.debug(f"{row.dataset.name} shown.")
+            self._show_dataset_details(row.dataset)
+        else:
+            _logger.info(f"No row with index {index} available for selection.")
+
+    def _select_and_show_by_row_index(self, index=0):
+        self._select_dataset_row_by_row_index(index)
+        self._show_dataset_details_by_row_index(index)
+
+    def _search(self, search_text, on_show=None):
+        _logger.debug(f"Evoke search with search text {search_text}.")
+        self.main_stack.set_visible_child(self.main_spinner)
+        row = self.base_uri_list_box.search_results_row
+        row.search_results = None
+        asyncio.create_task(self._fetch_search_results(search_text, on_show))
+
+    def _search_select_and_show(self, search_text):
+        _logger.debug(f"Search '{search_text}'...")
+        self._search(search_text, on_show=lambda _: self._select_and_show_by_row_index())
 
     # actions
     def do_search(self, action, value):
         """Evoke search tas for specific search text."""
         search_text = value.get_string()
-        _logger.debug(f"Evoke search with search text {search_text}.")
-        self.main_stack.set_visible_child(self.main_spinner)
-        row = self.base_uri_list_box.search_results_row
-        row.search_results = None
-        asyncio.create_task(self.fetch_search_results(search_text))
+        self._search(search_text)
+
+    def do_select_dataset_row_by_row_index(self, action, value):
+        """Select dataset row by index."""
+        row_index = value.get_uint32()
+        self._select_dataset_row_by_row_index(row_index)
+
+    def do_show_dataset_details_by_row_index(self, action, value):
+        row_index = value.get_uint32()
+        self._show_dataset_details_by_row_index(row_index)
+
+    def do_search_select_and_show(self, action, value):
+        """Evoke search task for specific search text, select and show 1st row of resuls subsequntly."""
+        search_text = value.get_string()
+        self._search_select_and_show(search_text)
 
     # signal handlers
     @Gtk.Template.Callback()
@@ -303,8 +370,9 @@ class MainWindow(Gtk.ApplicationWindow):
     @Gtk.Template.Callback()
     def on_dataset_selected(self, list_box, row):
         if row is not None:
-            asyncio.create_task(self._update_dataset_view(row.dataset))
-            self.dataset_stack.set_visible_child(self.dataset_box)
+            row_index = row.get_index()
+            _logger.debug(f"Selected row {row_index}.")
+            self.activate_action('show-dataset', GLib.Variant.new_uint32(row_index))
 
     @Gtk.Template.Callback()
     def on_open_local_directory_clicked(self, widget):
