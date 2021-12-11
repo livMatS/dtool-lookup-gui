@@ -187,7 +187,9 @@ async def _copy_dataset(uri, target_base_uri, resume, auto_resume):
                 raise FileExistsError(
                     "Path already exists: {}".format(parsed_dataset_uri.path))
 
-    def copy_func_wrapper(src_uri, dest_base_uri, status_report_callback, stop_event_callback):
+    num_items = len(list(dataset.identifiers))
+
+    def copy_func_wrapper(src_uri, dest_base_uri, status_report_callback):
         copy_func(
             src_uri=src_uri,
             dest_base_uri=dest_base_uri,
@@ -195,14 +197,11 @@ async def _copy_dataset(uri, target_base_uri, resume, auto_resume):
             progressbar=status_report_callback,
         )
 
-    num_items = len(list(dataset.identifiers))
-
     with ProgressBar(length=num_items * 2,
                      label="Copying dataset",
                      pb=None) as progressbar:
         non_blocking_copy_func = StatusReportingChildProcessBuilder(copy_func_wrapper, progressbar)
         dest_uri = await non_blocking_copy_func(uri, target_base_uri)
-
 
     logger.info(f'Dataset successfully copied from {uri} to {target_base_uri}.')
 

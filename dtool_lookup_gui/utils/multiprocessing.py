@@ -78,11 +78,7 @@ class StatusReportingChildProcessBuilder:
 
     The function must have the signature
 
-        func(*args, status_report_callback=None, stop_event_callback=None)
-
-    and need not make use of any of the two callback functions. It can check on
-    the stop_event_callback() to finish gracefully when the parent process wants
-    the child process to finish.
+        func(*args, status_report_callback=None)
     """
     def __init__(self, target, status_report_callback):
         self._target = target
@@ -92,15 +88,14 @@ class StatusReportingChildProcessBuilder:
         """Spawn child process to assure my environment stays untouched."""
         return_value_queue = multiprocessing.Queue()
         status_progress_queue = multiprocessing.Queue()
-        stop_event = multiprocessing.Event()
-        process = Process(target=self.target_wrapper, args=[return_value_queue, status_progress_queue, stop_event, *args])
+        process = Process(target=self.target_wrapper, args=[return_value_queue, status_progress_queue, *args])
         process.start()
 
-        # wait for child to queue objects and
+        # wait for child to queue its return value and
         # check whether child raises exception
         while return_value_queue.empty():
             # if child raises exception, then it has terminated
-            # before queueing any fw_action object
+            # before queueing any return value
             if process.exception:
                 error, p_traceback = process.exception
                 raise ChildProcessError(p_traceback)
@@ -113,47 +108,28 @@ class StatusReportingChildProcessBuilder:
                 logger.debug(f"Parent process received status report {status_report}")
                 self._status_report_handler.update(status_report)
 
-            # let child process stop
-            if hasattr(self, '_stop_event') and hasattr(self._stop_event, 'is_set'):
-                if self._stop_event.is_set():
-                    stop_event.set()
-
             await asyncio.sleep(0.1)
-        # this loop will deadlock for any child that never raises
-        # an exception and does not queue anything
 
-        # queue only used for one transfer of
-        # return fw_action, should thus never deadlock.
         return_value = return_value_queue.get()
-        # if we reach this line without the child
-        # queueing anything, then process will deadlock.
+        # for any child that never raises an exception and does not queue
+        # anything to the return_value_queue, will deadlock here
         process.join()
         return return_value
 
-    def target_wrapper(self, return_value_queue, status_progress_queue, stop_event, *args):
+    def target_wrapper(self, return_value_queue, status_progress_queue, *args):
 
         class StatusReportClass:
             def update(status_report):
                 logger.debug(f"Child process queues status report {status_report}")
                 status_progress_queue.put(status_report)
 
-        def stop_event_callback():
-            logger.debug(f"Child process checks stop event.")
-            return stop_event.is_set()
-
-        return_value_queue.put(self._target(*args, status_report_callback=StatusReportClass, stop_event_callback=stop_event_callback))
-
-    def set_stop_event(self, e):
-        """This can be a threaded event and will be forwarded to the child process."""
-        self._stop_event = e
+        return_value_queue.put(self._target(*args, status_report_callback=StatusReportClass))
 
 
-def test_function(steps, status_report_callback, stop_event_callback=None):
+def test_function(steps, status_report_callback):
     for n in range(steps):
         print(f"Child process step {n}")
         status_report_callback.update(n)
-        if stop_event_callback is not None and stop_event_callback():
-            return False
 
     return True
 
