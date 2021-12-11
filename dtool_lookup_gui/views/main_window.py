@@ -61,6 +61,8 @@ _logger = logging.getLogger(__name__)
 def _fill_manifest_tree_store(store, manifest, parent=None):
     nodes = {}
 
+    store.clear()
+
     def find_or_create_parent_node(path, top_parent):
         if not path:
             return top_parent
@@ -128,8 +130,15 @@ class MainWindow(Gtk.ApplicationWindow):
     dependency_graph_widget = Gtk.Template.Child()
 
     readme_source_view = Gtk.Template.Child()
+    readme_spinner = Gtk.Template.Child()
+    readme_stack = Gtk.Template.Child()
+    readme_view = Gtk.Template.Child()
+
+    manifest_spinner = Gtk.Template.Child()
+    manifest_stack = Gtk.Template.Child()
     manifest_tree_view = Gtk.Template.Child()
     manifest_tree_store = Gtk.Template.Child()
+    manifest_view = Gtk.Template.Child()
 
     settings_button = Gtk.Template.Child()
 
@@ -516,9 +525,15 @@ class MainWindow(Gtk.ApplicationWindow):
             self.copy_button.set_sensitive(True)
 
         async def _get_readme():
+            self.readme_stack.set_visible_child(self.readme_spinner)
             self.readme_buffer.set_text(await dataset.get_readme())
+            self.readme_stack.set_visible_child(self.readme_view)
+
         async def _get_manifest():
+            self.manifest_stack.set_visible_child(self.manifest_spinner)
             _fill_manifest_tree_store(self.manifest_tree_store, await dataset.get_manifest())
+            self.manifest_stack.set_visible_child(self.manifest_view)
+
         asyncio.create_task(_get_readme())
         asyncio.create_task(_get_manifest())
 
