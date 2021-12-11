@@ -160,7 +160,7 @@ def _load_dataset(uri):
     return dataset
 
 
-def _copy_dataset(uri, target_base_uri, resume, auto_resume):
+async def _copy_dataset(uri, target_base_uri, resume, auto_resume):
     logger.info(f'Copying dataset from URI {uri} to {target_base_uri}...')
 
     dataset = _load_dataset(uri)
@@ -201,7 +201,7 @@ def _copy_dataset(uri, target_base_uri, resume, auto_resume):
                      label="Copying dataset",
                      pb=None) as progressbar:
         non_blocking_copy_func = StatusReportingChildProcessBuilder(copy_func_wrapper, progressbar)
-        dest_uri = non_blocking_copy_func(uri, target_base_uri)
+        dest_uri = await non_blocking_copy_func(uri, target_base_uri)
 
 
     logger.info(f'Dataset successfully copied from {uri} to {target_base_uri}.')
@@ -298,10 +298,7 @@ class DatasetModel:
 
     async def copy(self, target_base_uri, resume=False, auto_resume=True, progressbar=None):
         """Copy a dataset."""
-
-        loop = asyncio.get_running_loop()
-        with ProcessPoolExecutor(1) as executor:
-            return await loop.run_in_executor(executor, _copy_dataset, self.uri, target_base_uri, resume, auto_resume)
+        await _copy_dataset(self.uri, target_base_uri, resume, auto_resume)
 
     def freeze(self):
         _load_dataset(str(self)).freeze()

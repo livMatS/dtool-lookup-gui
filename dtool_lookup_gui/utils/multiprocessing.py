@@ -26,6 +26,7 @@
 # NOTE: depending on platform, we may have to experiment with the forking methods,
 # https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods
 
+import asyncio
 import logging
 import multiprocessing  # run task as child process to avoid side effects
 import queue
@@ -87,7 +88,7 @@ class StatusReportingChildProcessBuilder:
         self._target = target
         self._status_report_handler = status_report_callback
 
-    def __call__(self, *args):
+    async def __call__(self, *args):
         """Spawn child process to assure my environment stays untouched."""
         return_value_queue = multiprocessing.Queue()
         status_progress_queue = multiprocessing.Queue()
@@ -117,6 +118,7 @@ class StatusReportingChildProcessBuilder:
                 if self._stop_event.is_set():
                     stop_event.set()
 
+            await asyncio.sleep(0.1)
         # this loop will deadlock for any child that never raises
         # an exception and does not queue anything
 
@@ -161,7 +163,7 @@ class test_handler:
         print(f"Test callback received report for step {n}")
 
 
-def test_run():
+async def test_run():
     test_process = StatusReportingChildProcessBuilder(test_function, test_handler)
-    return_value = test_process(10)
+    return_value = await test_process(10)
     print(f"Child process returned {return_value}.")
