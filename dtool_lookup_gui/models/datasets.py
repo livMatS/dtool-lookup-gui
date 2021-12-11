@@ -35,6 +35,11 @@ from dtool_info.utils import date_fmt, sizeof_fmt
 from dtool_info.inventory import _dataset_info
 from dtool_lookup_api.core.LookupClient import ConfigurationBasedLookupClient
 
+from ..utils.multiprocessing import StatusReportingChildProcessBuilder
+from ..utils.progressbar import ProgressBar
+
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -182,12 +187,22 @@ def _copy_dataset(uri, target_base_uri, resume, auto_resume):
                 raise FileExistsError(
                     "Path already exists: {}".format(parsed_dataset_uri.path))
 
-    dest_uri = copy_func(
-        src_uri=uri,
-        dest_base_uri=target_base_uri,
-        config_path=None
-        #progressbar=progressbar
-    )
+    def copy_func_wrapper(src_uri, dest_base_uri, status_report_callback, stop_event_callback):
+        copy_func(
+            src_uri=src_uri,
+            dest_base_uri=dest_base_uri,
+            config_path=None,
+            progressbar=status_report_callback,
+        )
+
+    num_items = len(list(dataset.identifiers))
+
+    with ProgressBar(length=num_items * 2,
+                     label="Copying dataset",
+                     pb=None) as progressbar:
+        non_blocking_copy_func = StatusReportingChildProcessBuilder(copy_func_wrapper, progressbar)
+        dest_uri = non_blocking_copy_func(uri, target_base_uri)
+
 
     logger.info(f'Dataset successfully copied from {uri} to {target_base_uri}.')
 

@@ -65,11 +65,15 @@ class Process(multiprocessing.Process):
 
 
 class StatusReportingChildProcessBuilder:
-    """Outsource serial functions with status report callbacks.
+    """Outsource serial functions with status report handlers.
 
-    For any function that runs serial and reports status via a callback, this
-    wrapper can run them in a forked process and forward the status reports
-    via queue to the callback.
+    The status report handler is expected to conform to the
+    click.ProgressBar interface. In particular, it must exhibit an
+    update(val) method.
+
+    For any function that runs serial and reports status via such a callback,
+    this wrapper can run them in a non-blocking forked process and forward the
+    status reports via queue to the callback.
 
     The function must have the signature
 
@@ -106,7 +110,7 @@ class StatusReportingChildProcessBuilder:
                 pass
             else:
                 logger.debug(f"Parent process received status report {status_report}")
-                self._status_report_handler(status_report)
+                self._status_report_handler.update(status_report)
 
             # let child process stop
             if hasattr(self, '_stop_event') and hasattr(self._stop_event, 'is_set'):
@@ -126,15 +130,16 @@ class StatusReportingChildProcessBuilder:
 
     def target_wrapper(self, return_value_queue, status_progress_queue, stop_event, *args):
 
-        def status_report_callback(status_report):
-            logger.debug(f"Child process queues status report {status_report}")
-            status_progress_queue.put(status_report)
+        class StatusReportClass:
+            def update(status_report):
+                logger.debug(f"Child process queues status report {status_report}")
+                status_progress_queue.put(status_report)
 
         def stop_event_callback():
             logger.debug(f"Child process checks stop event.")
             return stop_event.is_set()
 
-        return_value_queue.put(self._target(*args, status_report_callback=status_report_callback, stop_event_callback=stop_event_callback))
+        return_value_queue.put(self._target(*args, status_report_callback=StatusReportClass, stop_event_callback=stop_event_callback))
 
     def set_stop_event(self, e):
         self._stop_event = e
@@ -143,7 +148,7 @@ class StatusReportingChildProcessBuilder:
 def test_function(steps, status_report_callback, stop_event_callback=None):
     for n in range(steps):
         print(f"Child process step {n}")
-        status_report_callback(n)
+        status_report_callback.update(n)
         if stop_event_callback is not None and stop_event_callback():
             return False
 
