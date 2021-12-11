@@ -142,6 +142,7 @@ class StatusReportingChildProcessBuilder:
         return_value_queue.put(self._target(*args, status_report_callback=StatusReportClass, stop_event_callback=stop_event_callback))
 
     def set_stop_event(self, e):
+        """This can be a threaded event and will be forwarded to the child process."""
         self._stop_event = e
 
 
@@ -155,11 +156,12 @@ def test_function(steps, status_report_callback, stop_event_callback=None):
     return True
 
 
-def test_callback(n):
-    print(f"Test callback received report for step {n}")
+class test_handler:
+    def update(n):
+        print(f"Test callback received report for step {n}")
 
 
 def test_run():
-    test_process = StatusReportingChildProcessBuilder(test_function, test_callback)
+    test_process = StatusReportingChildProcessBuilder(test_function, test_handler)
     return_value = test_process(10)
     print(f"Child process returned {return_value}.")
