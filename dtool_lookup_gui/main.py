@@ -146,7 +146,7 @@ class Application(Gtk.Application):
 
         Gtk.Application.do_startup(self)
 
-    # custom actions
+    # custom application-scoped actions
     def do_toggle_logging(self, action, value):
         action.set_state(value)
         if value.get_boolean():
@@ -160,7 +160,6 @@ class Application(Gtk.Application):
             logger.debug("Disabled all logging below WARNING.")
 
     def do_set_loglevel(self, action, value):
-
         if action.get_state().get_uint16() == value.get_uint16():
             logger.debug("Desired loglevel and current log level are equivalent.")
             return
