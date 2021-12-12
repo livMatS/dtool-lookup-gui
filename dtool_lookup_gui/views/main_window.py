@@ -29,7 +29,7 @@ import traceback
 import urllib.parse
 from functools import reduce
 
-from gi.repository import Gdk, Gio, GLib, Gtk, GtkSource
+from gi.repository import Gio, GLib, Gtk, GtkSource
 
 import dtoolcore.utils
 from dtool_info.utils import sizeof_fmt
@@ -120,6 +120,7 @@ class MainWindow(Gtk.ApplicationWindow):
     add_items_button = Gtk.Template.Child()
     freeze_button = Gtk.Template.Child()
     copy_button = Gtk.Template.Child()
+    progress_button = Gtk.Template.Child()
 
     edit_readme_switch = Gtk.Template.Child()
     save_metadata_button = Gtk.Template.Child()
@@ -160,6 +161,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.readme_buffer.set_highlight_matching_brackets(True)
 
         self.error_bar.hide()
+        self.progress_button.hide()
 
         # connect log handler to error bar
         root_logger = logging.getLogger()
@@ -483,12 +485,13 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def on_copy_clicked(self, widget):
         async def _copy():
-            #self.copy_dataset_spinner.start()
+            self.progress_button.show()
             try:
-                await self.dataset_list_box.get_selected_row().dataset.copy(widget.destination)
+                await self.dataset_list_box.get_selected_row().dataset.copy(
+                    widget.destination, progressbar=self.progress_button.get_child())
             except Exception as e:
                 self.show_error(e)
-            #self.copy_dataset_spinner.stop()
+            self.progress_button.hide()
 
         asyncio.create_task(_copy())
 

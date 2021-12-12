@@ -160,7 +160,7 @@ def _load_dataset(uri):
     return dataset
 
 
-async def _copy_dataset(uri, target_base_uri, resume, auto_resume):
+async def _copy_dataset(uri, target_base_uri, resume, auto_resume, progressbar=None):
     logger.info(f'Copying dataset from URI {uri} to {target_base_uri}...')
 
     dataset = _load_dataset(uri)
@@ -199,8 +199,8 @@ async def _copy_dataset(uri, target_base_uri, resume, auto_resume):
 
     with ProgressBar(length=num_items * 2,
                      label="Copying dataset",
-                     pb=None) as progressbar:
-        non_blocking_copy_func = StatusReportingChildProcessBuilder(copy_func_wrapper, progressbar)
+                     pb=progressbar) as pb:
+        non_blocking_copy_func = StatusReportingChildProcessBuilder(copy_func_wrapper, pb)
         dest_uri = await non_blocking_copy_func(uri, target_base_uri)
 
     logger.info(f'Dataset successfully copied from {uri} to {target_base_uri}.')
@@ -297,7 +297,7 @@ class DatasetModel:
 
     async def copy(self, target_base_uri, resume=False, auto_resume=True, progressbar=None):
         """Copy a dataset."""
-        await _copy_dataset(self.uri, target_base_uri, resume, auto_resume)
+        await _copy_dataset(self.uri, target_base_uri, resume, auto_resume, progressbar)
 
     def freeze(self):
         _load_dataset(str(self)).freeze()

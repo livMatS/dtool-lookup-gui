@@ -24,16 +24,11 @@
 
 import logging
 
-from math import pi, sqrt
+from math import pi
 
-import numpy as np
+from gi.repository import GObject, Gdk, Gtk
 
-from gi.repository import GLib, GObject, Gdk, Gtk
-
-from ..models.simple_graph import GraphLayout
-from ..utils.query import dump_single_line_query_text
-
-from .graph_popover import DtoolGraphPopover
+_log = logging.getLogger(__name__)
 
 
 class DtoolProgressChart(Gtk.DrawingArea):
@@ -51,15 +46,17 @@ class DtoolProgressChart(Gtk.DrawingArea):
     def fraction(self):
         return self._fraction
 
-    @fraction.setter
-    def fraction(self, value):
+    def set_text(self, value):
+        _log.info(f'Received text: {value}')
+
+    def set_fraction(self, value):
         if value < 0 or value > 1:
             raise ValueError('Progress fraction must be between 0 and 1.')
         self._fraction = value
+        self.queue_draw()
 
     def _cairo_scale(self, area, context):
         w, h = area.get_allocated_width(), area.get_allocated_height()
-        print(w, h)
         s = min(w, h)
         context.translate(w / 2, h / 2)
         context.scale(s, s)
@@ -79,7 +76,7 @@ class DtoolProgressChart(Gtk.DrawingArea):
 
         # Draw pie
         context.set_source_rgb(*self._pie_color.to_floats())
-        context.arc(0, 0, 0.5, 3* pi / 2, 3 * pi /2 + 2 * pi * self._fraction)
+        context.arc(0, 0, 0.5, 3 * pi / 2, 3 * pi / 2 + 2 * pi * self._fraction)
         context.line_to(0, 0)
         context.close_path()
         context.fill()
