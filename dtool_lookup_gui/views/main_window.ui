@@ -4,7 +4,7 @@
   <requires lib="gtk+" version="3.22"/>
   <requires lib="dtool_gtk_catalog" version="1.0"/>
   <requires lib="gtksourceview" version="4.0"/>
-  <object class="GtkPopoverMenu" id="DtoolMainMenu">
+  <object class="GtkPopoverMenu" id="burger_menu">
     <property name="can-focus">False</property>
     <child>
       <object class="GtkBox">
@@ -82,6 +82,12 @@
       <!-- column-name uuid -->
       <column type="gchararray"/>
     </columns>
+  </object>
+  <object class="DtoolProgressPopoverMenu" id="progress_menu">
+    <property name="can-focus">False</property>
+    <child>
+      <placeholder/>
+    </child>
   </object>
   <template class="DtoolMainWindow" parent="GtkApplicationWindow">
     <property name="height-request">700</property>
@@ -1073,7 +1079,7 @@ or search for a dataset</property>
             <property name="can-focus">True</property>
             <property name="focus-on-click">False</property>
             <property name="receives-default">True</property>
-            <property name="popover">DtoolMainMenu</property>
+            <property name="popover">burger_menu</property>
             <child>
               <object class="GtkImage">
                 <property name="visible">True</property>
@@ -1108,13 +1114,22 @@ or search for a dataset</property>
           </packing>
         </child>
         <child>
-          <object class="GtkSpinner" id="copy_dataset_spinner">
+          <object class="GtkMenuButton">
             <property name="visible">True</property>
-            <property name="can-focus">False</property>
+            <property name="can-focus">True</property>
+            <property name="focus-on-click">False</property>
+            <property name="receives-default">True</property>
+            <property name="popover">progress_menu</property>
+            <child>
+              <object class="DtoolProgressChart">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+              </object>
+            </child>
           </object>
           <packing>
             <property name="pack-type">end</property>
-            <property name="position">3</property>
+            <property name="position">4</property>
           </packing>
         </child>
       </object>
