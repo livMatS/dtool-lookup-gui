@@ -43,7 +43,7 @@ class DtoolSearchResultsRow(Gtk.ListBoxRow):
         hbox.pack_start(image, False, False, 0)
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         label = Gtk.Label(xalign=0)
-        label.set_markup(f'<b>Search results</b>')
+        label.set_markup(f'<b>Lookup server</b>')
         vbox.pack_start(label, True, True, 0)
         self._info_label = Gtk.Label(xalign=0)
         self._info_label.set_text('---')
