@@ -79,9 +79,5 @@ class DtoolProgressChart(Gtk.DrawingArea):
         context.close_path()
         context.fill()
 
-        # Draw fraction
-        # context.set_source_rgb(0, 0, 0)
-        # context.set_line_width(0.1)
-
 
 GObject.type_register(DtoolProgressChart)
