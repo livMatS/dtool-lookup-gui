@@ -50,8 +50,6 @@ class DtoolProgressChart(Gtk.DrawingArea):
         _log.info(f'Received text: {value}')
 
     def set_fraction(self, value):
-        if value < 0 or value > 1:
-            raise ValueError('Progress fraction must be between 0 and 1.')
         self._fraction = value
         self.queue_draw()
 

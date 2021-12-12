@@ -21,7 +21,9 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
+
 """Progressbar"""
+
 import logging
 
 from gi.repository import Gtk
@@ -48,7 +50,10 @@ class ProgressBar(AbstractContextManager):
 
     def __enter__(self):
         if self._pb is not None:
-            self._pb.set_fraction(0.0)
+            if hasattr(self._pb, 'set_fraction'):
+                self._pb.set_fraction(0.0)
+            if hasattr(self._pb, 'set_step'):
+                self._pb.set_step(0, self._length)
         logger.info(f"Progress fraction 0.0")
         self._set_text()
         return self
@@ -78,7 +83,10 @@ class ProgressBar(AbstractContextManager):
         self._step += step
         fraction = float(self._step) / float(self._length)
         if self._pb is not None:
-            self._pb.set_fraction(fraction)
+            if hasattr(self._pb, 'set_fraction'):
+                self._pb.set_fraction(fraction)
+            if hasattr(self._pb, 'set_step'):
+                self._pb.set_step(self._step, self._length)
         logger.info(f"Progress fraction {fraction}")
         self._set_text()
 

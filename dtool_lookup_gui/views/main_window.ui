@@ -83,12 +83,6 @@
       <column type="gchararray"/>
     </columns>
   </object>
-  <object class="DtoolProgressPopoverMenu" id="progress_menu">
-    <property name="can-focus">False</property>
-    <child>
-      <placeholder/>
-    </child>
-  </object>
   <template class="DtoolMainWindow" parent="GtkApplicationWindow">
     <property name="height-request">700</property>
     <property name="can-focus">False</property>
@@ -1114,16 +1108,24 @@ or search for a dataset</property>
           </packing>
         </child>
         <child>
-          <object class="GtkMenuButton" id="progress_button">
+          <object class="GtkRevealer" id="progress_revealer">
             <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="focus-on-click">False</property>
-            <property name="receives-default">True</property>
-            <property name="popover">progress_menu</property>
+            <property name="can-focus">False</property>
+            <property name="transition-type">crossfade</property>
+            <property name="reveal-child">True</property>
             <child>
-              <object class="DtoolProgressChart">
+              <object class="GtkMenuButton" id="progress_button">
                 <property name="visible">True</property>
-                <property name="can-focus">False</property>
+                <property name="can-focus">True</property>
+                <property name="focus-on-click">False</property>
+                <property name="receives-default">True</property>
+                <property name="popover">progress_popover</property>
+                <child>
+                  <object class="DtoolProgressChart">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                  </object>
+                </child>
               </object>
             </child>
           </object>
@@ -1135,4 +1137,10 @@ or search for a dataset</property>
       </object>
     </child>
   </template>
+  <object class="DtoolProgressPopoverMenu" id="progress_popover">
+    <property name="can-focus">False</property>
+    <child>
+      <placeholder/>
+    </child>
+  </object>
 </interface>
