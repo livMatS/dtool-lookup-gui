@@ -164,7 +164,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.readme_buffer.set_highlight_syntax(True)
         self.readme_buffer.set_highlight_matching_brackets(True)
 
-        self.error_bar.hide()
+        self.error_bar.set_revealed(False)
         self.progress_revealer.set_reveal_child(False)
 
         # connect log handler to error bar
@@ -575,7 +575,6 @@ class MainWindow(Gtk.ApplicationWindow):
         self.copy_button.get_popover().update(destinations, self.on_copy_clicked)
 
     async def _compute_dependencies(self, dataset):
-        self.error_bar.set_revealed(False)
         self.dependency_stack.set_visible_child(self.dependency_spinner)
 
         # Compute dependency graph
