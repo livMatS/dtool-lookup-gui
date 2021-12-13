@@ -4,7 +4,7 @@
   <requires lib="gtk+" version="3.22"/>
   <requires lib="dtool_gtk_catalog" version="1.0"/>
   <requires lib="gtksourceview" version="4.0"/>
-  <object class="GtkPopoverMenu" id="DtoolMainMenu">
+  <object class="GtkPopoverMenu" id="burger_menu">
     <property name="can-focus">False</property>
     <child>
       <object class="GtkBox">
@@ -1073,7 +1073,7 @@ or search for a dataset</property>
             <property name="can-focus">True</property>
             <property name="focus-on-click">False</property>
             <property name="receives-default">True</property>
-            <property name="popover">DtoolMainMenu</property>
+            <property name="popover">burger_menu</property>
             <child>
               <object class="GtkImage">
                 <property name="visible">True</property>
@@ -1108,16 +1108,39 @@ or search for a dataset</property>
           </packing>
         </child>
         <child>
-          <object class="GtkSpinner" id="copy_dataset_spinner">
+          <object class="GtkRevealer" id="progress_revealer">
             <property name="visible">True</property>
             <property name="can-focus">False</property>
+            <property name="transition-type">crossfade</property>
+            <property name="reveal-child">True</property>
+            <child>
+              <object class="GtkMenuButton" id="progress_button">
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="focus-on-click">False</property>
+                <property name="receives-default">True</property>
+                <property name="popover">progress_popover</property>
+                <child>
+                  <object class="DtoolProgressChart">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                  </object>
+                </child>
+              </object>
+            </child>
           </object>
           <packing>
             <property name="pack-type">end</property>
-            <property name="position">3</property>
+            <property name="position">4</property>
           </packing>
         </child>
       </object>
     </child>
   </template>
+  <object class="DtoolProgressPopoverMenu" id="progress_popover">
+    <property name="can-focus">False</property>
+    <child>
+      <placeholder/>
+    </child>
+  </object>
 </interface>

@@ -15,6 +15,12 @@
     <glade-widget-class title="dtool transfer popover" name="DtoolTransferPopoverMenu"
                         generic-name="DtoolTransferPopoverMenu" parent="GtkPopoverMenu"
                         icon-name="widget-gtk-popover-menu"/>
+    <glade-widget-class title="dtool progress chart" name="DtoolProgressChart"
+                        generic-name="DtoolProgressChart" parent="GtkDrawingArea"
+                        icon-name="widget-gtk-drawing-area"/>
+    <glade-widget-class title="dtool progress popover" name="DtoolProgressPopoverMenu"
+                        generic-name="DtoolProgressPopoverMenu" parent="GtkPopoverMenu"
+                        icon-name="widget-gtk-popover-menu"/>
     <glade-widget-class title="dtool graph widget" name="DtoolGraphWidget"
                         generic-name="DtoolGraphWidget" parent="GtkDrawingArea"
                         icon-name="widget-gtk-drawing-area"/>

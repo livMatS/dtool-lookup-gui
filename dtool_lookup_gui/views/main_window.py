@@ -29,7 +29,7 @@ import traceback
 import urllib.parse
 from functools import reduce
 
-from gi.repository import Gdk, Gio, GLib, Gtk, GtkSource
+from gi.repository import Gio, GLib, Gtk, GtkSource
 
 import dtoolcore.utils
 from dtool_info.utils import sizeof_fmt
@@ -44,6 +44,7 @@ dtool_lookup_api.core.config.Config.interactive = False
 from ..models.base_uris import all, LocalBaseURIModel
 from ..models.datasets import DatasetModel
 from ..models.settings import settings
+from ..utils.copy_manager import CopyManager
 from ..utils.date import date_to_string
 from ..utils.dependency_graph import DependencyGraph
 from ..utils.logging import FormattedSingleMessageGtkInfoBarHandler
@@ -95,7 +96,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     search_entry = Gtk.Template.Child()
 
-    copy_dataset_spinner = Gtk.Template.Child()
+    #copy_dataset_spinner = Gtk.Template.Child()
 
     base_uri_list_box = Gtk.Template.Child()
     dataset_list_box = Gtk.Template.Child()
@@ -120,6 +121,10 @@ class MainWindow(Gtk.ApplicationWindow):
     add_items_button = Gtk.Template.Child()
     freeze_button = Gtk.Template.Child()
     copy_button = Gtk.Template.Child()
+
+    progress_revealer = Gtk.Template.Child()
+    progress_button = Gtk.Template.Child()
+    progress_popover = Gtk.Template.Child()
 
     edit_readme_switch = Gtk.Template.Child()
     save_metadata_button = Gtk.Template.Child()
@@ -159,7 +164,8 @@ class MainWindow(Gtk.ApplicationWindow):
         self.readme_buffer.set_highlight_syntax(True)
         self.readme_buffer.set_highlight_matching_brackets(True)
 
-        self.error_bar.hide()
+        self.error_bar.set_revealed(False)
+        self.progress_revealer.set_reveal_child(False)
 
         # connect log handler to error bar
         root_logger = logging.getLogger()
@@ -197,6 +203,9 @@ class MainWindow(Gtk.ApplicationWindow):
         self.add_action(search_select_show_action)
 
         self.dependency_graph_widget.search_by_uuid = self._search_by_uuid
+
+        self._copy_manager = CopyManager(self.progress_revealer, self.progress_popover)
+
         _logger.debug(f"Constructed main window for app '{self.application.get_application_id()}'")
 
     # utility methods
@@ -398,15 +407,20 @@ class MainWindow(Gtk.ApplicationWindow):
             Gtk.ResponseType.OK,
         )
 
+        # Attention: Avoid run method!
+        # Unlike GLib, Python does not support running the EventLoop recursively.
+        # Gbulb uses the GLib event loop, hence this works. If we move to another
+        # implementation (e.g. https://gitlab.gnome.org/GNOME/pygobject/-/merge_requests/189)
+        # that uses the asyncio event loop this will break.
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
             uri, = dialog.get_uris()
+            # Add directory to local inventory
+            LocalBaseURIModel.add_directory(uri)
         elif response == Gtk.ResponseType.CANCEL:
             uri = None
         dialog.destroy()
 
-        # Add directory to local inventory
-        LocalBaseURIModel.add_directory(uri)
 
         # Refresh view of base URIs
         asyncio.create_task(self.base_uri_list_box.refresh())
@@ -433,6 +447,11 @@ class MainWindow(Gtk.ApplicationWindow):
         )
         dialog.set_select_multiple(True)
 
+        # Attention: Avoid run method!
+        # Unlike GLib, Python does not support running the EventLoop recursively.
+        # Gbulb uses the GLib event loop, hence this works. If we move to another
+        # implementation (e.g. https://gitlab.gnome.org/GNOME/pygobject/-/merge_requests/189)
+        # that uses the asyncio event loop this will break.
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
             uris = dialog.get_uris()
@@ -464,6 +483,11 @@ class MainWindow(Gtk.ApplicationWindow):
                                    f'You are about to freeze dataset "{row.dataset.name}". Items can no longer be '
                                    'added, removed or modified after freezing the dataset. (You will still be able to '
                                    'edit the metadata README.yml.) Please confirm freezing of this dataset.')
+        # Attention: Avoid run method!
+        # Unlike GLib, Python does not support running the EventLoop recursively.
+        # Gbulb uses the GLib event loop, hence this works. If we move to another
+        # implementation (e.g. https://gitlab.gnome.org/GNOME/pygobject/-/merge_requests/189)
+        # that uses the asyncio event loop this will break.
         response = dialog.run()
         dialog.destroy()
         if response == Gtk.ResponseType.OK:
@@ -483,12 +507,10 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def on_copy_clicked(self, widget):
         async def _copy():
-            self.copy_dataset_spinner.start()
             try:
-                await self.dataset_list_box.get_selected_row().dataset.copy(widget.destination)
+                await self._copy_manager.copy(self.dataset_list_box.get_selected_row().dataset, widget.destination)
             except Exception as e:
                 self.show_error(e)
-            self.copy_dataset_spinner.stop()
 
         asyncio.create_task(_copy())
 
@@ -553,7 +575,6 @@ class MainWindow(Gtk.ApplicationWindow):
         self.copy_button.get_popover().update(destinations, self.on_copy_clicked)
 
     async def _compute_dependencies(self, dataset):
-        self.error_bar.set_revealed(False)
         self.dependency_stack.set_visible_child(self.dependency_spinner)
 
         # Compute dependency graph

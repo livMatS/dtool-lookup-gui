@@ -30,6 +30,10 @@ class DtoolBaseURIRow(Gtk.ListBoxRow):
 
     _margin = 3
 
+    _folder_symbols = {
+        'file': 'folder-symbolic',
+    }
+
     def __init__(self, base_uri, *args, **kwargs):
         self._base_uri = base_uri
         self._task = None
@@ -42,7 +46,8 @@ class DtoolBaseURIRow(Gtk.ListBoxRow):
 
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, margin_top=self._margin, margin_bottom=self._margin,
                        margin_start=self._margin, margin_end=self._margin)
-        image = Gtk.Image.new_from_icon_name('folder-symbolic' if base_uri.scheme == 'file'
+        image = Gtk.Image.new_from_icon_name(self._folder_symbols[base_uri.scheme]
+                                             if base_uri.scheme in self._folder_symbols
                                              else 'network-server-symbolic', Gtk.IconSize.BUTTON)
         image.set_padding(12, 12)
         hbox.pack_start(image, False, False, 0)

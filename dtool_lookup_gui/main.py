@@ -37,11 +37,13 @@ gbulb.install(gtk=True)
 
 from .views.main_window import MainWindow
 
-# The following import are need to register dtype with the GObject type system
+# The following imports are need to register widget types with the GObject type system
 import dtool_lookup_gui.widgets.base_uri_list_box
 import dtool_lookup_gui.widgets.dataset_list_box
-import dtool_lookup_gui.widgets.transfer_popover_menu
 import dtool_lookup_gui.widgets.graph_widget
+import dtool_lookup_gui.widgets.transfer_popover_menu
+import dtool_lookup_gui.widgets.progress_chart
+import dtool_lookup_gui.widgets.progress_popover_menu
 
 
 logger = logging.getLogger(__name__)
