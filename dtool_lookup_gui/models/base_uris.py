@@ -76,8 +76,8 @@ class LocalBaseURIModel(BaseURI):
     def add_directory(cls, path):
         base_uri = generous_parse_uri(path)
         if base_uri.scheme != cls._scheme:
-            raise ValueError(f"The URI provided specified schema '{base_uri.schema}', but this base URI model "
-                             f"supports '{cls._schama}'.")
+            raise ValueError(f"The URI provided specified schema '{base_uri.scheme}', but this base URI model "
+                             f"supports '{cls._scheme}'.")
         cls._local_base_uris += [base_uri.path]
         # Store such that they will reappear when restarting the program
         settings.local_base_uris = cls._local_base_uris

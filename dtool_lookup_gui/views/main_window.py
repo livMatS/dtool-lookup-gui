@@ -407,15 +407,20 @@ class MainWindow(Gtk.ApplicationWindow):
             Gtk.ResponseType.OK,
         )
 
+        # Attention: Avoid run method!
+        # Unlike GLib, Python does not support running the EventLoop recursively.
+        # Gbulb uses the GLib event loop, hence this works. If we move to another
+        # implementation (e.g. https://gitlab.gnome.org/GNOME/pygobject/-/merge_requests/189)
+        # that uses the asyncio event loop this will break.
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
             uri, = dialog.get_uris()
+            # Add directory to local inventory
+            LocalBaseURIModel.add_directory(uri)
         elif response == Gtk.ResponseType.CANCEL:
             uri = None
         dialog.destroy()
 
-        # Add directory to local inventory
-        LocalBaseURIModel.add_directory(uri)
 
         # Refresh view of base URIs
         asyncio.create_task(self.base_uri_list_box.refresh())
@@ -442,6 +447,11 @@ class MainWindow(Gtk.ApplicationWindow):
         )
         dialog.set_select_multiple(True)
 
+        # Attention: Avoid run method!
+        # Unlike GLib, Python does not support running the EventLoop recursively.
+        # Gbulb uses the GLib event loop, hence this works. If we move to another
+        # implementation (e.g. https://gitlab.gnome.org/GNOME/pygobject/-/merge_requests/189)
+        # that uses the asyncio event loop this will break.
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
             uris = dialog.get_uris()
@@ -473,6 +483,11 @@ class MainWindow(Gtk.ApplicationWindow):
                                    f'You are about to freeze dataset "{row.dataset.name}". Items can no longer be '
                                    'added, removed or modified after freezing the dataset. (You will still be able to '
                                    'edit the metadata README.yml.) Please confirm freezing of this dataset.')
+        # Attention: Avoid run method!
+        # Unlike GLib, Python does not support running the EventLoop recursively.
+        # Gbulb uses the GLib event loop, hence this works. If we move to another
+        # implementation (e.g. https://gitlab.gnome.org/GNOME/pygobject/-/merge_requests/189)
+        # that uses the asyncio event loop this will break.
         response = dialog.run()
         dialog.destroy()
         if response == Gtk.ResponseType.OK:
