@@ -1,4 +1,12 @@
 Change log for dtool-lookup-gui
+===============================
+
+0.4.0 (16Dec21)
+---------------
+
+- Manage (create, edit, freeze, copy) datasets in local directories and on
+  remote (cloud) storage systems
+- Configure dtool cloud endpoints
 
 0.3.0 (15May21)
 ---------------
