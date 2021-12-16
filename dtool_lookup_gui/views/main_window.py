@@ -471,7 +471,10 @@ class MainWindow(Gtk.ApplicationWindow):
             text = self.readme_buffer.get_text(self.readme_buffer.get_start_iter(),
                                                self.readme_buffer.get_end_iter(),
                                                False)
-            self.dataset_list_box.get_selected_row().dataset.put_readme(text)
+            try:
+                self.dataset_list_box.get_selected_row().dataset.put_readme(text)
+            except Exception as e:
+                self.show_error(e)
 
     @Gtk.Template.Callback()
     def on_save_metadata_button_clicked(self, widget):
