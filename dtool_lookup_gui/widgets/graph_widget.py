@@ -1,5 +1,6 @@
 #
-# Copyright 2020 Lars Pastewka
+# Copyright 2021 Johannes Hörmann
+#           2020-2021 Lars Pastewka
 #
 # ### MIT license
 #

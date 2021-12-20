@@ -1,5 +1,5 @@
 #
-# Copyright 2021 Johanns Hoermann, Lars Pastewka
+# Copyright 2021 Johannes Hörmann
 #
 # ### MIT license
 #

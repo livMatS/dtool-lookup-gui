@@ -1,5 +1,5 @@
 #
-# Copyright 2021 Lars Pastewka
+# Copyright 2020 Lars Pastewka
 #
 # ### MIT license
 #
@@ -22,37 +22,18 @@
 # SOFTWARE.
 #
 
-import os
 
-from gi.repository import Gtk
+import sys
 
+file_lines = open(sys.argv[1], 'r').readlines()
+header_lines = sys.stdin.readlines()
 
-@Gtk.Template(filename=f'{os.path.dirname(__file__)}/graph_popover.ui')
-class DtoolGraphPopover(Gtk.Popover):
-    __gtype_name__ = 'DtoolGraphPopover'
+while file_lines[0].startswith('#'):
+    file_lines = file_lines[1:]
 
-    uuid_label = Gtk.Template.Child()
-    name_label = Gtk.Template.Child()
-    show_dataset_button = Gtk.Template.Child()
+file_lines.insert(0, '#\n')
+for header_line in header_lines[::-1]:
+    file_lines.insert(0, '# {}'.format(header_line).strip() + '\n')
+file_lines.insert(0, '#\n')
 
-    def __init__(self, *args, **kwargs):
-        on_show_clicked = kwargs.pop('on_show_clicked', None)
-        super().__init__(*args, **kwargs)
-        if on_show_clicked is not None:
-            self.show_dataset_button.connect('clicked', on_show_clicked)
-
-    @property
-    def uuid(self):
-        self.uuid_label.get_text()
-
-    @uuid.setter
-    def uuid(self, uuid):
-        self.uuid_label.set_text(uuid)
-
-    @property
-    def name(self):
-        self.name_label.get_text()
-
-    @uuid.setter
-    def name(self, name):
-        self.name_label.set_text(name)
+open(sys.argv[1], 'w').writelines(file_lines)
