@@ -51,9 +51,8 @@ gbulb.install(gtk=True)
 from .Dependencies import DependencyGraph, is_uuid
 from .GraphWidget import GraphWidget
 
-def open(filename):
-    """Open file in system-default application"""
-
+def default_query():
+    return open(f'{os.environ["HOME"]}/.config/dtool/default_query.txt').read()
 
 @contextmanager
 def time_locale(name):
@@ -358,7 +357,7 @@ class SignalHandler:
             self.server_config = await self.lookup.config()
             if 'msg' in self.server_config:
                 self.show_error(self.server_config['msg'])
-            self.datasets = await self.lookup.all()
+            self.datasets = await self.lookup.by_query(default_query())
         except Exception as e:
             self.show_error(str(e))
             self.datasets = []
@@ -449,7 +448,7 @@ class SignalHandler:
                     # options for the other available keywords?
                     self.datasets = await self.lookup.search(keyword)
             else:
-                self.datasets = await self.lookup.all()
+                self.datasets = await self.lookup.by_query(default_query())
             self._refresh_results()
 
         if self._search_task is not None:
