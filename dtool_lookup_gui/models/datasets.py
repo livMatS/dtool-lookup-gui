@@ -325,3 +325,16 @@ class DatasetModel:
             manifest_dict = await lookup.manifest(self.uri)
         self._dataset_info['manifest'] = _mangle_lookup_manifest(manifest_dict)
         return self._dataset_info['manifest']
+
+    async def get_item(self, item_uuid):
+        """Get item from dataset by item UUID"""
+        if not self.is_frozen:
+            raise ValueError("Cannot retrieve items by UUID from ProtoDatasets.")
+
+        dataset = _load_dataset(str(self))
+        if item_uuid in dataset.identifiers:
+            cached_file = dataset.item_content_abspath(item_uuid)
+            logger.debug(f"Retrieved cached item {cached_file}.")
+            return cached_file
+        else:
+            raise ValueError(f"Item UUID '{item_uuid}' does not exist within dataset '{str(self)}'.")
