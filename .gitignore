@@ -1,5 +1,6 @@
 *~
 *.pyc
+*.pyo
 *.cpython*.so
 .idea
 __pycache__
