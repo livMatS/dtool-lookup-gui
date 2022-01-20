@@ -23,6 +23,10 @@
 # SOFTWARE.
 #
 
+# see https://docs.python.org/3/library/multiprocessing.html#multiprocessing.freeze_support
+import multiprocessing
+
 if __name__ == '__main__':
-    from .main import run_gui
+    multiprocessing.freeze_support()
+    from dtool_lookup_gui.main import run_gui
     run_gui()
