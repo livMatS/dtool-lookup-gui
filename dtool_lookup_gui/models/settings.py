@@ -30,7 +30,7 @@ from gi.repository import Gio
 class Settings:
     def __init__(self):
         schema_source = Gio.SettingsSchemaSource.new_from_directory(
-            f'{os.path.dirname(__file__)}/..', Gio.SettingsSchemaSource.get_default(), False)
+            os.path.abspath(f'{os.path.dirname(__file__)}/..'), Gio.SettingsSchemaSource.get_default(), False)
         schema = Gio.SettingsSchemaSource.lookup(
             schema_source, "de.uni-freiburg.dtool-lookup-gui", False)
         self.settings = Gio.Settings.new_full(schema, None, None)
