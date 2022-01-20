@@ -61,6 +61,13 @@ class Application(Gtk.Application):
 
     def do_activate(self):
         logger.debug("do_activate")
+
+        # https://pyinstaller.readthedocs.io/en/latest/runtime-information.html
+        if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+            logger.debug('running in a PyInstaller bundle')
+        else:
+            logger.debug('running in a normal Python process')
+
         win = self.props.active_window
         if not win:
             # Windows are associated with the application
