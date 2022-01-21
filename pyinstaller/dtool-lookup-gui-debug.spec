@@ -28,13 +28,9 @@ additional_datas = [
 
 runtime_hooks=[os.path.join(root_dir, 'pyinstaller/rthooks/pyi_rth_jinja2.py')]
 
-python_path = [
-  '/home/jotelha/venv/20220120-dtool-lookup-gui/lib/python3.8/site-packages'
-]
-
 a = Analysis(
     [os.path.join(root_dir, 'dtool_lookup_gui', 'launcher.py')],
-    pathex=[*python_path],
+    pathex=[],
     binaries=[],
     datas=[
         *additional_datas,
