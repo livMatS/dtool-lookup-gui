@@ -1,6 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 from PyInstaller.utils.hooks import collect_entry_point, copy_metadata
 
+root_dir = os.path.abspath(os.curdir)
 block_cipher = None
 
 # storage brokers and their entrypoints need the following special treatment,
@@ -12,19 +13,27 @@ for module in dtool_hidden_imports:
 
 dtool_storage_brokers_datas, dtool_storage_brokers_hidden_imports = collect_entry_point("dtool.storage_brokers")
 
+# relative to repository root
+glob_patterns_to_include =  [
+    'README.rst', 'LICENSE.md',
+    'dtool_lookup_gui/gschemas.compiled',
+    'dtool_lookup_gui/views/*.ui',
+    'dtool_lookup_gui/widgets/*.ui',
+]
+
 additional_datas = [
-      ('README.rst', '.'),
-      ('LICENSE.md', '.'),
-      ('dtool_lookup_gui/gschemas.compiled', 'dtool_lookup_gui'),
-      ('dtool_lookup_gui/views/*.ui', 'dtool_lookup_gui/views'),
-      ('dtool_lookup_gui/widgets/*.ui', 'dtool_lookup_gui/widgets'),
+    (os.path.join(root_dir, rel_path), os.path.dirname(rel_path)) for rel_path in glob_patterns_to_include
+]
+
+runtime_hooks=[os.path.join(root_dir, 'pyinstaller/rthooks/pyi_rth_jinja2.py')]
+
+python_path = [
+  '/home/jotelha/venv/20220120-dtool-lookup-gui/lib/python3.8/site-packages'
 ]
 
 a = Analysis(
-    ['dtool_lookup_gui/launcher.py'],
-    pathex=[
-      '/home/jotelha/venv/20220120-dtool-lookup-gui/lib/python3.8/site-packages',
-    ],
+    [os.path.join(root_dir, 'dtool_lookup_gui', 'launcher.py')],
+    pathex=[*python_path],
     binaries=[],
     datas=[
         *additional_datas,
@@ -44,7 +53,7 @@ a = Analysis(
             }
         }
     },
-    runtime_hooks=['./pyinstaller/rthooks/pyi_rth_jinja2.py'],
+    runtime_hooks=runtime_hooks,
     excludes=[],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
