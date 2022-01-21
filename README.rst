@@ -79,6 +79,18 @@ the URL of the lookup and the authentication server as well as provide a
 username and a password. To do this, click on the "Burger" symbol and select
 *Settings*.
 
+
+Pinned requirements
+-------------------
+
+`requirements.in` contains unpinned dependencies. `requirements.txt` with pinned versions has been auto-generated with
+
+.. code:: bash
+
+  pip install pip-tools
+  pip-compile requirements.in > requirements.txt
+
+
 Installation on MacOS
 ---------------------
 
