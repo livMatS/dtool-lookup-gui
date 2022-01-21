@@ -39,7 +39,7 @@ If you want the latest development release, then use:
 
     pip install git+https://github.com/IMTEK-Simulation/dtool-lookup-gui.git
 
-When already clone into a local directly via `git`, either use pip_ or install via the standard route
+When already clone into a local directly via ``git``, either use pip_ or install via the standard route
 
 .. code:: bash
 
@@ -58,7 +58,7 @@ also run
 
    glib-compile-schemas .
 
-from within subdirectory `dtool_lookup_gui`. Otherwise, GUI launch fails with
+from within subdirectory ``dtool_lookup_gui``. Otherwise, GUI launch fails with
 
 .. code::
 
@@ -80,21 +80,10 @@ username and a password. To do this, click on the "Burger" symbol and select
 *Settings*.
 
 
-Pinned requirements
--------------------
-
-`requirements.in` contains unpinned dependencies. `requirements.txt` with pinned versions has been auto-generated with
-
-.. code:: bash
-
-  pip install pip-tools
-  pip-compile requirements.in > requirements.txt
-
-
 Installation on MacOS
 ---------------------
 
-The pip package for PyGObject has another name for macos. So comment it out in setup.py, install it following the instructions_ and then run `pip install /path/to/dtool-gui` 
+The pip package for PyGObject has another name for macos. So comment it out in setup.py, install it following the instructions_ and then run ``pip install /path/to/dtool-gui``
 
 .. _instructions: https://pygobject.readthedocs.io/en/latest/getting_started.html 
 
@@ -161,8 +150,48 @@ A possible fix is
     
 See https://gitlab.gnome.org/GNOME/pygobject/-/issues/417 
 
+
 Development
 -----------
+
+Pinned requirements
+^^^^^^^^^^^^^^^^^^^
+
+``requirements.in`` contains unpinned dependencies. ``requirements.txt`` with pinned versions has been auto-generated with
+
+.. code:: bash
+
+  pip install pip-tools
+  pip-compile requirements.in > requirements.txt
+
+
+Testing github workflows locally
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+It is possible to run github workflows locally
+with the help of `docker <https://www.docker.com/>`_ and
+`act <https://github.com/nektos/act>`_.
+
+`Install and configure act <https://github.com/nektos/act#installation>`_
+at a specific version with
+
+.. code-block:: bash
+
+  go install github.com/nektos/act@v0.2.24
+
+and run a workflow with 
+
+.. code-block:: bash
+
+  act -s GITHUB_TOKEN=$GITHUB_TOKEN -W .github/workflows/publish-on-pypi.yml
+
+from within this repository. :code:`$GITHUB_TOKEN` must hold a valid
+`access token <https://github.com/settings/tokens>`_.
+The evoking user must be member of the :code:`docker` group.
+
+
+GUI design
+^^^^^^^^^^
 
 The GUI uses custom Gtk widgets. To edit the the XML UI definition files with
 Glade_, add the directory ``glade/catalog`` to `Extra Catalog & Template paths`
