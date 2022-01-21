@@ -1,11 +1,20 @@
 # -*- mode: python ; coding: utf-8 -*-
-from PyInstaller.utils.hooks import collect_entry_point
+from PyInstaller.utils.hooks import collect_entry_point, collect_all, copy_metadata
 
 # datafiles_toc = Tree('dtool_lookup_gui', prefix='dtool_lookup_gui', excludes=['.gitignore', '*.py','*.pyc', '*.pyo'])
 block_cipher = None
 
-dtool_hidden_imports = ['dtool_smb', 'dtool_s3', 'pysmb']
+dtool_hidden_imports = ['dtool_http', 'dtool_smb', 'dtool_s3', 'dtool_symlink']
 dtool_storage_brokers_datas, dtool_storage_brokers_hidden_imports = collect_entry_point("dtool.storage_brokers")
+
+dtool_hidden_imports_datas = []
+for module in dtool_hidden_imports:
+    dtool_hidden_imports_datas.extend(copy_metadata(module, recursive=True))
+
+# some issue with diverging distro name 'pymsb' and module name 'smb'
+# pysmb_data = copy_metadata('pysmb', recursive=True)
+# dtool_cli_data = copy_metadata('dtool_cli', recursive=True)
+# boto3_data = copy_metadata('boto3', recursive=True)
 
 additional_datas = [
       ('README.rst', '.'),
@@ -17,9 +26,18 @@ additional_datas = [
 
 a = Analysis(
     ['dtool_lookup_gui/launcher.py'],
-    pathex=['/home/jotelha/venv/20220120-dtool-lookup-gui/lib/python3.8/site-packages'],
+    pathex=[
+      '/home/jotelha/venv/20220120-dtool-lookup-gui/lib/python3.8/site-packages',
+    ],
     binaries=[],
-    datas=[*additional_datas, *dtool_storage_brokers_datas],
+    datas=[
+        *additional_datas,
+        *dtool_storage_brokers_datas,
+        *dtool_hidden_imports_datas,
+        #*pysmb_data,
+        #*dtool_cli_data,
+        #*boto3_data
+    ],
     hiddenimports=[*dtool_hidden_imports, *dtool_storage_brokers_hidden_imports],
     hookspath=[],
     hooksconfig={
@@ -38,21 +56,21 @@ a = Analysis(
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
-    noarchive=False,
+    noarchive=True,
 )
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
 exe = EXE(
     pyz,
     a.scripts,
-    [],
+    [('v', None, 'OPTION')],
     exclude_binaries=True,
     name='dtool-lookup-gui',
-    debug=False,
+    debug=True,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=False,
+    console=True,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
