@@ -1,7 +1,6 @@
 name: build-on-ubunu
 
 on:
-on:
   push:
     branches:    
       - master
