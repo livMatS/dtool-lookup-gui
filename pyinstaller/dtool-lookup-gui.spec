@@ -22,7 +22,8 @@ glob_patterns_to_include =  [
 ]
 
 additional_datas = [
-    (os.path.join(root_dir, rel_path), os.path.dirname(rel_path)) for rel_path in glob_patterns_to_include
+    (os.path.join(root_dir, rel_path),
+     os.path.join(os.curdir, os.path.dirname(rel_path))) for rel_path in glob_patterns_to_include
 ]
 
 runtime_hooks=[os.path.join(root_dir, 'pyinstaller/rthooks/pyi_rth_jinja2.py')]
@@ -65,7 +66,7 @@ pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 exe = EXE(
     pyz,
     a.scripts,
-    [('v', None, 'OPTION')],
+    [],
     exclude_binaries=True,
     name='dtool-lookup-gui',
     debug=False,
