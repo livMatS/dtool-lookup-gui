@@ -1,0 +1,47 @@
+name: build-on-ubunu
+
+on:
+on:
+  push:
+    branches:    
+      - master
+  pull_request:
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-20.04
+      
+    steps:
+
+    - name: checkout
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Set up Python 3.8
+      uses: actions/setup-python@v2.3.1
+      with:
+        python-version: 3.8
+
+    - name: Install dependencies
+      run: |
+        pip install -r requirements.txt
+        pip install pyinstaller
+
+    - name: Compile gschemas
+      run: |
+        glib-compile-schemas .
+      working-directory: dtool_lookup_gui
+
+    - name: Package executable with pyinstaller
+      run: |
+        pyinstaller -y ./pyinstaller/dtool-lookup-gui-one-file.spec
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: dtool-lookup-gui
+        path: dist/dtool-lookup-gui
+        if-no-files-found: error
