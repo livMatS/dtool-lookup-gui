@@ -189,6 +189,24 @@ from within this repository. :code:`$GITHUB_TOKEN` must hold a valid
 `access token <https://github.com/settings/tokens>`_.
 The evoking user must be member of the :code:`docker` group.
 
+To generate a pyinstaller-packaged application by the according workflow and 
+store it locally, use the ``--bind`` flag, i.e.
+
+.. code-block:: bash
+
+  act -s GITHUB_TOKEN=$GITHUB_TOKEN -W .github/workflows/build-on-ubuntu.yml --bind
+
+This will bind-mount the current folder into the workflow-executing container.
+All locally generated artifacts will hence survive the container's lifespan,
+but usually belong to ``root``. The executable resides below ``dist``. Use 
+
+.. code-block:: bash
+
+   sudo chown -R $USER:$USER .
+   git clean -fdx
+
+to remove the generated ``build``, ``dist``, and ``workflow`` folders and all other artifacts.
+
 
 GUI design
 ^^^^^^^^^^
