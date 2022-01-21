@@ -1,0 +1,13 @@
+dtoolcore
+dtool-create
+dtool-info
+dtool-lookup-api
+dtool-s3
+dtool-smb
+aiohttp
+gbulb
+pyyaml
+ruamel.yaml
+PyGObject
+scipy
+jwt

@@ -1,9 +1,10 @@
 *~
 *.pyc
+*.pyo
 *.cpython*.so
 .idea
 __pycache__
-../build
+build
 dist
 *egg-info
 /tests/*.png
