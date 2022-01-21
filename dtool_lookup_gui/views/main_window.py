@@ -26,6 +26,7 @@
 import asyncio
 import logging
 import os
+import shutil
 import traceback
 import urllib.parse
 from functools import reduce
@@ -203,6 +204,12 @@ class MainWindow(Gtk.ApplicationWindow):
         search_select_show_action.connect("activate", self.do_search_select_and_show)
         self.add_action(search_select_show_action)
 
+        # get item
+        dest_file_variant = GLib.Variant.new_string("dummy")
+        get_item_action = Gio.SimpleAction.new("get-item", dest_file_variant.get_type())
+        get_item_action.connect("activate", self.do_get_item)
+        self.add_action(get_item_action)
+
         self.dependency_graph_widget.search_by_uuid = self._search_by_uuid
 
         self._copy_manager = CopyManager(self.progress_revealer, self.progress_popover)
@@ -306,6 +313,20 @@ class MainWindow(Gtk.ApplicationWindow):
         _logger.debug(f"Search '{search_text}'...")
         self._search(search_text, on_show=lambda _: self._select_and_show_by_row_index())
 
+    def _get_selected_items(self):
+        """Returns (name uuid) tuples of items selected in manifest tree store."""
+        selection = self.manifest_tree_view.get_selection()
+        model, paths = selection.get_selected_rows()
+
+        items = []
+        for path in paths:
+            column_iter = model.get_iter(path)
+            item_name = model.get_value(column_iter, 0)
+            item_uuid = model.get_value(column_iter, 3)
+            items.append((item_name, item_uuid))
+
+        return items
+
     # actions
     def do_search(self, action, value):
         """Evoke search tas for specific search text."""
@@ -325,6 +346,23 @@ class MainWindow(Gtk.ApplicationWindow):
         """Evoke search task for specific search text, select and show 1st row of resuls subsequntly."""
         search_text = value.get_string()
         self._search_select_and_show(search_text)
+
+    def do_get_item(self, action, value):
+        """Copy currently selected manifest item in currently selected dataset to specified destination."""
+        dest_file = value.get_string()
+
+        dataset = self.dataset_list_box.get_selected_row().dataset
+
+        items = self._get_selected_items()
+        if len(items) !=1:
+            raise ValueError("Can only get one item at a time.")
+        item_name, item_uuid = items[0]
+
+        async def _get_item(dataset, item_uuid):
+            cached_file = await dataset.get_item(item_uuid)
+            shutil.copyfile(cached_file, dest_file)
+
+        asyncio.create_task(_get_item(dataset, item_uuid))
 
     # signal handlers
     @Gtk.Template.Callback()
@@ -422,7 +460,6 @@ class MainWindow(Gtk.ApplicationWindow):
             uri = None
         dialog.destroy()
 
-
         # Refresh view of base URIs
         asyncio.create_task(self.base_uri_list_box.refresh())
 
@@ -461,6 +498,20 @@ class MainWindow(Gtk.ApplicationWindow):
         elif response == Gtk.ResponseType.CANCEL:
             pass
         dialog.destroy()
+
+    @Gtk.Template.Callback()
+    def on_manifest_row_activated(self, tree_view, path, column):
+        """Handler for "row-activated" signal.
+
+        Signal emitted when the method gtk-tree-view-row-activated is called or the user double clicks a treeview row.
+        It is also emitted when a non-editable row is selected and one of the keys: Space, Shift+Space, Return or Enter
+        is pressed. (https://www.gnu.org/software/guile-gnome/docs/gtk/html/GtkTreeView.html)"""
+
+        items = self._get_selected_items()
+        if len(items) !=1:
+            raise ValueError("Can only get one item at a time.")
+        item_name, item_uuid = items[0]
+        self._show_get_item_dialog(item_name, item_uuid)
 
     @Gtk.Template.Callback()
     def on_edit_readme_state_set(self, widget, state):
@@ -517,6 +568,33 @@ class MainWindow(Gtk.ApplicationWindow):
                 self.show_error(e)
 
         asyncio.create_task(_copy())
+
+    def _show_get_item_dialog(self, item_name, item_uuid):
+        dialog = Gtk.FileChooserDialog(
+            title=f"Download item {item_uuid}: {item_name}", parent=self,
+            action=Gtk.FileChooserAction.SAVE
+        )
+        dialog.add_buttons(
+            Gtk.STOCK_CANCEL,
+            Gtk.ResponseType.CANCEL,
+            Gtk.STOCK_OK,
+            Gtk.ResponseType.OK,
+        )
+        dialog.set_current_name(item_name)
+        dialog.set_do_overwrite_confirmation(True)
+
+        # Attention: Avoid run method!
+        # Unlike GLib, Python does not support running the EventLoop recursively.
+        # Gbulb uses the GLib event loop, hence this works. If we move to another
+        # implementation (e.g. https://gitlab.gnome.org/GNOME/pygobject/-/merge_requests/189)
+        # that uses the asyncio event loop this will break.
+        response = dialog.run()
+        if response == Gtk.ResponseType.OK:
+            dest_file = dialog.get_filename()
+            self.activate_action('get-item', GLib.Variant.new_string(dest_file))
+        elif response == Gtk.ResponseType.CANCEL:
+            pass
+        dialog.destroy()
 
     def _add_item(self, uri):
         p = urllib.parse.urlparse(uri)
