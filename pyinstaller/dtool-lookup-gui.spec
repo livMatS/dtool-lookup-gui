@@ -1,20 +1,16 @@
 # -*- mode: python ; coding: utf-8 -*-
-from PyInstaller.utils.hooks import collect_entry_point, collect_all, copy_metadata
+from PyInstaller.utils.hooks import collect_entry_point, copy_metadata
 
-# datafiles_toc = Tree('dtool_lookup_gui', prefix='dtool_lookup_gui', excludes=['.gitignore', '*.py','*.pyc', '*.pyo'])
 block_cipher = None
 
+# storage brokers and their entrypoints need the following special treatment,
+# as they won't be discovered by pyinstaller's default tracing mechanisms
 dtool_hidden_imports = ['dtool_http', 'dtool_smb', 'dtool_s3', 'dtool_symlink']
-dtool_storage_brokers_datas, dtool_storage_brokers_hidden_imports = collect_entry_point("dtool.storage_brokers")
-
 dtool_hidden_imports_datas = []
 for module in dtool_hidden_imports:
     dtool_hidden_imports_datas.extend(copy_metadata(module, recursive=True))
 
-# some issue with diverging distro name 'pymsb' and module name 'smb'
-# pysmb_data = copy_metadata('pysmb', recursive=True)
-# dtool_cli_data = copy_metadata('dtool_cli', recursive=True)
-# boto3_data = copy_metadata('boto3', recursive=True)
+dtool_storage_brokers_datas, dtool_storage_brokers_hidden_imports = collect_entry_point("dtool.storage_brokers")
 
 additional_datas = [
       ('README.rst', '.'),
@@ -34,9 +30,6 @@ a = Analysis(
         *additional_datas,
         *dtool_storage_brokers_datas,
         *dtool_hidden_imports_datas,
-        #*pysmb_data,
-        #*dtool_cli_data,
-        #*boto3_data
     ],
     hiddenimports=[*dtool_hidden_imports, *dtool_storage_brokers_hidden_imports],
     hookspath=[],
@@ -56,7 +49,7 @@ a = Analysis(
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=block_cipher,
-    noarchive=True,
+    noarchive=False,
 )
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
@@ -66,11 +59,11 @@ exe = EXE(
     [('v', None, 'OPTION')],
     exclude_binaries=True,
     name='dtool-lookup-gui',
-    debug=True,
+    debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=True,
+    console=False,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
