@@ -50,10 +50,10 @@ jobs:
 
     - name: Log system package info
       run: |
-        echo "### pacman -q ###"
-        pacman -q | tee pacman_q.txt
-        echo "### pacman -q diff to reference configuration ###"
-        git diff --ignore-space-change --ignore-cr-at-eol --no-index pyinstaller/mingw64_pacman_q.txt pacman_q.txt | tee diff_pacman_q.txt
+        echo "### pacman -Q ###"
+        pacman -Q | tee pacman_Q.txt
+        echo "### pacman -Q diff to reference configuration ###"
+        git diff --ignore-space-change --ignore-cr-at-eol --no-index pyinstaller/mingw64_pacman_Q.txt pacman_Q.txt | tee diff_pacman_q.txt
 
     # strategy: only install remaining pythonic dependencies via pip
     - name: Install pip
