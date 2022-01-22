@@ -21,6 +21,7 @@ jobs:
         fetch-depth: 0
 
     # strategy: aim at installing as many dependencies as possible from official mingw64 repo
+    # starting point: https://www.gtk.org/docs/installations/windows#using-gtk-from-msys2-packages
     - name: Set up MINGW64 environment
       uses: msys2/setup-msys2@v2
       with:
@@ -30,12 +31,15 @@ jobs:
           curl
           git
           mingw-w64-x86_64-cython
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-gtk3
           mingw-w64-x86_64-pkg-config
           mingw-w64-x86_64-python-aiohttp
           mingw-w64-x86_64-python-asgiref
           mingw-w64-x86_64-python-boto3
           mingw-w64-x86_64-python-cairo
           mingw-w64-x86_64-python-click
+          mingw-w64-x86_64-python-gobject
           mingw-w64-x86_64-python-jsonschema
           mingw-w64-x86_64-python-numpy
           mingw-w64-x86_64-python-pip-tools
