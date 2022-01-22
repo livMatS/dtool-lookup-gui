@@ -28,6 +28,7 @@ jobs:
         msystem: MINGW64
         update: true
         install: >-
+          base-devel
           curl
           git
           mingw-w64-x86_64-cython
@@ -52,6 +53,7 @@ jobs:
           mingw-w64-x86_64-python-setuptools-scm
           mingw-w64-x86_64-python-urllib3
           mingw-w64-x86_64-python-yaml
+          mingw-w64-x86_64-toolchain
 
     - name: Log system package info
       run: |
@@ -61,17 +63,10 @@ jobs:
         (git diff --ignore-space-change --ignore-cr-at-eol --no-index pyinstaller/mingw64_pacman_Q.txt pacman_Q.txt || true) | tee diff_pacman_q.txt
 
     # strategy: only install remaining pythonic dependencies via pip
-    - name: Install pip
-      run: |
-        curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-        python get-pip.py
-        # (ignore any error from previous step)
-        python -m pip install -U --force-reinstall pip
-
     - name: Install remaining pythonic dependencies
       run: |
         pip install --upgrade pip
-        # pip install wheel
+        pip install wheel
         pip install -r pyinstaller/mingw64_venv_pip_freeze_local.txt
         pip install pyinstaller
 
