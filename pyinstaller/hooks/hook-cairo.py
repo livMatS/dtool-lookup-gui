@@ -1,3 +1,3 @@
-from PyInstaller.utils.hooks import collect_all
+from PyInstaller.utils.hooks import collect_submodules
 
-datas, binaries, hiddenimports = collect_all('cairo')
+hiddenimports =  collect_submodules('cairo')
