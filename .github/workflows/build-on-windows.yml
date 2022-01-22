@@ -18,9 +18,9 @@ jobs:
 
     steps:
       - name: checkout
-            uses: actions/checkout@v2
-            with:
-              fetch-depth: 0
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
       # strategy: aim at installing as many dependencies as possible from official mingw64 repo
       - name: Set up MINGW64 environment
