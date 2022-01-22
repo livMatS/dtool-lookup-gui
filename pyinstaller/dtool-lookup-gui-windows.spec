@@ -1,17 +1,48 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-
+root_dir = os.path.abspath(os.curdir)
 block_cipher = None
 
+other_hidden_imports = ['cairo']
 
-a = Analysis(['../dtool_lookup_gui/launcher.py'],
+# relative to repository root
+glob_patterns_to_include =  [
+    'README.rst', 'LICENSE.md',
+    'dtool_lookup_gui/gschemas.compiled',
+    'dtool_lookup_gui/views/*.ui',
+    'dtool_lookup_gui/widgets/*.ui',
+]
+
+additional_datas = [
+    (os.path.join(root_dir, rel_path),
+     os.path.join(os.curdir, os.path.dirname(rel_path))) for rel_path in glob_patterns_to_include
+]
+
+hooks_path = [os.path.join(root_dir, 'pyinstaller/hooks')]
+
+runtime_hooks = [os.path.join(root_dir, 'pyinstaller/rthooks/pyi_rth_jinja2.py')]
+
+a = Analysis(
+             [os.path.join(root_dir, 'dtool_lookup_gui', 'launcher.py')],
              pathex=[],
              binaries=[],
-             datas=[],
-             hiddenimports=[],
-             hookspath=[],
-             hooksconfig={},
-             runtime_hooks=[],
+             datas=[
+                 *additional_datas,
+             ],
+             hiddenimports=[*other_hidden_imports],
+             hookspath=[*hooks_path],
+             hooksconfig={
+                 "gi": {
+                     "icons": ["Adwaita"],
+                     "themes": ["Adwaita"],
+                     "languages": ["en_US"],
+                     "module-versions": {
+                         "Gtk": "3.0",
+                         "GtkSource": "4"
+                     }
+                 }
+             },
+             runtime_hooks=[*runtime_hooks],
              excludes=[],
              win_no_prefer_redirects=False,
              win_private_assemblies=False,
