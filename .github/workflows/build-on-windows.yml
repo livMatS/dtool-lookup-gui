@@ -48,6 +48,13 @@ jobs:
           mingw-w64-x86_64-python-urllib3
           mingw-w64-x86_64-python-yaml
 
+    - name: Log system package info
+      run: |
+        echo "### pacman -q ###"
+        pacman -q | tee pacman_q.txt
+        echo "### pacman -q diff to reference configuration ###"
+        git diff --ignore-space-change --ignore-cr-at-eol --no-index pyinstaller/mingw64_pacman_q.txt pacman_q.txt | tee diff_pacman_q.txt
+
     # strategy: only install remaining pythonic dependencies via pip
     - name: Install pip
       run: |
@@ -63,12 +70,8 @@ jobs:
         pip install -r pyinstaller/mingw64_venv_pip_freeze_local.txt
         pip install pyinstaller
 
-    - name: Log environment info
+    - name: Log python package info
       run: |
-        echo "### pacman -q ###"
-        pacman -q | tee pacman_q.txt
-        echo "### pacman -q diff to reference configuration ###"
-        git diff --ignore-space-change --ignore-cr-at-eol --no-index pyinstaller/mingw64_pacman_q.txt pacman_q.txt | tee diff_pacman_q.txt
         echo "### pip freeze ###"
         pip freeze | tee pip_freeze.txt
         echo "### pip freeze diff to reference configuration ###"
