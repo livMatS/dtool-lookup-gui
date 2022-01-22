@@ -53,7 +53,7 @@ jobs:
         echo "### pacman -Q ###"
         pacman -Q | tee pacman_Q.txt
         echo "### pacman -Q diff to reference configuration ###"
-        git diff --ignore-space-change --ignore-cr-at-eol --no-index pyinstaller/mingw64_pacman_Q.txt pacman_Q.txt | tee diff_pacman_q.txt
+        (git diff --ignore-space-change --ignore-cr-at-eol --no-index pyinstaller/mingw64_pacman_Q.txt pacman_Q.txt || true) | tee diff_pacman_q.txt
 
     # strategy: only install remaining pythonic dependencies via pip
     - name: Install pip
@@ -75,7 +75,7 @@ jobs:
         echo "### pip freeze ###"
         pip freeze | tee pip_freeze.txt
         echo "### pip freeze diff to reference configuration ###"
-        git diff --ignore-space-change --ignore-cr-at-eol --no-index pyinstaller/mingw64_venv_pip_freeze.txt pip_freeze.txt | tee diff_pip_freeze.txt
+        (git diff --ignore-space-change --ignore-cr-at-eol --no-index pyinstaller/mingw64_venv_pip_freeze.txt pip_freeze.txt || true) | tee diff_pip_freeze.txt
 
     - name: Compile gschemas
       run: |
