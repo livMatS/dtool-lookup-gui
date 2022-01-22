@@ -59,9 +59,20 @@ jobs:
     - name: Install remaining pythonic dependencies
       run: |
         pip install --upgrade pip
-        pip install wheel
+        # pip install wheel
         pip install -r pyinstaller/mingw64_venv_pip_freeze_local.txt
         pip install pyinstaller
+
+    - name: Log environment info
+      run: |
+        echo "### pacman -q ###"
+        pacman -q | tee pacman_q.txt
+        echo "### pacman -q diff to reference configuration ###"
+        git diff --ignore-space-change --ignore-cr-at-eol --no-index pyinstaller/mingw64_pacman_q.txt pacman_q.txt | tee diff_pacman_q.txt
+        echo "### pip freeze ###"
+        pip freeze | tee pip_freeze.txt
+        echo "### pip freeze diff to reference configuration ###"
+        git diff --ignore-space-change --ignore-cr-at-eol --no-index pyinstaller/mingw64_venv_pip_freeze.txt pip_freeze.txt | tee diff_pip_freeze.txt
 
     - name: Compile gschemas
       run: |
