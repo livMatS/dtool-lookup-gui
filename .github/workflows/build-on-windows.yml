@@ -8,47 +8,45 @@ on:
 
 # adapted template from https://www.msys2.org/docs/ci/
 jobs:
-
   build:
-
     runs-on: windows-latest
     defaults:
       run:
         shell: msys2 {0}
 
     steps:
-      - name: checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
+    - name: checkout
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
 
-      # strategy: aim at installing as many dependencies as possible from official mingw64 repo
-      - name: Set up MINGW64 environment
-        uses: msys2/setup-msys2@v2
-        with:
-          msystem: MINGW64
-          update: true
-          install: >-
-            curl
-            git
-            mingw-w64-x86_64-cc
-            mingw-w64-x86_64-cython
-            mingw-w64-x86_64-python-aiohttp
-            mingw-w64-x86_64-python-asgiref
-            mingw-w64-x86_64-python-boto3
-            mingw-w64-x86_64-python-cairo
-            mingw-w64-x86_64-python-click
-            mingw-w64-x86_64-python-jsonschema
-            mingw-w64-x86_64-python-numpy
-            mingw-w64-x86_64-python-pip-tools
-            mingw-w64-x86_64-python-requests
-            mingw-w64-x86_64-python-ruamel-yaml
-            mingw-w64-x86_64-python-ruamel.yaml.clib
-            mingw-w64-x86_64-python-scipy
-            mingw-w64-x86_64-python-setuptools
-            mingw-w64-x86_64-python-setuptools-scm
-            mingw-w64-x86_64-python-urllib3
-            mingw-w64-x86_64-python-yaml
+    # strategy: aim at installing as many dependencies as possible from official mingw64 repo
+    - name: Set up MINGW64 environment
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        update: true
+        install: >-
+          curl
+          git
+          mingw-w64-x86_64-cc
+          mingw-w64-x86_64-cython
+          mingw-w64-x86_64-python-aiohttp
+          mingw-w64-x86_64-python-asgiref
+          mingw-w64-x86_64-python-boto3
+          mingw-w64-x86_64-python-cairo
+          mingw-w64-x86_64-python-click
+          mingw-w64-x86_64-python-jsonschema
+          mingw-w64-x86_64-python-numpy
+          mingw-w64-x86_64-python-pip-tools
+          mingw-w64-x86_64-python-requests
+          mingw-w64-x86_64-python-ruamel-yaml
+          mingw-w64-x86_64-python-ruamel.yaml.clib
+          mingw-w64-x86_64-python-scipy
+          mingw-w64-x86_64-python-setuptools
+          mingw-w64-x86_64-python-setuptools-scm
+          mingw-w64-x86_64-python-urllib3
+          mingw-w64-x86_64-python-yaml
 
     # strategy: only install remaining pythonic dependencies via pip
     - name: Install pip
