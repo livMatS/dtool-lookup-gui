@@ -29,8 +29,8 @@ jobs:
         install: >-
           curl
           git
-          mingw-w64-x86_64-cc
           mingw-w64-x86_64-cython
+          mingw-w64-x86_64-pkg-config
           mingw-w64-x86_64-python-aiohttp
           mingw-w64-x86_64-python-asgiref
           mingw-w64-x86_64-python-boto3
