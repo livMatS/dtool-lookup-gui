@@ -13,6 +13,9 @@ glob_patterns_to_include =  [
     'dtool_lookup_gui/widgets/*.ui',
 ]
 
+with open(os.path.join(root_dir, 'openssl_dlls.txt'), 'r') as f:
+    lib_datas = [(os.path.abspath(line.strip()), '.') for line in f]
+
 additional_datas = [
     (os.path.join(root_dir, rel_path),
      os.path.join(os.curdir, os.path.dirname(rel_path))) for rel_path in glob_patterns_to_include
@@ -27,7 +30,7 @@ a = Analysis(
              pathex=[],
              binaries=[],
              datas=[
-                 *additional_datas,
+                 *lib_datas, *additional_datas,
              ],
              hiddenimports=[*other_hidden_imports],
              hookspath=[*hooks_path],

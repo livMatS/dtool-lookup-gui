@@ -35,6 +35,7 @@ jobs:
           mingw-w64-x86_64-gcc
           mingw-w64-x86_64-gtk3
           mingw-w64-x86_64-gtksourceview4
+          mingw-w64-x86_64-openssl
           mingw-w64-x86_64-pkg-config
           mingw-w64-x86_64-python-aiohttp
           mingw-w64-x86_64-python-asgiref
@@ -68,6 +69,12 @@ jobs:
         pacman -Q | tee pacman_Q.txt
         echo "### pacman -Q diff to reference configuration ###"
         (git diff --ignore-space-change --ignore-cr-at-eol --no-index pyinstaller/mingw64_pacman_Q.txt pacman_Q.txt || true) | tee diff_pacman_q.txt
+
+        # other than within the local variant, pinstaller has difficulties bundling libcrypto and libssl within
+        # the github actions-provided windows/msys2/mingw64 builder
+        echo "### libcrypto and libssl ###"
+        pacman -Ql mingw-w64-x86_64-openssl | grep 'lib[^/]*dll$' | awk '{print $2}' |  cygpath -wa --file - > openssl_dlls.txt
+
 
     # strategy: only install remaining pythonic dependencies via pip
     - name: Install remaining pythonic dependencies
@@ -107,7 +114,7 @@ jobs:
     - name: Package executable with pyinstaller
       run: |
         source venv/bin/activate
-        python -m PyInstaller -y ./pyinstaller/dtool-lookup-gui-windows-one-file.spec
+        python -m PyInstaller -y ./pyinstaller/dtool-lookup-gui-windows-one-file.spec 2>&1 | pyinstaller.log
 
     - name: Upload executable artifact
       uses: actions/upload-artifact@v2
@@ -127,4 +134,10 @@ jobs:
           diff_pip_freeze.txt
           pip_freeze_local.txt
           diff_pip_freeze_local.txt
+          openssl_dlls.txt
+          pyinstaller.log
+          build/dtool-lookup-gui-windows-one-file/*.toc
+          build/dtool-lookup-gui-windows-one-file/*.txt
+          build/dtool-lookup-gui-windows-one-file/html.toc
+
 
