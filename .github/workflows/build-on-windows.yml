@@ -73,7 +73,7 @@ jobs:
         # other than within the local variant, pinstaller has difficulties bundling libcrypto and libssl within
         # the github actions-provided windows/msys2/mingw64 builder
         echo "### libcrypto and libssl ###"
-        pacman -Ql mingw-w64-x86_64-openssl | grep 'lib[^/]*dll$' | awk '{print $2}' |  cygpath -wa --file - > openssl_dlls.txt
+        pacman -Ql mingw-w64-x86_64-openssl | grep 'lib[^/]*dll$' | awk '{print $2}' |  cygpath -wa --file - | tee openssl_dlls.txt
 
 
     # strategy: only install remaining pythonic dependencies via pip
@@ -114,7 +114,7 @@ jobs:
     - name: Package executable with pyinstaller
       run: |
         source venv/bin/activate
-        python -m PyInstaller -y ./pyinstaller/dtool-lookup-gui-windows-one-file.spec 2>&1 | pyinstaller.log
+        python -m PyInstaller -y ./pyinstaller/dtool-lookup-gui-windows-one-file.spec 2>&1 | tee pyinstaller.log
 
     - name: Upload executable artifact
       uses: actions/upload-artifact@v2
