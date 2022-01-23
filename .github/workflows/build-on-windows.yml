@@ -2,8 +2,8 @@ name: build-on-windows
 
 on:
   push:
-    # branches:
-    #  - master
+    branches:
+      - master
   pull_request:
 
 # adapted template from https://www.msys2.org/docs/ci/
