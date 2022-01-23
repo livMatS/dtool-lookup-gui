@@ -88,10 +88,12 @@ jobs:
     - name: Log python package info
       run: |
         source venv/bin/activate
+
         echo "### pip freeze --local ###"
         pip freeze --local | tee pip_freeze_local.txt
-        echo "### pip freeze diff to reference configuration ###"
-        (git diff --ignore-space-change --ignore-cr-at-eol --no-index pyinstaller/mingw64_venv_pip_freeze_local.txt pip_freeze.txt || true) | tee diff_pip_freeze_local.txt
+        echo "### pip freeze --local diff to reference configuration ###"
+        (git diff --ignore-space-change --ignore-cr-at-eol --no-index pyinstaller/mingw64_venv_pip_freeze_local.txt pip_freeze_local.txt || true) | tee diff_pip_freeze_local.txt
+
         echo "### pip freeze ###"
         pip freeze | tee pip_freeze.txt
         echo "### pip freeze diff to reference configuration ###"
