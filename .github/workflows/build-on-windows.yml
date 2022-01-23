@@ -70,8 +70,12 @@ jobs:
         echo "### pacman -Q diff to reference configuration ###"
         (git diff --ignore-space-change --ignore-cr-at-eol --no-index pyinstaller/mingw64_pacman_Q.txt pacman_Q.txt || true) | tee diff_pacman_q.txt
 
-        # other than within the local variant, pinstaller has difficulties bundling libcrypto and libssl within
-        # the github actions-provided windows/msys2/mingw64 builder
+        # 2022/01/23, although msys2/setup-msys2@v2 setup has been kept as close as possible to
+        # a local reference build system, former diverged from latter's pyinstaller behavior
+        # in not beeing able to automatically package the necessary libssl*.dll and libcrypto*.dll,
+        # part ot the mingw-w64-x86_64-openssl package. We hence find those two files manually here
+        # and include them by reading their paths from openssl_dlls.txt within
+        # pyinstaller/dtool-lookup-gui-windows-one-file.spec below.
         echo "### libcrypto and libssl ###"
         pacman -Ql mingw-w64-x86_64-openssl | grep 'lib[^/]*dll$' | awk '{print $2}' |  cygpath -wa --file - | tee openssl_dlls.txt
 
@@ -81,11 +85,11 @@ jobs:
       run: |
         pip install -r pyinstaller/mingw64_requirements.txt
         pip install PyInstaller
-        # ran into weird issues when calling PyInstaller or pyinstaller directly, now always as module
         echo "PyInstaller version: $(python -m PyInstaller --version)"
+
         # recursive copy_metadata needed local reinstall of
         #    $ pip install --ignore-installed six
-        # in minsys2/,ingw64, would otherwise fail with
+        # in minsys2/mingw64, would otherwise fail with
         #    RuntimeError: No metadata path found for distribution 'six'.
         # in pyinstaller/hooks/hook-dtoolcore.py
         python -m venv --system-site-packages venv
@@ -114,6 +118,8 @@ jobs:
     - name: Package executable with pyinstaller
       run: |
         source venv/bin/activate
+        # only ran into problems when calling PyInstaller or pyinstaller directly,
+        # would never find package metadata within the venv, call as module mitigates the issue:
         python -m PyInstaller -y ./pyinstaller/dtool-lookup-gui-windows-one-file.spec 2>&1 | tee pyinstaller.log
 
     - name: Upload executable artifact
