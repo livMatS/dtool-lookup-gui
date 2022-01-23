@@ -59,7 +59,6 @@ jobs:
           mingw-w64-x86_64-python-setuptools
           mingw-w64-x86_64-python-setuptools-scm
           mingw-w64-x86_64-python-urllib3
-          mingw-w64-x86_64-python-virtualenv
           mingw-w64-x86_64-python-yaml
           mingw-w64-x86_64-toolchain
 
@@ -73,22 +72,17 @@ jobs:
     # strategy: only install remaining pythonic dependencies via pip
     - name: Install remaining pythonic dependencies
       run: |
-        curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-        python get-pip.py
-        # (ignore any error from previous step)
-        python -m pip install --upgrade --force-reinstall pip
-        python -m venv --system-site-packages venv
-        source venv/bin/activate
-        # pip install --upgrade pip
-        # pip install wheel
+        pip install -r pyinstaller/mingw64_venv_pip_freeze_local.txt
+        pip install PyInstaller
+        # ran into weird issues when calling PyInstaller or pyinstaller directly, now always as module
+        echo "PyInstaller version: $(python -m PyInstaller --version)"
         # recursive copy_metadata needed local reinstall of
         #    $ pip install --ignore-installed six
         # in minsys2/,ingw64, would otherwise fail with
         #    RuntimeError: No metadata path found for distribution 'six'.
         # in pyinstaller/hooks/hook-dtoolcore.py
-        pip install -r pyinstaller/mingw64_venv_pip_freeze_local.txt
-        pip install PyInstaller
-        pyinstaller --version
+        python -m venv --system-site-packages venv
+        source venv/bin/activate
         pip install --ignore-installed six
 
     - name: Log python package info
@@ -111,7 +105,7 @@ jobs:
     - name: Package executable with pyinstaller
       run: |
         source venv/bin/activate
-        pyinstaller -y ./pyinstaller/dtool-lookup-gui-windows-one-file.spec
+        python -m PyInstaller -y ./pyinstaller/dtool-lookup-gui-windows-one-file.spec
 
     - name: Upload artifact
       uses: actions/upload-artifact@v2
