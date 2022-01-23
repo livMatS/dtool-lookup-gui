@@ -13,4 +13,3 @@ gbulb==0.6.2
 pyasn1==0.4.8
 pysmb==1.2.7
 PyYAML==6.0
-six==1.16.0
