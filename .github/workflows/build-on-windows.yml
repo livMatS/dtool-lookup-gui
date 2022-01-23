@@ -49,7 +49,6 @@ jobs:
           mingw-w64-x86_64-python-markupsafe
           mingw-w64-x86_64-python-numpy
           mingw-w64-x86_64-python-pip-tools
-          mingw-w64-x86_64-python-pyasn1
           mingw-w64-x86_64-python-pycparser
           mingw-w64-x86_64-python-pyjwt
           mingw-w64-x86_64-python-pygments

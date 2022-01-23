@@ -10,5 +10,6 @@ dtool-smb==0.1.0
 dtool-symlink==0.3.1
 dtoolcore==3.18.1
 gbulb==0.6.2
+pyasn1==0.4.8
 pysmb==1.2.7
 PyYAML==6.0
