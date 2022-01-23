@@ -69,13 +69,12 @@ jobs:
         echo "### pacman -Q diff to reference configuration ###"
         (git diff --ignore-space-change --ignore-cr-at-eol --no-index pyinstaller/mingw64_pacman_Q.txt pacman_Q.txt || true) | tee diff_pacman_q.txt
 
-    - name: Create python venv
-      run: |
-        python -m venv --system-site-packages venv
-
     # strategy: only install remaining pythonic dependencies via pip
     - name: Install remaining pythonic dependencies
       run: |
+        python -m venv --system-site-packages venv
+        ls -lha .
+        chown $USER:$USER venv
         source venv/bin/activate
         pip install --upgrade pip
         pip install wheel
