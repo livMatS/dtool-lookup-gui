@@ -72,9 +72,10 @@ jobs:
     # strategy: only install remaining pythonic dependencies via pip
     - name: Install remaining pythonic dependencies
       run: |
-        python -m venv --system-site-packages venv
+        python -m venv --copies --system-site-packages venv
         ls -Rlha venv
         source venv/bin/activate
+        pip install --upgrade pip
         pip install wheel
         # recursive copy_metadata needed local reinstall of
         #    $ pip install --ignore-installed six
