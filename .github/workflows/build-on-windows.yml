@@ -75,7 +75,7 @@ jobs:
         python -m venv --system-site-packages venv
         ls -Rlha venv
         source venv/bin/activate
-        # pip install --upgrade pip
+        pip install --ignore-installed --upgrade pip
         pip install wheel
         # recursive copy_metadata needed local reinstall of
         #    $ pip install --ignore-installed six
