@@ -149,10 +149,9 @@ mingw-w64-x86_64-p11-kit 0.24.1-1
 mingw-w64-x86_64-pango 1.50.3-1
 mingw-w64-x86_64-pcre 8.45-1
 mingw-w64-x86_64-pixman 0.40.0-2
-mingw-w64-x86_64-pkg-config 0.29.2-3
+mingw-w64-x86_64-pkgconf 1.8.0-2
 mingw-w64-x86_64-python 3.9.7-4
 mingw-w64-x86_64-python-aiohttp 3.7.4.post0-2
-mingw-w64-x86_64-python-appdirs 1.4.4-2
 mingw-w64-x86_64-python-asgiref 3.3.4-2
 mingw-w64-x86_64-python-async-timeout 3.0.1-2
 mingw-w64-x86_64-python-attrs 21.4.0-1
@@ -168,7 +167,6 @@ mingw-w64-x86_64-python-cryptography 3.4.7-2
 mingw-w64-x86_64-python-dateutil 2.8.2-2
 mingw-w64-x86_64-python-distlib 0.3.3-1
 mingw-w64-x86_64-python-docutils 0.18.1-1
-mingw-w64-x86_64-python-filelock 3.0.12-2
 mingw-w64-x86_64-python-gobject 3.40.1-2
 mingw-w64-x86_64-python-idna 3.2-2
 mingw-w64-x86_64-python-importlib-metadata 4.10.0-1

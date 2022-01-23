@@ -1,6 +1,5 @@
 aiohttp==3.7.4.post0
 altgraph==0.17.2
-appdirs==1.4.4
 asgiref==3.3.4
 async-timeout==3.0.1
 attrs==21.4.0
@@ -22,11 +21,10 @@ dtool-create==0.23.4
 dtool-http==0.5.1
 dtool-info==0.16.2
 dtool-lookup-api==0.5.0
-dtool-s3==0.12.0
+dtool-s3==0.13.0
 dtool-smb==0.1.0
 dtool-symlink==0.3.1
 dtoolcore==3.18.1
-filelock==3.0.12
 future==0.18.2
 gbulb==0.6.2
 idna==3.2
@@ -62,12 +60,11 @@ ruamel.yaml==0.17.19
 ruamel.yaml.clib==0.2.6
 s3transfer==0.4.2
 scipy==1.6.3
-sdist==0.0.0
 setuptools-scm==6.3.2
 six==1.16.0
 toml==0.10.2
 tomli==1.2.2
 typing_extensions @ file:///C://M/mingw-w64-python-typing_extensions/src/python-build-x86_64/dist/typing_extensions-4.0.1-py3-none-any.whl
-urllib3==1.26.7
+urllib3==1.26.8
 yarl==1.6.3
 zipp==3.7.0
