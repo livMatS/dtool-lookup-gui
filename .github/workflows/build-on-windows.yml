@@ -69,9 +69,14 @@ jobs:
         echo "### pacman -Q diff to reference configuration ###"
         (git diff --ignore-space-change --ignore-cr-at-eol --no-index pyinstaller/mingw64_pacman_Q.txt pacman_Q.txt || true) | tee diff_pacman_q.txt
 
+    - name: Create python venv
+      run: |
+        python -m venv --system-site-packages venv
+
     # strategy: only install remaining pythonic dependencies via pip
     - name: Install remaining pythonic dependencies
       run: |
+        source venv/bin/activate
         pip install --upgrade pip
         pip install wheel
         # recursive copy_metadata needed local reinstall of
@@ -85,6 +90,11 @@ jobs:
 
     - name: Log python package info
       run: |
+        source venv/bin/activate
+        echo "### pip freeze --local ###"
+        pip freeze --local | tee pip_freeze_local.txt
+        echo "### pip freeze diff to reference configuration ###"
+        (git diff --ignore-space-change --ignore-cr-at-eol --no-index pyinstaller/mingw64_venv_pip_freeze_local.txt pip_freeze.txt || true) | tee diff_pip_freeze_local.txt
         echo "### pip freeze ###"
         pip freeze | tee pip_freeze.txt
         echo "### pip freeze diff to reference configuration ###"
@@ -97,6 +107,7 @@ jobs:
 
     - name: Package executable with pyinstaller
       run: |
+        source venv/bin/activate
         pyinstaller -y ./pyinstaller/dtool-lookup-gui-windows-one-file.spec
 
     - name: Upload artifact
