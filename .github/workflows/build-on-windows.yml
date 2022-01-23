@@ -72,7 +72,7 @@ jobs:
     # strategy: only install remaining pythonic dependencies via pip
     - name: Install remaining pythonic dependencies
       run: |
-        pip install -r pyinstaller/mingw64_venv_pip_freeze_local.txt
+        pip install -r pyinstaller/mingw64_requirements.txt
         pip install PyInstaller
         # ran into weird issues when calling PyInstaller or pyinstaller directly, now always as module
         echo "PyInstaller version: $(python -m PyInstaller --version)"
@@ -107,9 +107,22 @@ jobs:
         source venv/bin/activate
         python -m PyInstaller -y ./pyinstaller/dtool-lookup-gui-windows-one-file.spec
 
-    - name: Upload artifact
+    - name: Upload executable artifact
       uses: actions/upload-artifact@v2
       with:
         name: dtool-lookup-gui.exe
         path: dist/dtool-lookup-gui.exe
         if-no-files-found: error
+
+    - name: Upload build system description artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: build-system-description
+        path: |
+          pacman_Q.txt
+          diff_pacman_q.txt
+          pip_freeze.txt
+          diff_pip_freeze.txt
+          pip_freeze_local.txt
+          diff_pip_freeze_local.txt
+
