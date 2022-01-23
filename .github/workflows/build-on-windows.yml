@@ -73,8 +73,7 @@ jobs:
     - name: Install remaining pythonic dependencies
       run: |
         python -m venv --system-site-packages venv
-        ls -lha .
-        chown $USER:$USER venv
+        ls -Rlha venv
         source venv/bin/activate
         pip install --upgrade pip
         pip install wheel
