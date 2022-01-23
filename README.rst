@@ -24,6 +24,13 @@ On Ubuntu (20.04),
 
 suffices to to install these dependencies from the standard system package repositories.
 
+On recent macs (>= 10.15), 
+
+.. code:: bash
+
+   brew install gtksourceview4 gnome-icon-theme
+
+
 Installation
 ------------
 
