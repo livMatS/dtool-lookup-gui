@@ -1,0 +1,149 @@
+name: build-on-windows
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+# adapted template from https://www.msys2.org/docs/ci/
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+    - name: checkout
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    # strategy: aim at installing as many dependencies as possible from official mingw64 repo
+    # starting point: https://www.gtk.org/docs/installations/windows#using-gtk-from-msys2-packages
+    - name: Set up MINGW64 environment
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        update: true
+        install: >-
+          base-devel
+          curl
+          git
+          mingw-w64-x86_64-cython
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-gtk3
+          mingw-w64-x86_64-gtksourceview4
+          mingw-w64-x86_64-openssl
+          mingw-w64-x86_64-pkg-config
+          mingw-w64-x86_64-python-aiohttp
+          mingw-w64-x86_64-python-asgiref
+          mingw-w64-x86_64-python-boto3
+          mingw-w64-x86_64-python-cairo
+          mingw-w64-x86_64-python-cffi
+          mingw-w64-x86_64-python-click
+          mingw-w64-x86_64-python-cryptography
+          mingw-w64-x86_64-python-gobject
+          mingw-w64-x86_64-python-jinja
+          mingw-w64-x86_64-python-jsonschema
+          mingw-w64-x86_64-python-markupsafe
+          mingw-w64-x86_64-python-numpy
+          mingw-w64-x86_64-python-pip-tools
+          mingw-w64-x86_64-python-pycparser
+          mingw-w64-x86_64-python-pyjwt
+          mingw-w64-x86_64-python-pygments
+          mingw-w64-x86_64-python-requests
+          mingw-w64-x86_64-python-ruamel-yaml
+          mingw-w64-x86_64-python-ruamel.yaml.clib
+          mingw-w64-x86_64-python-scipy
+          mingw-w64-x86_64-python-setuptools
+          mingw-w64-x86_64-python-setuptools-scm
+          mingw-w64-x86_64-python-urllib3
+          mingw-w64-x86_64-python-yaml
+          mingw-w64-x86_64-toolchain
+
+    - name: Log system package info
+      run: |
+        echo "### pacman -Q ###"
+        pacman -Q | tee pacman_Q.txt
+        echo "### pacman -Q diff to reference configuration ###"
+        (git diff --ignore-space-change --ignore-cr-at-eol --no-index pyinstaller/mingw64_pacman_Q.txt pacman_Q.txt || true) | tee diff_pacman_q.txt
+
+        # 2022/01/23, although msys2/setup-msys2@v2 setup has been kept as close as possible to
+        # a local reference build system, former diverged from latter's pyinstaller behavior
+        # in not beeing able to automatically package the necessary libssl*.dll and libcrypto*.dll,
+        # part ot the mingw-w64-x86_64-openssl package. We hence find those two files manually here
+        # and include them by reading their paths from openssl_dlls.txt within
+        # pyinstaller/dtool-lookup-gui-windows-one-file.spec below.
+        echo "### libcrypto and libssl ###"
+        pacman -Ql mingw-w64-x86_64-openssl | grep 'lib[^/]*dll$' | awk '{print $2}' |  cygpath -wa --file - | tee openssl_dlls.txt
+
+
+    # strategy: only install remaining pythonic dependencies via pip
+    - name: Install remaining pythonic dependencies
+      run: |
+        pip install -r pyinstaller/mingw64_requirements.txt
+        pip install PyInstaller
+        echo "PyInstaller version: $(python -m PyInstaller --version)"
+
+        # recursive copy_metadata needed local reinstall of
+        #    $ pip install --ignore-installed six
+        # in minsys2/mingw64, would otherwise fail with
+        #    RuntimeError: No metadata path found for distribution 'six'.
+        # in pyinstaller/hooks/hook-dtoolcore.py
+        python -m venv --system-site-packages venv
+        source venv/bin/activate
+        pip install --ignore-installed six
+
+    - name: Log python package info
+      run: |
+        source venv/bin/activate
+
+        echo "### pip freeze --local ###"
+        pip freeze --local | tee pip_freeze_local.txt
+        echo "### pip freeze --local diff to reference configuration ###"
+        (git diff --ignore-space-change --ignore-cr-at-eol --no-index pyinstaller/mingw64_venv_pip_freeze_local.txt pip_freeze_local.txt || true) | tee diff_pip_freeze_local.txt
+
+        echo "### pip freeze ###"
+        pip freeze | tee pip_freeze.txt
+        echo "### pip freeze diff to reference configuration ###"
+        (git diff --ignore-space-change --ignore-cr-at-eol --no-index pyinstaller/mingw64_venv_pip_freeze.txt pip_freeze.txt || true) | tee diff_pip_freeze.txt
+
+    - name: Compile gschemas
+      run: |
+        glib-compile-schemas .
+      working-directory: dtool_lookup_gui
+
+    - name: Package executable with pyinstaller
+      run: |
+        source venv/bin/activate
+        # only ran into problems when calling PyInstaller or pyinstaller directly,
+        # would never find package metadata within the venv, call as module mitigates the issue:
+        python -m PyInstaller -y ./pyinstaller/dtool-lookup-gui-windows-one-file.spec 2>&1 | tee pyinstaller.log
+
+    - name: Upload executable artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: dtool-lookup-gui.exe
+        path: dist/dtool-lookup-gui.exe
+        if-no-files-found: error
+
+    - name: Upload build system description artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: build-system-description
+        path: |
+          pacman_Q.txt
+          diff_pacman_q.txt
+          pip_freeze.txt
+          diff_pip_freeze.txt
+          pip_freeze_local.txt
+          diff_pip_freeze_local.txt
+          openssl_dlls.txt
+          pyinstaller.log
+          build/dtool-lookup-gui-windows-one-file/*.toc
+          build/dtool-lookup-gui-windows-one-file/*.txt
+          build/dtool-lookup-gui-windows-one-file/html.toc
+
+

@@ -13,6 +13,8 @@ for module in dtool_hidden_imports:
 
 dtool_storage_brokers_datas, dtool_storage_brokers_hidden_imports = collect_entry_point("dtool.storage_brokers")
 
+other_hidden_imports = ['cairo']
+
 # relative to repository root
 glob_patterns_to_include =  [
     'README.rst', 'LICENSE.md',
@@ -26,23 +28,25 @@ additional_datas = [
      os.path.join(os.curdir, os.path.dirname(rel_path))) for rel_path in glob_patterns_to_include
 ]
 
-runtime_hooks=[os.path.join(root_dir, 'pyinstaller/rthooks/pyi_rth_jinja2.py')]
+hooks_path = [os.path.join(root_dir, 'pyinstaller/hooks')]
 
-python_path = [
-  '/home/jotelha/venv/20220120-dtool-lookup-gui/lib/python3.8/site-packages'
-]
+runtime_hooks = [os.path.join(root_dir, 'pyinstaller/rthooks/pyi_rth_jinja2.py')]
 
 a = Analysis(
     [os.path.join(root_dir, 'dtool_lookup_gui', 'launcher.py')],
-    pathex=[*python_path],
+    pathex=[],
     binaries=[],
     datas=[
         *additional_datas,
         *dtool_storage_brokers_datas,
         *dtool_hidden_imports_datas,
     ],
-    hiddenimports=[*dtool_hidden_imports, *dtool_storage_brokers_hidden_imports],
-    hookspath=[],
+    hiddenimports=[
+      *dtool_hidden_imports,
+      *dtool_storage_brokers_hidden_imports,
+      *other_hidden_imports,
+    ],
+    hookspath=[*hooks_path],
     hooksconfig={
         "gi": {
             "icons": ["Adwaita"],

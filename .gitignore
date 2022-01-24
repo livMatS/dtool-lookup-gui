@@ -4,9 +4,9 @@
 *.cpython*.so
 .idea
 __pycache__
-build
-dist
 *egg-info
+/build
+/dist
 /tests/*.png
 /helpers/*.png
 /helpers/*.png.pdf
@@ -21,6 +21,5 @@ dist
 /notes/power_spectrum/prv*
 /notes/auto/biblio.el
 /helpers/.ipynb_checkpoints/
-*.pyc
-
+/venv
 
