@@ -110,22 +110,32 @@ class Application(Gtk.Application):
                             help='Print debug info')
         parser.add_argument('--quiet','-q', action='store_true',
                             help='Print debug info')
+        parser.add_argument('--log', required=False, nargs='?', dest="log",
+                            default=None, const='out.log', metavar='LOG',
+                            help='Write out.log, optionally specify log file name')
 
         # parse the command line stored in args, but skip the first element (the filename)
         self.args = parser.parse_args(args.get_arguments()[1:])
 
         loglevel = logging.WARNING
-
+        logformat = "%(levelname)s: %(message)s"
         if self.args.quiet:
             loglevel = logging.ERROR
         if self.args.verbose > 0:
             loglevel = logging.INFO
         if self.args.debug or (self.args.verbose > 1):
+            logformat = (
+                "[%(asctime)s - %(funcName)s - %(filename)s:%(lineno)s]"
+                " %(levelname)s: %(message)s"
+            )
             loglevel = logging.DEBUG
 
         # explicitly modify the root logger
-        logging.basicConfig(level=loglevel)
+        logging.basicConfig(level=loglevel, format=logformat)
+
         self.activate_action('set-loglevel', GLib.Variant.new_uint16(loglevel))
+        if self.args.log:
+            self.activate_action('set-logfile', GLib.Variant.new_string(self.args.log))
 
         logger.debug("Parsed CLI options {}".format(self.args))
 
@@ -154,6 +164,14 @@ class Application(Gtk.Application):
         loglevel_action.connect("change-state", self.do_set_loglevel)
         self.add_action(loglevel_action)
 
+        # set-logfile
+        logfile_variant = GLib.Variant.new_string('none')
+        logfile_action = Gio.SimpleAction.new_stateful(
+            "set-logfile", logfile_variant.get_type(), logfile_variant
+        )
+        logfile_action.connect("change-state", self.do_set_logfile)
+        self.add_action(logfile_action)
+
         Gtk.Application.do_startup(self)
 
     # custom application-scoped actions
@@ -170,12 +188,26 @@ class Application(Gtk.Application):
             logger.debug("Disabled all logging below WARNING.")
 
     def do_set_loglevel(self, action, value):
-        if action.get_state().get_uint16() == value.get_uint16():
+        loglevel = value.get_uint16()
+        if action.get_state().get_uint16() == loglevel:
             logger.debug("Desired loglevel and current log level are equivalent.")
             return
-        action.set_state(value)
         root_logger = logging.getLogger()
-        root_logger.setLevel(value.get_uint16())
+        root_logger.setLevel(loglevel)
+        action.set_state(value)
+
+    def do_set_logfile(self, action, value):
+        logfile = value.get_string()
+        if action.get_state().get_string() == logfile:
+            logger.debug(f"Desired log file {logfile} and current log file are equivalent.")
+            return
+        fh = logging.FileHandler(logfile)
+        root_logger = logging.getLogger()
+        fh.setLevel(root_logger.level)
+        fh.setFormatter(root_logger.handlers[0].formatter)
+        root_logger.addHandler(fh)
+        action.set_state(value)
+
 
 def run_gui():
     GObject.type_register(GtkSource.View)
