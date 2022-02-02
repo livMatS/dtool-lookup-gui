@@ -268,8 +268,8 @@ class GraphLayout:
                     action = 'mix'
 
             it += 1
-            logger.debug(f'FIRE: {action}, '
-                         f'energy: {self._energy}, '
-                         f'(old energy: {old_energy}, '
-                         f'max |force|: {np.sqrt(np.max(np.sum(self._forces ** 2, axis=1)))},'
-                         f' timestep: {self.timestep}')
+            # logger.debug(f'FIRE: {action}, '
+            #             f'energy: {self._energy}, '
+            #             f'(old energy: {old_energy}, '
+            #             f'max |force|: {np.sqrt(np.max(np.sum(self._forces ** 2, axis=1)))},'
+            #             f' timestep: {self.timestep}')
