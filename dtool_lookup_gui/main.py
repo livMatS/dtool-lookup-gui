@@ -23,6 +23,9 @@
 # SOFTWARE.
 #
 
+# the following import is necessary to patch flawed dtoolcore.utils function
+import dtool_lookup_gui.utils.patch
+
 import argparse
 import asyncio
 import logging
@@ -45,6 +48,7 @@ import dtool_lookup_gui.widgets.graph_widget
 import dtool_lookup_gui.widgets.transfer_popover_menu
 import dtool_lookup_gui.widgets.progress_chart
 import dtool_lookup_gui.widgets.progress_popover_menu
+
 
 
 logger = logging.getLogger(__name__)

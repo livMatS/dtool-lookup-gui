@@ -375,6 +375,10 @@ class MainWindow(Gtk.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def on_base_uri_selected(self, list_box, row):
+        if row is None:
+            # this callback apparently gets evoked with row=None when an entry is deleted / unselected (?) from the base URI list
+            return
+
         def update_base_uri_summary(datasets):
             total_size = sum([0 if dataset.size_int is None else dataset.size_int for dataset in datasets])
             row.info_label.set_text(f'{len(datasets)} datasets, {sizeof_fmt(total_size).strip()}')
@@ -383,9 +387,10 @@ class MainWindow(Gtk.ApplicationWindow):
             row.start_spinner()
 
             if isinstance(row, DtoolBaseURIRow):
-                _logger.debug("Selected base URI.")
                 try:
+                    _logger.debug(f"Selected base URI {row.base_uri}.")
                     datasets = await row.base_uri.all_datasets()
+                    _logger.debug(f"Found {len(datasets)} datasets.")
                     update_base_uri_summary(datasets)
                     if self.base_uri_list_box.get_selected_row() == row:
                         # Only update if the row is still selected

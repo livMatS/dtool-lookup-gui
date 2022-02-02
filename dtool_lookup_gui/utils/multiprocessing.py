@@ -36,6 +36,20 @@ import traceback  # forward exception from child process to parent process
 logger = logging.getLogger(__name__)
 
 
+def process_initializer():
+    """Initialize process pool workers."""
+    # Must apply patch in all worker processes.
+    import dtool_lookup_gui.utils.patch
+
+    # Avoids warning
+    #   PyGIWarning: Gtk was imported without specifying a version first.
+    #                Use gi.require_version('Gtk', '3.0') before import to ensure that the right version gets loaded.
+    # when launching process pool. Would forking / spawning global process pool
+    # before Gtk initialization be another option?
+    import gi
+    gi.require_version('Gtk', '3.0')
+
+
 # inspired by
 # https://stackoverflow.com/questions/19924104/python-multiprocessing-handling-child-errors-in-parent
 class Process(multiprocessing.Process):

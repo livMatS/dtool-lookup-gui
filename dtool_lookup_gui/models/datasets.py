@@ -26,6 +26,7 @@
 import asyncio
 import logging
 import os
+
 import yaml
 from concurrent.futures import ProcessPoolExecutor
 
@@ -36,9 +37,8 @@ from dtool_info.utils import date_fmt, sizeof_fmt
 from dtool_info.inventory import _dataset_info
 from dtool_lookup_api.core.LookupClient import ConfigurationBasedLookupClient
 
-from ..utils.multiprocessing import StatusReportingChildProcessBuilder
+from ..utils.multiprocessing import StatusReportingChildProcessBuilder, process_initializer
 from ..utils.progressbar import ProgressBar
-
 
 
 logger = logging.getLogger(__name__)
@@ -231,7 +231,7 @@ class DatasetModel:
 
         loop = asyncio.get_running_loop()
         datasets = []
-        with ProcessPoolExecutor(2) as executor:
+        with ProcessPoolExecutor(max_workers=2, initializer=process_initializer) as executor:
             datasets += await loop.run_in_executor(executor, _list_proto_datasets, base_uri)
             datasets += await loop.run_in_executor(executor, _list_datasets, base_uri)
 
