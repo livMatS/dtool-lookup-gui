@@ -44,6 +44,20 @@ from ..utils.progressbar import ProgressBar
 logger = logging.getLogger(__name__)
 
 
+class CopyFuncWrapper:
+    def __init__(self, copy_func):
+        self._copy_func = copy_func
+
+    def __call__(self, src_uri, dest_base_uri, status_report_callback):
+        """Wraps a dtool copy_func into interface compatible with StatusReportingChildProcessBuilder"""
+        self._copy_func(
+            src_uri=src_uri,
+            dest_base_uri=dest_base_uri,
+            config_path=None,
+            progressbar=status_report_callback,
+        )
+
+
 def _proto_dataset_info(dataset):
     """Return information about proto dataset as a dict."""
     # Analogous to dtool_info.inventory._dataset_info
@@ -190,13 +204,7 @@ async def _copy_dataset(uri, target_base_uri, resume, auto_resume, progressbar=N
 
     num_items = len(list(dataset.identifiers))
 
-    def copy_func_wrapper(src_uri, dest_base_uri, status_report_callback):
-        copy_func(
-            src_uri=src_uri,
-            dest_base_uri=dest_base_uri,
-            config_path=None,
-            progressbar=status_report_callback,
-        )
+    copy_func_wrapper = CopyFuncWrapper(copy_func)
 
     with ProgressBar(length=num_items,
                      label="Copying dataset",
