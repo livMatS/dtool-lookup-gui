@@ -53,6 +53,7 @@ class DependencyGraph:
 
     async def trace_dependencies(self, lookup, root_uuid, dependency_keys=None):
         """Build dependency graph by UUID."""
+        logger.debug(f"Build dependency graph for root '{root_uuid}'.")
         self._reset_graph()
 
         if isinstance(dependency_keys, str):
@@ -71,6 +72,7 @@ class DependencyGraph:
             # and this field is unique:
             uuid = dataset['uuid']
             if 'uuid' in dataset and uuid not in self._uuid_to_vertex:
+                logger.debug(f"Add dependency graph vertex '{uuid}'.")
                 v = self._graph.add_vertex(
                     uuid=uuid,
                     name=dataset['name'],
@@ -83,6 +85,7 @@ class DependencyGraph:
                     if is_uuid(parent_uuid):
                         if parent_uuid not in self._uuid_to_vertex:
                             # This UUID is present in the graph but not in the database
+                            logger.debug(f"Add dependency graph vertex of missing dataset '{parent_uuid}'.")
                             v = self._graph.add_vertex(
                                 uuid=parent_uuid,
                                 name='Dataset does not exist in database.',
@@ -90,6 +93,7 @@ class DependencyGraph:
                             self._uuid_to_vertex[parent_uuid] = v
                             self._missing_uuids += [parent_uuid]
 
+                        logger.debug(f"Add dependency graph edge between child '{dataset['uuid']}' and parent {parent_uuid}.")
                         self._graph.add_edge(
                             self._uuid_to_vertex[dataset['uuid']],
                             self._uuid_to_vertex[parent_uuid])
@@ -99,6 +103,9 @@ class DependencyGraph:
                             "valid UUID, ignored.".format(parent_uuid,
                                                           dataset['uuid'],
                                                           dataset['name']))
+        logger.debug(f"Done building dependency graph for root '{root_uuid}'.")
+
+
 
     @property
     def missing_uuids(self):

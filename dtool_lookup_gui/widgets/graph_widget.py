@@ -40,6 +40,10 @@ from .graph_popover import DtoolGraphPopover
 
 logger = logging.getLogger(__name__)
 
+# with a timeout of 10 microseconds, GUI freezes regularly on my machine (Ubuntu 20.04)
+TIMEOUT = 50
+
+
 def circle(context, x, y):
     context.arc(x, y, 0.5, 0, 2 * pi)
     context.close_path()
@@ -94,7 +98,7 @@ class DtoolGraphWidget(Gtk.DrawingArea):
         self._graph.set_vertex_properties('state', np.zeros(self._graph.nb_vertices, dtype=bool))
         self._layout = GraphLayout(self._graph)
         if self._timer is None:
-            self._timer = GObject.timeout_add(10, self.on_timeout, self)
+            self._timer = GObject.timeout_add(TIMEOUT, self.on_timeout, self)
 
     def __del__(self):
         if self._timer is not None:
