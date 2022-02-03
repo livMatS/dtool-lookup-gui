@@ -42,6 +42,9 @@ from .settings import settings
 logger = logging.getLogger(__name__)
 
 
+NON_EDITABLE_SCHEMES = ['s3']
+
+
 class BaseURI:
     """Model for all base URIs"""
 
@@ -50,7 +53,7 @@ class BaseURI:
         self._cache = None
 
     def __str__(self):
-        return f'{self._scheme}://{self._uri_name}'
+        return f'{self.scheme}://{self.uri_name}'
 
     def __eq__(self, other):
         return self.scheme == other.scheme and self.uri_name == other.uri_name
@@ -60,14 +63,21 @@ class BaseURI:
             self._cache = await DatasetModel.all(str(self))
         return self._cache
 
-    @classmethod
+    # causes trouble for python < 3.9,
+    # see https://docs.python.org/3.9/library/functions.html#classmethod or
+    #     https://stackoverflow.com/questions/128573/using-property-on-classmethods/64738850#64738850
+    # just use as per-instance property for now
     @property
-    def scheme(cls):
-        return cls._scheme
+    def scheme(self):
+        return self._scheme
 
     @property
     def uri_name(self):
         return self._uri_name
+
+    @property
+    def editable(self):
+        return self.scheme not in NON_EDITABLE_SCHEMES
 
 
 class LocalBaseURIModel(BaseURI):
