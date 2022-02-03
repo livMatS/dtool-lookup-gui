@@ -1,0 +1,36 @@
+name: build-and-publish
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+
+jobs:
+  build-on-ubuntu:
+    uses: ./.github/workflows/build-on-ubuntu.yml
+
+  build-on-windows:
+    uses: ./.github/workflows/build-on-windows.yml
+
+  make-release:
+    needs:
+      - build-on-ubuntu
+      - build-on-windows
+
+    steps:
+    - name: Download Linux build
+      uses: actions/download-artifact@v2
+      with:
+        name: dtool-lookup-gui-linux
+        path: /tmp
+
+    - name: Download Windows build
+        uses: actions/download-artifact@v2
+        with:
+          name: dtool-lookup-gui-windows
+          path: /tmp
+
+    - name: List content
+        run: |
+          ls -lhv /tmp
