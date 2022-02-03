@@ -26,6 +26,7 @@
 import asyncio
 import logging
 import os
+
 import yaml
 from concurrent.futures import ProcessPoolExecutor
 
@@ -36,12 +37,25 @@ from dtool_info.utils import date_fmt, sizeof_fmt
 from dtool_info.inventory import _dataset_info
 from dtool_lookup_api.core.LookupClient import ConfigurationBasedLookupClient
 
-from ..utils.multiprocessing import StatusReportingChildProcessBuilder
+from ..utils.multiprocessing import StatusReportingChildProcessBuilder, process_initializer
 from ..utils.progressbar import ProgressBar
 
 
-
 logger = logging.getLogger(__name__)
+
+
+class CopyFuncWrapper:
+    def __init__(self, copy_func):
+        self._copy_func = copy_func
+
+    def __call__(self, src_uri, dest_base_uri, status_report_callback):
+        """Wraps a dtool copy_func into interface compatible with StatusReportingChildProcessBuilder"""
+        self._copy_func(
+            src_uri=src_uri,
+            dest_base_uri=dest_base_uri,
+            config_path=None,
+            progressbar=status_report_callback,
+        )
 
 
 def _proto_dataset_info(dataset):
@@ -190,13 +204,7 @@ async def _copy_dataset(uri, target_base_uri, resume, auto_resume, progressbar=N
 
     num_items = len(list(dataset.identifiers))
 
-    def copy_func_wrapper(src_uri, dest_base_uri, status_report_callback):
-        copy_func(
-            src_uri=src_uri,
-            dest_base_uri=dest_base_uri,
-            config_path=None,
-            progressbar=status_report_callback,
-        )
+    copy_func_wrapper = CopyFuncWrapper(copy_func)
 
     with ProgressBar(length=num_items,
                      label="Copying dataset",
@@ -223,7 +231,7 @@ class DatasetModel:
 
         loop = asyncio.get_running_loop()
         datasets = []
-        with ProcessPoolExecutor(2) as executor:
+        with ProcessPoolExecutor(max_workers=2, initializer=process_initializer) as executor:
             datasets += await loop.run_in_executor(executor, _list_proto_datasets, base_uri)
             datasets += await loop.run_in_executor(executor, _list_datasets, base_uri)
 
@@ -301,10 +309,15 @@ class DatasetModel:
         await _copy_dataset(self.uri, target_base_uri, resume, auto_resume, progressbar)
 
     def freeze(self):
+        uri = str(self)
         _load_dataset(str(self)).freeze()
+        logger.debug(f"Froze {uri}")
         # We need to reread dataset after freezing, since _data is currently
         # a dtoolcore.ProtoDataSet but should not become a dtoolcore.DataSet
-        self.reload()
+        # Dataset and URI lost when freezing, preserve and reload here
+        self.reload(uri=uri)
+        uri = str(self)
+        logger.debug(f"Reloaded {uri}")
 
     def put_readme(self, text):
         self.readme_content = text
@@ -319,6 +332,9 @@ class DatasetModel:
         return self._dataset_info['readme_content']
 
     async def get_manifest(self):
+        # ATTENTION HERE: will try to get data from lookup server for proto datasets without following check
+        if not self.is_frozen:
+            return dict()
         if 'manifest' in self._dataset_info:
             return self._dataset_info['manifest']
         async with ConfigurationBasedLookupClient() as lookup:

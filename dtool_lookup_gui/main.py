@@ -23,6 +23,9 @@
 # SOFTWARE.
 #
 
+# the following import is necessary to patch flawed dtoolcore.utils function
+import dtool_lookup_gui.utils.patch
+
 import argparse
 import asyncio
 import logging
@@ -45,6 +48,7 @@ import dtool_lookup_gui.widgets.graph_widget
 import dtool_lookup_gui.widgets.transfer_popover_menu
 import dtool_lookup_gui.widgets.progress_chart
 import dtool_lookup_gui.widgets.progress_popover_menu
+
 
 
 logger = logging.getLogger(__name__)
@@ -124,11 +128,13 @@ class Application(Gtk.Application):
         if self.args.verbose > 0:
             loglevel = logging.INFO
         if self.args.debug or (self.args.verbose > 1):
+            loglevel = logging.DEBUG
+
+        if self.args.verbose > 2:
             logformat = (
-                "[%(asctime)s - %(funcName)s - %(filename)s:%(lineno)s]"
+                "[%(asctime)s - pid %(process)d - thread id %(thread)d - %(funcName)s - %(pathname)s:%(lineno)s]"
                 " %(levelname)s: %(message)s"
             )
-            loglevel = logging.DEBUG
 
         # explicitly modify the root logger
         logging.basicConfig(level=loglevel, format=logformat)

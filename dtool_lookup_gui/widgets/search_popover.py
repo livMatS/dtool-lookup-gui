@@ -24,7 +24,6 @@
 #
 
 import logging
-import logging
 import os
 
 from gi.repository import GLib, Gdk, Gtk, GtkSource

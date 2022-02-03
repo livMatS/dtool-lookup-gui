@@ -36,6 +36,20 @@ import traceback  # forward exception from child process to parent process
 logger = logging.getLogger(__name__)
 
 
+def process_initializer():
+    """Initialize process pool workers."""
+    # Must apply patch in all worker processes.
+    import dtool_lookup_gui.utils.patch
+
+    # Avoids warning
+    #   PyGIWarning: Gtk was imported without specifying a version first.
+    #                Use gi.require_version('Gtk', '3.0') before import to ensure that the right version gets loaded.
+    # when launching process pool. Would forking / spawning global process pool
+    # before Gtk initialization be another option?
+    import gi
+    gi.require_version('Gtk', '3.0')
+
+
 # inspired by
 # https://stackoverflow.com/questions/19924104/python-multiprocessing-handling-child-errors-in-parent
 class Process(multiprocessing.Process):
@@ -64,6 +78,17 @@ class Process(multiprocessing.Process):
             self._exception = self._parent_conn.recv()
         return self._exception
 
+class TargetWrapper:
+    def __init__(self, target):
+        self._target = target
+
+    def __call__(self, return_value_queue, status_progress_queue, *args):
+        class StatusReportClass:
+            def update(status_report):
+                logger.debug(f"Child process queues status report {status_report}")
+                status_progress_queue.put(status_report)
+
+        return_value_queue.put(self._target(*args, status_report_callback=StatusReportClass))
 
 class StatusReportingChildProcessBuilder:
     """Outsource serial functions with status report handlers.
@@ -81,14 +106,14 @@ class StatusReportingChildProcessBuilder:
         func(*args, status_report_callback=None)
     """
     def __init__(self, target, status_report_callback):
-        self._target = target
+        self._target_wrapper = TargetWrapper(target)
         self._status_report_handler = status_report_callback
 
     async def __call__(self, *args):
         """Spawn child process to assure my environment stays untouched."""
         return_value_queue = multiprocessing.Queue()
         status_progress_queue = multiprocessing.Queue()
-        process = Process(target=self.target_wrapper, args=[return_value_queue, status_progress_queue, *args])
+        process = Process(target=self._target_wrapper, args=[return_value_queue, status_progress_queue, *args])
         process.start()
 
         # wait for child to queue its return value and
@@ -115,15 +140,6 @@ class StatusReportingChildProcessBuilder:
         # anything to the return_value_queue, will deadlock here
         process.join()
         return return_value
-
-    def target_wrapper(self, return_value_queue, status_progress_queue, *args):
-
-        class StatusReportClass:
-            def update(status_report):
-                logger.debug(f"Child process queues status report {status_report}")
-                status_progress_queue.put(status_report)
-
-        return_value_queue.put(self._target(*args, status_report_callback=StatusReportClass))
 
 
 def test_function(steps, status_report_callback):

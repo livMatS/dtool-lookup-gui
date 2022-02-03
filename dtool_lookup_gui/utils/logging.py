@@ -24,6 +24,7 @@
 #
 
 import logging
+import re
 from typing import Optional
 
 from gi.repository import Gtk, Pango
@@ -35,6 +36,28 @@ DEFAULT_TEXT_BUFFER_MAX_LINES = 1000
 DEFAULT_ENTRY_MAX_LINES = 5
 DEFAULT_LABEL_MAX_LINES = 1
 
+# filters
+
+# We don't want certain exceptions to clutter the logs in production mode
+DEFAULT_EXCLUDE_PATTERNS = [
+    'WinError 10053',  # ConnectionAbortedError: [WinError 10053] An established connection was aborted by the software in your host machine
+    'Fatal read error on pipe transport',  # apparently arises in connection with above [WinError 10053],
+    'client_session: <aiohttp.client.ClientSession object at .*>',  # apparently arises in connection with 'RuntimeError: Authentication failed'
+    'Unclosed client session',  # apparently arises in connection with 'RuntimeError: Authentication failed',
+]
+
+DEFAULT_EXCLUDE_REGEX = [
+    re.compile(pattern) for pattern in DEFAULT_EXCLUDE_PATTERNS
+]
+
+class DefaultFilter(logging.Filter):
+    def filter(self, record):
+        """Filter out any log messages that match any of the defined exclusion patterns."""
+        for regex in DEFAULT_EXCLUDE_REGEX:
+            if regex.search(record.msg) is not None:
+                return False
+
+        return True
 
 # formatter mixins
 

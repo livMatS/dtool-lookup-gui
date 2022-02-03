@@ -23,6 +23,8 @@
 # SOFTWARE.
 #
 
+import logging
+
 from io import StringIO
 
 from ruamel.yaml import YAML
@@ -35,6 +37,9 @@ from dtool_lookup_api.core.LookupClient import ConfigurationBasedLookupClient
 
 from .datasets import DatasetModel
 from .settings import settings
+
+
+logger = logging.getLogger(__name__)
 
 
 class BaseURI:
@@ -75,7 +80,9 @@ class LocalBaseURIModel(BaseURI):
 
     @classmethod
     def add_directory(cls, path):
+        logger.debug(f"Add local path {path} as base URI.")
         base_uri = generous_parse_uri(path)
+        logger.debug(f"Parsed to qualified base URI {base_uri}.")
         if base_uri.scheme != cls._scheme:
             raise ValueError(f"The URI provided specified schema '{base_uri.scheme}', but this base URI model "
                              f"supports '{cls._scheme}'.")
@@ -110,9 +117,11 @@ class LocalBaseURIModel(BaseURI):
         admin_metadata = generate_admin_metadata(name)
 
         # Create the dataset
+        base_uri = f'{self.scheme}:{self.uri_name}'
+        logger.debug(f"Create dataset {name} at base URI {base_uri}.")
         proto_dataset = generate_proto_dataset(
             admin_metadata=admin_metadata,
-            base_uri=f'{self.scheme}:{self.uri_name}')
+            base_uri=base_uri)
         proto_dataset.create()  # May raise StorageBrokerOSError
 
         # Initialize with template README.yml
