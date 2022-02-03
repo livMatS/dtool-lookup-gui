@@ -5,7 +5,6 @@ on:
       - master
   pull_request:
 
-
 jobs:
   build-on-ubuntu:
     uses: IMTEK-Simulation/dtool-lookup-gui/.github/workflows/build-on-ubuntu.yml@2022-02-03-make-release-in-workflow
@@ -13,8 +12,56 @@ jobs:
   build-on-windows:
     uses: IMTEK-Simulation/dtool-lookup-gui/.github/workflows/build-on-windows.yml@2022-02-03-make-release-in-workflow
 
-  make-release:
+  publish-on-pypi:
+    runs-on: ubuntu-20.04
 
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2.3.1
+        with:
+          python-version: 3.8
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qy
+          sudo apt-get install -y \
+            libgirepository1.0-dev \
+            libcairo2-dev \
+            pkg-config \
+            python3-dev \
+            gir1.2-gtk-3.0 \
+            libgtksourceview-4-0
+
+      - name: Install pythonic dependencies
+        run: |
+          pip install --upgrade pip
+          pip install wheel
+          pip install -r requirements.txt
+
+      - name: Build and install
+        run: |
+          python setup.py build
+          python setup.py install
+
+      - name: Package distribution
+        run: |
+          python setup.py sdist bdist_wheel
+          ls -1 dist/
+
+      - name: Publish package
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+        uses: pypa/gh-action-pypi-publish@v1.5.0
+        with:
+          user: __token__
+          password: ${{ secrets.pypi_password }}
+          verbose: true
+
+  publish-on-github:
     runs-on: ubuntu-20.04
 
     needs:
@@ -22,18 +69,41 @@ jobs:
       - build-on-windows
 
     steps:
+      - name: Get version
+        id: get_version
+        uses: battila7/get-version-action@v2
+
+      - name: Prepare
+        run: |
+          mkdir -p /tmp/linux-build
+          mkdir -p /tmp/windows-build
+
       - name: Download Linux build
         uses: actions/download-artifact@v2
         with:
           name: dtool-lookup-gui-linux
-          path: /tmp
+          path: /tmp/linux-build
 
       - name: Download Windows build
         uses: actions/download-artifact@v2
         with:
           name: dtool-lookup-gui-windows
-          path: /tmp
+          path: /tmp/windows-build
 
-      - name: List content
+      - name: List content of builds
         run: |
-          ls -lhv /tmp
+          ls -lhv /tmp/linux-build/
+          ls -lhv /tmp/windows-build/
+
+      - name: Pack release assets
+        run: |
+          zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux.zip /tmp/linux-build/*
+          zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows.zip /tmp/windows-build/*
+
+      - name: Make release
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux.zip
+            dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows.zip
