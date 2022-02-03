@@ -19,18 +19,18 @@ jobs:
       - build-on-windows
 
     steps:
-    - name: Download Linux build
-      uses: actions/download-artifact@v2
-      with:
-        name: dtool-lookup-gui-linux
-        path: /tmp
+      - name: Download Linux build
+        uses: actions/download-artifact@v2
+        with:
+          name: dtool-lookup-gui-linux
+          path: /tmp
 
-    - name: Download Windows build
+      - name: Download Windows build
         uses: actions/download-artifact@v2
         with:
           name: dtool-lookup-gui-windows
           path: /tmp
 
-    - name: List content
+      - name: List content
         run: |
           ls -lhv /tmp
