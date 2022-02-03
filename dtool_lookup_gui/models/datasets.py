@@ -309,10 +309,15 @@ class DatasetModel:
         await _copy_dataset(self.uri, target_base_uri, resume, auto_resume, progressbar)
 
     def freeze(self):
+        uri = str(self)
         _load_dataset(str(self)).freeze()
+        logger.debug(f"Froze {uri}")
         # We need to reread dataset after freezing, since _data is currently
         # a dtoolcore.ProtoDataSet but should not become a dtoolcore.DataSet
-        self.reload()
+        # Dataset and URI lost when freezing, preserve and reload here
+        self.reload(uri=uri)
+        uri = str(self)
+        logger.debug(f"Reloaded {uri}")
 
     def put_readme(self, text):
         self.readme_content = text
@@ -327,6 +332,9 @@ class DatasetModel:
         return self._dataset_info['readme_content']
 
     async def get_manifest(self):
+        # ATTENTION HERE: will try to get data from lookup server for proto datasets without following check
+        if not self.is_frozen:
+            return dict()
         if 'manifest' in self._dataset_info:
             return self._dataset_info['manifest']
         async with ConfigurationBasedLookupClient() as lookup:

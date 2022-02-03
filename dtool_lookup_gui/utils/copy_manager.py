@@ -50,4 +50,7 @@ class CopyManager:
         # Refresh pie chart
         total_length = sum([len(tracker) for tracker in self._progress_popover.status_boxes])
         total_step = sum([tracker.step for tracker in self._progress_popover.status_boxes])
-        self._progress_chart.set_fraction(total_step / total_length)
+        if total_length > 0:
+            self._progress_chart.set_fraction(total_step / total_length)
+        else:
+            self._progress_chart.set_fraction(1.)

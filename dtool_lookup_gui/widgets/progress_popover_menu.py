@@ -73,7 +73,10 @@ class DtoolProgressStatusBox(Gtk.Box):
 
     @property
     def fraction(self):
-        return self._step / self._length
+        if self._length > 0:
+            return self._step / self._length
+        else:
+            return 1.
 
     @property
     def is_done(self):

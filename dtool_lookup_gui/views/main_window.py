@@ -194,11 +194,23 @@ class MainWindow(Gtk.ApplicationWindow):
         select_dataset_action.connect("activate", self.do_select_dataset_row_by_row_index)
         self.add_action(select_dataset_action)
 
+        # select row by uri in dataset list box action
+        uri_variant = GLib.Variant.new_string('dummy')
+        select_dataset_by_uri_action = Gio.SimpleAction.new("select-dataset-by-uri", uri_variant.get_type())
+        select_dataset_by_uri_action.connect("activate", self.do_select_dataset_row_by_uri)
+        self.add_action(select_dataset_by_uri_action)
+
         # show details of dataset by row index in dataset list box action
         row_index_variant = GLib.Variant.new_uint32(0)
         show_dataset_action = Gio.SimpleAction.new("show-dataset", row_index_variant.get_type())
         show_dataset_action.connect("activate", self.do_show_dataset_details_by_row_index)
         self.add_action(show_dataset_action)
+
+        # show details of dataset by uri in dataset list box action
+        uri_variant = GLib.Variant.new_string("dummy")
+        show_dataset_by_uri_action = Gio.SimpleAction.new("show-dataset-by-uri", uri_variant.get_type())
+        show_dataset_by_uri_action.connect("activate", self.do_show_dataset_details_by_uri)
+        self.add_action(show_dataset_by_uri_action)
 
         # search, select and show first search result subsequently
         row_index_variant = GLib.Variant.new_string("dummy")
@@ -288,6 +300,11 @@ class MainWindow(Gtk.ApplicationWindow):
         else:
             _logger.info(f"No row with index {index} available for selection.")
 
+    def _select_dataset_row_by_uri(self, uri):
+        """Select dataset row in dataset list box by uri."""
+        index = self.dataset_list_box.get_row_index_from_uri(uri)
+        self._select_dataset_row_by_row_index(index)
+
     def _show_dataset_details(self, dataset):
         asyncio.create_task(self._update_dataset_view(dataset))
         self.dataset_stack.set_visible_child(self.dataset_box)
@@ -300,9 +317,18 @@ class MainWindow(Gtk.ApplicationWindow):
         else:
             _logger.info(f"No row with index {index} available for selection.")
 
+    def _show_dataset_details_by_uri(self, uri):
+        """Select dataset row in dataset list box by uri."""
+        index = self.dataset_list_box.get_row_index_from_uri(uri)
+        self._show_dataset_details_by_row_index(index)
+
     def _select_and_show_by_row_index(self, index=0):
         self._select_dataset_row_by_row_index(index)
         self._show_dataset_details_by_row_index(index)
+
+    def _select_and_show_by_uri(self, uri):
+        self._select_dataset_row_by_uri(uri)
+        self._show_dataset_details_by_uri(uri)
 
     def _search(self, search_text, on_show=None):
         _logger.debug(f"Evoke search with search text {search_text}.")
@@ -340,9 +366,18 @@ class MainWindow(Gtk.ApplicationWindow):
         row_index = value.get_uint32()
         self._select_dataset_row_by_row_index(row_index)
 
+    def do_select_dataset_row_by_uri(self, action, value):
+        """Select dataset row by uri."""
+        uri = value.get_string()
+        self._select_dataset_row_by_uri(uri)
+
     def do_show_dataset_details_by_row_index(self, action, value):
         row_index = value.get_uint32()
         self._show_dataset_details_by_row_index(row_index)
+
+    def do_show_dataset_details_by_uri(self, action, value):
+        uri = value.get_string()
+        self._show_dataset_details_by_uri(uri)
 
     def do_search_select_and_show(self, action, value):
         """Evoke search task for specific search text, select and show 1st row of resuls subsequntly."""
@@ -460,7 +495,22 @@ class MainWindow(Gtk.ApplicationWindow):
         # that uses the asyncio event loop this will break.
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
+            # Quote from https://athenajc.gitbooks.io/python-gtk-3-api/content/gtk-group/gtkfilechooser.html:
+            #
+            # When the user is finished selecting files in a Gtk.FileChooser, your program can get the selected names
+            # either as filenames or as URIs. For URIs, the normal escaping rules are applied if the URI contains
+            # non-ASCII characters.
+            #
+            # However, filenames are always returned in the character set specified by the G_FILENAME_ENCODING
+            # environment variable.
+            #
+            # This means that while you can pass the result of Gtk.FileChooser::get_filename() to open() or fopen(),
+            # you may not be able to directly set it as the text of a Gtk.Label widget unless you convert it first to
+            # UTF-8, which all GTK+ widgets expect. You should use g_filename_to_utf8() to convert filenames into
+            # strings that can be passed to GTK+ widgets.
             uri, = dialog.get_uris()
+            # For using URI scheme on local paths, we have to unquote characters to be
+            uri = urllib.parse.unquote(uri, encoding='utf-8', errors='replace')
             # Add directory to local inventory
             LocalBaseURIModel.add_directory(uri)
         elif response == Gtk.ResponseType.CANCEL:
@@ -500,8 +550,10 @@ class MainWindow(Gtk.ApplicationWindow):
         response = dialog.run()
         if response == Gtk.ResponseType.OK:
             uris = dialog.get_uris()
-            for uri in uris:
-                self._add_item(uri)
+            fpaths = dialog.get_filenames()
+            for fpath in fpaths:
+                # uri = urllib.parse.unquote(uri, encoding='utf-8', errors='replace')
+                self._add_item(fpath)
         elif response == Gtk.ResponseType.CANCEL:
             pass
         dialog.destroy()
@@ -553,9 +605,11 @@ class MainWindow(Gtk.ApplicationWindow):
         response = dialog.run()
         dialog.destroy()
         if response == Gtk.ResponseType.OK:
+            uri = row.dataset.uri  # URI won't change in freeze process
             row.freeze()
             self.dataset_list_box.show_all()
-            asyncio.create_task(self._update_dataset_view(self.dataset_list_box.get_selected_row().dataset))
+            self.get_action_group("win").activate_action('select-dataset-by-uri', GLib.Variant.new_string(uri))
+            self.get_action_group("win").activate_action('show-dataset-by-uri', GLib.Variant.new_string(uri))
 
     @Gtk.Template.Callback()
     def on_error_bar_close(self, widget):
@@ -603,12 +657,11 @@ class MainWindow(Gtk.ApplicationWindow):
             pass
         dialog.destroy()
 
-    def _add_item(self, uri):
-        p = urllib.parse.urlparse(uri)
-        fpath = os.path.abspath(os.path.join(p.netloc, p.path))
+    # TODO: move to the model
+    def _add_item(self, fpath):
         handle = os.path.basename(fpath)
-        handle = dtoolcore.utils.windows_to_unix_path(handle)  # NOQA
-        self.dataset_list_box.get_selected_row().dataset.dataset.put_item(fpath, handle)
+        dataset = dtoolcore.ProtoDataSet.from_uri(self.dataset_list_box.get_selected_row().dataset.uri)
+        dataset.put_item(fpath, handle)
 
     def _create_dataset(self, name):
         base_uri = self.base_uri_list_box.get_selected_row()
@@ -617,6 +670,8 @@ class MainWindow(Gtk.ApplicationWindow):
             self.dataset_list_box.show_all()
 
     async def _update_dataset_view(self, dataset):
+        _logger.debug("In _update_dataset_view.")
+
         self.uuid_label.set_text(dataset.uuid)
         self.uri_label.set_text(dataset.uri)
         self.name_label.set_text(dataset.name)
@@ -625,11 +680,16 @@ class MainWindow(Gtk.ApplicationWindow):
         self.size_label.set_text(dataset.size_str.strip())
 
         if dataset.scheme == 'file':
+            _logger.debug("File system dataset access")
             self.show_button.set_sensitive(True)
             self.add_items_button.set_sensitive(not dataset.is_frozen)
             self.freeze_button.set_sensitive(not dataset.is_frozen)
             self.copy_button.set_sensitive(dataset.is_frozen)
         else:
+            # jotelha, 2022-02-03
+            # This binary distinction will only allow manipulation of local datasets via the FileSystemStorageBroker,
+            # no other storage broker. I would prefer to do a binary distinction between lookup / non-lookup entry here.
+            _logger.debug("Any other dataset access")
             self.show_button.set_sensitive(False)
             self.add_items_button.set_sensitive(False)
             self.freeze_button.set_sensitive(False)
@@ -645,13 +705,17 @@ class MainWindow(Gtk.ApplicationWindow):
             _fill_manifest_tree_store(self.manifest_tree_store, await dataset.get_manifest())
             self.manifest_stack.set_visible_child(self.manifest_view)
 
+        _logger.debug("Get readme.")
         asyncio.create_task(_get_readme())
+        _logger.debug("Get manifest.")
         asyncio.create_task(_get_manifest())
 
         if dataset.type == 'lookup':
             self.dependency_stack.show()
+            _logger.debug("Selected dataset is lookup result.")
             asyncio.create_task(self._compute_dependencies(dataset))
         else:
+            _logger.debug("Selected dataset is accessed directly.")
             self.dependency_stack.hide()
 
         await self._update_copy_button(dataset)

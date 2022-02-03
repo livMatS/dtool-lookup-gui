@@ -22,17 +22,25 @@
 # SOFTWARE.
 #
 
+import logging
+
 from gi.repository import GObject, Gtk
 
 from .dataset_row import DtoolDatasetRow
 
 
+logger = logging.getLogger(__name__)
+
 class DtoolDatasetListBox(Gtk.ListBox):
     __gtype_name__ = 'DtoolDatasetListBox'
+
+    def __init__(self, *args, **kwargs):
+        self._uri_to_row_index_mapping = dict()
 
     def fill(self, datasets, on_show=None):
         for row in self.get_children():
             row.destroy()
+        self._uri_to_row_index_mapping = dict()
         for dataset in datasets:
             self.add(DtoolDatasetRow(dataset))
         self.show_all()
@@ -45,5 +53,34 @@ class DtoolDatasetListBox(Gtk.ListBox):
         self.add(row)
         # Select new dataset
         self.select_row(row)
+
+    def add(self, row):
+        """Keep uri -> row index mapping up-to-date."""
+        if row.dataset.uri in self._uri_to_row_index_mapping:
+            row_index  = self.get_row_index_from_uri(row.dataset.uri)
+            raise ValueError(f"{row.dataset.uri} already in DtoolDatasetListBox at index {row_index}. This should not happen.")
+
+        super().add(row)
+
+        row_index = row.get_index()
+        logger.debug(f"Inserted {row.dataset.uri} at {row_index}.")
+        self._uri_to_row_index_mapping[row.dataset.uri] = row_index
+
+    def remove(self, row):
+        """Keep uri -> row index mapping up-to-date."""
+        if row.dataset.uri not in self._uri_to_row_index_mapping:
+            raise ValueError(f"{row.dataset.uri} not recorded in DtoolDatasetListBox uri -> row index mapping. This should not happen.")
+        else:
+            del self._uri_to_row_index_mapping[row.dataset.uri]
+
+        super().remove(row)
+
+    def get_row_index_from_uri(self, uri):
+        if uri in self._uri_to_row_index_mapping:
+            return self._uri_to_row_index_mapping[uri]
+        else:
+            logger.warning(f"{uri} not in DtoolDatasetListBox.")
+            return None
+
 
 GObject.type_register(DtoolDatasetListBox)
