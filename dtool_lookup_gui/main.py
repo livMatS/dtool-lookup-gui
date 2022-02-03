@@ -128,11 +128,13 @@ class Application(Gtk.Application):
         if self.args.verbose > 0:
             loglevel = logging.INFO
         if self.args.debug or (self.args.verbose > 1):
+            loglevel = logging.DEBUG
+
+        if self.args.verbose > 2:
             logformat = (
-                "[%(asctime)s - %(funcName)s - %(filename)s:%(lineno)s]"
+                "[%(asctime)s - pid %(process)d - thread id %(thread)d - %(funcName)s - %(pathname)s:%(lineno)s]"
                 " %(levelname)s: %(message)s"
             )
-            loglevel = logging.DEBUG
 
         # explicitly modify the root logger
         logging.basicConfig(level=loglevel, format=logformat)
