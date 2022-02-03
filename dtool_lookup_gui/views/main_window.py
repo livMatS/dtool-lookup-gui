@@ -49,7 +49,7 @@ from ..models.settings import settings
 from ..utils.copy_manager import CopyManager
 from ..utils.date import date_to_string
 from ..utils.dependency_graph import DependencyGraph
-from ..utils.logging import FormattedSingleMessageGtkInfoBarHandler
+from ..utils.logging import FormattedSingleMessageGtkInfoBarHandler, DefaultFilter
 from ..utils.query import (is_valid_query, dump_single_line_query_text)
 from ..widgets.base_uri_row import DtoolBaseURIRow
 from ..widgets.search_popover import DtoolSearchPopover
@@ -172,6 +172,8 @@ class MainWindow(Gtk.ApplicationWindow):
         # connect log handler to error bar
         root_logger = logging.getLogger()
         self.log_handler = FormattedSingleMessageGtkInfoBarHandler(info_bar=self.error_bar, label=self.error_label)
+        # exclude unwanted log messages from being displayed in error bar
+        self.log_handler.addFilter(DefaultFilter())
         root_logger.addHandler(self.log_handler)
 
         # connect a search popover with search entry
