@@ -8,10 +8,10 @@ on:
 
 jobs:
   build-on-ubuntu:
-    uses: ./.github/workflows/build-on-ubuntu.yml
+    uses: IMTEK-Simulation/dtool-lookup-gui/.github/workflows/build-on-ubuntu.yml@2022-02-03-make-release-in-workflow
 
   build-on-windows:
-    uses: ./.github/workflows/build-on-windows.yml
+    uses: IMTEK-Simulation/dtool-lookup-gui/.github/workflows/build-on-windows.yml@2022-02-03-make-release-in-workflow
 
   make-release:
 
