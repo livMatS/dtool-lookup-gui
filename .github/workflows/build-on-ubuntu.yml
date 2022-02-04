@@ -1,10 +1,7 @@
 name: build-on-ubunu
 
 on:
-  push:
-    branches:    
-      - master
-  pull_request:
+  workflow_call:
 
 jobs:
 
@@ -54,6 +51,6 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
-        name: dtool-lookup-gui
+        name: dtool-lookup-gui-linux
         path: dist/dtool-lookup-gui
         if-no-files-found: error

@@ -1,10 +1,7 @@
 name: build-on-windows
 
 on:
-  push:
-    branches:
-      - master
-  pull_request:
+  workflow_call:
 
 # adapted template from https://www.msys2.org/docs/ci/
 jobs:
@@ -125,7 +122,7 @@ jobs:
     - name: Upload executable artifact
       uses: actions/upload-artifact@v2
       with:
-        name: dtool-lookup-gui.exe
+        name: dtool-lookup-gui-windows
         path: dist/dtool-lookup-gui.exe
         if-no-files-found: error
 
