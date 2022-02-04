@@ -3,14 +3,16 @@ on:
   push:
     branches:
       - master
+    tags:
+      - '*'
   pull_request:
 
 jobs:
   build-on-ubuntu:
-    uses: IMTEK-Simulation/dtool-lookup-gui/.github/workflows/build-on-ubuntu.yml@2022-02-03-make-release-in-workflow
+    uses: IMTEK-Simulation/dtool-lookup-gui/.github/workflows/build-on-ubuntu.yml@master
 
   build-on-windows:
-    uses: IMTEK-Simulation/dtool-lookup-gui/.github/workflows/build-on-windows.yml@2022-02-03-make-release-in-workflow
+    uses: IMTEK-Simulation/dtool-lookup-gui/.github/workflows/build-on-windows.yml@master
 
   publish-on-pypi:
     runs-on: ubuntu-20.04
