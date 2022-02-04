@@ -455,7 +455,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self.main_stack.set_visible_child(self.main_spinner)
         self.create_dataset_button.set_sensitive(not isinstance(row, DtoolSearchResultsRow) and
-                                                 row.base_uri.scheme == 'file')
+                                                 row.base_uri.editable)
         if row.task is None:
             _logger.debug("Spawn select_base_uri task.")
             row.task = asyncio.create_task(_select_base_uri())
@@ -679,21 +679,23 @@ class MainWindow(Gtk.ApplicationWindow):
         self.frozen_at_label.set_text(dataset.date)
         self.size_label.set_text(dataset.size_str.strip())
 
-        if dataset.scheme == 'file':
-            _logger.debug("File system dataset access")
-            self.show_button.set_sensitive(True)
-            self.add_items_button.set_sensitive(not dataset.is_frozen)
-            self.freeze_button.set_sensitive(not dataset.is_frozen)
-            self.copy_button.set_sensitive(dataset.is_frozen)
-        else:
-            # jotelha, 2022-02-03
-            # This binary distinction will only allow manipulation of local datasets via the FileSystemStorageBroker,
-            # no other storage broker. I would prefer to do a binary distinction between lookup / non-lookup entry here.
+        # This binary distinction will allow manipulation of all datasets via
+        # the according StorageBroker, as long as latter implements the
+        # desired functionality
+        if dataset.type == 'lookup':
             _logger.debug("Any other dataset access")
             self.show_button.set_sensitive(False)
             self.add_items_button.set_sensitive(False)
             self.freeze_button.set_sensitive(False)
             self.copy_button.set_sensitive(True)
+        # if necessary, insert scheme-specific clauses later, i.e.
+        # elif dataset.scheme == 's3', ....
+        else:  # per default, treat all endpoints equally here
+            _logger.debug("File system dataset access")
+            self.show_button.set_sensitive(True)
+            self.add_items_button.set_sensitive(not dataset.is_frozen)
+            self.freeze_button.set_sensitive(not dataset.is_frozen)
+            self.copy_button.set_sensitive(dataset.is_frozen)
 
         async def _get_readme():
             self.readme_stack.set_visible_child(self.readme_spinner)
