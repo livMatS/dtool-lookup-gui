@@ -24,12 +24,13 @@
 #
 
 import asyncio
+import datetime
 import logging
 import os
 
 import jwt
 
-from gi.repository import Gio, Gtk
+from gi.repository import Gio, GLib, Gtk
 
 from dtool_lookup_api.core.config import Config
 from dtool_lookup_api.core.LookupClient import authenticate
@@ -72,6 +73,13 @@ class SettingsDialog(Gtk.Window):
 
         settings.settings.bind("dependency-keys", self.dependency_keys_entry, 'text', Gio.SettingsBindFlags.DEFAULT)
 
+        # register own refresh method as listener for app-central dtool-config-changed signal
+        self.get_application().connect("dtool-config-changed", self.on_dtool_config_changed)
+
+        self._refresh_settings_dialog()
+
+    def _refresh_settings_dialog(self):
+        logger.debug("Refresh settings dialog.")
         if Config.lookup_url is not None:
             self.lookup_url_entry.set_text(Config.lookup_url)
         if Config.token is not None:
@@ -99,6 +107,10 @@ class SettingsDialog(Gtk.Window):
 
         self.base_uris_list_box.show_all()
 
+    def on_dtool_config_changed(self, widget):
+        """Signal handler for dtool-method-changed."""
+        self._refresh_settings_dialog()
+
     @Gtk.Template.Callback()
     def on_delete(self, widget, event):
         # Write back configuration
@@ -125,6 +137,49 @@ class SettingsDialog(Gtk.Window):
             #asyncio.create_task(self.main_application.lookup_tab.connect())
 
         AuthenticationDialog(authenticate, Config.username, Config.password).show()
+
+    @Gtk.Template.Callback()
+    def on_import_config_clicked(self, widget):
+        """Process clicked signal from import-config button."""
+        dialog = Gtk.FileChooserDialog(title=f"Import dtool config from file", parent=self,
+                                       action=Gtk.FileChooserAction.OPEN)
+        dialog.add_buttons(Gtk.STOCK_CANCEL,
+                           Gtk.ResponseType.CANCEL,
+                           Gtk.STOCK_OPEN,
+                           Gtk.ResponseType.OK)
+        dialog.set_select_multiple(False)
+        response = dialog.run()
+
+        if response == Gtk.ResponseType.OK:
+            dest_filename = dialog.get_filename()
+            self.get_action_group("app").activate_action('import-config', GLib.Variant.new_string(dest_filename))
+
+        elif response == Gtk.ResponseType.CANCEL:
+            pass
+        dialog.destroy()
+
+    @Gtk.Template.Callback()
+    def on_export_config_clicked(self, widget):
+        """Process clicked signal from import-config button."""
+        dialog = Gtk.FileChooserDialog(title=f"Export dtool config to file", parent=self,
+                                       action=Gtk.FileChooserAction.SAVE)
+        dialog.add_buttons(Gtk.STOCK_CANCEL,
+                           Gtk.ResponseType.CANCEL,
+                           Gtk.STOCK_OK,
+                           Gtk.ResponseType.OK)
+        suggested_file_name = f"{datetime.datetime.now().isoformat()}-{self.get_application().get_application_id()}-dtool.json"
+        dialog.set_current_name(suggested_file_name)
+        dialog.set_do_overwrite_confirmation(True)
+
+        response = dialog.run()
+
+        if response == Gtk.ResponseType.OK:
+            dest_filename = dialog.get_filename()
+            self.get_action_group("app").activate_action('export-config', GLib.Variant.new_string(dest_filename))
+
+        elif response == Gtk.ResponseType.CANCEL:
+            pass
+        dialog.destroy()
 
     async def retrieve_token(self, auth_url, username, password):
         #self.main_application.error_bar.hide()

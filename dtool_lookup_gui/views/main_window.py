@@ -404,7 +404,7 @@ class MainWindow(Gtk.ApplicationWindow):
     # signal handlers
     @Gtk.Template.Callback()
     def on_settings_clicked(self, widget):
-        SettingsDialog(self).show()
+        SettingsDialog(self, application=self.application).show()
 
     @Gtk.Template.Callback()
     def on_logging_clicked(self, widget):
