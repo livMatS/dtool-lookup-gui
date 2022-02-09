@@ -24,6 +24,8 @@
 #
 
 # the following import is necessary to patch flawed dtoolcore.utils function
+import os
+
 import dtool_lookup_gui.utils.patch
 
 import argparse
@@ -189,6 +191,11 @@ class Application(Gtk.Application):
         logfile_action.connect("change-state", self.do_set_logfile)
         self.add_action(logfile_action)
 
+        # reset-config action
+        reset_config_action = Gio.SimpleAction.new("reset-config")
+        reset_config_action.connect("activate", self.do_reset_config)
+        self.add_action(reset_config_action)
+
         # import-config action
         import_config_action = Gio.SimpleAction.new("import-config", string_variant.get_type())
         import_config_action.connect("activate", self.do_import_config)
@@ -198,7 +205,6 @@ class Application(Gtk.Application):
         export_config_action = Gio.SimpleAction.new("export-config", string_variant.get_type())
         export_config_action.connect("activate", self.do_export_config)
         self.add_action(export_config_action)
-
 
         Gtk.Application.do_startup(self)
 
@@ -237,6 +243,20 @@ class Application(Gtk.Application):
         action.set_state(value)
 
     # action handlers
+    def do_reset_config(self, action, value):
+        """Empties config. All settings lost."""
+        fpath = dtoolcore.utils.DEFAULT_CONFIG_PATH
+        logger.debug(f"Remove config file '{fpath}'.")
+        try:
+            os.remove(fpath)
+        except FileNotFoundError as exc:
+            logger.warning(str(exc))
+        else:
+            # reinitialize config object underlying dtool_lookup_api,
+            # this must disappear here and move into dtool_lookup_api
+            dtool_lookup_api.core.config.Config = dtool_lookup_api.core.config.DtoolLookupAPIConfig(interactive=False)
+            self.emit('dtool-config-changed')
+
     def do_import_config(self, action, value):
         """Import config from file. No sanity checking."""
         config_file = value.get_string()
@@ -246,10 +266,10 @@ class Application(Gtk.Application):
         _log_nested(logger.debug, config)
         for key, value in config.items():
             dtoolcore.utils.write_config_value_to_file(key, value)
-        # reinitialize config object underlying dtool_lookup_api
+        # reinitialize config object underlying dtool_lookup_api,
+        # this must disappear here and move into dtool_lookup_api
         dtool_lookup_api.core.config.Config = dtool_lookup_api.core.config.DtoolLookupAPIConfig(interactive=False)
         self.emit('dtool-config-changed')
-
 
     def do_export_config(self, action, value):
         """Import config from file."""
