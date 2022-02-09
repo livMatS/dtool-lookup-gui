@@ -24,12 +24,18 @@
 #
 
 # the following import is necessary to patch flawed dtoolcore.utils function
+import os
+
 import dtool_lookup_gui.utils.patch
 
 import argparse
 import asyncio
+import json
 import logging
 import sys
+
+import dtoolcore
+import dtool_lookup_api.core.config
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -41,6 +47,8 @@ gbulb.install(gtk=True)
 
 from .views.main_window import MainWindow
 
+from .utils.logging import _log_nested
+
 # The following imports are need to register widget types with the GObject type system
 import dtool_lookup_gui.widgets.base_uri_list_box
 import dtool_lookup_gui.widgets.dataset_list_box
@@ -50,12 +58,15 @@ import dtool_lookup_gui.widgets.progress_chart
 import dtool_lookup_gui.widgets.progress_popover_menu
 
 
-
 logger = logging.getLogger(__name__)
 
 
 # adapted from https://python-gtk-3-tutorial.readthedocs.io/en/latest/popover.html#menu-popover
 class Application(Gtk.Application):
+    __gsignals__ = {
+        'dtool-config-changed': (GObject.SIGNAL_RUN_FIRST, None, ())
+    }
+
     def __init__(self, *args, loop=None, **kwargs):
         super().__init__(*args,
                          application_id='de.uni-freiburg.dtool-lookup-gui',
@@ -154,6 +165,8 @@ class Application(Gtk.Application):
 
         root_logger = logging.getLogger()
 
+        string_variant = GLib.Variant.new_string("dummy")
+
         # toggle-logging
         toggle_logging_variant = GLib.Variant.new_boolean(True)
         toggle_logging_action = Gio.SimpleAction.new_stateful(
@@ -177,6 +190,21 @@ class Application(Gtk.Application):
         )
         logfile_action.connect("change-state", self.do_set_logfile)
         self.add_action(logfile_action)
+
+        # reset-config action
+        reset_config_action = Gio.SimpleAction.new("reset-config")
+        reset_config_action.connect("activate", self.do_reset_config)
+        self.add_action(reset_config_action)
+
+        # import-config action
+        import_config_action = Gio.SimpleAction.new("import-config", string_variant.get_type())
+        import_config_action.connect("activate", self.do_import_config)
+        self.add_action(import_config_action)
+
+        # export-config action
+        export_config_action = Gio.SimpleAction.new("export-config", string_variant.get_type())
+        export_config_action.connect("activate", self.do_export_config)
+        self.add_action(export_config_action)
 
         Gtk.Application.do_startup(self)
 
@@ -213,6 +241,50 @@ class Application(Gtk.Application):
         fh.setFormatter(root_logger.handlers[0].formatter)
         root_logger.addHandler(fh)
         action.set_state(value)
+
+    # action handlers
+    def do_reset_config(self, action, value):
+        """Empties config. All settings lost."""
+        fpath = dtoolcore.utils.DEFAULT_CONFIG_PATH
+        logger.debug(f"Remove config file '{fpath}'.")
+        try:
+            os.remove(fpath)
+        except FileNotFoundError as exc:
+            logger.warning(str(exc))
+        else:
+            # reinitialize config object underlying dtool_lookup_api,
+            # this must disappear here and move into dtool_lookup_api
+            dtool_lookup_api.core.config.Config = dtool_lookup_api.core.config.DtoolLookupAPIConfig(interactive=False)
+            self.emit('dtool-config-changed')
+
+    def do_import_config(self, action, value):
+        """Import config from file. No sanity checking."""
+        config_file = value.get_string()
+        logger.debug(f"Import config from '{config_file}':")
+        with open(config_file, 'r') as f:
+            config = json.load(f)
+        _log_nested(logger.debug, config)
+        for key, value in config.items():
+            dtoolcore.utils.write_config_value_to_file(key, value)
+        # reinitialize config object underlying dtool_lookup_api,
+        # this must disappear here and move into dtool_lookup_api
+        dtool_lookup_api.core.config.Config = dtool_lookup_api.core.config.DtoolLookupAPIConfig(interactive=False)
+        self.emit('dtool-config-changed')
+
+    def do_export_config(self, action, value):
+        """Import config from file."""
+        config_file = value.get_string()
+        logger.debug(f"Export config to '{config_file}':")
+        config = dtoolcore.utils._get_config_dict_from_file()
+        _log_nested(logger.debug, config)
+        with open(config_file, 'w') as f:
+            json.dump(config, f, indent=4)
+
+    # object method handlers for own signals
+    def do_dtool_config_changed(self):
+        """Doesn't do anything, just documents how GTK calls this method
+           first when emitting dtool-config-changed signal."""
+        logger.debug("method handler for 'dtool-config-changed' called.")
 
 
 def run_gui():

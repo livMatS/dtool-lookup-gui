@@ -23,6 +23,7 @@
 # SOFTWARE.
 #
 
+import json
 import logging
 import re
 from typing import Optional
@@ -35,6 +36,11 @@ SINGLE_MESSAGE_FORMATTER = logging.Formatter('%(levelname)s: %(message)s')
 DEFAULT_TEXT_BUFFER_MAX_LINES = 1000
 DEFAULT_ENTRY_MAX_LINES = 5
 DEFAULT_LABEL_MAX_LINES = 1
+
+
+def _log_nested(log_func, dct):
+    for l in json.dumps(dct, indent=2, default=str).splitlines():
+        log_func(l)
 
 # filters
 

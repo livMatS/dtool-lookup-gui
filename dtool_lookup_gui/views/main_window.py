@@ -179,6 +179,7 @@ class MainWindow(Gtk.ApplicationWindow):
         # connect a search popover with search entry
         self.search_popover = DtoolSearchPopover(search_entry=self.search_entry)
         self.log_window = LogWindow(application=self.application)
+        self.settings_dialog = SettingsDialog(application=self.application)
 
         # window-scoped actions
 
@@ -404,7 +405,7 @@ class MainWindow(Gtk.ApplicationWindow):
     # signal handlers
     @Gtk.Template.Callback()
     def on_settings_clicked(self, widget):
-        SettingsDialog(self).show()
+        self.settings_dialog.show()
 
     @Gtk.Template.Callback()
     def on_logging_clicked(self, widget):

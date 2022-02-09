@@ -24,12 +24,13 @@
 #
 
 import asyncio
+import datetime
 import logging
 import os
 
 import jwt
 
-from gi.repository import Gio, Gtk
+from gi.repository import Gio, GLib, Gtk
 
 from dtool_lookup_api.core.config import Config
 from dtool_lookup_api.core.LookupClient import authenticate
@@ -67,25 +68,57 @@ class SettingsDialog(Gtk.Window):
     verify_ssl_certificate_switch = Gtk.Template.Child()
     base_uris_list_box = Gtk.Template.Child()
 
-    def __init__(self, parent, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
         settings.settings.bind("dependency-keys", self.dependency_keys_entry, 'text', Gio.SettingsBindFlags.DEFAULT)
 
+        # register own refresh method as listener for app-central dtool-config-changed signal
+        self.get_application().connect("dtool-config-changed", self.on_dtool_config_changed)
+
+        self._refresh_settings_dialog()
+
+    def _refresh_settings_dialog(self):
+        logger.debug("Refresh settings dialog.")
+
         if Config.lookup_url is not None:
+            logger.debug(f"Current lookup server url: {Config.lookup_url}")
             self.lookup_url_entry.set_text(Config.lookup_url)
+        else:
+            logger.debug("No lookup server url configured.")
+            self.lookup_url_entry.set_text('')
+
         if Config.token is not None:
+            logger.debug(f"Current lookup server token: {Config.token}")
             self.token_entry.set_text(Config.token)
+        else:
+            logger.debug("No lookup server token configured.")
+            self.token_entry.set_text('')
+
         if Config.auth_url is not None:
+            logger.debug(f"Current lookup server auth url: {Config.auth_url}")
             self.authenticator_url_entry.set_text(Config.auth_url)
+        else:
+            logger.debug("No lookup server auth url configured.")
+            self.authenticator_url_entry.set_text('')
+
         if Config.verify_ssl is not None:
+            logger.debug(f"Current lookup server verify ssl: {Config.verify_ssl}")
+            # following line throws segmentation fault
             self.verify_ssl_certificate_switch.set_state(Config.verify_ssl)
+        else:
+            logger.debug("No lookup server verify ssl configured, set True.")
+            self.verify_ssl_certificate_switch.set_state(True)
+
+        logger.debug("Refresh list of endpoints.")
         asyncio.create_task(self._refresh_list_of_endpoints())
 
     async def _refresh_list_of_endpoints(self):
+        logger.debug("Refresh base uris list box.")
         await self.base_uris_list_box.refresh(on_configure=self.on_configure_base_uri_clicked, local=False,
                                               search_results=False)
 
+        logger.debug("Add button for new end points.")
         # Plus button for adding new endpoints
         row = Gtk.ListBoxRow()
         image = Gtk.Image.new_from_icon_name('list-add-symbolic', Gtk.IconSize.BUTTON)
@@ -97,8 +130,15 @@ class SettingsDialog(Gtk.Window):
         row.add(image)
         self.base_uris_list_box.add(row)
 
+        logger.debug("base uris list box show all.")
         self.base_uris_list_box.show_all()
+        logger.debug("Done refreshing settings dialog.")
 
+    def on_dtool_config_changed(self, widget):
+        """Signal handler for dtool-method-changed."""
+        self._refresh_settings_dialog()
+
+    # signal handlers
     @Gtk.Template.Callback()
     def on_delete(self, widget, event):
         # Write back configuration
@@ -107,11 +147,7 @@ class SettingsDialog(Gtk.Window):
         Config.auth_url = self.authenticator_url_entry.get_text()
         Config.verify_ssl = self.verify_ssl_certificate_switch.get_state()
 
-        # Reconnect since settings may have been changed
-        #asyncio.create_task(self.main_application.lookup_tab.connect())
-
-        # Destroy window
-        return False
+        return self.hide_on_delete()
 
     @Gtk.Template.Callback()
     def on_renew_token_clicked(self, widget):
@@ -125,6 +161,54 @@ class SettingsDialog(Gtk.Window):
             #asyncio.create_task(self.main_application.lookup_tab.connect())
 
         AuthenticationDialog(authenticate, Config.username, Config.password).show()
+
+    @Gtk.Template.Callback()
+    def on_reset_config_clicked(self, widget):
+        """Process clicked signal from reset-config button."""
+        self.get_action_group("app").activate_action('reset-config')
+
+    @Gtk.Template.Callback()
+    def on_import_config_clicked(self, widget):
+        """Process clicked signal from import-config button."""
+        dialog = Gtk.FileChooserDialog(title=f"Import dtool config from file", parent=self,
+                                       action=Gtk.FileChooserAction.OPEN)
+        dialog.add_buttons(Gtk.STOCK_CANCEL,
+                           Gtk.ResponseType.CANCEL,
+                           Gtk.STOCK_OPEN,
+                           Gtk.ResponseType.OK)
+        dialog.set_select_multiple(False)
+        response = dialog.run()
+
+        if response == Gtk.ResponseType.OK:
+            dest_filename = dialog.get_filename()
+            self.get_action_group("app").activate_action('import-config', GLib.Variant.new_string(dest_filename))
+
+        elif response == Gtk.ResponseType.CANCEL:
+            pass
+        dialog.destroy()
+
+    @Gtk.Template.Callback()
+    def on_export_config_clicked(self, widget):
+        """Process clicked signal from import-config button."""
+        dialog = Gtk.FileChooserDialog(title=f"Export dtool config to file", parent=self,
+                                       action=Gtk.FileChooserAction.SAVE)
+        dialog.add_buttons(Gtk.STOCK_CANCEL,
+                           Gtk.ResponseType.CANCEL,
+                           Gtk.STOCK_OK,
+                           Gtk.ResponseType.OK)
+        suggested_file_name = f"{datetime.datetime.now().isoformat()}-{self.get_application().get_application_id()}-dtool.json"
+        dialog.set_current_name(suggested_file_name)
+        dialog.set_do_overwrite_confirmation(True)
+
+        response = dialog.run()
+
+        if response == Gtk.ResponseType.OK:
+            dest_filename = dialog.get_filename()
+            self.get_action_group("app").activate_action('export-config', GLib.Variant.new_string(dest_filename))
+
+        elif response == Gtk.ResponseType.CANCEL:
+            pass
+        dialog.destroy()
 
     async def retrieve_token(self, auth_url, username, password):
         #self.main_application.error_bar.hide()
