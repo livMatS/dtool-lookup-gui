@@ -77,7 +77,13 @@ def _proto_dataset_info(dataset):
 
     info["date"] = 'not yet frozen'
 
-    info['readme_content'] = dataset.get_readme_content()
+    try:
+        info['readme_content'] = dataset.get_readme_content()
+    except FileNotFoundError as exc:
+        logger.warning(str(exc))
+        info['readme_content'] = ''
+
+
 
     return info
 

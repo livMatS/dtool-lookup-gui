@@ -137,8 +137,9 @@ class LocalBaseURIModel(BaseURI):
         # Initialize with template README.yml
         try:
             readme_template = _get_readme_template(readme_template_path)
-        except FileNotFoundError:
+        except FileNotFoundError as exc:
             # FIXME: Show an error that template could not be found
+            logger.warning(str(exc))
             readme_template = ''
         yaml = YAML()
         yaml.explicit_start = True
