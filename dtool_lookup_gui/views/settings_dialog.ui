@@ -42,11 +42,34 @@
               </packing>
             </child>
             <child>
+              <object class="GtkButton" id="reset-config">
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+                <property name="tooltip-text" translatable="yes">Reset config. All settings lost.</property>
+                <property name="margin-end">5</property>
+                <property name="hexpand">False</property>
+                <signal name="clicked" handler="on_reset_config_clicked" swapped="no"/>
+                <child>
+                  <object class="GtkImage">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="icon-name">edit-delete</property>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
+            <child>
               <object class="GtkButton" id="import-config">
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="receives-default">True</property>
-                <property name="tooltip-text" translatable="yes">Import configuration from file.</property>
+                <property name="tooltip-text" translatable="yes">Import configuration from file. Will merge with current settings.</property>
                 <property name="margin-end">5</property>
                 <signal name="clicked" handler="on_import_config_clicked" swapped="no"/>
                 <child>
@@ -60,7 +83,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">1</property>
+                <property name="position">2</property>
               </packing>
             </child>
             <child>
@@ -83,7 +106,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">2</property>
+                <property name="position">3</property>
               </packing>
             </child>
           </object>
