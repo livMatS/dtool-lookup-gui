@@ -148,6 +148,16 @@ but usually belong to ``root``. The executable resides below ``dist``. Use
 
 to remove the generated ``build``, ``dist``, and ``workflow`` folders and all other artifacts.
 
+GTK debugging
+^^^^^^^^^^^^^
+
+After
+
+.. code-block:: bash
+
+  gsettings set org.gtk.Settings.Debug enable-inspector-keybinding true
+
+use CTRL-SHIFT-D during execution to display the GTK inspector for interactive debugging.
 
 GUI design
 ^^^^^^^^^^
