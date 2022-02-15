@@ -99,13 +99,13 @@ jobs:
 
       - name: Pack release assets
         run: |
-          zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux.zip /tmp/linux-build/*
-          zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows.zip /tmp/windows-build/*
+          cd /tmp/linux-build && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux.zip ./*
+          cd /tmp/windows-build && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows.zip ./*
 
       - name: Make release
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux.zip
-            dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows.zip
+            /tmp/linux-build/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux.zip
+            /tmp/windows-build/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows.zip

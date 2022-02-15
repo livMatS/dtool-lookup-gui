@@ -28,7 +28,7 @@ import datetime
 import logging
 import os
 
-import jwt
+import dtoolcore
 
 from gi.repository import Gio, GLib, Gtk
 
@@ -45,6 +45,10 @@ _DTOOL_CONFIG_PREFIXES = {
     'DTOOL_S3_ENDPOINT_': 's3',
     'DTOOL_SMB_SERVER_NAME_': 'smb',
 }
+
+_DTOOL_README_TEMPLATE_FPATH_KEY = "DTOOL_README_TEMPLATE_FPATH"
+_DTOOL_USER_FULL_NAME_KEY = "DTOOL_USER_FULL_NAME"
+_DTOOL_USER_EMAIL_KEY = "DTOOL_USER_EMAIL"
 
 
 logger = logging.getLogger(__name__)
@@ -68,6 +72,10 @@ class SettingsDialog(Gtk.Window):
     verify_ssl_certificate_switch = Gtk.Template.Child()
     base_uris_list_box = Gtk.Template.Child()
 
+    dtool_user_full_name_entry = Gtk.Template.Child()
+    dtool_user_email_entry = Gtk.Template.Child()
+    dtool_readme_template_fpath_file_chooser_button = Gtk.Template.Child()
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -81,6 +89,7 @@ class SettingsDialog(Gtk.Window):
     def _refresh_settings_dialog(self):
         logger.debug("Refresh settings dialog.")
 
+        # access lookup config via lookup api
         if Config.lookup_url is not None:
             logger.debug(f"Current lookup server url: {Config.lookup_url}")
             self.lookup_url_entry.set_text(Config.lookup_url)
@@ -109,6 +118,18 @@ class SettingsDialog(Gtk.Window):
         else:
             logger.debug("No lookup server verify ssl configured, set True.")
             self.verify_ssl_certificate_switch.set_state(True)
+
+        # access basic config via default dtool config
+        self.dtool_user_full_name_entry.set_text(
+            dtoolcore.utils.get_config_value(_DTOOL_USER_FULL_NAME_KEY, default=""))
+
+        self.dtool_user_email_entry.set_text(
+            dtoolcore.utils.get_config_value(_DTOOL_USER_EMAIL_KEY, default=""))
+
+        dtool_readme_template_fpath = dtoolcore.utils.get_config_value(_DTOOL_README_TEMPLATE_FPATH_KEY)
+        if dtool_readme_template_fpath is not None:
+            logger.debug(f"Current readme template: {dtool_readme_template_fpath}")
+            self.dtool_readme_template_fpath_file_chooser_button.set_filename(dtool_readme_template_fpath)
 
         logger.debug("Refresh list of endpoints.")
         asyncio.create_task(self._refresh_list_of_endpoints())
@@ -141,11 +162,28 @@ class SettingsDialog(Gtk.Window):
     # signal handlers
     @Gtk.Template.Callback()
     def on_delete(self, widget, event):
-        # Write back configuration
+        # Write back lookup configuration via lookup api
         Config.lookup_url = self.lookup_url_entry.get_text()
         Config.token = self.token_entry.get_text()
         Config.auth_url = self.authenticator_url_entry.get_text()
         Config.verify_ssl = self.verify_ssl_certificate_switch.get_state()
+
+        # write back basic config via default dtool api
+        dtool_user_full_name = self.dtool_user_full_name_entry.get_text()
+        if dtool_user_full_name != dtoolcore.utils.get_config_value(_DTOOL_USER_FULL_NAME_KEY, default=""):
+            logger.debug(f"{_DTOOL_USER_FULL_NAME_KEY} changed to {dtool_user_full_name}, write to config.")
+            dtoolcore.utils.write_config_value_to_file(_DTOOL_USER_FULL_NAME_KEY, dtool_user_full_name)
+
+        dtool_user_email = self.dtool_user_email_entry.get_text()
+        if dtool_user_email != dtoolcore.utils.get_config_value(_DTOOL_USER_EMAIL_KEY, default=""):
+            logger.debug(f"{_DTOOL_USER_EMAIL_KEY} changed to {dtool_user_email}, write to config.")
+            dtoolcore.utils.write_config_value_to_file(_DTOOL_USER_EMAIL_KEY, dtool_user_email)
+
+        dtool_readme_template_fpath = self.dtool_readme_template_fpath_file_chooser_button.get_filename()
+        if (dtool_readme_template_fpath is not None
+                and dtool_readme_template_fpath != dtoolcore.utils.get_config_value(_DTOOL_README_TEMPLATE_FPATH_KEY)):
+            logger.debug(f"{_DTOOL_README_TEMPLATE_FPATH_KEY} changed to {dtool_readme_template_fpath}, write to config.")
+            dtoolcore.utils.write_config_value_to_file(_DTOOL_README_TEMPLATE_FPATH_KEY, dtool_readme_template_fpath)
 
         return self.hide_on_delete()
 
