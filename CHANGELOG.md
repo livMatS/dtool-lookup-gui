@@ -1,6 +1,23 @@
 Change log for dtool-lookup-gui
 ===============================
 
+Unreleased
+----------
+
+- README.yml template file chooser in settings dialog
+
+0.4.2 (04Feb22)
+---------------
+
+- Config reset/import/export buttons in settings dialog
+
+0.4.1 (04Feb22)
+---------------
+
+- Usable and stable on Windows 10 and Ubuntu 20.04
+- Published as PyInstaller-bundled one-file exectuable on GitHub releases
+- Download of single items by double-click on manifest entry
+
 0.4.0 (16Dec21)
 ---------------
 
