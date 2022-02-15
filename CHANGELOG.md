@@ -5,6 +5,7 @@ Unreleased
 ----------
 
 - README.yml template file chooser in settings dialog
+- User name and eMail configurable in settings dialog
 
 0.4.2 (04Feb22)
 ---------------
