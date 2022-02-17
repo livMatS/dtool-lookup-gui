@@ -1,13 +1,13 @@
 Change log for dtool-lookup-gui
 ===============================
 
-Unreleased
-----------
+0.4.3 (17Feb22)
+--------------
 
 - README.yml template file chooser in settings dialog
 - User name and eMail configurable in settings dialog
 
-0.4.2 (04Feb22)
+0.4.2 (09Feb22)
 ---------------
 
 - Config reset/import/export buttons in settings dialog
