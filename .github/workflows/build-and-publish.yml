@@ -57,7 +57,6 @@ jobs:
 
       - name: Get master HEAD SHA
         id: get_master_sha
-        name: Declare some variables
         run: |
           echo "Commit that triggered this workflow: ${{ github.sha }}"
           echo "HEAD at master: $(git rev-parse master)"
@@ -115,7 +114,6 @@ jobs:
 
       - name: Get master HEAD SHA
         id: get_master_sha
-        name: Declare some variables
         run: |
           echo "Commit that triggered this workflow: ${{ github.sha }}"
           echo "HEAD at master: $(git rev-parse master)"
