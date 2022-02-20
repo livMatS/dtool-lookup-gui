@@ -15,7 +15,7 @@ jobs:
     uses: livMatS/dtool-lookup-gui/.github/workflows/build-on-windows.yml@master
 
   build-on-macos:
-    uses: livMatS/dtool-lookup-gui/.github/workflows/build-on-windows.yml@2022-02-20-macos-workflow
+    uses: livMatS/dtool-lookup-gui/.github/workflows/build-on-macos.yml@2022-02-20-macos-workflow
 
   publish-on-pypi:
     runs-on: ubuntu-20.04
@@ -83,6 +83,7 @@ jobs:
     needs:
       - build-on-ubuntu
       - build-on-windows
+      - build-on-macos
 
     steps:
       - name: Checkout
