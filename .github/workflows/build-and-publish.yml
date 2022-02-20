@@ -58,6 +58,7 @@ jobs:
       - name: Get master HEAD SHA
         id: get_master_sha
         run: |
+          git fetch --depth 1 origin master
           echo "Commit that triggered this workflow: ${{ github.sha }}"
           echo "HEAD at master: $(git rev-parse origin/master)"
           echo "::set-output name=sha::$(git rev-parse origin/master)
@@ -120,6 +121,7 @@ jobs:
       - name: Get master HEAD SHA
         id: get_master_sha
         run: |
+          git fetch --depth 1 origin master
           echo "Commit that triggered this workflow: ${{ github.sha }}"
           echo "HEAD at master: $(git rev-parse master)"
           echo "::set-output name=sha::$(git rev-parse master)
