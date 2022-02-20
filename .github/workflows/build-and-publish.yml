@@ -109,3 +109,4 @@ jobs:
           files: |
             /tmp/linux-build/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux.zip
             /tmp/windows-build/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows.zip
+          draft: true
