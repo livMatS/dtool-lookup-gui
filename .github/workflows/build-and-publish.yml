@@ -14,6 +14,9 @@ jobs:
   build-on-windows:
     uses: livMatS/dtool-lookup-gui/.github/workflows/build-on-windows.yml@master
 
+  build-on-macos:
+    uses: livMatS/dtool-lookup-gui/.github/workflows/build-on-windows.yml@2022-02-20-macos-workflow
+
   publish-on-pypi:
     runs-on: ubuntu-20.04
 

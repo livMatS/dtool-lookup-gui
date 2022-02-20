@@ -1,0 +1,44 @@
+name: build-on-macos
+
+on:
+  workflow_call:
+
+jobs:
+
+  build:
+
+    runs-on: macos-10.15
+      
+    steps:
+
+    - name: checkout
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 1
+
+    - name: Install system dependencies
+      run: |
+        brew install python pygobject3 gtk+3 gtksourceview4
+        
+    - name: Install pythonic dependencies
+      run: |
+        pip install --upgrade pip
+        pip install wheel
+        pip install -r requirements.txt
+        pip install pyinstaller
+
+    - name: Compile gschemas
+      run: |
+        glib-compile-schemas .
+      working-directory: dtool_lookup_gui
+
+    - name: Package executable with pyinstaller
+      run: |
+        pyinstaller -y ./pyinstaller/dtool-lookup-gui-macos-one-file.spec
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: dtool-lookup-gui-macos
+        path: dist/dtool-lookup-gui
+        if-no-files-found: error
