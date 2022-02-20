@@ -9,10 +9,10 @@ on:
 
 jobs:
   build-on-ubuntu:
-    uses: IMTEK-Simulation/dtool-lookup-gui/.github/workflows/build-on-ubuntu.yml@master
+    uses: livMatS/dtool-lookup-gui/.github/workflows/build-on-ubuntu.yml@master
 
   build-on-windows:
-    uses: IMTEK-Simulation/dtool-lookup-gui/.github/workflows/build-on-windows.yml@master
+    uses: livMatS/dtool-lookup-gui/.github/workflows/build-on-windows.yml@master
 
   publish-on-pypi:
     runs-on: ubuntu-20.04

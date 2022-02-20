@@ -32,7 +32,7 @@ On recent macs (>= 10.15) using homebrew,
 
 
 on older macs, you have to use a legacy version, 
-e.g. https://github.com/IMTEK-Simulation/dtool-lookup-gui/tree/legacy/default_query,
+e.g. https://github.com/livMatS/dtool-lookup-gui/tree/legacy/default_query,
 and you refer to the installation instructions therein.
 
 
@@ -49,7 +49,7 @@ If you want the latest development release, then use:
 
 .. code:: bash
 
-    pip install git+https://github.com/IMTEK-Simulation/dtool-lookup-gui.git
+    pip install git+https://github.com/livMatS/dtool-lookup-gui.git
 
 When already clone into a local directly via ``git``, either use pip_ or install via the standard route
 
@@ -171,7 +171,7 @@ within Glade's preferences dialog.
 
 .. _dtool-lookup-server: https://github.com/jic-dtool/dtool-lookup-server
 
-.. _dtool-lookup-server-dependency-graph-plugin: https://github.com/IMTEK-Simulation/dtool-lookup-server-dependency-graph-plugin
+.. _dtool-lookup-server-dependency-graph-plugin: https://github.com/livMatS/dtool-lookup-server-dependency-graph-plugin
 
 .. _Glade: https://glade.gnome.org/
 
