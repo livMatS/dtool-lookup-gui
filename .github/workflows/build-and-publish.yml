@@ -61,7 +61,7 @@ jobs:
           git fetch --depth 1 origin master
           echo "Commit that triggered this workflow: ${{ github.sha }}"
           echo "HEAD at master: $(git rev-parse origin/master)"
-          echo "::set-output name=sha::$(git rev-parse origin/master)
+          echo "::set-output name=sha::$(git rev-parse origin/master)"
 
       - name: Publish package
         if: >-
@@ -124,7 +124,7 @@ jobs:
           git fetch --depth 1 origin master
           echo "Commit that triggered this workflow: ${{ github.sha }}"
           echo "HEAD at master: $(git rev-parse master)"
-          echo "::set-output name=sha::$(git rev-parse master)
+          echo "::set-output name=sha::$(git rev-parse master)"
 
       - name: Make release
         if: >-
