@@ -21,7 +21,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Set up Python 3.8
         uses: actions/setup-python@v2.3.1
@@ -59,8 +59,8 @@ jobs:
         id: get_master_sha
         run: |
           echo "Commit that triggered this workflow: ${{ github.sha }}"
-          echo "HEAD at master: $(git rev-parse master)"
-          echo "::set-output name=sha::$(git rev-parse master)
+          echo "HEAD at master: $(git rev-parse origin/master)"
+          echo "::set-output name=sha::$(git rev-parse origin/master)
 
       - name: Publish package
         if: >-
@@ -81,6 +81,11 @@ jobs:
       - build-on-windows
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+
       - name: Get version
         id: get_version
         uses: battila7/get-version-action@v2
