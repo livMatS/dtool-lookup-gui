@@ -1,6 +1,9 @@
 dtool-lookup-gui
 ================
 
+.. image:: https://img.shields.io/github/v/release/livMatS/dtool-lookup-gui
+    :target: https://github.com/livMatS/dtool-lookup-gui/releases
+    :alt: GitHub release (latest by date)
 .. image:: https://badge.fury.io/py/dtool-lookup-gui.svg
     :target: https://badge.fury.io/py/dtool-lookup-gui
     :alt: PyPI package
@@ -13,9 +16,10 @@ dtool-lookup-server-dependency-graph-plugin_ written in Python_ and GTK_.
 Quick start
 -----------
 
-Just download and run the pre-packaged binaries of the `latest release <https://github.com/livMatS/dtool-lookup-gui/releases/latest>_`.
+We provide binary packages for Windows, macOS and Linux: https://github.com/livMatS/dtool-lookup-gui/releases
 
-Next, follow the `quick start guide <https://github.com/livMatS/RDM-Wiki-public/blob/master/rdm/dtool/src/020_gui/005_quick_start.md>_` to get started.
+Just download the pre-packaged binaries of the `latest release <https://github.com/livMatS/dtool-lookup-gui/releases/latest>_` 
+and follow the `quick start guide <https://github.com/livMatS/RDM-Wiki-public/blob/master/rdm/dtool/src/020_gui/005_quick_start.md>_` to get started.
 
 If the binaries won't run out-of-the-box on your system, continue below.
 
@@ -198,6 +202,10 @@ The GUI uses custom Gtk widgets. To edit the the XML UI definition files with
 Glade_, add the directory ``glade/catalog`` to `Extra Catalog & Template paths`
 within Glade's preferences dialog.
 
+Funding
+-------
+
+This development has received funding from the Deutsche Forschungsgemeinschaft within the Cluster of Excellence livMatS_.
 
 .. _dtool: https://github.com/jic-dtool/dtool
 
@@ -216,3 +224,5 @@ within Glade's preferences dialog.
 .. _Python: https://www.python.org/
 
 .. _setuptools: https://setuptools.readthedocs.io/en/latest/
+
+.. _livMatS: https://www.livmats.uni-freiburg.de/en
