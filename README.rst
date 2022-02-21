@@ -10,6 +10,15 @@ dtool-lookup-server-dependency-graph-plugin_ written in Python_ and GTK_.
 
 .. image:: data/screenshots/screenshot1.png
 
+Quick start
+-----------
+
+Just download and run the pre-packaged binaries of the `latest release <https://github.com/livMatS/dtool-lookup-gui/releases/latest>_`.
+
+Next, follow the `quick start guide <https://github.com/livMatS/RDM-Wiki-public/blob/master/rdm/dtool/src/020_gui/005_quick_start.md>_` to get started.
+
+If the binaries won't run out-of-the-box on your system, continue below.
+
 
 Requirements
 ------------
@@ -24,17 +33,40 @@ On Ubuntu (20.04),
 
 suffices to to install these dependencies from the standard system package repositories.
 
-On recent macs (>= 10.15) using homebrew, 
+On recent macOS (>= 10.15) use homebrew, 
 
 .. code:: bash
 
    brew install gtksourceview4 gnome-icon-theme
 
+On earlie macOs, `MacPorts <https://www.macports.org/>_` allows the installation of `gtksourceview4`
 
-on older macs, you have to use a legacy version, 
-e.g. https://github.com/livMatS/dtool-lookup-gui/tree/legacy/default_query,
-and you refer to the installation instructions therein.
+.. code:: bash
+   
+   sudo port install xorg-xserver
+   sudo port install gtksourceview4 py-gopject3 py-pip py-numpy py-scipy
+   sudo port install adwaita-icon-theme
 
+   sudo port select --set python python310
+   sudo port select --set pip ip310
+
+   mkdir -p ~/venv
+   python -m venv --system-site-packages ~/venv/python-3.10
+   source ~/venv/python-3.10/bin/activate
+   
+   pip install --upgrade pip
+   pip install wheel
+   pip install dtool-lookup-gui dtool-s3 dtool-smb
+
+
+This has been tested on macOS 10.13.6.
+
+On Windows, use `mingw64/msys2 <https://www.msys2.org>_` and refer to the
+`Using GTK from MSYS2 packages <https://www.gtk.org/docs/installations/windows#using-gtk-from-msys2-packages>_` 
+on the GTK project's pages.
+
+Also refer to the build workflows `.github/workflows/build-on-[linux|macos|windows].yml` within this repository 
+for understanding the requirements for the different systems.
 
 Installation
 ------------
