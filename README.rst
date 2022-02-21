@@ -13,6 +13,11 @@ dtool-lookup-server-dependency-graph-plugin_ written in Python_ and GTK_.
 
 .. image:: data/screenshots/screenshot1.png
 
+Download
+--------
+
+We provide binary packages for Windows, macOS and Linux: https://github.com/livMatS/dtool-lookup-gui/releases
+
 
 Requirements
 ------------
