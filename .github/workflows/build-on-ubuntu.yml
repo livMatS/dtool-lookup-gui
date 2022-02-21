@@ -31,6 +31,20 @@ jobs:
           python3-dev \
           gir1.2-gtk-3.0 \
           libgtksourceview-4-0
+
+    - name: Log system package info
+      run: |
+        echo "### lab_release -a ###"
+        lsb_release -a | tee lsb_release_a.txt
+        echo "### uname -a ###"
+        uname -a | tee uname_a.txt
+        echo "### apt list --installed ###"
+        apt list --installed | tee apt_list_installed.txt
+
+        echo "lsb_release_a.txt" >> files_to_include_in_release.txt
+        echo "uname_a.txt" >> files_to_include_in_release.txt
+        echo "apt_list_installed.txt" >> files_to_include_in_release.txt
+
         
     - name: Install pythonic dependencies
       run: |
@@ -38,6 +52,13 @@ jobs:
         pip install wheel
         pip install -r requirements.txt
         pip install pyinstaller
+
+    - name: Log python package info
+      run: |
+        echo "### pip freeze ###"
+        pip freeze | tee pip_freeze.txt
+
+        echo "pip_freeze.txt" >> files_to_include_in_release.txt
 
     - name: Compile gschemas
       run: |
@@ -54,3 +75,18 @@ jobs:
         name: dtool-lookup-gui-linux
         path: dist/dtool-lookup-gui
         if-no-files-found: error
+
+    - name: Upload build system description artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: linux-build-system-description
+        path: |
+          files_to_include_in_release.txt
+          uname_a.txt
+          brew_list_versions.txt
+          pip_freeze.txt
+          pip_freeze_local.txt
+          pyinstaller.log
+          build/dtool-lookup-gui-macos-one-file/*.toc
+          build/dtool-lookup-gui-macos-one-file/*.txt
+          build/dtool-lookup-gui-macos-one-file/html.toc

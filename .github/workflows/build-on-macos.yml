@@ -19,7 +19,20 @@ jobs:
     - name: Install system dependencies
       run: |
         brew install python pygobject3 gtk+3 gtksourceview4
-        
+
+    - name: Log system package info
+      run: |
+        echo "### sw_vers ###"
+        sw_vers | tee sw_vers.txt
+        echo "### uname -a ###"
+        uname -a | tee uname_a.txt
+        echo "### brew list --versions ###"
+        brew list --versions | tee brew_list_versions.txt
+
+        echo "sw_vers.txt" >> files_to_include_in_release.txt
+        echo "uname_a.txt" >> files_to_include_in_release.txt
+        echo "brew_list_versions.txt" >> files_to_include_in_release.txt
+
     - name: Install pythonic dependencies
       run: |
         python3 -m venv --system-site-packages venv
@@ -29,6 +42,19 @@ jobs:
         pip install wheel
         pip install -r requirements.txt
         pip install pyinstaller
+
+    - name: Log python package info
+      run: |
+        source venv/bin/activate
+
+        echo "### pip freeze --local ###"
+        pip freeze --local | tee pip_freeze_local.txt
+
+        echo "### pip freeze ###"
+        pip freeze | tee pip_freeze.txt
+
+        echo "pip_freeze_local.txt" >> files_to_include_in_release.txt
+        echo "pip_freeze.txt" >> files_to_include_in_release.txt
 
     - name: Compile gschemas
       run: |
@@ -46,3 +72,19 @@ jobs:
         name: dtool-lookup-gui-macos
         path: dist/dtool-lookup-gui
         if-no-files-found: error
+
+    - name: Upload build system description artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: macos-build-system-description
+        path: |
+          files_to_include_in_release.txt
+          sw_vers.txt
+          uname_a.txt
+          brew_list_versions.txt
+          pip_freeze.txt
+          pip_freeze_local.txt
+          pyinstaller.log
+          build/dtool-lookup-gui-macos-one-file/*.toc
+          build/dtool-lookup-gui-macos-one-file/*.txt
+          build/dtool-lookup-gui-macos-one-file/html.toc
