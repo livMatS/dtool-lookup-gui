@@ -106,6 +106,12 @@ jobs:
           name: dtool-lookup-gui-linux
           path: /tmp/linux-build
 
+      - name: Download Linux build system description
+        uses: actions/download-artifact@v2
+        with:
+          name: linux-build-system-description
+          path: /tmp/linux-build-system-description
+
       - name: Download Windows build
         uses: actions/download-artifact@v2
         with:
