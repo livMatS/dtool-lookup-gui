@@ -1,6 +1,9 @@
 dtool-lookup-gui
 ================
 
+.. image:: https://img.shields.io/github/v/release/livMatS/dtool-lookup-gui
+    :target: https://github.com/livMatS/dtool-lookup-gui/releases
+    :alt: GitHub release (latest by date)
 .. image:: https://badge.fury.io/py/dtool-lookup-gui.svg
     :target: https://badge.fury.io/py/dtool-lookup-gui
     :alt: PyPI package
