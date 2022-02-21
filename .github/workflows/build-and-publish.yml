@@ -9,10 +9,10 @@ on:
 
 jobs:
   build-on-ubuntu:
-    uses: IMTEK-Simulation/dtool-lookup-gui/.github/workflows/build-on-ubuntu.yml@master
+    uses: livMatS/dtool-lookup-gui/.github/workflows/build-on-ubuntu.yml@master
 
   build-on-windows:
-    uses: IMTEK-Simulation/dtool-lookup-gui/.github/workflows/build-on-windows.yml@master
+    uses: livMatS/dtool-lookup-gui/.github/workflows/build-on-windows.yml@master
 
   publish-on-pypi:
     runs-on: ubuntu-20.04
@@ -21,7 +21,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
       - name: Set up Python 3.8
         uses: actions/setup-python@v2.3.1
@@ -55,8 +55,19 @@ jobs:
           python setup.py sdist bdist_wheel
           ls -1 dist/
 
+      - name: Get master HEAD SHA
+        id: get_master_sha
+        run: |
+          git fetch --depth 1 origin master
+          echo "Commit that triggered this workflow: ${{ github.sha }}"
+          echo "HEAD at master: $(git rev-parse origin/master)"
+          echo "::set-output name=sha::$(git rev-parse origin/master)"
+
       - name: Publish package
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+        if: >-
+          github.event_name == 'push' &&
+          startsWith(github.ref, 'refs/tags') &&
+          steps.get_master_sha.outputs.sha == github.sha
         uses: pypa/gh-action-pypi-publish@v1.5.0
         with:
           user: __token__
@@ -71,6 +82,11 @@ jobs:
       - build-on-windows
 
     steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+
       - name: Get version
         id: get_version
         uses: battila7/get-version-action@v2
@@ -102,10 +118,22 @@ jobs:
           cd /tmp/linux-build && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux.zip ./*
           cd /tmp/windows-build && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows.zip ./*
 
+      - name: Get master HEAD SHA
+        id: get_master_sha
+        run: |
+          git fetch --depth 1 origin master
+          echo "Commit that triggered this workflow: ${{ github.sha }}"
+          echo "HEAD at master: $(git rev-parse master)"
+          echo "::set-output name=sha::$(git rev-parse master)"
+
       - name: Make release
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+        if: >-
+          github.event_name == 'push' &&
+          startsWith(github.ref, 'refs/tags') &&
+          steps.get_master_sha.outputs.sha == github.sha
         uses: softprops/action-gh-release@v1
         with:
           files: |
             /tmp/linux-build/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux.zip
             /tmp/windows-build/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows.zip
+          draft: true

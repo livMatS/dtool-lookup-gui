@@ -37,7 +37,7 @@ class CustomInstallCommand(install):
               shell=True).wait()
 
 
-url = 'https://github.com/IMTEK-Simulation/dtool-lookup-gui'
+url = 'https://github.com/livMatS/dtool-lookup-gui'
 readme = open('README.rst', encoding="utf8").read()
 
 setup(
