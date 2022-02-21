@@ -167,7 +167,7 @@ Glade_, add the directory ``glade/catalog`` to `Extra Catalog & Template paths`
 within Glade's preferences dialog.
 
 Funding
-^^^^^^^
+-------
 
 This development has received funding from the Deutsche Forschungsgemeinschaft within the Cluster of Excellence livMatS_.
 
