@@ -15,7 +15,7 @@ jobs:
     - name: checkout
       uses: actions/checkout@v2
       with:
-        fetch-depth: 0
+        fetch-depth: 1
 
     # strategy: aim at installing as many dependencies as possible from official mingw64 repo
     # starting point: https://www.gtk.org/docs/installations/windows#using-gtk-from-msys2-packages
