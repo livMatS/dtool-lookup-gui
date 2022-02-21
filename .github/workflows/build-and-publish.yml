@@ -9,10 +9,13 @@ on:
 
 jobs:
   build-on-ubuntu:
-    uses: livMatS/dtool-lookup-gui/.github/workflows/build-on-ubuntu.yml@master
+    uses: livMatS/dtool-lookup-gui/.github/workflows/build-on-ubuntu.yml@2022-02-20-macos-workflow
 
   build-on-windows:
-    uses: livMatS/dtool-lookup-gui/.github/workflows/build-on-windows.yml@master
+    uses: livMatS/dtool-lookup-gui/.github/workflows/build-on-windows.yml@2022-02-20-macos-workflow
+
+  build-on-macos:
+    uses: livMatS/dtool-lookup-gui/.github/workflows/build-on-macos.yml@2022-02-20-macos-workflow
 
   publish-on-pypi:
     runs-on: ubuntu-20.04
@@ -80,6 +83,7 @@ jobs:
     needs:
       - build-on-ubuntu
       - build-on-windows
+      - build-on-macos
 
     steps:
       - name: Checkout
@@ -102,20 +106,54 @@ jobs:
           name: dtool-lookup-gui-linux
           path: /tmp/linux-build
 
+      - name: Download Linux build system description
+        uses: actions/download-artifact@v2
+        with:
+          name: linux-build-system-description
+          path: /tmp/linux-build-system-description
+
       - name: Download Windows build
         uses: actions/download-artifact@v2
         with:
           name: dtool-lookup-gui-windows
           path: /tmp/windows-build
 
+      - name: Download Windows build system description
+        uses: actions/download-artifact@v2
+        with:
+          name: windows-build-system-description
+          path: /tmp/windows-build-system-description
+
+      - name: Download MacOS build
+        uses: actions/download-artifact@v2
+        with:
+          name: dtool-lookup-gui-macos
+          path: /tmp/macos-build
+
+      - name: Download MacOS build system description
+        uses: actions/download-artifact@v2
+        with:
+          name: macos-build-system-description
+          path: /tmp/macos-build-system-description
+
+      - name: Package additional files with the bindaries
+        run: |
+          prefix=$(pwd)
+          bash ${prefix}/maintenance/copy_files_into_folders.sh maintenance/files_to_include_in_release.txt /tmp/linux-build /tmp/macos-build /tmp/windows-build
+          cd /tmp/linux-build-system-description && bash ${prefix}/maintenance/copy_files_into_folders.sh files_to_include_in_release.txt /tmp/linux-build
+          cd /tmp/macos-build-system-description && bash ${prefix}/maintenance/copy_files_into_folders.sh files_to_include_in_release.txt /tmp/macos-build
+          cd /tmp/windows-build-system-description && bash ${prefix}/maintenance/copy_files_into_folders.sh files_to_include_in_release.txt /tmp/windows-build
+
       - name: List content of builds
         run: |
           ls -lhv /tmp/linux-build/
           ls -lhv /tmp/windows-build/
+          ls -lhv /tmp/macos-build/
 
       - name: Pack release assets
         run: |
           cd /tmp/linux-build && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux.zip ./*
+          cd /tmp/macos-build && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-macos.zip ./*
           cd /tmp/windows-build && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows.zip ./*
 
       - name: Get master HEAD SHA
@@ -135,5 +173,6 @@ jobs:
         with:
           files: |
             /tmp/linux-build/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux.zip
+            /tmp/linux-build/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-macos.zip
             /tmp/windows-build/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows.zip
           draft: true

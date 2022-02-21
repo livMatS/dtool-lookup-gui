@@ -76,6 +76,7 @@ jobs:
         echo "### libcrypto and libssl ###"
         pacman -Ql mingw-w64-x86_64-openssl | grep 'lib[^/]*dll$' | awk '{print $2}' |  cygpath -wa --file - | tee openssl_dlls.txt
 
+        echo "pacman_Q.txt" >> files_to_include_in_release.txt
 
     # strategy: only install remaining pythonic dependencies via pip
     - name: Install remaining pythonic dependencies
@@ -107,6 +108,9 @@ jobs:
         echo "### pip freeze diff to reference configuration ###"
         (git diff --ignore-space-change --ignore-cr-at-eol --no-index pyinstaller/mingw64_venv_pip_freeze.txt pip_freeze.txt || true) | tee diff_pip_freeze.txt
 
+        echo "pip_freeze_local.txt" >> files_to_include_in_release.txt
+        echo "pip_freeze.txt" >> files_to_include_in_release.txt
+
     - name: Compile gschemas
       run: |
         glib-compile-schemas .
@@ -129,8 +133,9 @@ jobs:
     - name: Upload build system description artifact
       uses: actions/upload-artifact@v2
       with:
-        name: build-system-description
+        name: windows-build-system-description
         path: |
+          files_to_include_in_release.txt
           pacman_Q.txt
           diff_pacman_q.txt
           pip_freeze.txt
@@ -142,5 +147,3 @@ jobs:
           build/dtool-lookup-gui-windows-one-file/*.toc
           build/dtool-lookup-gui-windows-one-file/*.txt
           build/dtool-lookup-gui-windows-one-file/html.toc
-
-

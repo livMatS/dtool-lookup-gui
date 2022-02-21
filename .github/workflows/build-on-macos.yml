@@ -1,4 +1,4 @@
-name: build-on-ubunu
+name: build-on-macos
 
 on:
   workflow_call:
@@ -7,47 +7,37 @@ jobs:
 
   build:
 
-    runs-on: ubuntu-20.04
+    runs-on: macos-10.15
       
     steps:
 
     - name: checkout
       uses: actions/checkout@v2
       with:
-        fetch-depth: 0
-
-    - name: Set up Python 3.8
-      uses: actions/setup-python@v2.3.1
-      with:
-        python-version: 3.8
+        fetch-depth: 1
 
     - name: Install system dependencies
       run: |
-        sudo apt-get update -qy
-        sudo apt-get install -y \
-          libgirepository1.0-dev \
-          libcairo2-dev \
-          pkg-config \
-          python3-dev \
-          gir1.2-gtk-3.0 \
-          libgtksourceview-4-0
+        brew install python pygobject3 gtk+3 gtksourceview4 gnome-icon-theme
 
     - name: Log system package info
       run: |
-        echo "### lab_release -a ###"
-        lsb_release -a | tee lsb_release_a.txt
+        echo "### sw_vers ###"
+        sw_vers | tee sw_vers.txt
         echo "### uname -a ###"
         uname -a | tee uname_a.txt
-        echo "### apt list --installed ###"
-        apt list --installed | tee apt_list_installed.txt
+        echo "### brew list --versions ###"
+        brew list --versions | tee brew_list_versions.txt
 
-        echo "lsb_release_a.txt" >> files_to_include_in_release.txt
+        echo "sw_vers.txt" >> files_to_include_in_release.txt
         echo "uname_a.txt" >> files_to_include_in_release.txt
-        echo "apt_list_installed.txt" >> files_to_include_in_release.txt
+        echo "brew_list_versions.txt" >> files_to_include_in_release.txt
 
-        
     - name: Install pythonic dependencies
       run: |
+        python3 -m venv --system-site-packages venv
+        source venv/bin/activate
+
         pip install --upgrade pip
         pip install wheel
         pip install -r requirements.txt
@@ -55,9 +45,15 @@ jobs:
 
     - name: Log python package info
       run: |
+        source venv/bin/activate
+
+        echo "### pip freeze --local ###"
+        pip freeze --local | tee pip_freeze_local.txt
+
         echo "### pip freeze ###"
         pip freeze | tee pip_freeze.txt
 
+        echo "pip_freeze_local.txt" >> files_to_include_in_release.txt
         echo "pip_freeze.txt" >> files_to_include_in_release.txt
 
     - name: Compile gschemas
@@ -67,26 +63,28 @@ jobs:
 
     - name: Package executable with pyinstaller
       run: |
-        pyinstaller -y ./pyinstaller/dtool-lookup-gui-linux-one-file.spec
+        source venv/bin/activate
+        pyinstaller -y ./pyinstaller/dtool-lookup-gui-macos-one-file.spec
 
     - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
-        name: dtool-lookup-gui-linux
+        name: dtool-lookup-gui-macos
         path: dist/dtool-lookup-gui
         if-no-files-found: error
 
     - name: Upload build system description artifact
       uses: actions/upload-artifact@v2
       with:
-        name: linux-build-system-description
+        name: macos-build-system-description
         path: |
           files_to_include_in_release.txt
-          lsb_release_a.txt
+          sw_vers.txt
           uname_a.txt
-          apt_list_installed.txt
+          brew_list_versions.txt
           pip_freeze.txt
+          pip_freeze_local.txt
           pyinstaller.log
-          build/dtool-lookup-gui-linux-one-file/*.toc
-          build/dtool-lookup-gui-linux-one-file/*.txt
-          build/dtool-lookup-gui-linux-one-file/html.toc
+          build/dtool-lookup-gui-macos-one-file/*.toc
+          build/dtool-lookup-gui-macos-one-file/*.txt
+          build/dtool-lookup-gui-macos-one-file/html.toc
