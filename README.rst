@@ -166,6 +166,10 @@ The GUI uses custom Gtk widgets. To edit the the XML UI definition files with
 Glade_, add the directory ``glade/catalog`` to `Extra Catalog & Template paths`
 within Glade's preferences dialog.
 
+Funding
+^^^^^^^
+
+This development has received funding from the Deutsche Forschungsgemeinschaft within the Cluster of Excellence livMatS_.
 
 .. _dtool: https://github.com/jic-dtool/dtool
 
@@ -184,3 +188,5 @@ within Glade's preferences dialog.
 .. _Python: https://www.python.org/
 
 .. _setuptools: https://setuptools.readthedocs.io/en/latest/
+
+.. _livMatS: https://www.livmats.uni-freiburg.de/en
