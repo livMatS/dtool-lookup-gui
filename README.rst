@@ -18,8 +18,8 @@ Quick start
 
 We provide binary packages for Windows, macOS and Linux: https://github.com/livMatS/dtool-lookup-gui/releases
 
-Just download the pre-packaged binaries of the `latest release <https://github.com/livMatS/dtool-lookup-gui/releases/latest>_` 
-and follow the `quick start guide <https://github.com/livMatS/RDM-Wiki-public/blob/master/rdm/dtool/src/020_gui/005_quick_start.md>_` to get started.
+Just download the pre-packaged binaries of the `latest release <https://github.com/livMatS/dtool-lookup-gui/releases/latest>`_
+and follow the `quick start guide <https://github.com/livMatS/RDM-Wiki-public/blob/master/rdm/dtool/src/020_gui/005_quick_start.md>`_ to get started.
 
 If the binaries won't run out-of-the-box on your system, continue below.
 
@@ -43,7 +43,7 @@ On recent macOS (>= 10.15) use homebrew,
 
    brew install gtksourceview4 gnome-icon-theme
 
-On earlie macOs, `MacPorts <https://www.macports.org/>_` allows the installation of `gtksourceview4`
+On earlie macOs, `MacPorts <https://www.macports.org/>`_ allows the installation of `gtksourceview4`
 
 .. code:: bash
    
@@ -65,8 +65,8 @@ On earlie macOs, `MacPorts <https://www.macports.org/>_` allows the installation
 
 This has been tested on macOS 10.13.6.
 
-On Windows, use `mingw64/msys2 <https://www.msys2.org>_` and refer to the
-`Using GTK from MSYS2 packages <https://www.gtk.org/docs/installations/windows#using-gtk-from-msys2-packages>_` 
+On Windows, use `mingw64/msys2 <https://www.msys2.org>`_ and refer to the
+`Using GTK from MSYS2 packages <https://www.gtk.org/docs/installations/windows#using-gtk-from-msys2-packages>`_
 on the GTK project's pages.
 
 Also refer to the build workflows `.github/workflows/build-on-[linux|macos|windows].yml` within this repository 
