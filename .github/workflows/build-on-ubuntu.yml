@@ -67,7 +67,7 @@ jobs:
 
     - name: Package executable with pyinstaller
       run: |
-        pyinstaller -y ./pyinstaller/dtool-lookup-gui-one-file.spec
+        pyinstaller -y ./pyinstaller/dtool-lookup-gui-linux-one-file.spec
 
     - name: Upload artifact
       uses: actions/upload-artifact@v2
@@ -82,11 +82,11 @@ jobs:
         name: linux-build-system-description
         path: |
           files_to_include_in_release.txt
+          lsb_release_a.txt
           uname_a.txt
-          brew_list_versions.txt
+          apt_list_installed.txt
           pip_freeze.txt
-          pip_freeze_local.txt
           pyinstaller.log
-          build/dtool-lookup-gui-macos-one-file/*.toc
-          build/dtool-lookup-gui-macos-one-file/*.txt
-          build/dtool-lookup-gui-macos-one-file/html.toc
+          build/dtool-lookup-gui-linux-one-file/*.toc
+          build/dtool-lookup-gui-linux-one-file/*.txt
+          build/dtool-lookup-gui-linux-one-file/html.toc
