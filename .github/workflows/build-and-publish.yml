@@ -138,10 +138,11 @@ jobs:
 
       - name: Package additional files with the bindaries
         run: |
-          bash maintenance/copy_files_into_folders.sh maintenance/files_to_include_in_release.txt /tmp/linux-build /tmp/macos-build /tmp/windows-build
-          bash maintenance/copy_files_into_folders.sh /tmp/linux-build-system-description/files_to_include_in_release.txt /tmp/linux-build
-          bash maintenance/copy_files_into_folders.sh /tmp/macos-build-system-description/files_to_include_in_release.txt /tmp/macos-build
-          bash maintenance/copy_files_into_folders.sh /tmp/windows-build-system-description/files_to_include_in_release.txt /tmp/windows-build
+          prefix=$(pwd)
+          bash ${prefix}/maintenance/copy_files_into_folders.sh maintenance/files_to_include_in_release.txt /tmp/linux-build /tmp/macos-build /tmp/windows-build
+          cd /tmp/linux-build-system-description && bash ${prefix}/maintenance/copy_files_into_folders.sh files_to_include_in_release.txt /tmp/linux-build
+          cd /tmp/macos-build-system-description && bash ${prefix}/maintenance/copy_files_into_folders.sh files_to_include_in_release.txt /tmp/macos-build
+          cd /tmp/windows-build-system-description && bash ${prefix}/maintenance/copy_files_into_folders.sh files_to_include_in_release.txt /tmp/windows-build
 
       - name: List content of builds
         run: |
