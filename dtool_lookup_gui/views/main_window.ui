@@ -83,6 +83,12 @@
       <column type="gchararray"/>
     </columns>
   </object>
+  <object class="DtoolProgressPopoverMenu" id="progress_popover">
+    <property name="can-focus">False</property>
+    <child>
+      <placeholder/>
+    </child>
+  </object>
   <template class="DtoolMainWindow" parent="GtkApplicationWindow">
     <property name="height-request">700</property>
     <property name="can-focus">False</property>
@@ -1047,24 +1053,8 @@ or search for a dataset</property>
               </packing>
             </child>
           </object>
-        </child>
-        <child>
-          <object class="GtkButton">
-            <property name="visible">True</property>
-            <property name="can-focus">True</property>
-            <property name="receives-default">True</property>
-            <property name="tooltip-text" translatable="yes">Open local base URI.</property>
-            <signal name="clicked" handler="on_open_local_directory_clicked" swapped="no"/>
-            <child>
-              <object class="GtkImage">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <property name="icon-name">folder-symbolic</property>
-              </object>
-            </child>
-          </object>
           <packing>
-            <property name="position">1</property>
+            <property name="position">4</property>
           </packing>
         </child>
         <child>
@@ -1084,27 +1074,6 @@ or search for a dataset</property>
           </object>
           <packing>
             <property name="pack-type">end</property>
-            <property name="position">1</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkButton" id="create_dataset_button">
-            <property name="visible">True</property>
-            <property name="sensitive">False</property>
-            <property name="can-focus">True</property>
-            <property name="receives-default">True</property>
-            <property name="tooltip-text" translatable="yes">Create a new dataset at currently selected base URI.</property>
-            <signal name="clicked" handler="on_create_dataset_clicked" swapped="no"/>
-            <child>
-              <object class="GtkImage">
-                <property name="visible">True</property>
-                <property name="can-focus">False</property>
-                <property name="icon-name">list-add-symbolic</property>
-              </object>
-            </child>
-          </object>
-          <packing>
-            <property name="position">2</property>
           </packing>
         </child>
         <child>
@@ -1131,16 +1100,68 @@ or search for a dataset</property>
           </object>
           <packing>
             <property name="pack-type">end</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="open_local_base_uri_button">
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
+            <property name="tooltip-text" translatable="yes">Open local base URI.</property>
+            <signal name="clicked" handler="on_open_local_directory_clicked" swapped="no"/>
+            <child>
+              <object class="GtkImage">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="icon-name">folder-symbolic</property>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="position">2</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="create_dataset_button">
+            <property name="visible">True</property>
+            <property name="sensitive">False</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
+            <property name="tooltip-text" translatable="yes">Create a new dataset at currently selected base URI.</property>
+            <signal name="clicked" handler="on_create_dataset_clicked" swapped="no"/>
+            <child>
+              <object class="GtkImage">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="icon-name">list-add-symbolic</property>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="position">3</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="refresh_button">
+            <property name="visible">True</property>
+            <property name="can-focus">True</property>
+            <property name="receives-default">True</property>
+            <property name="tooltip-text" translatable="yes">Refresh current view.</property>
+            <signal name="clicked" handler="on_refresh_clicked" swapped="no"/>
+            <child>
+              <object class="GtkImage">
+                <property name="visible">True</property>
+                <property name="can-focus">False</property>
+                <property name="icon-name">view-refresh</property>
+              </object>
+            </child>
+          </object>
+          <packing>
             <property name="position">4</property>
           </packing>
         </child>
       </object>
     </child>
   </template>
-  <object class="DtoolProgressPopoverMenu" id="progress_popover">
-    <property name="can-focus">False</property>
-    <child>
-      <placeholder/>
-    </child>
-  </object>
 </interface>

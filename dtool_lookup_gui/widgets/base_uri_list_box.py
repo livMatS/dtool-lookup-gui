@@ -22,11 +22,19 @@
 # SOFTWARE.
 #
 
+import logging
+
 from gi.repository import GObject, Gtk
 
 from ..models.base_uris import all, LocalBaseURIModel
 from .base_uri_row import DtoolBaseURIRow
 from .search_results_row import DtoolSearchResultsRow
+
+
+logger = logging.getLogger(__name__)
+
+
+LOOKUP_BASE_URI = 'lookup://search'
 
 
 class DtoolBaseURIListBox(Gtk.ListBox):
@@ -35,9 +43,52 @@ class DtoolBaseURIListBox(Gtk.ListBox):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._search_results_row = None
+        self._uri_to_row_index_mapping = dict()
+
+    def add(self, row):
+        """Keep uri -> row index mapping up-to-date."""
+
+        # TODO: more elegant distinction between base URI and search rows
+        if isinstance(row, DtoolBaseURIRow):
+            base_uri = str(row.base_uri)
+        else:
+            base_uri = LOOKUP_BASE_URI
+
+        if isinstance(row, DtoolBaseURIRow) and base_uri in self._uri_to_row_index_mapping:
+            row_index = self.get_row_index_from_uri(base_uri)
+            raise ValueError(f"{base_uri} already in DtoolBaseURIListBox at index {row_index}. This should not happen.")
+
+        super().add(row)
+
+        row_index = row.get_index()
+        logger.debug(f"Inserted '{base_uri}' at {row_index}.")
+        self._uri_to_row_index_mapping[base_uri] = row_index
+
+    def remove(self, row):
+        """Keep uri -> row index mapping up-to-date."""
+        if isinstance(row, DtoolBaseURIRow):
+            base_uri = str(row.base_uri)
+        else:
+            base_uri = LOOKUP_BASE_URI
+
+        if isinstance(row, DtoolBaseURIRow) and base_uri not in self._uri_to_row_index_mapping:
+            raise ValueError(
+                f"{base_uri} not recorded in DtoolBaseURIListBox uri -> row index mapping. This should not happen.")
+        else:
+            del self._uri_to_row_index_mapping[base_uri]
+
+        super().remove(row)
+
+    def get_row_index_from_uri(self, uri):
+        if uri in self._uri_to_row_index_mapping:
+            return self._uri_to_row_index_mapping[uri]
+        else:
+            logger.warning(f"{uri} not in DtoolBaseURIListBox.")
+            return None
 
     async def refresh(self, on_activate=None, on_configure=None, local=True, lookup=None, search_results=True):
         for row in self.get_children():
+            self.remove(row)
             row.destroy()
         if search_results:
             self._search_results_row = DtoolSearchResultsRow()
