@@ -5,7 +5,7 @@ dtool-create==0.23.4
 dtool-http==0.5.1
 dtool-info==0.16.2
 dtool-lookup-api==0.5.0
-dtool-s3==0.13.0
+-e git+https://github.com/jic-dtool/dtool-s3.git@i18n-filename-support#egg=dtool-s3
 dtool-smb==0.1.0
 dtool-symlink==0.3.1
 dtoolcore==3.18.1
