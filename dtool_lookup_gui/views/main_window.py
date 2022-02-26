@@ -51,6 +51,7 @@ from ..utils.date import date_to_string
 from ..utils.dependency_graph import DependencyGraph
 from ..utils.logging import FormattedSingleMessageGtkInfoBarHandler, DefaultFilter
 from ..utils.query import (is_valid_query, dump_single_line_query_text)
+from ..widgets.base_uri_list_box import LOOKUP_BASE_URI
 from ..widgets.base_uri_row import DtoolBaseURIRow
 from ..widgets.search_popover import DtoolSearchPopover
 from ..widgets.search_results_row import DtoolSearchResultsRow
@@ -225,6 +226,11 @@ class MainWindow(Gtk.ApplicationWindow):
         get_item_action.connect("activate", self.do_get_item)
         self.add_action(get_item_action)
 
+        # refresh view
+        refresh_view_action = Gio.SimpleAction.new("refresh-view")
+        refresh_view_action.connect("activate", self.do_refresh_view)
+        self.add_action(refresh_view_action)
+
         self.dependency_graph_widget.search_by_uuid = self._search_by_uuid
 
         self._copy_manager = CopyManager(self.progress_revealer, self.progress_popover)
@@ -233,7 +239,48 @@ class MainWindow(Gtk.ApplicationWindow):
 
     # utility methods
     def refresh(self):
-        asyncio.create_task(self.base_uri_list_box.refresh())
+        """Refresh view."""
+
+        dataset_row = self.dataset_list_box.get_selected_row()
+        dataset_uri = None
+        if dataset_row is not None:
+            dataset_uri = dataset_row.dataset.uri
+            _logger.debug(f"Keep '{dataset_uri}' for dataset refresh.")
+
+        async def _refresh():
+            # first, refresh base uri list and its selection
+            await self._refresh_base_uri_list_box()
+
+            _logger.debug(f"Done refreshing base URIs.")
+            # on_base_uri_selected(self, list_box, row) called by selection
+            # above already
+
+            # TODO: following restration of selected dataset needs to happen
+            # after base URI has been loaded, but on_base_uri_selected
+            # spawns another task, hence above "await" won't wait for the
+            # process to complete. Need a signal insted.
+            # if dataset_uri is not None:
+            #    _logger.debug(f"Select and show '{dataset_uri}'.")
+            #    self._select_and_show_by_uri(dataset_uri)
+
+        asyncio.create_task(_refresh())
+
+    async def _refresh_base_uri_list_box(self):
+        # bookkeeping of current state
+        base_uri_row = self.base_uri_list_box.get_selected_row()
+        base_uri = None
+
+        if isinstance(base_uri_row, DtoolBaseURIRow):
+            base_uri = str(base_uri_row.base_uri)
+        elif isinstance(base_uri_row, DtoolSearchResultsRow):
+            base_uri = LOOKUP_BASE_URI
+
+        # first, refresh list box
+        await self.base_uri_list_box.refresh()
+        # second, refresh base uri list selection
+        if base_uri is not None:
+            _logger.debug(f"Reselect base URI '{base_uri}")
+            self._select_base_uri_row_by_uri(base_uri)
 
     # removed these utility functions from inner scope of on_search_activate
     # in order to decouple actual signal handler and functionality
@@ -296,10 +343,10 @@ class MainWindow(Gtk.ApplicationWindow):
         """Select dataset row in dataset list box by index."""
         row = self.dataset_list_box.get_row_at_index(index)
         if row is not None:
-            _logger.debug(f"{row} selected.")
+            _logger.debug(f"Dataset row {index} selected.")
             self.dataset_list_box.select_row(row)
         else:
-            _logger.info(f"No row with index {index} available for selection.")
+            _logger.info(f"No dataset row with index {index} available for selection.")
 
     def _select_dataset_row_by_uri(self, uri):
         """Select dataset row in dataset list box by uri."""
@@ -316,7 +363,7 @@ class MainWindow(Gtk.ApplicationWindow):
             _logger.debug(f"{row.dataset.name} shown.")
             self._show_dataset_details(row.dataset)
         else:
-            _logger.info(f"No row with index {index} available for selection.")
+            _logger.info(f"No dataset row with index {index} available for selection.")
 
     def _show_dataset_details_by_uri(self, uri):
         """Select dataset row in dataset list box by uri."""
@@ -356,12 +403,28 @@ class MainWindow(Gtk.ApplicationWindow):
 
         return items
 
-    # actions
-    def do_search(self, action, value):
-        """Evoke search tas for specific search text."""
-        search_text = value.get_string()
-        self._search(search_text)
+    # utility methods - base uri selection
+    def _select_base_uri_row_by_row_index(self, index):
+        """Select base uri row in base uri list box by index."""
+        row = self.base_uri_list_box.get_row_at_index(index)
+        if row is not None:
+            _logger.debug(f"Base URI row {index} selected.")
+            self.base_uri_list_box.select_row(row)
+        else:
+            _logger.info(f"No base URI row with index {index} available for selection.")
 
+    def _select_base_uri_row_by_uri(self, uri):
+        """Select base uri row in dataset list box by uri."""
+        index = self.base_uri_list_box.get_row_index_from_uri(uri)
+        self._select_base_uri_row_by_row_index(index)
+
+    # def _show_base_uri(self, dataset):
+    #    asyncio.create_task(self._update_dataset_view(dataset))
+    #    self.dataset_stack.set_visible_child(self.dataset_box)
+
+    # actions
+
+    # dataset selection actions
     def do_select_dataset_row_by_row_index(self, action, value):
         """Select dataset row by index."""
         row_index = value.get_uint32()
@@ -373,18 +436,48 @@ class MainWindow(Gtk.ApplicationWindow):
         self._select_dataset_row_by_uri(uri)
 
     def do_show_dataset_details_by_row_index(self, action, value):
+        """Show dataset details by row index."""
         row_index = value.get_uint32()
         self._show_dataset_details_by_row_index(row_index)
 
     def do_show_dataset_details_by_uri(self, action, value):
+        """Show dataset details by uri."""
         uri = value.get_string()
         self._show_dataset_details_by_uri(uri)
+
+    # search actions
+    def do_search(self, action, value):
+        """Evoke search tas for specific search text."""
+        search_text = value.get_string()
+        self._search(search_text)
 
     def do_search_select_and_show(self, action, value):
         """Evoke search task for specific search text, select and show 1st row of resuls subsequntly."""
         search_text = value.get_string()
         self._search_select_and_show(search_text)
 
+    # base uri selection actions
+    def do_select_base_uri_row_by_row_index(self, action, value):
+        """Select base uri row by index."""
+        row_index = value.get_uint32()
+        self._select_base_uri_row_by_row_index(row_index)
+
+    def do_select_base_uri_row_by_uri(self, action, value):
+        """Select base uri row by uri."""
+        uri = value.get_string()
+        self._select_base_uri_row_by_uri(uri)
+
+    def do_show_base_uri_by_row_index(self, action, value):
+        """Show base uri by row index"""
+        row_index = value.get_uint32()
+        self._show_base_uri_by_row_index(row_index)
+
+    def do_show_baser_uri_by_uri(self, action, value):
+        """Show base uri by uri."""
+        uri = value.get_string()
+        self._show_base_uri_details_by_uri(uri)
+
+    # other actions
     def do_get_item(self, action, value):
         """Copy currently selected manifest item in currently selected dataset to specified destination."""
         dest_file = value.get_string()
@@ -401,6 +494,10 @@ class MainWindow(Gtk.ApplicationWindow):
             shutil.copyfile(cached_file, dest_file)
 
         asyncio.create_task(_get_item(dataset, item_uuid))
+
+    def do_refresh_view(self, action, value):
+        """Refresh view by reloading base uri list, """
+        self.refresh()
 
     # signal handlers
     @Gtk.Template.Callback()
@@ -519,11 +616,15 @@ class MainWindow(Gtk.ApplicationWindow):
         dialog.destroy()
 
         # Refresh view of base URIs
-        asyncio.create_task(self.base_uri_list_box.refresh())
+        asyncio.create_task(self._refresh_base_uri_list_box())
 
     @Gtk.Template.Callback()
     def on_create_dataset_clicked(self, widget):
         DatasetNameDialog(on_confirmation=self._create_dataset).show()
+
+    @Gtk.Template.Callback()
+    def on_refresh_clicked(self, widget):
+        self.get_action_group("win").activate_action('refresh-view', None)
 
     @Gtk.Template.Callback()
     def on_show_clicked(self, widget):
@@ -622,6 +723,7 @@ class MainWindow(Gtk.ApplicationWindow):
         if response_id == Gtk.ResponseType.CLOSE:
             self.error_bar.set_revealed(False)
 
+    # @Gtk.Template.Callback(), not in .ui
     def on_copy_clicked(self, widget):
         async def _copy():
             try:

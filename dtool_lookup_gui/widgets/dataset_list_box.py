@@ -31,10 +31,12 @@ from .dataset_row import DtoolDatasetRow
 
 logger = logging.getLogger(__name__)
 
+
 class DtoolDatasetListBox(Gtk.ListBox):
     __gtype_name__ = 'DtoolDatasetListBox'
 
     def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._uri_to_row_index_mapping = dict()
 
     def fill(self, datasets, on_show=None):
