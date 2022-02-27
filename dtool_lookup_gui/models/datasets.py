@@ -212,7 +212,7 @@ async def _copy_dataset(uri, target_base_uri, resume, auto_resume, progressbar=N
 
     copy_func_wrapper = CopyFuncWrapper(copy_func)
 
-    with ProgressBar(length=num_items,
+    with ProgressBar(length=2*num_items,
                      label="Copying dataset",
                      pb=progressbar) as pb:
         non_blocking_copy_func = StatusReportingChildProcessBuilder(copy_func_wrapper, pb)
