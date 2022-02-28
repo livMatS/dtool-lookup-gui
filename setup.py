@@ -24,6 +24,7 @@
 # SOFTWARE.
 #
 
+import os
 from subprocess import Popen
 
 from setuptools import setup
