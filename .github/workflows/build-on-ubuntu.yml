@@ -30,6 +30,7 @@ jobs:
           pkg-config \
           python3-dev \
           gir1.2-gtk-3.0 \
+          gir1.2-gtksource-4 \
           libgtksourceview-4-0
 
     - name: Log system package info
