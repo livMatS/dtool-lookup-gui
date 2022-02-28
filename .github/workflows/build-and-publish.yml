@@ -124,13 +124,10 @@ jobs:
           prefix=$(pwd)
           bash ${prefix}/maintenance/copy_files_into_folders.sh maintenance/files_to_include_in_release.txt /tmp/linux-build /tmp/macos-build /tmp/windows-build
           cd /tmp/linux-build \
-            && unzip dtool-lookup-gui*.zip \
             && bash ${prefix}/maintenance/copy_files_into_folders.sh files_to_include_in_release.txt /tmp/linux-release
           cd /tmp/macos-build \
-            && unzip dtool-lookup-gui*.zip \
             && bash ${prefix}/maintenance/copy_files_into_folders.sh files_to_include_in_release.txt /tmp/macos-release
           cd /tmp/windows-build \
-            && unzip dtool-lookup-gui*.zip \
             && bash ${prefix}/maintenance/copy_files_into_folders.sh files_to_include_in_release.txt /tmp/windows-release
 
       - name: List content of release
@@ -141,7 +138,7 @@ jobs:
 
       - name: Pack release assets
         run: |
-          cd /tmp/linux-release && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux.zip ./*
+          cd /tmp/linux-release && tar -cvzf -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux.tar.gz ./*
           cd /tmp/macos-release && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-macos.zip ./*
           cd /tmp/windows-release && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows.zip ./*
 
@@ -161,7 +158,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            /tmp/linux-release/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux.zip
+            /tmp/linux-release/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux.tar.gz
             /tmp/macos-release/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-macos.zip
             /tmp/windows-release/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows.zip
           draft: true

@@ -127,7 +127,7 @@ jobs:
 
     - name: Pack assets
       run: |
-        zip dtool-lookup-gui-windows.zip \
+        tar -cvf dtool-lookup-gui-windows.tar \
           dist/dtool-lookup-gui.exe \
           files_to_include_in_release.txt \
           pacman_Q.txt \
@@ -146,6 +146,6 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: dtool-lookup-gui-windows
-        path: dtool-lookup-gui-windows.zip
+        path: dtool-lookup-gui-windows.tar
         if-no-files-found: error
 

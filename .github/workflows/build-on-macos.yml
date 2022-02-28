@@ -66,27 +66,27 @@ jobs:
         source venv/bin/activate
         pyinstaller -y ./pyinstaller/dtool-lookup-gui-macos-one-file.spec 2>&1 | tee pyinstaller.log
         chmod +x dist/dtool-lookup-gui
-        echo " dist/dtool-lookup-gui" >> files_to_include_in_release.txt
+        echo "dist/dtool-lookup-gui" >> files_to_include_in_release.txt
 
     - name: Pack assets
-      run: |
-        zip dtool-lookup-gui-macos.zip \
-          dist/dtool-lookup-gui \
-          files_to_include_in_release.txt \
-          sw_vers.txt \
-          uname_a.txt \
-          brew_list_versions.txt \
-          pip_freeze.txt \
-          pip_freeze_local.txt \
-          pyinstaller.log \
-          build/dtool-lookup-gui-macos-one-file/*.toc \
-          build/dtool-lookup-gui-macos-one-file/*.txt \
-          build/dtool-lookup-gui-macos-one-file/html.toc
-
+        run: |
+          tar -cvf dtool-lookup-gui-macos.tar \
+            dist/dtool-lookup-gui \
+            files_to_include_in_release.txt \
+            sw_vers.txt \
+            uname_a.txt \
+            brew_list_versions.txt \
+            pip_freeze.txt \
+            pip_freeze_local.txt \
+            pyinstaller.log \
+            build/dtool-lookup-gui-macos-one-file/*.toc \
+            build/dtool-lookup-gui-macos-one-file/*.txt \
+            build/dtool-lookup-gui-macos-one-file/html.toc
 
     - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
         name: dtool-lookup-gui-macos
-        path: dtool-lookup-gui-macos.zip
+        path: dtool-lookup-gui-macos.tar
+
         if-no-files-found: error
