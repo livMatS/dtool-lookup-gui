@@ -67,12 +67,12 @@ jobs:
 
     - name: Package executable with pyinstaller
       run: |
-        pyinstaller -y ./pyinstaller/dtool-lookup-gui-linux-one-file.spec
+        pyinstaller -y ./pyinstaller/dtool-lookup-gui-linux-one-file.spec 2>&1 | tee pyinstaller.log
         echo " dist/dtool-lookup-gui" >> files_to_include_in_release.txt
 
     - name: Pack assets
       run: |
-        zip dtool-lookup-gui-macos.zip \
+        zip dtool-lookup-gui-linux.zip \
           dist/dtool-lookup-gui \
           files_to_include_in_release.txt \
           lsb_release_a.txt \

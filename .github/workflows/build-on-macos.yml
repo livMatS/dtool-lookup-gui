@@ -64,7 +64,7 @@ jobs:
     - name: Package executable with pyinstaller
       run: |
         source venv/bin/activate
-        pyinstaller -y ./pyinstaller/dtool-lookup-gui-macos-one-file.spec
+        pyinstaller -y ./pyinstaller/dtool-lookup-gui-macos-one-file.spec 2>&1 | tee pyinstaller.log
         echo " dist/dtool-lookup-gui" >> files_to_include_in_release.txt
 
     - name: Pack assets
