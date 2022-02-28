@@ -66,25 +66,25 @@ jobs:
         source venv/bin/activate
         pyinstaller -y ./pyinstaller/dtool-lookup-gui-macos-one-file.spec
 
+    - name: Pack assets
+        run: |
+          zip dtool-lookup-gui-macos.zip \
+            dist/dtool-lookup-gui \
+            files_to_include_in_release.txt \
+            sw_vers.txt \
+            uname_a.txt \
+            brew_list_versions.txt \
+            pip_freeze.txt \
+            pip_freeze_local.txt \
+            pyinstaller.log \
+            build/dtool-lookup-gui-macos-one-file/*.toc \
+            build/dtool-lookup-gui-macos-one-file/*.txt \
+            build/dtool-lookup-gui-macos-one-file/html.toc
+
+
     - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
         name: dtool-lookup-gui-macos
-        path: dist/dtool-lookup-gui
+        path: dtool-lookup-gui-macos.zip
         if-no-files-found: error
-
-    - name: Upload build system description artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: macos-build-system-description
-        path: |
-          files_to_include_in_release.txt
-          sw_vers.txt
-          uname_a.txt
-          brew_list_versions.txt
-          pip_freeze.txt
-          pip_freeze_local.txt
-          pyinstaller.log
-          build/dtool-lookup-gui-macos-one-file/*.toc
-          build/dtool-lookup-gui-macos-one-file/*.txt
-          build/dtool-lookup-gui-macos-one-file/html.toc
