@@ -68,20 +68,21 @@ jobs:
     - name: Package executable with pyinstaller
       run: |
         pyinstaller -y ./pyinstaller/dtool-lookup-gui-linux-one-file.spec
+        echo " dist/dtool-lookup-gui" >> files_to_include_in_release.txt
 
     - name: Pack assets
-        run: |
-          zip dtool-lookup-gui-macos.zip \
-            dist/dtool-lookup-gui \
-            files_to_include_in_release.txt \
-            lsb_release_a.txt \
-            uname_a.txt \
-            apt_list_installed.txt \
-            pip_freeze.txt \
-            pyinstaller.log \
-            build/dtool-lookup-gui-linux-one-file/*.toc \
-            build/dtool-lookup-gui-linux-one-file/*.txt \
-            build/dtool-lookup-gui-linux-one-file/html.toc
+      run: |
+        zip dtool-lookup-gui-macos.zip \
+          dist/dtool-lookup-gui \
+          files_to_include_in_release.txt \
+          lsb_release_a.txt \
+          uname_a.txt \
+          apt_list_installed.txt \
+          pip_freeze.txt \
+          pyinstaller.log \
+          build/dtool-lookup-gui-linux-one-file/*.toc \
+          build/dtool-lookup-gui-linux-one-file/*.txt \
+          build/dtool-lookup-gui-linux-one-file/html.toc
 
     - name: Upload artifact
       uses: actions/upload-artifact@v2

@@ -106,23 +106,11 @@ jobs:
           name: dtool-lookup-gui-linux
           path: /tmp/linux-build
 
-      - name: Download Linux build system description
-        uses: actions/download-artifact@v2
-        with:
-          name: linux-build-system-description
-          path: /tmp/linux-build-system-description
-
       - name: Download Windows build
         uses: actions/download-artifact@v2
         with:
           name: dtool-lookup-gui-windows
           path: /tmp/windows-build
-
-      - name: Download Windows build system description
-        uses: actions/download-artifact@v2
-        with:
-          name: windows-build-system-description
-          path: /tmp/windows-build-system-description
 
       - name: Download MacOS build
         uses: actions/download-artifact@v2
@@ -130,31 +118,32 @@ jobs:
           name: dtool-lookup-gui-macos
           path: /tmp/macos-build
 
-      - name: Download MacOS build system description
-        uses: actions/download-artifact@v2
-        with:
-          name: macos-build-system-description
-          path: /tmp/macos-build-system-description
-
-      - name: Package additional files with the bindaries
+      - name: Package additional files with the binaries
         run: |
+
           prefix=$(pwd)
           bash ${prefix}/maintenance/copy_files_into_folders.sh maintenance/files_to_include_in_release.txt /tmp/linux-build /tmp/macos-build /tmp/windows-build
-          cd /tmp/linux-build-system-description && bash ${prefix}/maintenance/copy_files_into_folders.sh files_to_include_in_release.txt /tmp/linux-build
-          cd /tmp/macos-build-system-description && bash ${prefix}/maintenance/copy_files_into_folders.sh files_to_include_in_release.txt /tmp/macos-build
-          cd /tmp/windows-build-system-description && bash ${prefix}/maintenance/copy_files_into_folders.sh files_to_include_in_release.txt /tmp/windows-build
+          cd /tmp/linux-build \
+            && unzip dtool-lookup-gui*.zip \
+            && bash ${prefix}/maintenance/copy_files_into_folders.sh files_to_include_in_release.txt /tmp/linux-release
+          cd /tmp/macos-build \
+            && unzip dtool-lookup-gui*.zip \
+            && bash ${prefix}/maintenance/copy_files_into_folders.sh files_to_include_in_release.txt /tmp/macos-release
+          cd /tmp/windows-build \
+            && unzip dtool-lookup-gui*.zip \
+            && bash ${prefix}/maintenance/copy_files_into_folders.sh files_to_include_in_release.txt /tmp/windows-release
 
-      - name: List content of builds
+      - name: List content of release
         run: |
-          ls -lhv /tmp/linux-build/
-          ls -lhv /tmp/windows-build/
-          ls -lhv /tmp/macos-build/
+          ls -lhv /tmp/linux-release/
+          ls -lhv /tmp/windows-release/
+          ls -lhv /tmp/macos-release/
 
       - name: Pack release assets
         run: |
-          cd /tmp/linux-build && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux.zip ./*
-          cd /tmp/macos-build && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-macos.zip ./*
-          cd /tmp/windows-build && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows.zip ./*
+          cd /tmp/linux-release && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux.zip ./*
+          cd /tmp/macos-release && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-macos.zip ./*
+          cd /tmp/windows-release && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows.zip ./*
 
       - name: Get master HEAD SHA
         id: get_master_sha
@@ -172,7 +161,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            /tmp/linux-build/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux.zip
-            /tmp/macos-build/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-macos.zip
-            /tmp/windows-build/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows.zip
+            /tmp/linux-release/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux.zip
+            /tmp/macos-release/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-macos.zip
+            /tmp/windows-release/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows.zip
           draft: true
