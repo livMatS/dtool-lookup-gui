@@ -7,6 +7,7 @@ shift
 
 for target_folder in "$@"
 do
+    mkdir -p "$target_folder"
     echo xargs -a "$file_list" cp -t "$target_folder"
     xargs -a "$file_list" cp -t "$target_folder"
 done

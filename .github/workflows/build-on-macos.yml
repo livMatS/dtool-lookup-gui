@@ -64,27 +64,30 @@ jobs:
     - name: Package executable with pyinstaller
       run: |
         source venv/bin/activate
-        pyinstaller -y ./pyinstaller/dtool-lookup-gui-macos-one-file.spec
+        pyinstaller -y ./pyinstaller/dtool-lookup-gui-macos-one-file.spec 2>&1 | tee pyinstaller.log
+        mv dist/dtool-lookup-gui dtool-lookup-gui
+        chmod +x dtool-lookup-gui
+        echo "dtool-lookup-gui" >> files_to_include_in_release.txt
+
+    - name: Pack assets
+      run: |
+        tar -cvf dtool-lookup-gui-macos.tar \
+          dtool-lookup-gui \
+          files_to_include_in_release.txt \
+          sw_vers.txt \
+          uname_a.txt \
+          brew_list_versions.txt \
+          pip_freeze.txt \
+          pip_freeze_local.txt \
+          pyinstaller.log \
+          build/dtool-lookup-gui-macos-one-file/*.toc \
+          build/dtool-lookup-gui-macos-one-file/*.txt \
+          build/dtool-lookup-gui-macos-one-file/*.html
 
     - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
         name: dtool-lookup-gui-macos
-        path: dist/dtool-lookup-gui
-        if-no-files-found: error
+        path: dtool-lookup-gui-macos.tar
 
-    - name: Upload build system description artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: macos-build-system-description
-        path: |
-          files_to_include_in_release.txt
-          sw_vers.txt
-          uname_a.txt
-          brew_list_versions.txt
-          pip_freeze.txt
-          pip_freeze_local.txt
-          pyinstaller.log
-          build/dtool-lookup-gui-macos-one-file/*.toc
-          build/dtool-lookup-gui-macos-one-file/*.txt
-          build/dtool-lookup-gui-macos-one-file/html.toc
+        if-no-files-found: error

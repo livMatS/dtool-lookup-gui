@@ -30,6 +30,7 @@ jobs:
           pkg-config \
           python3-dev \
           gir1.2-gtk-3.0 \
+          gir1.2-gtksource-4 \
           libgtksourceview-4-0
 
     - name: Log system package info
@@ -67,26 +68,29 @@ jobs:
 
     - name: Package executable with pyinstaller
       run: |
-        pyinstaller -y ./pyinstaller/dtool-lookup-gui-linux-one-file.spec
+        pyinstaller -y ./pyinstaller/dtool-lookup-gui-linux-one-file.spec 2>&1 | tee pyinstaller.log
+        mv dist/dtool-lookup-gui dtool-lookup-gui
+        chmod +x dtool-lookup-gui
+        echo "dtool-lookup-gui" >> files_to_include_in_release.txt
+
+    # use tar here, see https://github.com/actions/upload-artifact/issues/38
+    - name: Pack assets
+      run: |
+        tar -cvf dtool-lookup-gui-linux.tar \
+          dtool-lookup-gui \
+          files_to_include_in_release.txt \
+          lsb_release_a.txt \
+          uname_a.txt \
+          apt_list_installed.txt \
+          pip_freeze.txt \
+          pyinstaller.log \
+          build/dtool-lookup-gui-linux-one-file/*.toc \
+          build/dtool-lookup-gui-linux-one-file/*.txt \
+          build/dtool-lookup-gui-linux-one-file/*.html
 
     - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
         name: dtool-lookup-gui-linux
-        path: dist/dtool-lookup-gui
+        path: dtool-lookup-gui-linux.tar
         if-no-files-found: error
-
-    - name: Upload build system description artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: linux-build-system-description
-        path: |
-          files_to_include_in_release.txt
-          lsb_release_a.txt
-          uname_a.txt
-          apt_list_installed.txt
-          pip_freeze.txt
-          pyinstaller.log
-          build/dtool-lookup-gui-linux-one-file/*.toc
-          build/dtool-lookup-gui-linux-one-file/*.txt
-          build/dtool-lookup-gui-linux-one-file/html.toc

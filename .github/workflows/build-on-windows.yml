@@ -28,6 +28,7 @@ jobs:
           base-devel
           curl
           git
+          zip
           mingw-w64-x86_64-cython
           mingw-w64-x86_64-gcc
           mingw-w64-x86_64-gtk3
@@ -122,28 +123,30 @@ jobs:
         # only ran into problems when calling PyInstaller or pyinstaller directly,
         # would never find package metadata within the venv, call as module mitigates the issue:
         python -m PyInstaller -y ./pyinstaller/dtool-lookup-gui-windows-one-file.spec 2>&1 | tee pyinstaller.log
+        mv dist/dtool-lookup-gui.exe dtool-lookup-gui.exe
+        echo "dtool-lookup-gui.exe" >> files_to_include_in_release.txt
 
-    - name: Upload executable artifact
+    - name: Pack assets
+      run: |
+        tar -cvf dtool-lookup-gui-windows.tar \
+          dtool-lookup-gui.exe \
+          files_to_include_in_release.txt \
+          pacman_Q.txt \
+          diff_pacman_q.txt \
+          pip_freeze.txt \
+          diff_pip_freeze.txt \
+          pip_freeze_local.txt \
+          diff_pip_freeze_local.txt \
+          openssl_dlls.txt \
+          pyinstaller.log \
+          build/dtool-lookup-gui-windows-one-file/*.toc \
+          build/dtool-lookup-gui-windows-one-file/*.txt \
+          build/dtool-lookup-gui-windows-one-file/*.html
+
+    - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
         name: dtool-lookup-gui-windows
-        path: dist/dtool-lookup-gui.exe
+        path: dtool-lookup-gui-windows.tar
         if-no-files-found: error
 
-    - name: Upload build system description artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: windows-build-system-description
-        path: |
-          files_to_include_in_release.txt
-          pacman_Q.txt
-          diff_pacman_q.txt
-          pip_freeze.txt
-          diff_pip_freeze.txt
-          pip_freeze_local.txt
-          diff_pip_freeze_local.txt
-          openssl_dlls.txt
-          pyinstaller.log
-          build/dtool-lookup-gui-windows-one-file/*.toc
-          build/dtool-lookup-gui-windows-one-file/*.txt
-          build/dtool-lookup-gui-windows-one-file/html.toc
