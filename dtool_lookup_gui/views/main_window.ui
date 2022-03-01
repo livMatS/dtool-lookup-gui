@@ -1043,6 +1043,7 @@ or search for a dataset</property>
                 <property name="primary-icon-name">edit-find-symbolic</property>
                 <property name="primary-icon-activatable">False</property>
                 <property name="primary-icon-sensitive">False</property>
+                <property name="secondary-icon-tooltip-text" translatable="yes">Open multiline search query editor.</property>
                 <property name="placeholder-text" translatable="yes">Type to search, double-click to expand...</property>
                 <signal name="activate" handler="on_search_activate" swapped="no"/>
                 <signal name="button-press-event" handler="on_search_entry_button_press" swapped="no"/>
@@ -1051,6 +1052,26 @@ or search for a dataset</property>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
                 <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkButton">
+                <property name="visible">True</property>
+                <property name="can-focus">True</property>
+                <property name="receives-default">True</property>
+                <signal name="clicked" handler="on_search_drop_down_clicked" swapped="no"/>
+                <child>
+                  <object class="GtkImage">
+                    <property name="visible">True</property>
+                    <property name="can-focus">False</property>
+                    <property name="icon-name">go-down</property>
+                  </object>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
               </packing>
             </child>
           </object>
