@@ -15,8 +15,8 @@ class TemporaryOSEnviron:
         """Store backup of current os.environ."""
         logger = logging.getLogger(__name__)
         logger.debug("Backed-up os.environ:")
-        _log_nested(logger.debug, os.environ)
-        self._original_environ = os.environ.copy()
+        _log_nested(logger.debug, dict(os.environ))
+        self._original_environ = dict(os.environ.copy())
 
         if self._insertions:
             for k, v in self._insertions.items():
@@ -24,11 +24,12 @@ class TemporaryOSEnviron:
                 os.environ[k] = str(v)
 
         logger.debug("Initial modified os.environ:")
-        _log_nested(logger.debug, os.environ)
+        _log_nested(logger.debug, dict(os.environ))
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """Restore backed up os.environ."""
         logger = logging.getLogger(__name__)
-        os.environ = self._original_environ
+        os.environ.clear()
+        os.environ.update(self._original_environ)
         logger.debug("Recovered os.environ:")
-        _log_nested(logger.debug, os.environ)
+        _log_nested(logger.debug, dict(os.environ))
