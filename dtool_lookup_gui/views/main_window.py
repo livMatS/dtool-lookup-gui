@@ -572,6 +572,16 @@ class MainWindow(Gtk.ApplicationWindow):
         self._search_by_search_text(search_text)
 
     @Gtk.Template.Callback()
+    def on_search_drop_down_clicked(self, widget):
+        if self.search_popover.get_visible():
+            _logger.debug(
+                f"Search entry drop down icon pressed, hide popover.")
+            self.search_popover.popdown()
+        else:
+            _logger.debug(f"Search entry drop down icon pressed, show popover.")
+            self.search_popover.popup_at(widget)
+
+    @Gtk.Template.Callback()
     def on_dataset_selected(self, list_box, row):
         if row is not None:
             row_index = row.get_index()

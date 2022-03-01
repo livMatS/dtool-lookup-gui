@@ -60,7 +60,6 @@ class DtoolSearchPopover(Gtk.Popover):
         self.search_text_buffer.set_highlight_matching_brackets(True)
 
         self.set_relative_to(self.search_entry)
-        self.search_entry.connect("button-press-event", self.on_search_entry_button_press)
 
     def popup_at(self, widget):
         search_text = self.search_entry_buffer.get_text()
@@ -74,14 +73,6 @@ class DtoolSearchPopover(Gtk.Popover):
         self.set_relative_to(widget)
         logger.debug("Show search popover.")
         self.popup()
-
-    def on_search_entry_button_press(self, widget, event):
-        """"Display larger text box popover for multiline search queries on double-click in search bar."""
-        if event.button == 1:
-            logger.debug("Search entry clicked.")
-            if event.type == Gdk.EventType._2BUTTON_PRESS:
-                logger.debug(f"Search entry double-clicked, show popover at {event.x, event.y}.")
-                self.popup_at(widget)
 
     @Gtk.Template.Callback()
     def on_search_button_clicked(self, button):
