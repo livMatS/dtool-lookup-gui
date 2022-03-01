@@ -81,7 +81,7 @@ jobs:
           pyinstaller.log \
           build/dtool-lookup-gui-macos-one-file/*.toc \
           build/dtool-lookup-gui-macos-one-file/*.txt \
-          build/dtool-lookup-gui-macos-one-file/html.toc
+          build/dtool-lookup-gui-macos-one-file/*.html
 
     - name: Upload artifact
       uses: actions/upload-artifact@v2

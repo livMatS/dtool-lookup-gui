@@ -140,7 +140,7 @@ jobs:
           pyinstaller.log \
           build/dtool-lookup-gui-windows-one-file/*.toc \
           build/dtool-lookup-gui-windows-one-file/*.txt \
-          build/dtool-lookup-gui-windows-one-file/html.toc
+          build/dtool-lookup-gui-windows-one-file/*.html
 
     - name: Upload artifact
       uses: actions/upload-artifact@v2
