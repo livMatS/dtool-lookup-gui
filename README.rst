@@ -50,7 +50,7 @@ On earlie macOs, `MacPorts <https://www.macports.org/>`_ allows the installation
    sudo port install adwaita-icon-theme
 
    sudo port select --set python python310
-   sudo port select --set pip ip310
+   sudo port select --set pip pip310
 
    mkdir -p ~/venv
    python -m venv --system-site-packages ~/venv/python-3.10
