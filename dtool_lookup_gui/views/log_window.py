@@ -27,7 +27,7 @@ import os
 
 from gi.repository import Gdk, GLib, Gio, Gtk, GtkSource
 
-from ..utils.logging import FormattedPrependingGtkTextBufferHandler
+from ..utils.logging import FormattedAppendingGtkTextBufferHandler
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +75,7 @@ class LogWindow(Gtk.Window):
 
         # connect log handler to my buffer
         self.log_buffer = self.log_text_view.get_buffer()
-        self.log_handler = FormattedPrependingGtkTextBufferHandler(
+        self.log_handler = FormattedAppendingGtkTextBufferHandler(
             text_buffer=self.log_buffer)
 
         # set up some pseudo highlighting for the log window
