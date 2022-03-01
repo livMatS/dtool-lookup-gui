@@ -45,8 +45,9 @@ On earlie macOs, `MacPorts <https://www.macports.org/>`_ allows the installation
 
 .. code:: bash
    
-   sudo port install xorg-xserver
-   sudo port install gtksourceview4 py-gopject3 py-pip py-numpy py-scipy
+   sudo port -v selfupdate
+   sudo port install xorg-server
+   sudo port install gtksourceview4 py-gobject3 py-pip py-numpy py-scipy
    sudo port install adwaita-icon-theme
 
    sudo port select --set python python310
