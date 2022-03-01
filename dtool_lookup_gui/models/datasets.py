@@ -79,8 +79,11 @@ def _proto_dataset_info(dataset):
 
     try:
         info['readme_content'] = dataset.get_readme_content()
-    except FileNotFoundError as exc:
-        logger.warning(str(exc))
+    except Exception as exc:  # exception here depends on storage broker
+        # i.e. FileNotFoundError on local file system, or
+        # botocore.errorfactory.NoSuchKey: An error occurred (NoSuchKey) when calling the GetObject operation: The specified key does not exist.
+        # on dtool-s3
+        logger.warning(f"{dataset.uuid}, {dataset.uri}: {str(exc)}")
         info['readme_content'] = ''
 
 
