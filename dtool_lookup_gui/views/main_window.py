@@ -49,6 +49,7 @@ from ..models.settings import settings
 from ..utils.copy_manager import CopyManager
 from ..utils.date import date_to_string
 from ..utils.dependency_graph import DependencyGraph
+from ..utils.environ import TemporaryOSEnviron
 from ..utils.logging import FormattedSingleMessageGtkInfoBarHandler, DefaultFilter
 from ..utils.query import (is_valid_query, dump_single_line_query_text)
 from ..widgets.base_uri_list_box import LOOKUP_BASE_URI
@@ -635,7 +636,10 @@ class MainWindow(Gtk.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def on_show_clicked(self, widget):
-        Gio.AppInfo.launch_default_for_uri(str(self.dataset_list_box.get_selected_row().dataset))
+        lp_key = 'LD_LIBRARY_PATH'
+        lp_orig = os.environ.get(lp_key + '_ORIG', lp_key)
+        with TemporaryOSEnviron(env={lp_key: lp_orig}):
+            Gio.AppInfo.launch_default_for_uri_async(str(self.dataset_list_box.get_selected_row().dataset))
 
     @Gtk.Template.Callback()
     def on_add_items_clicked(self, widget):
