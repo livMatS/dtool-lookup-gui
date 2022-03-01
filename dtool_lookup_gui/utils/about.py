@@ -6,14 +6,17 @@ import dtool_lookup_api
 try:
     from dtool import __version__ as dtool_version
 except ImportError:
-    dtool_version = ""
+    dtool_version = None
 
 from .. import __version__
 
 # from https://github.com/jic-dtool/dtool-cli/blob/master/dtool_cli/cli.py
 def pretty_version_text():
     """Return pretty version text listing all plugins."""
-    version_lines = ["dtool, version {}".format(dtool_version)]
+    if dtool_version is not None:
+        version_lines = ["dtool, version {}".format(dtool_version)]
+    else:
+        version_lines = []
     version_lines.append("\n<b>Base</b>:")
     version_lines.append("dtoolcore, version {}".format(dtoolcore.__version__))
     version_lines.append("dtool-lookup-api, version {}".format(dtool_lookup_api.__version__))
