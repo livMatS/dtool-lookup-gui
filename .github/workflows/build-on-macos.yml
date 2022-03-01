@@ -69,19 +69,19 @@ jobs:
         echo "dist/dtool-lookup-gui" >> files_to_include_in_release.txt
 
     - name: Pack assets
-        run: |
-          tar -cvf dtool-lookup-gui-macos.tar \
-            dist/dtool-lookup-gui \
-            files_to_include_in_release.txt \
-            sw_vers.txt \
-            uname_a.txt \
-            brew_list_versions.txt \
-            pip_freeze.txt \
-            pip_freeze_local.txt \
-            pyinstaller.log \
-            build/dtool-lookup-gui-macos-one-file/*.toc \
-            build/dtool-lookup-gui-macos-one-file/*.txt \
-            build/dtool-lookup-gui-macos-one-file/html.toc
+      run: |
+        tar -cvf dtool-lookup-gui-macos.tar \
+          dist/dtool-lookup-gui \
+          files_to_include_in_release.txt \
+          sw_vers.txt \
+          uname_a.txt \
+          brew_list_versions.txt \
+          pip_freeze.txt \
+          pip_freeze_local.txt \
+          pyinstaller.log \
+          build/dtool-lookup-gui-macos-one-file/*.toc \
+          build/dtool-lookup-gui-macos-one-file/*.txt \
+          build/dtool-lookup-gui-macos-one-file/html.toc
 
     - name: Upload artifact
       uses: actions/upload-artifact@v2
