@@ -39,6 +39,29 @@ from ruamel.yaml.scanner import ScannerError
 
 import dtoolcore
 
+
+# workaround for diverging1 python versions:
+try:
+    from importlib.metadata import version, PackageNotFoundError
+except ModuleNotFoundError:
+    from importlib_metadata import version, PackageNotFoundError
+
+
+# fist, try to determine dynamic version at runtime
+try:
+    __version__ = version(__name__)
+except PackageNotFoundError:
+    # package is not installed
+    __version__  = None
+
+# if that fails, check for static version file written by setuptools_scm
+if __version__ is None:
+    try:
+        del __version__
+        from .version import __version__
+    except:
+        __version__ = None
+
 logger = logging.getLogger(__name__)
 
 

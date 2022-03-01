@@ -56,6 +56,7 @@ from ..widgets.base_uri_row import DtoolBaseURIRow
 from ..widgets.search_popover import DtoolSearchPopover
 from ..widgets.search_results_row import DtoolSearchResultsRow
 from .dataset_name_dialog import DatasetNameDialog
+from .about_dialog import AboutDialog
 from .settings_dialog import SettingsDialog
 from .log_window import LogWindow
 
@@ -179,8 +180,10 @@ class MainWindow(Gtk.ApplicationWindow):
 
         # connect a search popover with search entry
         self.search_popover = DtoolSearchPopover(search_entry=self.search_entry)
+
         self.log_window = LogWindow(application=self.application)
         self.settings_dialog = SettingsDialog(application=self.application)
+        self.about_dialog = AboutDialog(application=self.application)
 
         # window-scoped actions
 
@@ -507,6 +510,10 @@ class MainWindow(Gtk.ApplicationWindow):
     @Gtk.Template.Callback()
     def on_logging_clicked(self, widget):
         self.log_window.show()
+
+    @Gtk.Template.Callback()
+    def on_about_clicked(self, widget):
+        self.about_dialog.show()
 
     @Gtk.Template.Callback()
     def on_base_uri_selected(self, list_box, row):

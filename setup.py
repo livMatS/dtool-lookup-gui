@@ -24,6 +24,7 @@
 # SOFTWARE.
 #
 
+import os
 from subprocess import Popen
 
 from setuptools import setup
@@ -35,6 +36,12 @@ class CustomInstallCommand(install):
         install.run(self)
         Popen("glib-compile-schemas " + self.install_lib + "/dtool_lookup_gui/",
               shell=True).wait()
+
+
+def local_scheme(version):
+    """Skip the local version (eg. +xyz of 0.6.1.dev4+gdf99fe2)
+    to be able to upload to Test PyPI"""
+    return ""
 
 
 url = 'https://github.com/livMatS/dtool-lookup-gui'
@@ -52,7 +59,13 @@ setup(
     author='Lars Pastewka',
     author_email='lars.pastewka@imtek.uni-freiburg.de',
     url=url,
-    use_scm_version=True,
+    use_scm_version={
+        "local_scheme": local_scheme,
+        "root": '.',
+        "relative_to": __file__,
+        "write_to": os.path.join(
+            "dtool_lookup_gui", "version.py"),
+    },
     install_requires=[
         'dtoolcore>=3.17',
         'dtool-create>=0.23.4',
