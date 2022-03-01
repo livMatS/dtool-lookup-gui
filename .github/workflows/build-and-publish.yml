@@ -99,6 +99,7 @@ jobs:
         run: |
           mkdir -p /tmp/linux-build
           mkdir -p /tmp/windows-build
+          mkdir -p /tmp/macos-build
 
       - name: Download Linux build
         uses: actions/download-artifact@v2
@@ -117,6 +118,12 @@ jobs:
         with:
           name: dtool-lookup-gui-macos
           path: /tmp/macos-build
+
+      - name: Unpack tar archives
+        run: |
+          cd /tmp/linux-build && tar -xvf dtool-lookup-gui-linux.tar
+          cd /tmp/macos-build && tar -xvf dtool-lookup-gui-macos.tar
+          cd /tmp/windows-build && tar -xvf dtool-lookup-gui-windows.tar
 
       - name: Package additional files with the binaries
         run: |

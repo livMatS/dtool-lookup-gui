@@ -65,13 +65,14 @@ jobs:
       run: |
         source venv/bin/activate
         pyinstaller -y ./pyinstaller/dtool-lookup-gui-macos-one-file.spec 2>&1 | tee pyinstaller.log
-        chmod +x dist/dtool-lookup-gui
-        echo "dist/dtool-lookup-gui" >> files_to_include_in_release.txt
+        mv dist/dtool-lookup-gui dtool-lookup-gui
+        chmod +x dtool-lookup-gui
+        echo "dtool-lookup-gui" >> files_to_include_in_release.txt
 
     - name: Pack assets
       run: |
         tar -cvf dtool-lookup-gui-macos.tar \
-          dist/dtool-lookup-gui \
+          dtool-lookup-gui \
           files_to_include_in_release.txt \
           sw_vers.txt \
           uname_a.txt \
