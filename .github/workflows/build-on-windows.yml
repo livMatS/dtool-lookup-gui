@@ -60,9 +60,9 @@ jobs:
           mingw-w64-x86_64-toolchain
 
     - name: Get history and tags for SCM versioning to work
-        run: |
-          git fetch --prune --unshallow
-          git fetch --depth=1 origin +refs/tags/*:refs/tags/*
+      run: |
+        git fetch --prune --unshallow
+        git fetch --depth=1 origin +refs/tags/*:refs/tags/*
 
     - name: Log system package info
       run: |
