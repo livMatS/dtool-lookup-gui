@@ -120,6 +120,7 @@ jobs:
     - name: Package executable with pyinstaller
       run: |
         source venv/bin/activate
+        python setup.py --version  # have version written to file to appear in bundled app as well
         # only ran into problems when calling PyInstaller or pyinstaller directly,
         # would never find package metadata within the venv, call as module mitigates the issue:
         python -m PyInstaller -y ./pyinstaller/dtool-lookup-gui-windows-one-file.spec 2>&1 | tee pyinstaller.log
