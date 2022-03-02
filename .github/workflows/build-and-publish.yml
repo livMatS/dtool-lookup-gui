@@ -129,7 +129,7 @@ jobs:
         run: |
 
           prefix=$(pwd)
-          bash ${prefix}/maintenance/copy_files_into_folders.sh maintenance/files_to_include_in_release.txt /tmp/linux-build /tmp/macos-build /tmp/windows-build
+          bash ${prefix}/maintenance/copy_files_into_folders.sh maintenance/files_to_include_in_release.txt /tmp/linux-release /tmp/macos-release /tmp/windows-release
           cd /tmp/linux-build \
             && bash ${prefix}/maintenance/copy_files_into_folders.sh files_to_include_in_release.txt /tmp/linux-release
           cd /tmp/macos-build \
