@@ -71,7 +71,7 @@ jobs:
 
     - name: Package executable with pyinstaller
       run: |
-        python setup.py --version  # have version written to file to appear in bundled app as well
+        SETUPTOOLS_SCM_DEBUG=1 python setup.py --version  # have version written to file to appear in bundled app as well
         pyinstaller -y ./pyinstaller/dtool-lookup-gui-linux-one-file.spec 2>&1 | tee pyinstaller.log
         mv dist/dtool-lookup-gui dtool-lookup-gui
         chmod +x dtool-lookup-gui

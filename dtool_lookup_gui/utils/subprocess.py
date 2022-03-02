@@ -1,3 +1,26 @@
+#
+# Copyright 2022 Johannes Laurin Hörmann
+#
+# ### MIT license
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
 import logging
 import os
 import platform
@@ -15,10 +38,10 @@ logger = logging.getLogger(__name__)
 
 
 def launch_default_app_for_uri(uri):
-
+    """Launch OS- and environment-dependent default application for URI."""
     parsed_uri = generous_parse_uri(uri)
     if parsed_uri.scheme != 'file':
-        logger.warning("Only meant to open local resources. URI scheme '%s' not supported.")
+        logger.warning("Only meant to open local resources. URI scheme '%s' not supported.", parsed_uri.scheme)
 
     filepath = parsed_uri.path
     logger.debug("URI '%s' corresponds to local path '%s'.", uri, filepath)
@@ -42,11 +65,13 @@ def launch_default_app_for_uri(uri):
         elif platform.system() == 'Windows':
             if filepath[0] == '/':
                 # remove leading slash from path such as /C:/Users/admin/...
-                filepath = filepath[:1]
+                filepath = filepath[1:]
             # convert / to \
             filepath = os.path.abspath(filepath)
-            logger.debug("On Windows, launch 'start %s'", filepath)
-            subprocess.call(('start', filepath))
+            logger.debug("On Windows, launch wth os.startfile('%s')", filepath)
+            os.startfile(filepath)
+            # direct call of start won't work for directories
+            # subprocess.call(('start', filepath))
         else:  # linux variants
             logger.debug("On Linux, launch with Gio.AppInfo.launch_default_for_uri_async('%s')", uri)
             # On Linux, use the Gio.AppInfo mechanism instead of direct xdg-open

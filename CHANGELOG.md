@@ -1,6 +1,11 @@
 Change log for dtool-lookup-gui
 ===============================
 
+0.5.1 (03Mar22)
+---------------
+
+- Button 'Show' opens file system browser in frozen executables as well, even on Windows
+
 0.5.0 (02Mar22)
 ---------------
 
