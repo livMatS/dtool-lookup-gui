@@ -49,9 +49,9 @@ from ..models.settings import settings
 from ..utils.copy_manager import CopyManager
 from ..utils.date import date_to_string
 from ..utils.dependency_graph import DependencyGraph
-from ..utils.environ import TemporaryOSEnviron
 from ..utils.logging import FormattedSingleMessageGtkInfoBarHandler, DefaultFilter, _log_nested
 from ..utils.query import (is_valid_query, dump_single_line_query_text)
+from ..utils.subprocess import launch_default_app_for_uri
 from ..widgets.base_uri_list_box import LOOKUP_BASE_URI
 from ..widgets.base_uri_row import DtoolBaseURIRow
 from ..widgets.search_popover import DtoolSearchPopover
@@ -646,21 +646,8 @@ class MainWindow(Gtk.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def on_show_clicked(self, widget):
-        # This workaround for launching external system applications from
-        # within a frozen app as suggested on
-        # https://pyinstaller.readthedocs.io/en/stable/runtime-information.html#ld-library-path-libpath-considerations
-        # likely not be necessary here. It may, however, be necessary for
-        # opening arbitrary file types.
-        lp_key = 'LD_LIBRARY_PATH'
-        lp_mod = os.environ.get(lp_key + '_ORIG', None)
-        if lp_mod is not None:
-            _logger.debug("Modfify environment with '%s=%s.'", lp_key, lp_mod)
-        else:
-            lp_mod = os.environ.get(lp_key, "")
-        with TemporaryOSEnviron(env={lp_key: lp_mod}):
-            uri = str(self.dataset_list_box.get_selected_row().dataset)
-            _logger.debug("Open %s.", uri)
-            Gio.AppInfo.launch_default_for_uri_async(uri)
+        uri = str(self.dataset_list_box.get_selected_row().dataset)
+        launch_default_app_for_uri(uri)
 
     @Gtk.Template.Callback()
     def on_add_items_clicked(self, widget):
