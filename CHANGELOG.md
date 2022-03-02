@@ -1,6 +1,23 @@
 Change log for dtool-lookup-gui
 ===============================
 
+0.5.0 (02Mar22)
+---------------
+
+- About dialog with version info
+- Offer multi-line search query editor via drp-down button instead of double click
+- Button 'Show' opens file system browser in frozen executables as well
+- Display correct number of copied items
+- Added missing gir1.2-gtksource-4 system package dependency to Ubuntu build workflow
+- Preserve executable bits in release archives
+- Don't fail listing proto datasets without README.yml via dtool-s3 (or any other storage broker)
+
+0.4.5 (28Feb22)
+---------------
+
+- Added refresh button
+- Handle non-ASCII characters in S3 metadata by using dtool-s3 development version
+
 0.4.4 (21Feb22)
 ---------------
 
