@@ -42,7 +42,7 @@ def launch_default_app_for_uri(uri):
         elif platform.system() == 'Windows':
             if filepath[0] == '/':
                 # remove leading slash from path such as /C:/Users/admin/...
-                filepath = filepath[:1]
+                filepath = filepath[1:]
             # convert / to \
             filepath = os.path.abspath(filepath)
             logger.debug("On Windows, launch 'start %s'", filepath)
