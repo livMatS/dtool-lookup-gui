@@ -68,8 +68,10 @@ def launch_default_app_for_uri(uri):
                 filepath = filepath[1:]
             # convert / to \
             filepath = os.path.abspath(filepath)
-            logger.debug("On Windows, launch 'start %s'", filepath)
-            subprocess.call(('start', filepath))
+            logger.debug("On Windows, launch wth os.startfile('%s')", filepath)
+            os.startfile(filepath)
+            # direct call of start won't work for directories
+            # subprocess.call(('start', filepath))
         else:  # linux variants
             logger.debug("On Linux, launch with Gio.AppInfo.launch_default_for_uri_async('%s')", uri)
             # On Linux, use the Gio.AppInfo mechanism instead of direct xdg-open
