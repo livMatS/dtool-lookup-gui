@@ -15,11 +15,6 @@ jobs:
     - name: checkout
       uses: actions/checkout@v2
 
-    - name: Get history and tags for SCM versioning to work
-      run: |
-        git fetch --prune --unshallow
-        git fetch --depth=1 origin +refs/tags/*:refs/tags/*
-
     # strategy: aim at installing as many dependencies as possible from official mingw64 repo
     # starting point: https://www.gtk.org/docs/installations/windows#using-gtk-from-msys2-packages
     - name: Set up MINGW64 environment
@@ -63,6 +58,11 @@ jobs:
           mingw-w64-x86_64-python-urllib3
           mingw-w64-x86_64-python-yaml
           mingw-w64-x86_64-toolchain
+
+    - name: Get history and tags for SCM versioning to work
+        run: |
+          git fetch --prune --unshallow
+          git fetch --depth=1 origin +refs/tags/*:refs/tags/*
 
     - name: Log system package info
       run: |
