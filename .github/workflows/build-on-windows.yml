@@ -12,9 +12,6 @@ jobs:
         shell: msys2 {0}
 
     steps:
-    - name: checkout
-      uses: actions/checkout@v2
-
     # strategy: aim at installing as many dependencies as possible from official mingw64 repo
     # starting point: https://www.gtk.org/docs/installations/windows#using-gtk-from-msys2-packages
     - name: Set up MINGW64 environment
@@ -58,6 +55,9 @@ jobs:
           mingw-w64-x86_64-python-urllib3
           mingw-w64-x86_64-python-yaml
           mingw-w64-x86_64-toolchain
+
+    - name: checkout
+      uses: actions/checkout@v2
 
     - name: Get history and tags for SCM versioning to work
       run: |
@@ -123,7 +123,7 @@ jobs:
     - name: Package executable with pyinstaller
       run: |
         source venv/bin/activate
-        python setup.py --version  # have version written to file to appear in bundled app as well
+        SETUPTOOLS_SCM_DEBUG=1 python setup.py --version  # have version written to file to appear in bundled app as well
         # only ran into problems when calling PyInstaller or pyinstaller directly,
         # would never find package metadata within the venv, call as module mitigates the issue:
         python -m PyInstaller -y ./pyinstaller/dtool-lookup-gui-windows-one-file.spec 2>&1 | tee pyinstaller.log
