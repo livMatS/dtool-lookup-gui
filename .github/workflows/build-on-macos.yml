@@ -13,8 +13,11 @@ jobs:
 
     - name: checkout
       uses: actions/checkout@v2
-      with:
-        fetch-depth: 1
+
+    - name: Get history and tags for SCM versioning to work
+      run: |
+        git fetch --prune --unshallow
+        git fetch --depth=1 origin +refs/tags/*:refs/tags/*
 
     - name: Install system dependencies
       run: |
