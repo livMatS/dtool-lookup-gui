@@ -41,7 +41,7 @@ def launch_default_app_for_uri(uri):
     """Launch OS- and environment-dependent default application for URI."""
     parsed_uri = generous_parse_uri(uri)
     if parsed_uri.scheme != 'file':
-        logger.warning("Only meant to open local resources. URI scheme '%s' not supported.")
+        logger.warning("Only meant to open local resources. URI scheme '%s' not supported.", parsed_uri.scheme)
 
     filepath = parsed_uri.path
     logger.debug("URI '%s' corresponds to local path '%s'.", uri, filepath)
