@@ -44,7 +44,7 @@ def launch_default_app_for_uri(uri):
                 # remove leading slash from path such as /C:/Users/admin/...
                 filepath = filepath[:1]
             # convert / to \
-            filepath = os.abspath(filepath)
+            filepath = os.path.abspath(filepath)
             logger.debug("On Windows, launch 'start %s'", filepath)
             subprocess.call(('start', filepath))
         else:  # linux variants
