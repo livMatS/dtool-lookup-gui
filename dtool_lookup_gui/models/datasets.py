@@ -274,7 +274,7 @@ class DatasetModel:
 
     @classmethod
     async def query(cls, query_text):
-        datasets = await async_dl.by_query(query_text)
+        datasets = await async_dl.query(query_text)
         return [await cls.from_lookup(lookup_dict) for lookup_dict in datasets]
 
     @classmethod
