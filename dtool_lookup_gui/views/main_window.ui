@@ -1064,7 +1064,7 @@ or search for a dataset</property>
                   <object class="GtkImage">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
-                    <property name="icon-name">go-down</property>
+                    <property name="icon-name">go-down-symbolic</property>
                   </object>
                 </child>
               </object>
@@ -1175,7 +1175,7 @@ or search for a dataset</property>
               <object class="GtkImage">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="icon-name">view-refresh</property>
+                <property name="icon-name">view-refresh-symbolic</property>
               </object>
             </child>
           </object>
