@@ -39,7 +39,7 @@ DEFAULT_LABEL_MAX_LINES = 1
 
 
 def _log_nested(log_func, dct):
-    for l in json.dumps(dct, indent=2, default=str).splitlines():
+    for l in json.dumps(dct, indent=2, default=str, ensure_ascii=False).splitlines():
         log_func(l)
 
 # filters

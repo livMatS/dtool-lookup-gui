@@ -37,6 +37,7 @@ from dtool_info.utils import date_fmt, sizeof_fmt
 from dtool_info.inventory import _dataset_info
 from dtool_lookup_api.core.LookupClient import ConfigurationBasedLookupClient
 
+from ..utils.logging import _log_nested
 from ..utils.multiprocessing import StatusReportingChildProcessBuilder, process_initializer
 from ..utils.progressbar import ProgressBar
 
@@ -334,10 +335,13 @@ class DatasetModel:
 
     async def get_readme(self):
         if 'readme_content' in self._dataset_info:
+            logger.debug("README.yml cached.")
             return self._dataset_info['readme_content']
+
+        logger.debug("README.yml queried from lookup server.")
         async with ConfigurationBasedLookupClient() as lookup:
             readme_dict = await lookup.readme(self.uri)
-        self._dataset_info['readme_content'] = yaml.dump(readme_dict)
+        self._dataset_info['readme_content'] = yaml.dump(readme_dict, allow_unicode=True)
         return self._dataset_info['readme_content']
 
     async def get_manifest(self):
