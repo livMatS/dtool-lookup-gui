@@ -35,7 +35,7 @@ from dtoolcore.utils import generous_parse_uri
 from dtool_info.utils import date_fmt, sizeof_fmt
 
 from dtool_info.inventory import _dataset_info
-import dtool_lookup_api.asynchronous as async_dl
+from dtool_lookup_api.core.LookupClient import ConfigurationBasedLookupClient
 
 from ..utils.logging import _log_nested
 from ..utils.multiprocessing import StatusReportingChildProcessBuilder, process_initializer
@@ -269,18 +269,24 @@ class DatasetModel:
 
     @classmethod
     async def search(cls, keyword):
-        datasets = await async_dl.search(keyword)
+        async with ConfigurationBasedLookupClient() as lookup:
+            datasets = await lookup.search(keyword)
+
         return [await cls.from_lookup(lookup_dict) for lookup_dict in datasets]
 
     @classmethod
     async def query(cls, query_text):
-        datasets = await async_dl.query(query_text)
+        async with ConfigurationBasedLookupClient() as lookup:
+            datasets = await lookup.by_query(query_text)
+
         return [await cls.from_lookup(lookup_dict) for lookup_dict in datasets]
 
     @classmethod
     async def query_all(cls):
         """Query all datasets from lookup server."""
-        datasets = await async_dl.all()
+        async with ConfigurationBasedLookupClient() as lookup:
+            datasets = await lookup.all()
+
         return [await cls.from_lookup(lookup_dict) for lookup_dict in datasets]
 
     def __str__(self):
@@ -333,7 +339,8 @@ class DatasetModel:
             return self._dataset_info['readme_content']
 
         logger.debug("README.yml queried from lookup server.")
-        readme_dict = await async_dl.readme(self.uri)
+        async with ConfigurationBasedLookupClient() as lookup:
+            readme_dict = await lookup.readme(self.uri)
         self._dataset_info['readme_content'] = yaml.dump(readme_dict, allow_unicode=True)
         return self._dataset_info['readme_content']
 
@@ -343,7 +350,8 @@ class DatasetModel:
             return dict()
         if 'manifest' in self._dataset_info:
             return self._dataset_info['manifest']
-        manifest_dict = await async_dl.manifest(self.uri)
+        async with ConfigurationBasedLookupClient() as lookup:
+            manifest_dict = await lookup.manifest(self.uri)
         self._dataset_info['manifest'] = _mangle_lookup_manifest(manifest_dict)
         return self._dataset_info['manifest']
 
