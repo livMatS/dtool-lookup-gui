@@ -71,8 +71,12 @@ exe = EXE(pyz,
 coll = COLLECT(exe,
                a.binaries,
                a.zipfiles,
-               a.datas, 
+               a.datas,
                strip=False,
                upx=True,
                upx_exclude=[],
                name='dtool-lookup-gui')
+app = BUNDLE(coll,
+             name='dtool-lookup-gui.app',
+             icon=None,
+             bundle_identifier=None)
