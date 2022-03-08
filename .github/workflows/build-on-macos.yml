@@ -68,15 +68,15 @@ jobs:
       run: |
         source venv/bin/activate
         SETUPTOOLS_SCM_DEBUG=1 python setup.py --version  # have version written to file to appear in bundled app as well
-        pyinstaller -y ./pyinstaller/dtool-lookup-gui-macos-one-file.spec 2>&1 | tee pyinstaller.log
-        mv dist/dtool-lookup-gui dtool-lookup-gui
-        chmod +x dtool-lookup-gui
-        echo "dtool-lookup-gui" >> files_to_include_in_release.txt
+        pyinstaller -y ./pyinstaller/dtool-lookup-gui-macos.spec 2>&1 | tee pyinstaller.log
+        ls -lh dist
+        mv dist/dtool-lookup-gui.app dtool-lookup-gui.app
+        echo "dtool-lookup-gui.app" >> files_to_include_in_release.txt
 
     - name: Pack assets
       run: |
         tar -cvf dtool-lookup-gui-macos.tar \
-          dtool-lookup-gui \
+          dtool-lookup-gui.app \
           files_to_include_in_release.txt \
           sw_vers.txt \
           uname_a.txt \
@@ -84,9 +84,9 @@ jobs:
           pip_freeze.txt \
           pip_freeze_local.txt \
           pyinstaller.log \
-          build/dtool-lookup-gui-macos-one-file/*.toc \
-          build/dtool-lookup-gui-macos-one-file/*.txt \
-          build/dtool-lookup-gui-macos-one-file/*.html
+          build/dtool-lookup-gui-macos/*.toc \
+          build/dtool-lookup-gui-macos/*.txt \
+          build/dtool-lookup-gui-macos/*.html
 
     - name: Upload artifact
       uses: actions/upload-artifact@v2
