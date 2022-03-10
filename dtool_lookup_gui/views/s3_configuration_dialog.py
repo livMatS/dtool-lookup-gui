@@ -48,7 +48,7 @@ class S3ConfigurationDialog(Gtk.Window):
             self.endpoint_url_entry.set_text(get_config_value(f'DTOOL_S3_ENDPOINT_{bucket}', default=''))
             self.access_key_entry.set_text(get_config_value(f'DTOOL_S3_ACCESS_KEY_ID_{bucket}', default=''))
             self.secret_key_entry.set_text(get_config_value(f'DTOOL_S3_SECRET_ACCESS_KEY_{bucket}', default=''))
-            self.prefix_entry.set_text(get_config_value(f'DTOOL_S3_DATASET_PREFIX', default=''))
+            self.prefix_entry.set_text(get_config_value(f'DTOOL_S3_DATASET_PREFIX_{bucket}', default=''))
 
         self._apply = apply
 
@@ -58,7 +58,7 @@ class S3ConfigurationDialog(Gtk.Window):
         write_config_value_to_file(f'DTOOL_S3_ENDPOINT_{bucket}', self.endpoint_url_entry.get_text())
         write_config_value_to_file(f'DTOOL_S3_ACCESS_KEY_ID_{bucket}', self.access_key_entry.get_text())
         write_config_value_to_file(f'DTOOL_S3_SECRET_ACCESS_KEY_{bucket}', self.secret_key_entry.get_text())
-        write_config_value_to_file(f'DTOOL_S3_DATASET_PREFIX', self.prefix_entry.get_text())
+        write_config_value_to_file(f'DTOOL_S3_DATASET_PREFIX_{bucket}', self.prefix_entry.get_text())
         self._apply()
         self.destroy()
 
