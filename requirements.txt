@@ -54,7 +54,7 @@ dtool-info==0.16.2
     # via -r requirements.in
 dtool-lookup-api==0.5.0
     # via -r requirements.in
--e git+https://github.com/jic-dtool/dtool-s3.git@i18n-filename-support#egg=dtool-s3
+dtool-s3==0.14.0
     # via -r requirements.in
 dtool-smb==0.1.0
     # via -r requirements.in
