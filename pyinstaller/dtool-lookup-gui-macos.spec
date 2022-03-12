@@ -78,5 +78,5 @@ coll = COLLECT(exe,
                name='dtool-lookup-gui')
 app = BUNDLE(coll,
              name='dtool-lookup-gui.app',
-             icon=None,
+             icon='data/icons/128x128/dtool_logo_small.png',
              bundle_identifier=None)
