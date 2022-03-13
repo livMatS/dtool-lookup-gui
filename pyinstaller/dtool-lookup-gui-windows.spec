@@ -71,12 +71,4 @@ exe = EXE(pyz,
           target_arch=None,
           codesign_identity=None,
           entitlements_file=None,
-          icon='data/icons/128x128/dtool_logo_small.ico')
-coll = COLLECT(exe,
-               a.binaries,
-               a.zipfiles,
-               a.datas,
-               strip=False,
-               upx=True,
-               upx_exclude=[],
-               name='dtool-lookup-gui')
+          icon=os.path.join(root_dir, 'data', 'icons', '128x128', 'dtool_logo_small.ico'))
