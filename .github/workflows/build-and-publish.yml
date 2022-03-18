@@ -14,6 +14,9 @@ jobs:
   build-on-windows:
     uses: livMatS/dtool-lookup-gui/.github/workflows/build-on-windows.yml@master
 
+  build-installer-on-windows:
+    uses: livMatS/dtool-lookup-gui/.github/workflows/build-installer-on-windows.yml@2022-03-18-windows-installer
+
   build-on-macos:
     uses: livMatS/dtool-lookup-gui/.github/workflows/build-on-macos.yml@2022-03-07-macos-app
 
@@ -85,8 +88,9 @@ jobs:
 
     needs:
       - build-on-ubuntu
-      - build-on-windows
       - build-on-macos
+      - build-on-windows
+      - build-installer-on-windows
 
     steps:
       - name: Checkout
@@ -104,8 +108,9 @@ jobs:
       - name: Prepare
         run: |
           mkdir -p /tmp/linux-build
-          mkdir -p /tmp/windows-build
           mkdir -p /tmp/macos-build
+          mkdir -p /tmp/windows-build
+          mkdir -p /tmp/windows-installer-build
 
       - name: Download Linux build
         uses: actions/download-artifact@v2
@@ -119,6 +124,12 @@ jobs:
           name: dtool-lookup-gui-windows
           path: /tmp/windows-build
 
+      - name: Download Windows installer build
+        uses: actions/download-artifact@v2
+        with:
+          name: dtool-lookup-gui-windows-installer
+          path: /tmp/windows-installer-build
+
       - name: Download MacOS build
         uses: actions/download-artifact@v2
         with:
@@ -130,10 +141,10 @@ jobs:
           cd /tmp/linux-build && tar -xvf dtool-lookup-gui-linux.tar
           cd /tmp/macos-build && tar -xvf dtool-lookup-gui-macos.tar
           cd /tmp/windows-build && tar -xvf dtool-lookup-gui-windows.tar
+          cd /tmp/windows-installer-build && tar -xvf dtool-lookup-gui-windows-installer.tar
 
       - name: Package additional files with the binaries
         run: |
-
           prefix=$(pwd)
           bash ${prefix}/maintenance/copy_files_into_folders.sh maintenance/files_to_include_in_release.txt /tmp/linux-release /tmp/macos-release /tmp/windows-release
           cd /tmp/linux-build \
@@ -142,18 +153,22 @@ jobs:
             && bash ${prefix}/maintenance/copy_files_into_folders.sh files_to_include_in_release.txt /tmp/macos-release
           cd /tmp/windows-build \
             && bash ${prefix}/maintenance/copy_files_into_folders.sh files_to_include_in_release.txt /tmp/windows-release
+          cd /tmp/windows-installer-build \
+            && bash ${prefix}/maintenance/copy_files_into_folders.sh files_to_include_in_release.txt /tmp/windows-installer-release
 
       - name: List content of release
         run: |
           ls -lhv /tmp/linux-release/
-          ls -lhv /tmp/windows-release/
           ls -lhv /tmp/macos-release/
+          ls -lhv /tmp/windows-release/
+          ls -lhv /tmp/windows-installer-release/
 
       - name: Pack release assets
         run: |
           cd /tmp/linux-release && tar -cvzf dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux.tar.gz ./*
           cd /tmp/macos-release && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-macos.zip ./*
           cd /tmp/windows-release && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows.zip ./*
+          cd /tmp/windows-installer-release && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows-installer.zip ./*
 
       - name: Get master HEAD SHA
         id: get_master_sha
@@ -174,4 +189,5 @@ jobs:
             /tmp/linux-release/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux.tar.gz
             /tmp/macos-release/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-macos.zip
             /tmp/windows-release/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows.zip
+            /tmp/windows-installer-release/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows-installer.zip
           draft: true
