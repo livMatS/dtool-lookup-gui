@@ -139,7 +139,6 @@ jobs:
         echo "dtool-lookup-gui.exe" >> files_to_include_in_release.txt
         tar -cvf dtool-lookup-gui-windows-installer.tar \
           dtool-lookup-gui.exe \
-          win/dtool-lookup-gui.exe \
           files_to_include_in_release.txt \
           pacman_Q.txt \
           diff_pacman_q.txt \
