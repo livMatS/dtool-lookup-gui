@@ -74,4 +74,5 @@ exe = EXE(pyz,
           disable_windowed_traceback=False,
           target_arch=None,
           codesign_identity=None,
-          entitlements_file=None )
+          entitlements_file=None,
+          icon=os.path.join(root_dir, 'data', 'icons', '64x64', 'dtool_logo_small.ico'))

@@ -21,6 +21,15 @@ and follow the `quick start guide`_ to get started.
 
 If the binaries won't run out-of-the-box on your system, continue below.
 
+OS-specific notes
+-----------------
+
+Linux (Ubuntu)
+^^^^^^^^^^^^^^
+
+Run packaged scripts `./maintenance/set_launcher_icon.sh` and 
+`./maintenance/soft_link_launcher.sh` to install a desktop launcher icon.
+Remove link `${HOME}/.local/share/applications/dtool-lookup-gui.destop` to delete launcher.
 
 Requirements
 ------------

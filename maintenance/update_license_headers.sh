@@ -3,5 +3,5 @@
 
 for fn in setup.py `find dtool_lookup_gui -name "*.py"`; do
   echo $fn
-  python3 maintenance/copyright.py $fn | cat - LICENSE.md | python3 maintenance/replace_header.py $fn
+  python3 maintenance/copyright.py $fn | cat - LICENSE-MIT.md | python3 maintenance/replace_header.py $fn
 done

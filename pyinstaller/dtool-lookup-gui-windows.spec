@@ -24,8 +24,8 @@ additional_datas = [
 hooks_path = [os.path.join(root_dir, 'pyinstaller/hooks')]
 
 runtime_hooks = [
-  os.path.join(root_dir, 'pyinstaller/rthooks/pyi_rth_jinja2.py'),
-  os.path.join(root_dir, 'pyinstaller/rthooks/pyi_rth_glib.py')
+    os.path.join(root_dir, 'pyinstaller/rthooks/pyi_rth_jinja2.py'),
+    os.path.join(root_dir, 'pyinstaller/rthooks/pyi_rth_glib.py')
 ]
 
 a = Analysis(
@@ -55,10 +55,10 @@ a = Analysis(
              cipher=block_cipher,
              noarchive=False)
 pyz = PYZ(a.pure, a.zipped_data,
-             cipher=block_cipher)
+          cipher=block_cipher)
 
 exe = EXE(pyz,
-          a.scripts, 
+          a.scripts,
           [],
           exclude_binaries=True,
           name='dtool-lookup-gui',
@@ -70,11 +70,12 @@ exe = EXE(pyz,
           disable_windowed_traceback=False,
           target_arch=None,
           codesign_identity=None,
-          entitlements_file=None )
+          entitlements_file=None,
+          icon=os.path.join(root_dir, 'data', 'icons', '64x64', 'dtool_logo_small.ico'))
 coll = COLLECT(exe,
                a.binaries,
                a.zipfiles,
-               a.datas, 
+               a.datas,
                strip=False,
                upx=True,
                upx_exclude=[],

@@ -76,6 +76,9 @@ jobs:
         mv dist/dtool-lookup-gui dtool-lookup-gui
         chmod +x dtool-lookup-gui
         echo "dtool-lookup-gui" >> files_to_include_in_release.txt
+        echo "etc/dtool-lookup-gui.desktop" >> files_to_include_in_release.txt
+        echo "maintenance/set_launcher_icon.sh" >> files_to_include_in_release.txt
+        echo "maintenance/soft_link_launcher.sh" >> files_to_include_in_release.txt
 
     # use tar here, see https://github.com/actions/upload-artifact/issues/38
     - name: Pack assets

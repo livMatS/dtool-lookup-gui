@@ -1,19 +1,18 @@
-### MIT license
+# LICENSE
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+dtool-lookup-gui makes all its materials publicly available under [open source][osi] licenses.
 
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
+Documents and data are made available under a CC-BY-SA license.
+Software are made available under an MIT license.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+## Documents and data
+
+Documentation and graphics in this repository are licensed under a [Creative Commons Attribution-ShareAlike 4.0 International License][cc-by-sa].
+
+## Software
+
+Software provided are made available under the [OSI][osi]-approved [MIT license][mit-license].
+
+[cc-by-sa]: https://creativecommons.org/licenses/by-sa/4.0/
+[mit-license]: https://opensource.org/licenses/mit-license.html
+[osi]: https://opensource.org
