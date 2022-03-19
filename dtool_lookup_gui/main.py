@@ -30,6 +30,7 @@ import dtool_lookup_gui.utils.patch
 
 import argparse
 import asyncio
+import glob
 import json
 import logging
 import sys
@@ -40,7 +41,7 @@ import dtool_lookup_api.core.config
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('GtkSource', '4')
-from gi.repository import GLib, GObject, Gio, Gtk, GtkSource
+from gi.repository import GLib, GObject, Gio, Gtk, GtkSource, GdkPixbuf
 
 import gbulb
 gbulb.install(gtk=True)
@@ -91,6 +92,14 @@ class Application(Gtk.Application):
             logger.debug("Build GUI.")
 
             win = MainWindow(application=self)
+            glob_pattern = os.path.join(os.path.dirname(__file__), os.pardir, 'data','icons','*','dtool_logo_small.xpm')
+            icon_file_list = glob.glob(glob_pattern)
+            if len(icon_file_list) > 0:
+                icon_list = [GdkPixbuf.Pixbuf.new_from_file(icon_file) for icon_file in icon_file_list]
+                win.set_icon_list(icon_list)
+                logger.debug("Loaded %d icons.", len(icon_file_list))
+            else:
+                logger.warning("Could not load app icons.")
             win.connect('destroy', lambda _: self.loop.stop())
             self.loop.call_soon(win.refresh)  # Populate widgets after event loop starts
 
