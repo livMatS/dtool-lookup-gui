@@ -67,7 +67,7 @@ jobs:
 
     - name: Pack assets
       run: |
-        cat pyinstaller/MANIFEST.macos | xargs -I{} bash -c "tar -cvf dtool-lookup-gui-macos.tar {}"
+        bash -c "tar -cvf dtool-lookup-gui-macos.tar $(xargs -a pyinstaller/MANIFEST.macos)"
 
     - name: Upload artifact
       uses: actions/upload-artifact@v2

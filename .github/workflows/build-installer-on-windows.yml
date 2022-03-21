@@ -140,7 +140,7 @@ jobs:
     - name: Pack assets
       run: |
         mv win/dtool-lookup-gui.exe dtool-lookup-gui.exe
-        cat pyinstaller/MANIFEST.windows-installer | xargs -I{} bash -c "tar -cvf dtool-lookup-gui-windows-installer.tar {}"
+        bash -c "tar -cvf dtool-lookup-gui-windows-installer.tar $(xargs -a pyinstaller/MANIFEST.windows-installer)"
 
 
     - name: Upload artifact

@@ -126,7 +126,7 @@ jobs:
 
     - name: Pack assets
       run: |
-        cat pyinstaller/MANIFEST.windows | xargs -I{} bash -c "tar -cvf dtool-lookup-gui-windows.tar {}"
+        bash -c "tar -cvf dtool-lookup-gui-windows.tar $(xargs -a pyinstaller/MANIFEST.windows)"
 
     - name: Upload artifact
       uses: actions/upload-artifact@v2

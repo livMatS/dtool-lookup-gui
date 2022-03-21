@@ -72,7 +72,7 @@ jobs:
     # use tar here, see https://github.com/actions/upload-artifact/issues/38
     - name: Pack assets
       run: |
-        cat pyinstaller/MANIFEST.linux | xargs -I{} bash -c "tar -cvf dtool-lookup-gui-linux.tar {}"
+        bash -c "tar -cvf dtool-lookup-gui-linux.tar $(xargs -a pyinstaller/MANIFEST.linux)"
 
     - name: Upload artifact
       uses: actions/upload-artifact@v2
