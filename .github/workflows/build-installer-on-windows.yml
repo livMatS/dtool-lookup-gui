@@ -64,6 +64,10 @@ jobs:
         git fetch --prune --unshallow
         git fetch --depth=1 origin +refs/tags/*:refs/tags/*
 
+    - name: Get version
+      id: get_version
+      uses: battila7/get-version-action@v2
+
     - name: Log system package info
       run: |
         echo "### pacman -Q ###"
@@ -79,6 +83,8 @@ jobs:
         # pyinstaller/dtool-lookup-gui-windows-one-file.spec below.
         echo "### libcrypto and libssl ###"
         pacman -Ql mingw-w64-x86_64-openssl | grep 'lib[^/]*dll$' | awk '{print $2}' |  cygpath -wa --file - | tee openssl_dlls.txt
+
+        echo "pacman_Q.txt" >> files_to_include_in_release.txt
 
     # strategy: only install remaining pythonic dependencies via pip
     - name: Install remaining pythonic dependencies
@@ -110,6 +116,9 @@ jobs:
         echo "### pip freeze diff to reference configuration ###"
         (git diff --ignore-space-change --ignore-cr-at-eol --no-index pyinstaller/mingw64_venv_pip_freeze.txt pip_freeze.txt || true) | tee diff_pip_freeze.txt
 
+        echo "pip_freeze_local.txt" >> files_to_include_in_release.txt
+        echo "pip_freeze.txt" >> files_to_include_in_release.txt
+
     - name: Compile gschemas
       run: |
         glib-compile-schemas .
@@ -121,17 +130,23 @@ jobs:
         SETUPTOOLS_SCM_DEBUG=1 python setup.py --version  # have version written to file to appear in bundled app as well
         # only ran into problems when calling PyInstaller or pyinstaller directly,
         # would never find package metadata within the venv, call as module mitigates the issue:
-        python -m PyInstaller -y ./pyinstaller/dtool-lookup-gui-windows-one-file.spec 2>&1 | tee pyinstaller.log
-        mv dist/dtool-lookup-gui.exe dtool-lookup-gui.exe
+        python -m PyInstaller -y ./pyinstaller/dtool-lookup-gui-windows.spec 2>&1 | tee pyinstaller.log
+
+    - name: Build installer
+      run: |
+        "%programfiles(x86)%\Inno Setup 6\iscc.exe" "/DMyAppVersion=${{ steps.get_version.outputs.version }}" "win\dtool-lookup-gui.iss"
+      shell: cmd
 
     - name: Pack assets
       run: |
-        bash -c "tar -cvf dtool-lookup-gui-windows.tar $(xargs -a pyinstaller/MANIFEST.windows)"
+        mv win/dtool-lookup-gui.exe dtool-lookup-gui.exe
+        bash -c "tar -cvf dtool-lookup-gui-windows-installer.tar $(xargs -a pyinstaller/MANIFEST.windows-installer)"
+
 
     - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
-        name: dtool-lookup-gui-windows
-        path: dtool-lookup-gui-windows.tar
+        name: dtool-lookup-gui-windows-installer
+        path: dtool-lookup-gui-windows-installer.tar
         if-no-files-found: error
 

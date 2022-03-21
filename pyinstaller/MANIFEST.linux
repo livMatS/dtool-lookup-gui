@@ -1,0 +1,13 @@
+dtool-lookup-gui
+etc/dtool-lookup-gui.desktop
+maintenance/set_launcher_icon.sh
+maintenance/soft_link_launcher.sh
+apt_list_installed.txt
+lsb_release_a.txt
+uname_a.txt
+pip_freeze.txt
+pyinstaller.log
+build/dtool-lookup-gui-linux-one-file/*.toc
+build/dtool-lookup-gui-linux-one-file/*.txt
+build/dtool-lookup-gui-linux-one-file/*.html
+

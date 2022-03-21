@@ -1,0 +1,12 @@
+dtool-lookup-gui.exe
+diff_pacman_q.txt
+diff_pip_freeze.txt
+diff_pip_freeze_local.txt
+openssl_dlls.txt
+pacman_Q.txt
+pip_freeze_local.txt
+pip_freeze.txt
+pyinstaller.log
+build/dtool-lookup-gui-windows-one-file/*.toc
+build/dtool-lookup-gui-windows-one-file/*.txt
+build/dtool-lookup-gui-windows-one-file/*.html

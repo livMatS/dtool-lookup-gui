@@ -32,10 +32,6 @@ jobs:
         echo "### brew list --versions ###"
         brew list --versions | tee brew_list_versions.txt
 
-        echo "sw_vers.txt" >> files_to_include_in_release.txt
-        echo "uname_a.txt" >> files_to_include_in_release.txt
-        echo "brew_list_versions.txt" >> files_to_include_in_release.txt
-
     - name: Install pythonic dependencies
       run: |
         python3 -m venv --system-site-packages venv
@@ -56,9 +52,6 @@ jobs:
         echo "### pip freeze ###"
         pip freeze | tee pip_freeze.txt
 
-        echo "pip_freeze_local.txt" >> files_to_include_in_release.txt
-        echo "pip_freeze.txt" >> files_to_include_in_release.txt
-
     - name: Compile gschemas
       run: |
         glib-compile-schemas .
@@ -71,22 +64,11 @@ jobs:
         pyinstaller -y ./pyinstaller/dtool-lookup-gui-macos.spec 2>&1 | tee pyinstaller.log
         ls -lh dist
         mv dist/dtool-lookup-gui.app dtool-lookup-gui.app
-        echo "dtool-lookup-gui.app" >> files_to_include_in_release.txt
 
+    # macos environment's xargs does not support option -a
     - name: Pack assets
       run: |
-        tar -cvf dtool-lookup-gui-macos.tar \
-          dtool-lookup-gui.app \
-          files_to_include_in_release.txt \
-          sw_vers.txt \
-          uname_a.txt \
-          brew_list_versions.txt \
-          pip_freeze.txt \
-          pip_freeze_local.txt \
-          pyinstaller.log \
-          build/dtool-lookup-gui-macos/*.toc \
-          build/dtool-lookup-gui-macos/*.txt \
-          build/dtool-lookup-gui-macos/*.html
+        bash -c "tar -cvf dtool-lookup-gui-macos.tar $(cat pyinstaller/MANIFEST.macos | xargs)"
 
     - name: Upload artifact
       uses: actions/upload-artifact@v2
