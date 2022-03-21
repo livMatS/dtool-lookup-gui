@@ -65,9 +65,10 @@ jobs:
         ls -lh dist
         mv dist/dtool-lookup-gui.app dtool-lookup-gui.app
 
+    # macos environment's xargs does not support option -a
     - name: Pack assets
       run: |
-        bash -c "tar -cvf dtool-lookup-gui-macos.tar $(xargs -a pyinstaller/MANIFEST.macos)"
+        bash -c "tar -cvf dtool-lookup-gui-macos.tar $(cat pyinstaller/MANIFEST.macos | xargs)"
 
     - name: Upload artifact
       uses: actions/upload-artifact@v2
