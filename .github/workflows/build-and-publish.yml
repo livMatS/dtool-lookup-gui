@@ -159,7 +159,7 @@ jobs:
                ${prefix}/pyinstaller/MANIFEST.windows-release /tmp/windows-release
           cd /tmp/windows-installer-build \
             && bash ${prefix}/maintenance/copy_files_into_folders.sh \
-               ${prefix}/pyinstaller/MANIFEST.windows-installer-release.txt /tmp/windows-installer-release
+               ${prefix}/pyinstaller/MANIFEST.windows-installer-release /tmp/windows-installer-release
 
       - name: List content of release
         run: |
