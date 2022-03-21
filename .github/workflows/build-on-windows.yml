@@ -80,8 +80,6 @@ jobs:
         echo "### libcrypto and libssl ###"
         pacman -Ql mingw-w64-x86_64-openssl | grep 'lib[^/]*dll$' | awk '{print $2}' |  cygpath -wa --file - | tee openssl_dlls.txt
 
-        echo "pacman_Q.txt" >> files_to_include_in_release.txt
-
     # strategy: only install remaining pythonic dependencies via pip
     - name: Install remaining pythonic dependencies
       run: |
@@ -112,9 +110,6 @@ jobs:
         echo "### pip freeze diff to reference configuration ###"
         (git diff --ignore-space-change --ignore-cr-at-eol --no-index pyinstaller/mingw64_venv_pip_freeze.txt pip_freeze.txt || true) | tee diff_pip_freeze.txt
 
-        echo "pip_freeze_local.txt" >> files_to_include_in_release.txt
-        echo "pip_freeze.txt" >> files_to_include_in_release.txt
-
     - name: Compile gschemas
       run: |
         glib-compile-schemas .
@@ -128,24 +123,10 @@ jobs:
         # would never find package metadata within the venv, call as module mitigates the issue:
         python -m PyInstaller -y ./pyinstaller/dtool-lookup-gui-windows-one-file.spec 2>&1 | tee pyinstaller.log
         mv dist/dtool-lookup-gui.exe dtool-lookup-gui.exe
-        echo "dtool-lookup-gui.exe" >> files_to_include_in_release.txt
 
     - name: Pack assets
       run: |
-        tar -cvf dtool-lookup-gui-windows.tar \
-          dtool-lookup-gui.exe \
-          files_to_include_in_release.txt \
-          pacman_Q.txt \
-          diff_pacman_q.txt \
-          pip_freeze.txt \
-          diff_pip_freeze.txt \
-          pip_freeze_local.txt \
-          diff_pip_freeze_local.txt \
-          openssl_dlls.txt \
-          pyinstaller.log \
-          build/dtool-lookup-gui-windows-one-file/*.toc \
-          build/dtool-lookup-gui-windows-one-file/*.txt \
-          build/dtool-lookup-gui-windows-one-file/*.html
+        cat pyinstaller/MANIFEST.windows | xargs -I{} bash -c "tar -cvf dtool-lookup-gui-windows.tar {}"
 
     - name: Upload artifact
       uses: actions/upload-artifact@v2

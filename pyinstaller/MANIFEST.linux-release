@@ -1,0 +1,4 @@
+dtool-lookup-gui
+etc/dtool-lookup-gui.desktop
+maintenance/set_launcher_icon.sh
+maintenance/soft_link_launcher.sh

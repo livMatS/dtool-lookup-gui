@@ -136,21 +136,8 @@ jobs:
     - name: Pack assets
       run: |
         mv win/dtool-lookup-gui.exe dtool-lookup-gui.exe
-        echo "dtool-lookup-gui.exe" >> files_to_include_in_release.txt
-        tar -cvf dtool-lookup-gui-windows-installer.tar \
-          dtool-lookup-gui.exe \
-          files_to_include_in_release.txt \
-          pacman_Q.txt \
-          diff_pacman_q.txt \
-          pip_freeze.txt \
-          diff_pip_freeze.txt \
-          pip_freeze_local.txt \
-          diff_pip_freeze_local.txt \
-          openssl_dlls.txt \
-          pyinstaller.log \
-          build/dtool-lookup-gui-windows/*.toc \
-          build/dtool-lookup-gui-windows/*.txt \
-          build/dtool-lookup-gui-windows/*.html
+        cat pyinstaller/MANIFEST.windows-installer | xargs -I{} bash -c "tar -cvf dtool-lookup-gui-windows-installer.tar {}"
+
 
     - name: Upload artifact
       uses: actions/upload-artifact@v2

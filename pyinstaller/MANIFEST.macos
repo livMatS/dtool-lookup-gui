@@ -1,0 +1,11 @@
+dtool-lookup-gui.app
+brew_list_versions.txt
+pip_freeze_local.txt
+pip_freeze.txt
+pyinstaller.log
+sw_vers.txt
+uname_a.txt
+build/dtool-lookup-gui-macos/*.toc
+build/dtool-lookup-gui-macos/*.txt
+build/dtool-lookup-gui-macos/*.html
+

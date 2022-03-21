@@ -44,11 +44,6 @@ jobs:
         uname -a | tee uname_a.txt
         echo "### apt list --installed ###"
         apt list --installed | tee apt_list_installed.txt
-
-        echo "lsb_release_a.txt" >> files_to_include_in_release.txt
-        echo "uname_a.txt" >> files_to_include_in_release.txt
-        echo "apt_list_installed.txt" >> files_to_include_in_release.txt
-
         
     - name: Install pythonic dependencies
       run: |
@@ -62,8 +57,6 @@ jobs:
         echo "### pip freeze ###"
         pip freeze | tee pip_freeze.txt
 
-        echo "pip_freeze.txt" >> files_to_include_in_release.txt
-
     - name: Compile gschemas
       run: |
         glib-compile-schemas .
@@ -75,25 +68,11 @@ jobs:
         pyinstaller -y ./pyinstaller/dtool-lookup-gui-linux-one-file.spec 2>&1 | tee pyinstaller.log
         mv dist/dtool-lookup-gui dtool-lookup-gui
         chmod +x dtool-lookup-gui
-        echo "dtool-lookup-gui" >> files_to_include_in_release.txt
-        echo "etc/dtool-lookup-gui.desktop" >> files_to_include_in_release.txt
-        echo "maintenance/set_launcher_icon.sh" >> files_to_include_in_release.txt
-        echo "maintenance/soft_link_launcher.sh" >> files_to_include_in_release.txt
 
     # use tar here, see https://github.com/actions/upload-artifact/issues/38
     - name: Pack assets
       run: |
-        tar -cvf dtool-lookup-gui-linux.tar \
-          dtool-lookup-gui \
-          files_to_include_in_release.txt \
-          lsb_release_a.txt \
-          uname_a.txt \
-          apt_list_installed.txt \
-          pip_freeze.txt \
-          pyinstaller.log \
-          build/dtool-lookup-gui-linux-one-file/*.toc \
-          build/dtool-lookup-gui-linux-one-file/*.txt \
-          build/dtool-lookup-gui-linux-one-file/*.html
+        cat pyinstaller/MANIFEST.linux | xargs -I{} bash -c "tar -cvf dtool-lookup-gui-linux.tar {}"
 
     - name: Upload artifact
       uses: actions/upload-artifact@v2
