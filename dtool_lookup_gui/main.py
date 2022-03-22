@@ -23,16 +23,12 @@
 # SOFTWARE.
 #
 
-# the following import is necessary to patch flawed dtoolcore.utils function
-import os
-
-import dtool_lookup_gui.utils.patch
-
 import argparse
 import asyncio
 import glob
 import json
 import logging
+import os
 import sys
 
 import dtoolcore

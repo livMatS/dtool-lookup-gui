@@ -11,3 +11,4 @@ ruamel.yaml
 PyGObject
 scipy
 jwt
+markupsafe==2.0.1
