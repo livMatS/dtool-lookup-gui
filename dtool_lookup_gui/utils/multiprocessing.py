@@ -38,8 +38,6 @@ logger = logging.getLogger(__name__)
 
 def process_initializer():
     """Initialize process pool workers."""
-    # Must apply patch in all worker processes.
-    import dtool_lookup_gui.utils.patch
 
     # Avoids warning
     #   PyGIWarning: Gtk was imported without specifying a version first.
