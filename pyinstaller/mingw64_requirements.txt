@@ -9,7 +9,7 @@ dtool-s3==0.14.0
 dtool-smb==0.1.0
 dtool-symlink==0.3.1
 dtoolcore==3.18.1
-gbulb==0.6.2
+gbulb==0.6.3
 pyasn1==0.4.8
 pysmb==1.2.7
 urllib3==1.26.8
