@@ -1,6 +1,9 @@
 dtool-lookup-gui
 ================
 
+.. image:: https://img.shields.io/github/workflow/status/livMatS/dtool-lookup-gui/build-and-publish   
+    :target: https://github.com/livMatS/dtool-lookup-gui/actions/workflows/build-and-publish.yml
+    :alt: GitHub Workflow Status
 .. image:: https://img.shields.io/github/v/release/livMatS/dtool-lookup-gui
     :target: https://github.com/livMatS/dtool-lookup-gui/releases/latest
     :alt: GitHub release (latest by date)
