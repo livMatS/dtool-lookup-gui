@@ -57,6 +57,17 @@ import dtool_lookup_gui.widgets.progress_popover_menu
 
 logger = logging.getLogger(__name__)
 
+from . import __version__
+
+appid = f'de.uni-freiburg.dtool-lookup-gui.{__version__}'
+
+# Windows taskbar icons fix
+try:
+    from ctypes import windll  # Only exists on Windows.
+    windll.shell32.SetCurrentProcessExplicitAppUserModelID(appid)
+except ImportError:
+    pass
+
 
 # adapted from https://python-gtk-3-tutorial.readthedocs.io/en/latest/popover.html#menu-popover
 class Application(Gtk.Application):
@@ -93,7 +104,8 @@ class Application(Gtk.Application):
             if len(icon_file_list) > 0:
                 icon_list = [GdkPixbuf.Pixbuf.new_from_file(icon_file) for icon_file in icon_file_list]
                 win.set_icon_list(icon_list)
-                logger.debug("Loaded %d icons.", len(icon_file_list))
+                logger.debug("Loaded %d icons from:", len(icon_file_list))
+                logger.debug("{}", icon_file_list)
             else:
                 logger.warning("Could not load app icons.")
             win.connect('destroy', lambda _: self.loop.stop())
