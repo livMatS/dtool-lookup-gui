@@ -64,10 +64,6 @@ jobs:
         git fetch --prune --unshallow
         git fetch --depth=1 origin +refs/tags/*:refs/tags/*
 
-    - name: Get version
-      id: get_version
-      uses: battila7/get-version-action@v2
-
     - name: Log system package info
       run: |
         echo "### pacman -Q ###"
@@ -125,16 +121,18 @@ jobs:
       working-directory: dtool_lookup_gui
 
     - name: Package executable with pyinstaller
+      id: build_package
       run: |
         source venv/bin/activate
-        SETUPTOOLS_SCM_DEBUG=1 python setup.py --version  # have version written to file to appear in bundled app as well
+        version=$(SETUPTOOLS_SCM_DEBUG=1 python setup.py --version)  # have version written to file to appear in bundled app as well
+        echo "::set-output name=version::$(echo $version)"
         # only ran into problems when calling PyInstaller or pyinstaller directly,
         # would never find package metadata within the venv, call as module mitigates the issue:
         python -m PyInstaller -y ./pyinstaller/dtool-lookup-gui-windows.spec 2>&1 | tee pyinstaller.log
 
     - name: Build installer
       run: |
-        "%programfiles(x86)%\Inno Setup 6\iscc.exe" "/DMyAppVersion=${{ steps.get_version.outputs.version }}" "win\dtool-lookup-gui.iss"
+        "%programfiles(x86)%\Inno Setup 6\iscc.exe" "/DMyAppVersion=${{ steps.build_package.outputs.version }}" "win\dtool-lookup-gui.iss"
       shell: cmd
 
     - name: Pack assets
