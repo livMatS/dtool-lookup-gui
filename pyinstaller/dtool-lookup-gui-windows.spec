@@ -11,6 +11,14 @@ glob_patterns_to_include =  [
     'dtool_lookup_gui/gschemas.compiled',
     'dtool_lookup_gui/views/*.ui',
     'dtool_lookup_gui/widgets/*.ui',
+    'data/icons/16x16/*.xpm',
+    'data/icons/22x22/*.xpm',
+    'data/icons/24x24/*.xpm',
+    'data/icons/32x32/*.xpm',
+    'data/icons/48x48/*.xpm',
+    'data/icons/64x64/*.xpm',
+    'data/icons/96x96/*.xpm',
+    'data/icons/128x128/*.xpm',
 ]
 
 with open(os.path.join(root_dir, 'openssl_dlls.txt'), 'r') as f:

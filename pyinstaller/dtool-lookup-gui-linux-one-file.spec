@@ -21,6 +21,7 @@ glob_patterns_to_include =  [
     'dtool_lookup_gui/gschemas.compiled',
     'dtool_lookup_gui/views/*.ui',
     'dtool_lookup_gui/widgets/*.ui',
+    'data/icons/*/*.xpm',
 ]
 
 additional_datas = [
