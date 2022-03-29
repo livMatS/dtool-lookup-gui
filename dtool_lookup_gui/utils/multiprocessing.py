@@ -76,6 +76,7 @@ class Process(multiprocessing.Process):
             self._exception = self._parent_conn.recv()
         return self._exception
 
+
 class TargetWrapper:
     def __init__(self, target):
         self._target = target
@@ -87,6 +88,7 @@ class TargetWrapper:
                 status_progress_queue.put(status_report)
 
         return_value_queue.put(self._target(*args, status_report_callback=StatusReportClass))
+
 
 class StatusReportingChildProcessBuilder:
     """Outsource serial functions with status report handlers.

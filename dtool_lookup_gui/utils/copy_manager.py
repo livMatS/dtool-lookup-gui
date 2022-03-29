@@ -23,6 +23,12 @@
 # SOFTWARE.
 #
 
+import logging
+
+
+logger = logging.getLogger(__name__)
+
+
 class CopyManager:
     """Keep track of running copy operations"""
 
@@ -38,7 +44,14 @@ class CopyManager:
         self._progress_revealer.set_reveal_child(True)
         tracker = self._progress_popover.add_status_box(
             self.progress_update, f'Copying dataset »{dataset}« to »{destination}«')
-        await dataset.copy(destination, progressbar=tracker)
+        try:
+            await dataset.copy(destination, progressbar=tracker)
+        except ChildProcessError as exc:
+            # dtoolcore.DtoolCoreTypeError: xyz is not a ProtoDataSet
+            # arises if the dataset exists at the destination already.
+            # TODO: check content of exc to provide simple "dataset exists" msg
+            logger.error(str(exc))
+
         tracker.set_done()
 
         # Once all copy operations are done, we hide the pie chart and clear the popover
