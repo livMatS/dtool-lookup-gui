@@ -1,10 +1,15 @@
 Change log for dtool-lookup-gui
 ===============================
 
-Unreleased
-----------
+0.6.0 (29Mar22)
+---------------
 
-- Bump to dtool-s3==0.14.0, replaces DTOOL_S3_DATASET_PREFIX by bucket-specific DTOOL_S3_DATASET_PREFIX_<BUCKET NAME>
+- Handle errors in dataset copy child processes correctly
+- Include dtool icons and according licenses
+- Release macOS .app and Windows installer
+- Desktop launcher 
+- Preserve non-ASCII characters in README.yml content received from lookup server
+- Bump to ``dtool-s3==0.14.1``, replaces ``DTOOL_S3_DATASET_PREFIX`` by bucket-specific ``DTOOL_S3_DATASET_PREFIX_<BUCKET NAME>``
 
 0.5.1 (03Mar22)
 ---------------
