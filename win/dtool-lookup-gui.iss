@@ -2,7 +2,9 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "dtool-lookup-gui"
-#define MyAppVersion "0.5.2"
+#ifndef MyAppVersion
+#define MyAppVersion "dev"
+#endif
 #define MyAppPublisher "livMatS Cluster of Excellence"
 #define MyAppURL "https://github.com/livMatS/dtool-lookup-gui"
 #define MyAppExeName "dtool-lookup-gui.exe"
