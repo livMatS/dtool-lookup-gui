@@ -70,13 +70,36 @@ jobs:
         chmod +x dtool-lookup-gui
 
     # use tar here, see https://github.com/actions/upload-artifact/issues/38
-    - name: Pack assets
+    - name: Pack build assets
       run: |
         bash -c "tar -cvf dtool-lookup-gui-linux.tar $(xargs -a pyinstaller/MANIFEST.linux)"
 
-    - name: Upload artifact
+    - name: Collect release assets
+      run: |
+        prefix=$(pwd)
+        mkdir -p /tmp/release
+        bash ${prefix}/maintenance/copy_files_into_folders.sh \
+             ${prefix}/pyinstaller/MANIFEST.linux-release /tmp/release
+
+    - name: List content of release
+      run: |
+        ls -lhv /tmp/release/
+
+    - name: Pack release assets
+      run: |
+        cd /tmp/release \
+          && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux-installer.zip ./*
+
+    - name: Upload build artifact
       uses: actions/upload-artifact@v2
       with:
         name: dtool-lookup-gui-linux
         path: dtool-lookup-gui-linux.tar
+        if-no-files-found: error
+
+    - name: Upload release artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: dtool-lookup-gui-linux-release
+        path: /tmp/release/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux.zip
         if-no-files-found: error
