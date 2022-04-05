@@ -66,14 +66,37 @@ jobs:
         mv dist/dtool-lookup-gui.app dtool-lookup-gui.app
 
     # macos environment's xargs does not support option -a
-    - name: Pack assets
+    - name: Pack build assets
       run: |
         bash -c "tar -cvf dtool-lookup-gui-macos.tar $(cat pyinstaller/MANIFEST.macos | xargs)"
 
-    - name: Upload artifact
+    - name: Collect release assets
+      run: |
+        prefix=$(pwd)
+        mkdir -p /tmp/release
+        bash ${prefix}/maintenance/copy_files_into_folders.sh \
+             ${prefix}/pyinstaller/MANIFEST.macos-release /tmp/release
+
+    - name: List content of release
+      run: |
+        ls -lhv /tmp/release/
+
+    - name: Pack release assets
+      run: |
+        cd /tmp/release \
+          && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-macos-installer.zip ./*
+
+    - name: Upload build artifact
       uses: actions/upload-artifact@v2
       with:
         name: dtool-lookup-gui-macos
         path: dtool-lookup-gui-macos.tar
-
         if-no-files-found: error
+
+    - name: Upload release artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: dtool-lookup-gui-macos-release
+        path: /tmp/release/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-macos.zip
+        if-no-files-found: error
+

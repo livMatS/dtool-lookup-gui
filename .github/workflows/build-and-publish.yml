@@ -105,75 +105,29 @@ jobs:
         id: get_version
         uses: battila7/get-version-action@v2
 
-      - name: Prepare
-        run: |
-          mkdir -p /tmp/linux-build
-          mkdir -p /tmp/macos-build
-          mkdir -p /tmp/windows-build
-          mkdir -p /tmp/windows-installer-build
-
       - name: Download Linux build
         uses: actions/download-artifact@v2
         with:
-          name: dtool-lookup-gui-linux
-          path: /tmp/linux-build
+          name: dtool-lookup-gui-linux-release
 
       - name: Download Windows build
         uses: actions/download-artifact@v2
         with:
-          name: dtool-lookup-gui-windows
-          path: /tmp/windows-build
+          name: dtool-lookup-gui-windows-release
 
       - name: Download Windows installer build
         uses: actions/download-artifact@v2
         with:
-          name: dtool-lookup-gui-windows-installer
-          path: /tmp/windows-installer-build
+          name: dtool-lookup-gui-windows-installer-release
 
       - name: Download MacOS build
         uses: actions/download-artifact@v2
         with:
-          name: dtool-lookup-gui-macos
-          path: /tmp/macos-build
+          name: dtool-lookup-gui-macos-release
 
-      - name: Unpack tar archives
+      - name: List release builds
         run: |
-          cd /tmp/linux-build && tar -xvf dtool-lookup-gui-linux.tar
-          cd /tmp/macos-build && tar -xvf dtool-lookup-gui-macos.tar
-          cd /tmp/windows-build && tar -xvf dtool-lookup-gui-windows.tar
-          cd /tmp/windows-installer-build && tar -xvf dtool-lookup-gui-windows-installer.tar
-
-      - name: Package additional files with the binaries
-        run: |
-          prefix=$(pwd)
-          bash ${prefix}/maintenance/copy_files_into_folders.sh ${prefix}/pyinstaller/MANIFEST.general \
-            /tmp/linux-release /tmp/macos-release /tmp/windows-release /tmp/windows-installer-release
-          cd /tmp/linux-build \
-            && bash ${prefix}/maintenance/copy_files_into_folders.sh \
-              ${prefix}/pyinstaller/MANIFEST.linux-release /tmp/linux-release
-          cd /tmp/macos-build \
-            && bash ${prefix}/maintenance/copy_files_into_folders.sh \
-              ${prefix}/pyinstaller/MANIFEST.macos-release /tmp/macos-release
-          cd /tmp/windows-build \
-            && bash ${prefix}/maintenance/copy_files_into_folders.sh \
-               ${prefix}/pyinstaller/MANIFEST.windows-release /tmp/windows-release
-          cd /tmp/windows-installer-build \
-            && bash ${prefix}/maintenance/copy_files_into_folders.sh \
-               ${prefix}/pyinstaller/MANIFEST.windows-installer-release /tmp/windows-installer-release
-
-      - name: List content of release
-        run: |
-          ls -lhv /tmp/linux-release/
-          ls -lhv /tmp/macos-release/
-          ls -lhv /tmp/windows-release/
-          ls -lhv /tmp/windows-installer-release/
-
-      - name: Pack release assets
-        run: |
-          cd /tmp/linux-release && tar -cvzf dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux.tar.gz ./*
-          cd /tmp/macos-release && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-macos.zip ./*
-          cd /tmp/windows-release && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows.zip ./*
-          cd /tmp/windows-installer-release && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows-installer.zip ./*
+          ls -lhv .
 
       - name: Get master HEAD SHA
         id: get_master_sha
@@ -191,8 +145,8 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            /tmp/linux-release/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux.tar.gz
-            /tmp/macos-release/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-macos.zip
-            /tmp/windows-release/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows.zip
-            /tmp/windows-installer-release/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows-installer.zip
+            dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux.tar.gz
+            dtool-lookup-gui-${{ steps.get_version.outputs.version }}-macos.zip
+            dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows.zip
+            dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows-installer.zip
           draft: true
