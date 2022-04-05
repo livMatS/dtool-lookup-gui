@@ -68,7 +68,6 @@ jobs:
       id: get_version
       uses: battila7/get-version-action@v2
 
-
     - name: Log system package info
       run: |
         echo "### pacman -Q ###"

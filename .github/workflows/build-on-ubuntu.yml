@@ -19,6 +19,10 @@ jobs:
         git fetch --prune --unshallow
         git fetch --depth=1 origin +refs/tags/*:refs/tags/*
 
+    - name: Get version
+      id: get_version
+      uses: battila7/get-version-action@v2
+
     - name: Set up Python 3.8
       uses: actions/setup-python@v3
       with:
@@ -88,7 +92,7 @@ jobs:
     - name: Pack release assets
       run: |
         cd /tmp/release \
-          && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux-installer.zip ./*
+          && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux.zip ./*
 
     - name: Upload build artifact
       uses: actions/upload-artifact@v2

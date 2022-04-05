@@ -68,7 +68,6 @@ jobs:
       id: get_version
       uses: battila7/get-version-action@v2
 
-
     - name: Log system package info
       run: |
         echo "### pacman -Q ###"
@@ -147,7 +146,7 @@ jobs:
     - name: Pack release assets
       run: |
         cd /tmp/release \
-          && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows-installer.zip ./*
+          && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows.zip ./*
 
     - name: Upload build artifact
       uses: actions/upload-artifact@v2
