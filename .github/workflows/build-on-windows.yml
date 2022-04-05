@@ -146,8 +146,8 @@ jobs:
 
     - name: Pack release assets
       run: |
-      cd /tmp/release \
-        && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows-installer.zip ./*
+        cd /tmp/release \
+          && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows-installer.zip ./*
 
     - name: Upload build artifact
       uses: actions/upload-artifact@v2
