@@ -134,20 +134,20 @@ jobs:
         bash -c "tar -cvf dtool-lookup-gui-windows.tar $(xargs -a pyinstaller/MANIFEST.windows)"
 
     - name: Collect release assets
-        run: |
-          prefix=$(pwd)
-          mkdir -p /tmp/release
-          bash ${prefix}/maintenance/copy_files_into_folders.sh \
-               ${prefix}/pyinstaller/MANIFEST.windows-release /tmp/release
+      run: |
+        prefix=$(pwd)
+        mkdir -p /tmp/release
+        bash ${prefix}/maintenance/copy_files_into_folders.sh \
+             ${prefix}/pyinstaller/MANIFEST.windows-release /tmp/release
 
     - name: List content of release
-        run: |
-          ls -lhv /tmp/release/
+      run: |
+        ls -lhv /tmp/release/
 
     - name: Pack release assets
-        run: |
-          cd /tmp/release \
-            && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows-installer.zip ./*
+      run: |
+      cd /tmp/release \
+        && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows-installer.zip ./*
 
     - name: Upload build artifact
       uses: actions/upload-artifact@v2
