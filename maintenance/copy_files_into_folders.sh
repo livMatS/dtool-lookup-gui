@@ -8,7 +8,6 @@ shift
 for target_folder in "$@"
 do
     mkdir -p "$target_folder"
-    echo "cat '$file_list' | xargs -a '$file_list' cp -r -t '$target_folder'"
-    cat "$file_list" | xargs  cp -r -t "$target_folder"
+    echo "cat '$file_list' | xargs -n 1 -I{} cp -r {} '$target_folder'"
+    cat "$file_list" | xargs -n 1 -I{} cp -r {} "$target_folder"
 done
-
