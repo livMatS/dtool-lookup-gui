@@ -161,6 +161,10 @@ jobs:
         cd /tmp/release \
           && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows.zip ./*
 
+    - name: List packed release
+      run: |
+        ls -lhv /tmp/release/
+
     - name: Upload build artifact
       uses: actions/upload-artifact@v2
       with:
