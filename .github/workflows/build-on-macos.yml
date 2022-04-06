@@ -69,6 +69,18 @@ jobs:
         ls -lh dist
         mv dist/dtool-lookup-gui.app dtool-lookup-gui.app
 
+    - name: Create dmg
+      run: |
+        mkdir app
+        cp -r dtool-lookup-gui.app app/dtool-lookup-gui.app
+        create-dmg \
+          --volname "dtool-lookup-gui" \
+          --icon-size 128 \
+          --icon "dtool-lookup-gui.app" 200 190 \
+          --eula "LICENSE.txt" \
+          "dtool-lookup-gui.dmg" \
+          "app/"
+
     # macos environment's xargs does not support option -a
     - name: Pack build assets
       run: |
