@@ -11,11 +11,18 @@ for size in "${sizes[@]}"; do
   mkdir -p "$prefix/$size"
   for format in "${formats[@]}"; do
     mogrify -path "$prefix/$size" -resize $size -density $size -format $format -background none "$prefix/*.svg"
-    for png_file in "$prefix/$size"/*.png; do
-       png_basename=$(basename "${png_file}")
-       base="${png_basename%%.*}"
-       icns_file="$prefix/$size/$base.icns"
-       png2icns "${icns_file}" "${png_file}"
-    done
   done
+done
+# icns: Apple Icon Image format
+# https://en.wikipedia.org/wiki/Apple_Icon_Image_format
+icns_sizes=(16x16 32x32 48x48 128x128 256x256 512x512)
+for svg_file in $prefix/*.svg; do
+  svg_basename=$(basename "${svg_file}")
+  base="${svg_basename%%.*}"
+  icns_file="$prefix/$base.icns"
+  png_files=()
+  for icns_size in "${icns_sizes[@]}"; do
+    png_files+=("${prefix}/${icns_size}/${base}.png")
+  done
+  png2icns "${icns_file}" ${png_files[@]}
 done
