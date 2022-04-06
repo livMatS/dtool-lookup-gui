@@ -75,9 +75,8 @@ jobs:
         cp -r dtool-lookup-gui.app app/dtool-lookup-gui.app
         create-dmg \
           --volname "dtool-lookup-gui" \
-          --icon-size 128 \
-          --icon "dtool-lookup-gui.app" 200 190 \
-          --eula "LICENSE.txt" \
+          --hdiutil-verbose \
+          --sandbox-safe \
           "dtool-lookup-gui.dmg" \
           "app/"
 
