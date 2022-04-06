@@ -5,9 +5,19 @@
 file_list="$1"
 shift
 
+# check whether dos2unix is available and try to convert line endings to lf only if so
+CRLF_TO_LF_PIPE=""
+if [ -x "$(command -v dos2unix)" ]; then
+    CRLF_TO_LF_PIPE="dos2unix --verbose"  # --verbose writes to stderr
+else
+    echo 'Error: dos2unix is not available.' >&2
+fi
+
+
 for target_folder in "$@"
 do
     mkdir -p "$target_folder"
-    echo "cat '$file_list' | xargs -n 1 -I{} cp -r {} '$target_folder'"
-    cat "$file_list" | xargs -n 1 -I{} cp -r {} "$target_folder"
+    cmd="cat '$file_list' | ${CRLF_TO_LF_PIPE} | xargs -I{} cp -r {} '$target_folder'"
+    echo "$cmd"
+    bash -c "$cmd"
 done

@@ -145,7 +145,12 @@ jobs:
         mv win/dtool-lookup-gui.exe dtool-lookup-gui.exe
         bash -c "tar -cvf dtool-lookup-gui-windows-installer.tar $(xargs -a pyinstaller/MANIFEST.windows-installer)"
 
-    - name: Debug MANIFEST line ending style
+- name: Debug MANIFEST.general line ending style
+      run: |
+        win\check-crlf.bat pyinstaller\MANIFEST.general
+      shell: cmd
+
+    - name: Debug MANIFEST.windows-installer line ending style
       run: |
         win\check-crlf.bat pyinstaller\MANIFEST.windows-installer-release
       shell: cmd
@@ -167,6 +172,10 @@ jobs:
       run: |
         cd /tmp/release \
           && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows-installer.zip ./*
+
+    - name: List packed release
+      run: |
+        ls -lhv /tmp/release/
 
     - name: Upload build artifact
       uses: actions/upload-artifact@v2
