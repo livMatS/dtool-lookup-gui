@@ -1,4 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
+# see https://www.pythonguis.com/tutorials/packaging-pyqt5-applications-pyinstaller-macos-dmg/
 
 root_dir = os.path.abspath(os.curdir)
 block_cipher = None
@@ -11,7 +12,7 @@ glob_patterns_to_include =  [
     'dtool_lookup_gui/gschemas.compiled',
     'dtool_lookup_gui/views/*.ui',
     'dtool_lookup_gui/widgets/*.ui',
-    'data/icons/*/*.xpm',
+    'data/icons/*.icns',
 ]
 
 additional_datas = [
@@ -75,5 +76,5 @@ exe = EXE(pyz,
           entitlements_file=None )
 app = BUNDLE(exe,
              name='dtool-lookup-gui.app',
-             icon='data/icons/128x128/dtool_logo_small.png',
-             bundle_identifier=None)
+             icon='data/icons/dtool_logo_small.icns',
+             bundle_identifier='de.uni-freiburg.dtool-lookup-gui')

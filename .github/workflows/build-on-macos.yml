@@ -61,9 +61,11 @@ jobs:
       working-directory: dtool_lookup_gui
 
     - name: Package executable with pyinstaller
+      id: build_package
       run: |
         source venv/bin/activate
-        SETUPTOOLS_SCM_DEBUG=1 python setup.py --version  # have version written to file to appear in bundled app as well
+        version=$(SETUPTOOLS_SCM_DEBUG=1 python setup.py --version)  # have version written to file to appear in bundled app as well
+        echo "::set-output name=version::$(echo $version)"
         pyinstaller -y ./pyinstaller/dtool-lookup-gui-macos.spec 2>&1 | tee pyinstaller.log
         ls -lh dist
         mv dist/dtool-lookup-gui.app dtool-lookup-gui.app
@@ -78,8 +80,6 @@ jobs:
         prefix=$(pwd)
         mkdir -p ${prefix}/release
         bash ${prefix}/maintenance/copy_files_into_folders.sh \
-             ${prefix}/pyinstaller/MANIFEST.general ${prefix}/release
-        bash ${prefix}/maintenance/copy_files_into_folders.sh \
              ${prefix}/pyinstaller/MANIFEST.macos-release ${prefix}/release
 
     - name: List content of release
@@ -91,7 +91,7 @@ jobs:
         create-dmg \
           --volname "dtool-lookup-gui" \
           --eula "LICENSE.txt" \
-          --volicon "data/icons/128x128/dtool_logo_small.icns" \
+          --volicon "data/icons/dtool_logo_small.icns" \
           --window-pos 200 120 \
           --window-size 600 300 \
           --icon-size 100 \
