@@ -138,13 +138,19 @@ jobs:
       run: |
         bash -c "tar -cvf dtool-lookup-gui-windows.tar $(xargs -a pyinstaller/MANIFEST.windows)"
 
-    - name: Debug MANIFEST line ending style
+    - name: Debug MANIFEST.general line ending style
       run: |
-        win\check-crlf.bat pyinstaller\MANIFEST.windows-installer-release
+        win\check-crlf.bat pyinstaller\MANIFEST.general
+      shell: cmd
+
+    - name: Debug MANIFEST.windows line ending style
+      run: |
+        win\check-crlf.bat pyinstaller\MANIFEST.windows
       shell: cmd
 
     - name: Collect release assets
       run: |
+
         prefix=$(pwd)
         mkdir -p /tmp/release
         bash ${prefix}/maintenance/copy_files_into_folders.sh \
