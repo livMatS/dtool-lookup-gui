@@ -160,8 +160,6 @@ jobs:
         prefix=$(pwd)
         mkdir -p ${prefix}/release
         bash ${prefix}/maintenance/copy_files_into_folders.sh \
-             ${prefix}/pyinstaller/MANIFEST.general ${prefix}/release
-        bash ${prefix}/maintenance/copy_files_into_folders.sh \
              ${prefix}/pyinstaller/MANIFEST.windows-installer-release ${prefix}/release
 
     - name: List content of release
