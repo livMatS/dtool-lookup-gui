@@ -158,24 +158,24 @@ jobs:
     - name: Collect release assets
       run: |
         prefix=$(pwd)
-        mkdir -p /tmp/release
+        mkdir -p ${prefix}/release
         bash ${prefix}/maintenance/copy_files_into_folders.sh \
-             ${prefix}/pyinstaller/MANIFEST.general /tmp/release
+             ${prefix}/pyinstaller/MANIFEST.general ${prefix}/release
         bash ${prefix}/maintenance/copy_files_into_folders.sh \
-             ${prefix}/pyinstaller/MANIFEST.windows-installer-release /tmp/release
+             ${prefix}/pyinstaller/MANIFEST.windows-installer-release ${prefix}/release
 
     - name: List content of release
       run: |
-        ls -lhv /tmp/release/
+        ls -lhv release/
 
     - name: Pack release assets
       run: |
-        cd /tmp/release \
+        cd release \
           && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows-installer.zip ./*
 
     - name: List packed release
       run: |
-        ls -lhv /tmp/release/
+        ls -lhv release/
 
     - name: Upload build artifact
       uses: actions/upload-artifact@v2
@@ -188,6 +188,6 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: dtool-lookup-gui-windows-installer-release
-        path: /tmp/release/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows-installer.zip
+        path: release/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows-installer.zip
         if-no-files-found: error
 
