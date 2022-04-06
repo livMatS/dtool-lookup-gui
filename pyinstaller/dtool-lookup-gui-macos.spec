@@ -12,7 +12,7 @@ glob_patterns_to_include =  [
     'dtool_lookup_gui/gschemas.compiled',
     'dtool_lookup_gui/views/*.ui',
     'dtool_lookup_gui/widgets/*.ui',
-    'data/icons/*/*.xpm',
+    'data/icons/*.icns',
 ]
 
 additional_datas = [
@@ -82,5 +82,5 @@ coll = COLLECT(exe,
 # see https://pyinstaller.readthedocs.io/en/stable/spec-files.html#spec-file-options-for-a-mac-os-x-bundle
 app = BUNDLE(coll,
              name='dtool-lookup-gui.app',
-             icon='data/icons/128x128/dtool_logo_small.icns',
+             icon='data/icons/dtool_logo_small.icns',
              bundle_identifier='de.uni-freiburg.dtool-lookup-gui')
