@@ -15,6 +15,8 @@ glob_patterns_to_include =  [
     'data/icons/*.icns',
 ]
 
+icns_file = os.path.join(root_dir, 'data', 'icons', 'dtool_logo_small.icns')
+
 additional_datas = [
     (os.path.join(root_dir, rel_path),
      os.path.join(os.curdir, os.path.dirname(rel_path))) for rel_path in glob_patterns_to_include
@@ -82,5 +84,5 @@ coll = COLLECT(exe,
 # see https://pyinstaller.readthedocs.io/en/stable/spec-files.html#spec-file-options-for-a-mac-os-x-bundle
 app = BUNDLE(coll,
              name='dtool-lookup-gui.app',
-             icon='data/icons/dtool_logo_small.icns',
+             icon=icns_file,
              bundle_identifier='de.uni-freiburg.dtool-lookup-gui')
