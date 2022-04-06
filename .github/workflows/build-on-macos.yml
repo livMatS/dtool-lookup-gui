@@ -79,6 +79,8 @@ jobs:
         prefix=$(pwd)
         mkdir -p /tmp/release
         bash ${prefix}/maintenance/copy_files_into_folders.sh \
+             ${prefix}/pyinstaller/MANIFEST.general /tmp/release
+        bash ${prefix}/maintenance/copy_files_into_folders.sh \
              ${prefix}/pyinstaller/MANIFEST.macos-release /tmp/release
 
     - name: List content of release

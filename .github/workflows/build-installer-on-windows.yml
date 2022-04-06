@@ -56,6 +56,12 @@ jobs:
           mingw-w64-x86_64-python-yaml
           mingw-w64-x86_64-toolchain
 
+    # see https://github.com/actions/checkout/issues/135
+    - name: Set git to use LF
+      run: |
+        git config --global core.autocrlf false
+        git config --global core.eol lf
+
     - name: checkout
       uses: actions/checkout@v3
 
@@ -139,10 +145,17 @@ jobs:
         mv win/dtool-lookup-gui.exe dtool-lookup-gui.exe
         bash -c "tar -cvf dtool-lookup-gui-windows-installer.tar $(xargs -a pyinstaller/MANIFEST.windows-installer)"
 
+    - name: Debug MANIFEST line ending style
+      run: |
+        win\check-crlf.bat pyinstaller\MANIFEST.windows-installer-release
+      shell: cmd
+
     - name: Collect release assets
       run: |
         prefix=$(pwd)
         mkdir -p /tmp/release
+        bash ${prefix}/maintenance/copy_files_into_folders.sh \
+             ${prefix}/pyinstaller/MANIFEST.general /tmp/release
         bash ${prefix}/maintenance/copy_files_into_folders.sh \
              ${prefix}/pyinstaller/MANIFEST.windows-installer-release /tmp/release
 
