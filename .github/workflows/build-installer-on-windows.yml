@@ -145,7 +145,7 @@ jobs:
         mv win/dtool-lookup-gui.exe dtool-lookup-gui.exe
         bash -c "tar -cvf dtool-lookup-gui-windows-installer.tar $(xargs -a pyinstaller/MANIFEST.windows-installer)"
 
-- name: Debug MANIFEST.general line ending style
+    - name: Debug MANIFEST.general line ending style
       run: |
         win\check-crlf.bat pyinstaller\MANIFEST.general
       shell: cmd
