@@ -69,17 +69,6 @@ jobs:
         ls -lh dist
         mv dist/dtool-lookup-gui.app dtool-lookup-gui.app
 
-    - name: Create dmg
-      run: |
-        mkdir app
-        cp -r dtool-lookup-gui.app app/dtool-lookup-gui.app
-        create-dmg \
-          --volname "dtool-lookup-gui" \
-          --hdiutil-verbose \
-          --sandbox-safe \
-          "dtool-lookup-gui.dmg" \
-          "app/"
-
     # macos environment's xargs does not support option -a
     - name: Pack build assets
       run: |
@@ -88,24 +77,31 @@ jobs:
     - name: Collect release assets
       run: |
         prefix=$(pwd)
-        mkdir -p /tmp/release
+        mkdir -p ${prefix}/release
         bash ${prefix}/maintenance/copy_files_into_folders.sh \
-             ${prefix}/pyinstaller/MANIFEST.general /tmp/release
+             ${prefix}/pyinstaller/MANIFEST.general ${prefix}/release
         bash ${prefix}/maintenance/copy_files_into_folders.sh \
-             ${prefix}/pyinstaller/MANIFEST.macos-release /tmp/release
+             ${prefix}/pyinstaller/MANIFEST.macos-release ${prefix}/release
 
-    - name: List content of release
-      run: |
-        ls -lhv /tmp/release/
+  - name: List content of release
+    run: |
+      ls -lhv release/
 
-    - name: Pack release assets
-      run: |
-        cd /tmp/release \
-          && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-macos.zip ./*
-
-    - name: List packed release
-      run: |
-        ls -lhv /tmp/release/
+    - name: Create dmg
+        run: |
+          create-dmg \
+            --volname "dtool-lookup-gui" \
+            --eula "LICENSE.txt" \
+            --volicon "data/icons/128x128/dtool_logo_small.icns" \
+            --window-pos 200 120 \
+            --window-size 600 300 \
+            --icon-size 100 \
+            --icon "dtool-lookup-gui.app" 175 120 \
+            --hide-extension "dtool-lookup-gui.app" \
+            --app-drop-link 425 120 \
+            --hdiutil-verbose \
+            "dtool-lookup-gui-${{ steps.get_version.outputs.version }}-macos.dmg" \
+            "release/"
 
     - name: Upload build artifact
       uses: actions/upload-artifact@v2
@@ -118,6 +114,6 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: dtool-lookup-gui-macos-release
-        path: /tmp/release/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-macos.zip
+        path: dtool-lookup-gui-${{ steps.get_version.outputs.version }}-macos.dmg
         if-no-files-found: error
 

@@ -1,4 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
+# see https://www.pythonguis.com/tutorials/packaging-pyqt5-applications-pyinstaller-macos-dmg/
 
 root_dir = os.path.abspath(os.curdir)
 block_cipher = None
@@ -77,7 +78,9 @@ coll = COLLECT(exe,
                upx=True,
                upx_exclude=[],
                name='dtool-lookup-gui')
+
+# see https://pyinstaller.readthedocs.io/en/stable/spec-files.html#spec-file-options-for-a-mac-os-x-bundle
 app = BUNDLE(coll,
              name='dtool-lookup-gui.app',
-             icon='data/icons/128x128/dtool_logo_small.png',
-             bundle_identifier=None)
+             icon='data/icons/128x128/dtool_logo_small.icns',
+             bundle_identifier='de.uni-freiburg.dtool-lookup-gui')
