@@ -4,7 +4,6 @@ on:
   workflow_call:
 
 jobs:
-
   build:
 
     runs-on: macos-10.15
@@ -83,25 +82,25 @@ jobs:
         bash ${prefix}/maintenance/copy_files_into_folders.sh \
              ${prefix}/pyinstaller/MANIFEST.macos-release ${prefix}/release
 
-  - name: List content of release
-    run: |
-      ls -lhv release/
+    - name: List content of release
+      run: |
+        ls -lhv release/
 
     - name: Create dmg
-        run: |
-          create-dmg \
-            --volname "dtool-lookup-gui" \
-            --eula "LICENSE.txt" \
-            --volicon "data/icons/128x128/dtool_logo_small.icns" \
-            --window-pos 200 120 \
-            --window-size 600 300 \
-            --icon-size 100 \
-            --icon "dtool-lookup-gui.app" 175 120 \
-            --hide-extension "dtool-lookup-gui.app" \
-            --app-drop-link 425 120 \
-            --hdiutil-verbose \
-            "dtool-lookup-gui-${{ steps.get_version.outputs.version }}-macos.dmg" \
-            "release/"
+      run: |
+        create-dmg \
+          --volname "dtool-lookup-gui" \
+          --eula "LICENSE.txt" \
+          --volicon "data/icons/128x128/dtool_logo_small.icns" \
+          --window-pos 200 120 \
+          --window-size 600 300 \
+          --icon-size 100 \
+          --icon "dtool-lookup-gui.app" 175 120 \
+          --hide-extension "dtool-lookup-gui.app" \
+          --app-drop-link 425 120 \
+          --hdiutil-verbose \
+          "dtool-lookup-gui-${{ steps.get_version.outputs.version }}-macos.dmg" \
+          "release/"
 
     - name: Upload build artifact
       uses: actions/upload-artifact@v2
