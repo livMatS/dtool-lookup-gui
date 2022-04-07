@@ -2,3 +2,4 @@ dtool-lookup-gui
 etc/dtool-lookup-gui.desktop
 maintenance/set_launcher_icon.sh
 maintenance/soft_link_launcher.sh
+data/icons/256x256/dtool_logo_small.png

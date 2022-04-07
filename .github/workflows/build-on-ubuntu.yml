@@ -94,7 +94,7 @@ jobs:
     - name: Pack release assets
       run: |
         cd /tmp/release \
-          && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux.zip ./*
+          && tar -cvzf dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux.tar.gz ./*
 
     - name: List packed release
       run: |
@@ -111,5 +111,5 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: dtool-lookup-gui-linux-release
-        path: /tmp/release/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux.zip
+        path: /tmp/release/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux.tar.gz
         if-no-files-found: error
