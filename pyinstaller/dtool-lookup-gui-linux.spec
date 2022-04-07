@@ -1,4 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
+from glob import glob
 from PyInstaller.utils.hooks import collect_entry_point, copy_metadata
 
 root_dir = os.path.abspath(os.curdir)
@@ -15,13 +16,17 @@ dtool_storage_brokers_datas, dtool_storage_brokers_hidden_imports = collect_entr
 
 other_hidden_imports = ['cairo']
 
+icon_parent_folder_glob_pattern = os.path.join('data', 'icons', '*x*')
+icon_parent_folders = list(glob(icon_parent_folder_glob_pattern))
+icon_glob_patterns = [os.path.join(icon_parent_folder, '*.xpm') for icon_parent_folder in icon_parent_folders]
+
 # relative to repository root
 glob_patterns_to_include =  [
     'README.rst', 'LICENSE.md',
-    'dtool_lookup_gui/gschemas.compiled',
-    'dtool_lookup_gui/views/*.ui',
-    'dtool_lookup_gui/widgets/*.ui',
-    'data/icons/*/*.xpm',
+    os.path.join('dtool_lookup_gui', 'gschemas.compiled'),
+    os.path.join('dtool_lookup_gui', 'views', '*.ui'),
+    os.path.join('dtool_lookup_gui', 'widgets', '*.ui'),
+    *icon_glob_patterns
 ]
 
 additional_datas = [

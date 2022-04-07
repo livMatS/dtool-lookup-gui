@@ -1,6 +1,12 @@
 Change log for dtool-lookup-gui
 ===============================
 
+0.6.1 (07Apr22)
+---------------
+
+- Offer DMG image for macOS
+- Bundle xpm icons with all distributions
+
 0.6.0 (29Mar22)
 ---------------
 

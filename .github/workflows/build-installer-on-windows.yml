@@ -162,14 +162,14 @@ jobs:
         bash ${prefix}/maintenance/copy_files_into_folders.sh \
              ${prefix}/pyinstaller/MANIFEST.windows-installer-release ${prefix}/release
 
-    - name: List content of release
+    - name: Embed version in installer file name
       run: |
-        ls -lhv release/
+        mv release/dtool-lookup-gui.exe release/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows-installer.exe
 
-    - name: Pack release assets
-      run: |
-        cd release \
-          && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows-installer.zip ./*
+    # - name: Pack release assets
+    #  run: |
+    #    cd release \
+    #      && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows-installer.zip ./*
 
     - name: List packed release
       run: |
@@ -186,6 +186,6 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: dtool-lookup-gui-windows-installer-release
-        path: release/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows-installer.zip
+        path: release/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows-installer.exe
         if-no-files-found: error
 
