@@ -105,6 +105,18 @@ jobs:
         id: get_version
         uses: battila7/get-version-action@v2
 
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v3
+        with:
+          python-version: 3.8
+
+      - name: Fix setuptools_scm-generated version
+        id: fix_version
+        run: |
+          pip install setuptools_scm
+          version=$(SETUPTOOLS_SCM_DEBUG=1 python setup.py --version)
+          echo "::set-output name=version::$(echo $version)"
+
       - name: Download Linux build
         uses: actions/download-artifact@v2
         with:
@@ -145,8 +157,8 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux.tar.gz
-            dtool-lookup-gui-${{ steps.get_version.outputs.version }}-macos.dmg
-            dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows.zip
-            dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows-installer.exe
+            dtool-lookup-gui-${{ steps.fix_version.outputs.version }}-linux.tar.gz
+            dtool-lookup-gui-${{ steps.fix_version.outputs.version }}-macos.dmg
+            dtool-lookup-gui-${{ steps.fix_version.outputs.version }}-windows.zip
+            dtool-lookup-gui-${{ steps.fix_version.outputs.version }}-windows-installer.exe
           draft: true
