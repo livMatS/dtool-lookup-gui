@@ -1,24 +1,22 @@
 # -*- mode: python ; coding: utf-8 -*-
+from glob import glob
 
 root_dir = os.path.abspath(os.curdir)
 block_cipher = None
 
 other_hidden_imports = ['cairo']
 
+icon_parent_folder_glob_pattern = os.path.join('data', 'icons', '*x*')
+icon_parent_folders = list(glob(icon_parent_folder_glob_pattern))
+icon_glob_patterns = [os.path.join(icon_parent_folder, '*.xpm') for icon_parent_folder in icon_parent_folders]
+
 # relative to repository root
 glob_patterns_to_include =  [
     'README.rst', 'LICENSE.md',
-    'dtool_lookup_gui/gschemas.compiled',
-    'dtool_lookup_gui/views/*.ui',
-    'dtool_lookup_gui/widgets/*.ui',
-    'data/icons/16x16/*.xpm',
-    'data/icons/22x22/*.xpm',
-    'data/icons/24x24/*.xpm',
-    'data/icons/32x32/*.xpm',
-    'data/icons/48x48/*.xpm',
-    'data/icons/64x64/*.xpm',
-    'data/icons/96x96/*.xpm',
-    'data/icons/128x128/*.xpm',
+    os.path.join('dtool_lookup_gui', 'gschemas.compiled'),
+    os.path.join('dtool_lookup_gui', 'views', '*.ui'),
+    os.path.join('dtool_lookup_gui', 'widgets', '*.ui'),
+    *icon_glob_patterns
 ]
 
 with open(os.path.join(root_dir, 'openssl_dlls.txt'), 'r') as f:
