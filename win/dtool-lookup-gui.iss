@@ -28,6 +28,7 @@ LicenseFile=..\LICENSE.txt
 OutputDir=.
 OutputBaseFilename=dtool-lookup-gui
 SetupIconFile=..\data\icons\64x64\dtool_logo_small.ico
+UninstallDisplayIcon={app}\{#MyAppExeName}
 Compression=lzma
 SolidCompression=yes
 WizardStyle=modern
