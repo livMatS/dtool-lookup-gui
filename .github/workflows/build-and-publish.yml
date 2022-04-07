@@ -146,7 +146,7 @@ jobs:
         with:
           files: |
             dtool-lookup-gui-${{ steps.get_version.outputs.version }}-linux.tar.gz
-            dtool-lookup-gui-${{ steps.get_version.outputs.version }}-macos.zip
+            dtool-lookup-gui-${{ steps.get_version.outputs.version }}-macos.dmg
             dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows.zip
-            dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows-installer.zip
+            dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows-installer.exe
           draft: true
