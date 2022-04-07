@@ -104,6 +104,7 @@ jobs:
         echo "::set-output name=version::$(echo $version)"
 
     - name: Create local venv
+      run: |
         # recursive copy_metadata needed local reinstall of
         #    $ pip install --ignore-installed six
         # in minsys2/mingw64, would otherwise fail with

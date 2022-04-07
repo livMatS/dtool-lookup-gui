@@ -45,6 +45,12 @@ jobs:
         pip install -r requirements.txt
         pip install pyinstaller
 
+    - name: Fix setuptools_scm-generated version
+      id: fix_version
+      run: |
+        version=$(SETUPTOOLS_SCM_DEBUG=1 python setup.py --version)  # have version written to file to appear in bundled app as well
+        echo "::set-output name=version::$(echo $version)"
+
     - name: Log python package info
       run: |
         source venv/bin/activate
@@ -61,11 +67,8 @@ jobs:
       working-directory: dtool_lookup_gui
 
     - name: Package executable with pyinstaller
-      id: build_package
       run: |
         source venv/bin/activate
-        version=$(SETUPTOOLS_SCM_DEBUG=1 python setup.py --version)  # have version written to file to appear in bundled app as well
-        echo "::set-output name=version::$(echo $version)"
         pyinstaller -y ./pyinstaller/dtool-lookup-gui-macos.spec 2>&1 | tee pyinstaller.log
         ls -lh dist
         mv dist/dtool-lookup-gui.app dtool-lookup-gui.app
@@ -99,7 +102,7 @@ jobs:
           --hide-extension "dtool-lookup-gui.app" \
           --app-drop-link 425 120 \
           --hdiutil-verbose \
-          "dtool-lookup-gui-${{ steps.build_package.outputs.version }}-macos.dmg" \
+          "dtool-lookup-gui-${{ steps.fix_version.outputs.version }}-macos.dmg" \
           "release/"
 
     - name: Upload build artifact
@@ -113,6 +116,6 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: dtool-lookup-gui-macos-release
-        path: dtool-lookup-gui-${{ steps.build_package.outputs.version }}-macos.dmg
+        path: dtool-lookup-gui-${{ steps.fix_version.outputs.version }}-macos.dmg
         if-no-files-found: error
 
