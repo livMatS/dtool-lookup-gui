@@ -97,6 +97,14 @@ jobs:
         pip install PyInstaller
         echo "PyInstaller version: $(python -m PyInstaller --version)"
 
+    - name: Fix setuptools_scm-generated version
+      id: fix_version
+      run:
+        version=$(SETUPTOOLS_SCM_DEBUG=1 python setup.py --version)  # have version written to file to appear in bundled app as well
+        echo "::set-output name=version::$(echo $version)"
+
+
+    - name: Create local venv
         # recursive copy_metadata needed local reinstall of
         #    $ pip install --ignore-installed six
         # in minsys2/mingw64, would otherwise fail with
@@ -128,7 +136,6 @@ jobs:
     - name: Package executable with pyinstaller
       run: |
         source venv/bin/activate
-        SETUPTOOLS_SCM_DEBUG=1 python setup.py --version  # have version written to file to appear in bundled app as well
         # only ran into problems when calling PyInstaller or pyinstaller directly,
         # would never find package metadata within the venv, call as module mitigates the issue:
         python -m PyInstaller -y ./pyinstaller/dtool-lookup-gui-windows-one-file.spec 2>&1 | tee pyinstaller.log
@@ -165,7 +172,7 @@ jobs:
     - name: Pack release assets
       run: |
         cd release \
-          && zip -r dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows.zip ./*
+          && zip -r dtool-lookup-gui-${{ steps.fix_version.outputs.version }}-windows.zip ./*
 
     - name: List packed release
       run: |
@@ -182,7 +189,7 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: dtool-lookup-gui-windows-release
-        path: release/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows.zip
+        path: release/dtool-lookup-gui-${{ steps.fix_version.outputs.version }}-windows.zip
         if-no-files-found: error
 
 

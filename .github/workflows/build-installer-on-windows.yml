@@ -97,6 +97,14 @@ jobs:
         pip install PyInstaller
         echo "PyInstaller version: $(python -m PyInstaller --version)"
 
+    - name: Fix setuptools_scm-generated version
+      id: fix_version
+      run:
+        version=$(SETUPTOOLS_SCM_DEBUG=1 python setup.py --version)  # have version written to file to appear in bundled app as well
+        echo "::set-output name=version::$(echo $version)"
+
+
+    - name: Create local venv
         # recursive copy_metadata needed local reinstall of
         #    $ pip install --ignore-installed six
         # in minsys2/mingw64, would otherwise fail with
@@ -126,18 +134,15 @@ jobs:
       working-directory: dtool_lookup_gui
 
     - name: Package executable with pyinstaller
-      id: build_package
       run: |
         source venv/bin/activate
-        version=$(SETUPTOOLS_SCM_DEBUG=1 python setup.py --version)  # have version written to file to appear in bundled app as well
-        echo "::set-output name=version::$(echo $version)"
         # only ran into problems when calling PyInstaller or pyinstaller directly,
         # would never find package metadata within the venv, call as module mitigates the issue:
         python -m PyInstaller -y ./pyinstaller/dtool-lookup-gui-windows.spec 2>&1 | tee pyinstaller.log
 
     - name: Build installer
       run: |
-        "%programfiles(x86)%\Inno Setup 6\iscc.exe" "/DMyAppVersion=${{ steps.build_package.outputs.version }}" "win\dtool-lookup-gui.iss"
+        "%programfiles(x86)%\Inno Setup 6\iscc.exe" "/DMyAppVersion=${{ steps.fix_version.outputs.version }}" "win\dtool-lookup-gui.iss"
       shell: cmd
 
     - name: Pack build assets
@@ -164,7 +169,7 @@ jobs:
 
     - name: Embed version in installer file name
       run: |
-        mv release/dtool-lookup-gui.exe release/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows-installer.exe
+        mv release/dtool-lookup-gui.exe release/dtool-lookup-gui-${{ steps.fix_version.outputs.version }}-windows-installer.exe
 
     # - name: Pack release assets
     #  run: |
@@ -186,6 +191,6 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: dtool-lookup-gui-windows-installer-release
-        path: release/dtool-lookup-gui-${{ steps.get_version.outputs.version }}-windows-installer.exe
+        path: release/dtool-lookup-gui-${{ steps.fix_version.outputs.version }}-windows-installer.exe
         if-no-files-found: error
 
