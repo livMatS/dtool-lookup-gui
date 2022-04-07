@@ -56,11 +56,13 @@ jobs:
           mingw-w64-x86_64-python-yaml
           mingw-w64-x86_64-toolchain
 
+    # see https://github.com/actions/checkout/issues/250
     # see https://github.com/actions/checkout/issues/135
+    # see https://github.com/msys2/setup-msys2#default-shell
     - name: Set git to use LF
       run: |
-        git config --global core.autocrlf false
-        git config --global core.eol lf
+        git config --global core.autocrlf input
+      shell: bash
 
     - name: checkout
       uses: actions/checkout@v3
