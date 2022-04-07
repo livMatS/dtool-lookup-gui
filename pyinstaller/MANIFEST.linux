@@ -10,4 +10,4 @@ pyinstaller.log
 build/dtool-lookup-gui-linux-one-file/*.toc
 build/dtool-lookup-gui-linux-one-file/*.txt
 build/dtool-lookup-gui-linux-one-file/*.html
-
+data/icons/256x256/dtool_logo_small.png
