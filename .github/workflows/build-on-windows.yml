@@ -181,14 +181,14 @@ jobs:
         ls -lhv release/
 
     - name: Upload build artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: dtool-lookup-gui-windows
         path: dtool-lookup-gui-windows.tar
         if-no-files-found: error
 
     - name: Upload release artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: dtool-lookup-gui-windows-release
         path: release/dtool-lookup-gui-${{ steps.fix_version.outputs.version }}-windows.zip
