@@ -118,22 +118,22 @@ jobs:
           echo "::set-output name=version::$(echo $version)"
 
       - name: Download Linux build
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: dtool-lookup-gui-linux-release
 
       - name: Download Windows build
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: dtool-lookup-gui-windows-release
 
       - name: Download Windows installer build
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: dtool-lookup-gui-windows-installer-release
 
       - name: Download MacOS build
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           name: dtool-lookup-gui-macos-release
 
