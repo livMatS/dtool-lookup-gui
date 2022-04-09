@@ -183,14 +183,14 @@ jobs:
         ls -lhv release/
 
     - name: Upload build artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: dtool-lookup-gui-windows-installer
         path: dtool-lookup-gui-windows-installer.tar
         if-no-files-found: error
 
     - name: Upload release artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: dtool-lookup-gui-windows-installer-release
         path: release/dtool-lookup-gui-${{ steps.fix_version.outputs.version }}-windows-installer.exe
