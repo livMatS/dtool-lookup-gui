@@ -23,7 +23,7 @@ dtool-lookup-server-dependency-graph-plugin_ written in Python_ and GTK_.
 Quick start
 -----------
 
-Just download the pre-packaged binaries of the `latest release`_ 
+Just download the pre-packaged binaries of the `latest release`_
 and follow the `quick start guide`_ to get started.
 
 If the binaries won't run out-of-the-box on your system, continue below.
@@ -31,12 +31,25 @@ If the binaries won't run out-of-the-box on your system, continue below.
 OS-specific notes
 -----------------
 
-Linux (Ubuntu)
-^^^^^^^^^^^^^^
+macOS
+^^^^^
 
-Run packaged scripts `./maintenance/set_launcher_icon.sh` and 
-`./maintenance/soft_link_launcher.sh` to install a desktop launcher icon.
-Remove link `${HOME}/.local/share/applications/dtool-lookup-gui.destop` to delete launcher.
+After downloading the `dmg` Apple Disk Image of the `latest release`_
+and copying `dtool-lookup-gui` over to your `Applications` folder,
+*macOS* will likely complain about `dtool-lookup-gui` being damaged
+and refuse to execute it. This is due to the fact that we are no
+Apple-verified developers. To run the app anyway, open a terminal and
+remove Appöe's quarantine attribute from the app with
+
+    sudo xattr -rds com.apple.quarantine /Applications/dtool-lookup-gui.app
+
+That should enable you to launch the app as usual. Another option is to
+call
+
+    /Applications/dtool-lookup-gui.app/Contents/MacOS/dtool-lookup-gui
+
+directly from the command line.
+
 
 Requirements
 ------------
