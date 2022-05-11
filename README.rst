@@ -41,10 +41,14 @@ and refuse to execute it. This is due to the fact that we are no
 Apple-verified developers. To run the app anyway, open a terminal and
 remove Appöe's quarantine attribute from the app with
 
+.. code:: bash
+
     sudo xattr -rds com.apple.quarantine /Applications/dtool-lookup-gui.app
 
 That should enable you to launch the app as usual. Another option is to
 call
+
+.. code:: bash
 
     /Applications/dtool-lookup-gui.app/Contents/MacOS/dtool-lookup-gui
 
