@@ -461,6 +461,7 @@
                     <property name="action">select-folder</property>
                     <property name="create-folders">False</property>
                     <property name="title" translatable="yes">Select download directory</property>
+                    <signal name="file-set" handler="on_item_download_directory_file_chooser_button_file_set" swapped="no"/>
                   </object>
                   <packing>
                     <property name="left-attach">1</property>
