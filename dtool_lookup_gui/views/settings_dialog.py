@@ -76,10 +76,26 @@ class SettingsDialog(Gtk.Window):
     dtool_user_email_entry = Gtk.Template.Child()
     dtool_readme_template_fpath_file_chooser_button = Gtk.Template.Child()
 
+    item_download_directory_file_chooser_button = Gtk.Template.Child()
+    choose_item_download_target_directory_checkbox = Gtk.Template.Child()
+    open_downloaded_item_checkbox = Gtk.Template.Child()
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         settings.settings.bind("dependency-keys", self.dependency_keys_entry, 'text', Gio.SettingsBindFlags.DEFAULT)
+
+        # that certainly won't work, but no property exposes the file chooser's path
+        settings.settings.bind("item-download-directory",
+                               self.item_download_directory_file_chooser_button,
+                               'get_filename', Gio.SettingsBindFlags.DEFAULT)
+
+        settings.settings.bind("choose-item-download-directory",
+                               self.choose_item_download_target_directory_checkbox,
+                               'active', Gio.SettingsBindFlags.DEFAULT)
+        settings.settings.bind("open-downloaded-item",
+                               self.open_downloaded_item_checkbox,
+                               'active', Gio.SettingsBindFlags.DEFAULT)
 
         # register own refresh method as listener for app-central dtool-config-changed signal
         self.get_application().connect("dtool-config-changed", self.on_dtool_config_changed)
