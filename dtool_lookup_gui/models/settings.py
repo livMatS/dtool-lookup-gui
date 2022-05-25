@@ -48,4 +48,29 @@ class Settings:
     def local_base_uris(self, value):
         self.settings.set_strv('local-base-uris', value)
 
+    @property
+    def item_download_directory(self):
+        return self.settings.get_string('item-download-directory')
+
+    @item_download_directory.setter
+    def item_download_directory(self, value):
+        self.settings.set_string('item-download-directory', value)
+
+    @property
+    def choose_item_download_directory(self):
+        return self.settings.get_boolean('choose-item-download-directory')
+
+    @choose_item_download_directory.setter
+    def choose_item_download_directory(self, value):
+        self.settings.set_boolean('choose-item-download-directory', value)
+
+    @property
+    def open_downloaded_item(self):
+        return self.settings.get_boolean('open-downloaded-item')
+
+    @open_downloaded_item.setter
+    def open_downloaded_item(self, value):
+        self.settings.set_boolean('open-downloaded-item', value)
+
+
 settings = Settings()
