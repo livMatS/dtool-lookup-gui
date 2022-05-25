@@ -455,7 +455,7 @@
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkFileChooserButton" id="dtool_readme_template_fpath_file_chooser_button1">
+                  <object class="GtkFileChooserButton" id="item_download_directory_file_chooser_button">
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <property name="action">select-folder</property>
@@ -473,7 +473,7 @@
                     <property name="visible">True</property>
                     <property name="can-focus">False</property>
                     <child>
-                      <object class="GtkCheckButton">
+                      <object class="GtkCheckButton" id="choose_item_download_target_directory_checkbox">
                         <property name="label" translatable="yes">Choose target directory at download</property>
                         <property name="visible">True</property>
                         <property name="can-focus">True</property>
@@ -488,7 +488,7 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkCheckButton">
+                      <object class="GtkCheckButton" id="open_downloaded_item_checkbox">
                         <property name="label" translatable="yes">Open downloaded item with default app</property>
                         <property name="visible">True</property>
                         <property name="can-focus">True</property>
