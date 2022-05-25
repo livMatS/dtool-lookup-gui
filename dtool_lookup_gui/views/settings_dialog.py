@@ -142,6 +142,11 @@ class SettingsDialog(Gtk.Window):
             logger.debug(f"Current readme template: {dtool_readme_template_fpath}")
             self.dtool_readme_template_fpath_file_chooser_button.set_filename(dtool_readme_template_fpath)
 
+        # get gio settings (if not bound)
+        if os.path.isdir(settings.item_download_directory):
+            logger.debug(f"Current default item download directory: %s",  settings.item_download_directory)
+            self.item_download_directory_file_chooser_button.set_filename(settings.item_download_directory)
+
         logger.debug("Refresh list of endpoints.")
         asyncio.create_task(self._refresh_list_of_endpoints())
 
@@ -262,7 +267,11 @@ class SettingsDialog(Gtk.Window):
     # binding the filechooser to settings via property isn't possible, hence work with signals here
     @Gtk.Template.Callback()
     def on_item_download_directory_file_chooser_button_file_set(self, widget):
-        item_download_directory = widget.get_file()
+        item_download_directory = widget.get_file().get_path()
+        if item_download_directory is None:
+            logger.error("Selected directory invalid.")
+            return
+
         logger.debug("Selected default item download directory '%s'.", item_download_directory)
         settings.item_download_directory = item_download_directory
 
