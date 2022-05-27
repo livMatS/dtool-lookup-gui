@@ -39,7 +39,7 @@ and copying `dtool-lookup-gui` over to your `Applications` folder,
 *macOS* will likely complain about `dtool-lookup-gui` being damaged
 and refuse to execute it. This is due to the fact that we are no
 Apple-verified developers. To run the app anyway, open a terminal and
-remove Appöe's quarantine attribute from the app with
+remove Apple's quarantine attribute from the app with
 
 .. code:: bash
 
