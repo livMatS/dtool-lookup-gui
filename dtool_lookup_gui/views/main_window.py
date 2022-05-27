@@ -497,6 +497,11 @@ class MainWindow(Gtk.ApplicationWindow):
             cached_file = await dataset.get_item(item_uuid)
             shutil.copyfile(cached_file, dest_file)
 
+            if settings.open_downloaded_item:
+                # try to launch default application for downloaded item if desired
+                _logger.debug("Try to open '%s' with default application.", dest_file)
+                launch_default_app_for_uri(dest_file)
+
         asyncio.create_task(_get_item(dataset, item_uuid))
 
     def do_refresh_view(self, action, value):
@@ -753,31 +758,47 @@ class MainWindow(Gtk.ApplicationWindow):
         asyncio.create_task(_copy())
 
     def _show_get_item_dialog(self, item_name, item_uuid):
-        dialog = Gtk.FileChooserDialog(
-            title=f"Download item {item_uuid}: {item_name}", parent=self,
-            action=Gtk.FileChooserAction.SAVE
-        )
-        dialog.add_buttons(
-            Gtk.STOCK_CANCEL,
-            Gtk.ResponseType.CANCEL,
-            Gtk.STOCK_OK,
-            Gtk.ResponseType.OK,
-        )
-        dialog.set_current_name(item_name)
-        dialog.set_do_overwrite_confirmation(True)
+        default_dir = settings.item_download_directory
 
-        # Attention: Avoid run method!
-        # Unlike GLib, Python does not support running the EventLoop recursively.
-        # Gbulb uses the GLib event loop, hence this works. If we move to another
-        # implementation (e.g. https://gitlab.gnome.org/GNOME/pygobject/-/merge_requests/189)
-        # that uses the asyncio event loop this will break.
-        response = dialog.run()
-        if response == Gtk.ResponseType.OK:
-            dest_file = dialog.get_filename()
+        if settings.choose_item_download_directory:
+            dialog = Gtk.FileChooserDialog(
+                title=f"Download item {item_uuid}: {item_name}", parent=self,
+                action=Gtk.FileChooserAction.SAVE
+            )
+            dialog.add_buttons(
+                Gtk.STOCK_CANCEL,
+                Gtk.ResponseType.CANCEL,
+                Gtk.STOCK_OK,
+                Gtk.ResponseType.OK,
+            )
+            dialog.set_current_name(item_name)
+            dialog.set_do_overwrite_confirmation(True)
+
+            if os.path.isdir(default_dir):
+                _logger.debug("Set default download dir to '%s'.", default_dir)
+                dialog.set_current_folder(default_dir)
+            else:
+                _logger.warning("'%s' is no valid default download dir.", default_dir)
+
+            # Attention: Avoid run method!
+            # Unlike GLib, Python does not support running the EventLoop recursively.
+            # Gbulb uses the GLib event loop, hence this works. If we move to another
+            # implementation (e.g. https://gitlab.gnome.org/GNOME/pygobject/-/merge_requests/189)
+            # that uses the asyncio event loop this will break.
+            response = dialog.run()
+            if response == Gtk.ResponseType.OK:
+                dest_file = dialog.get_filename()
+                self.activate_action('get-item', GLib.Variant.new_string(dest_file))
+            elif response == Gtk.ResponseType.CANCEL:
+                pass
+            dialog.destroy()
+        else:
+            if not os.path.isdir(default_dir):
+                _logger.error("'%s' is no valid download directory.", default_dir)
+                return
+            dest_file = os.path.join(default_dir, item_name)
             self.activate_action('get-item', GLib.Variant.new_string(dest_file))
-        elif response == Gtk.ResponseType.CANCEL:
-            pass
-        dialog.destroy()
+
 
     # TODO: move to the model
     def _add_item(self, fpath):

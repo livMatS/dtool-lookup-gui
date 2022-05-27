@@ -76,10 +76,21 @@ class SettingsDialog(Gtk.Window):
     dtool_user_email_entry = Gtk.Template.Child()
     dtool_readme_template_fpath_file_chooser_button = Gtk.Template.Child()
 
+    item_download_directory_file_chooser_button = Gtk.Template.Child()
+    choose_item_download_target_directory_checkbox = Gtk.Template.Child()
+    open_downloaded_item_checkbox = Gtk.Template.Child()
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         settings.settings.bind("dependency-keys", self.dependency_keys_entry, 'text', Gio.SettingsBindFlags.DEFAULT)
+
+        settings.settings.bind("choose-item-download-directory",
+                               self.choose_item_download_target_directory_checkbox,
+                               'active', Gio.SettingsBindFlags.DEFAULT)
+        settings.settings.bind("open-downloaded-item",
+                               self.open_downloaded_item_checkbox,
+                               'active', Gio.SettingsBindFlags.DEFAULT)
 
         # register own refresh method as listener for app-central dtool-config-changed signal
         self.get_application().connect("dtool-config-changed", self.on_dtool_config_changed)
@@ -130,6 +141,11 @@ class SettingsDialog(Gtk.Window):
         if dtool_readme_template_fpath is not None:
             logger.debug(f"Current readme template: {dtool_readme_template_fpath}")
             self.dtool_readme_template_fpath_file_chooser_button.set_filename(dtool_readme_template_fpath)
+
+        # get gio settings (if not bound)
+        if os.path.isdir(settings.item_download_directory):
+            logger.debug(f"Current default item download directory: %s",  settings.item_download_directory)
+            self.item_download_directory_file_chooser_button.set_filename(settings.item_download_directory)
 
         logger.debug("Refresh list of endpoints.")
         asyncio.create_task(self._refresh_list_of_endpoints())
@@ -247,6 +263,17 @@ class SettingsDialog(Gtk.Window):
         elif response == Gtk.ResponseType.CANCEL:
             pass
         dialog.destroy()
+
+    # binding the filechooser to settings via property isn't possible, hence work with signals here
+    @Gtk.Template.Callback()
+    def on_item_download_directory_file_chooser_button_file_set(self, widget):
+        item_download_directory = widget.get_file().get_path()
+        if item_download_directory is None:
+            logger.error("Selected directory invalid.")
+            return
+
+        logger.debug("Selected default item download directory '%s'.", item_download_directory)
+        settings.item_download_directory = item_download_directory
 
     async def retrieve_token(self, auth_url, username, password):
         #self.main_application.error_bar.hide()

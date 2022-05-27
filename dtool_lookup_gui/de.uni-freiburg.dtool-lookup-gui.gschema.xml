@@ -14,6 +14,26 @@
             <summary>Local directories displayed in the base URI list.</summary>
         </key>
 
+        <key name='item-download-directory' type='s'>
+            <default>''</default>
+            <summary>Default item download directory.</summary>
+        </key>
+
+        <key name='choose-item-download-directory' type='b'>
+            <default>true</default>
+            <summary>
+                If set, always ask for picking local directory at item download.
+                If unset, always download items to default directory without asking.
+            </summary>
+        </key>
+
+        <key name='open-downloaded-item' type='b'>
+            <default>false</default>
+            <summary>
+                If set, always try to open item with associated default application after download.
+            </summary>
+        </key>
+
     </schema>
 
 </schemalist>

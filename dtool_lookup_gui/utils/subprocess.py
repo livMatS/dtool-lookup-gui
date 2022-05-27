@@ -74,6 +74,7 @@ def launch_default_app_for_uri(uri):
             # subprocess.call(('start', filepath))
         else:  # linux variants
             logger.debug("On Linux, launch with Gio.AppInfo.launch_default_for_uri_async('%s')", uri)
-            # On Linux, use the Gio.AppInfo mechanism instead of direct xdg-open
-            Gio.AppInfo.launch_default_for_uri_async(uri)
-            # subprocess.call(('xdg-open', filepath))
+            # On Linux, the Gio.AppInfo mechanism fails for opening files, need to investigate
+            # Gio.AppInfo.launch_default_for_uri_async(uri)
+            # use xdg-open for now, 2022-05-25
+            subprocess.call(('xdg-open', filepath))

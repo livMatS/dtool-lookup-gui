@@ -25,8 +25,6 @@
 
 import locale
 import logging
-import math
-import os
 import uuid
 from contextlib import contextmanager
 from datetime import date, datetime
@@ -108,8 +106,6 @@ def datetime_to_string(d):
 
 def date_to_string(d):
     return date.fromtimestamp(to_timestamp(d))
-
-
 
 
 def fill_readme_tree_store(store, data, parent=None):
