@@ -1,7 +1,7 @@
 dtool-lookup-gui
 ================
 
-.. image:: data/icons/22x22/dtool_logo_small.png
+.. image:: data/icons/22x22/dtool_logo.png
     :height: 20px
     :target: https://github.com/livMatS/dtool-lookup-gui
     :alt: dtool-lookup-gui icon

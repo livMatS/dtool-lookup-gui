@@ -21,7 +21,7 @@ glob_patterns_to_include =  [
     *icon_glob_patterns
 ]
 
-icns_file = os.path.join(root_dir, 'data', 'icons', 'dtool_logo_small.icns')
+icns_file = os.path.join(root_dir, 'data', 'icons', 'dtool_logo.icns')
 
 additional_datas = [
     (os.path.join(root_dir, rel_path),
