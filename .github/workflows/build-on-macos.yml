@@ -95,7 +95,7 @@ jobs:
         create-dmg \
           --volname "dtool-lookup-gui" \
           --eula "LICENSE.txt" \
-          --volicon "data/icons/dtool_logo_small.icns" \
+          --volicon "data/icons/dtool_logo.icns" \
           --window-pos 200 120 \
           --window-size 600 300 \
           --icon-size 100 \
