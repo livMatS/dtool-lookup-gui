@@ -6,7 +6,7 @@
 
 APPDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )/.." && pwd )"
 if [ -w "$APPDIR"/etc/dtool-lookup-gui.desktop ]; then
-	sed -i -e "s@^Icon=.*@Icon=$APPDIR/data/icons/256x256/dtool_logo_small.xpm@" "$APPDIR"/etc/dtool-lookup-gui.desktop
+	sed -i -e "s@^Icon=.*@Icon=$APPDIR/data/icons/256x256/dtool_logo.xpm@" "$APPDIR"/etc/dtool-lookup-gui.desktop
 else
 	echo "$APPDIR"/etc/dtool-lookup-gui.desktop is not writable
 	exit 1
