@@ -42,6 +42,7 @@ jobs:
           mingw-w64-x86_64-python-jsonschema
           mingw-w64-x86_64-python-markupsafe
           mingw-w64-x86_64-python-numpy
+          mingw-w64-x86_64-python-pip
           mingw-w64-x86_64-python-pip-tools
           mingw-w64-x86_64-python-pycparser
           mingw-w64-x86_64-python-pyjwt
@@ -95,6 +96,12 @@ jobs:
     # strategy: only install remaining pythonic dependencies via pip
     - name: Install remaining pythonic dependencies
       run: |
+        echo "### python and pip info ###"
+        command -v python
+        python --version
+        pip --version
+        echo "### install pythonic dependencies ###"
+        pip install --upgrade pip
         pip install -r pyinstaller/mingw64_requirements.txt
         pip install PyInstaller
         echo "PyInstaller version: $(python -m PyInstaller --version)"
