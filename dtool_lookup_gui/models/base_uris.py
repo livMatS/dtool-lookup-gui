@@ -86,8 +86,6 @@ class LocalBaseURIModel(BaseURI):
     _scheme = 'file'
     _use_cache = False
 
-    _local_base_uris = settings.local_base_uris
-
     @classmethod
     def add_directory(cls, path):
         logger.debug(f"Add local path {path} as base URI.")
@@ -96,21 +94,28 @@ class LocalBaseURIModel(BaseURI):
         if base_uri.scheme != cls._scheme:
             raise ValueError(f"The URI provided specified schema '{base_uri.scheme}', but this base URI model "
                              f"supports '{cls._scheme}'.")
-        cls._local_base_uris += [base_uri.path]
+        if base_uri.path in settings.local_base_uris:
+            raise ValueError(f"Specified base URI {base_uri.scheme}://{base_uri.path} already registered.")
         # Store such that they will reappear when restarting the program
-        settings.local_base_uris = cls._local_base_uris
+        settings.local_base_uris += [base_uri.path]
+        logger.debug("List of base URIs: %s", settings.local_base_uris)
 
     @classmethod
     def remove(cls, base_uri):
-        i = cls._local_base_uris.index(base_uri.uri_name)
+        logger.debug("Remove base URI '%s'", base_uri)
+        i = settings.local_base_uris.index(base_uri.uri_name)
+        logger.debug("Located base URI by name '%s' at index %d", base_uri.uri_name, i)
         if i >= 0:
-            del cls._local_base_uris[i]
+            # direct 'del settings.local_base_uris[i]' won't do anything
+            _local_base_uris = settings.local_base_uris
+            del _local_base_uris[i]
             # Store such that they will be removed when restarting the program
-            settings.local_base_uris = cls._local_base_uris
+            settings.local_base_uris = _local_base_uris
+        logger.debug("List of base URIs: %s", settings.local_base_uris)
 
     @classmethod
     def all(cls):
-        return [cls(base_uri) for base_uri in cls._local_base_uris]
+        return [cls(base_uri) for base_uri in settings.local_base_uris]
 
     def create_dataset(self, name, readme_template_path=None):
         """Create a proto dataset."""
