@@ -42,6 +42,8 @@ from gi.repository import GLib, GObject, Gio, Gtk, GtkSource, GdkPixbuf
 import gbulb
 gbulb.install(gtk=True)
 
+from .models.settings import settings
+
 from .views.main_window import MainWindow
 
 from .utils.logging import _log_nested
@@ -262,6 +264,9 @@ class Application(Gtk.Application):
     # action handlers
     def do_reset_config(self, action, value):
         """Empties config. All settings lost."""
+        logger.debug(f"Reset Gtk app settings.")
+        settings.reset()
+
         fpath = dtoolcore.utils.DEFAULT_CONFIG_PATH
         logger.debug(f"Remove config file '{fpath}'.")
         try:
