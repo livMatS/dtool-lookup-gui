@@ -1,6 +1,13 @@
 Change log for dtool-lookup-gui
 ===============================
 
+0.6.2 (02Nov22)
+---------------
+
+- Item download settings (open after download, default download directory)
+- New icons
+- Fixed issue concerning duplicate local base URI entries
+
 0.6.1 (07Apr22)
 ---------------
 
