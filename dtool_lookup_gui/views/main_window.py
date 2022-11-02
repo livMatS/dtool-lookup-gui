@@ -633,7 +633,10 @@ class MainWindow(Gtk.ApplicationWindow):
             # For using URI scheme on local paths, we have to unquote characters to be
             uri = urllib.parse.unquote(uri, encoding='utf-8', errors='replace')
             # Add directory to local inventory
-            LocalBaseURIModel.add_directory(uri)
+            try:
+                LocalBaseURIModel.add_directory(uri)
+            except ValueError as err:
+                _logger.warning(str(err))
         elif response == Gtk.ResponseType.CANCEL:
             uri = None
         dialog.destroy()
