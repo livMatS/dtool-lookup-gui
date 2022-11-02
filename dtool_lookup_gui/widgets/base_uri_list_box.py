@@ -91,10 +91,16 @@ class DtoolBaseURIListBox(Gtk.ListBox):
         for row in self.get_children():
             self.remove(row)
             row.destroy()
+
+        logger.debug("Residual uri to row index mapping: %s", self._uri_to_row_index_mapping)
+        # reset mapping here, otherwise leads to errors with URIs remaining in the index mapping after removal
+        self._uri_to_row_index_mapping = dict()
+
         if search_results:
             self._search_results_row = DtoolSearchResultsRow()
             self.add(self.search_results_row)
         base_uris = await all(local=local, lookup=lookup)
+        logger.debug("List base URIs %s", [str(base_uri) for base_uri in base_uris])
         for base_uri in base_uris:
             if base_uri.scheme == 'file':
                 self.add(DtoolBaseURIRow(base_uri, on_activate=on_activate, on_configure=on_configure,
