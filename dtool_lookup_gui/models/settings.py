@@ -23,18 +23,31 @@
 # SOFTWARE.
 #
 
+import logging
 import os
 
 from gi.repository import Gio
+
+
+logger = logging.getLogger(__name__)
 
 
 class Settings:
     def __init__(self):
         schema_source = Gio.SettingsSchemaSource.new_from_directory(
             os.path.abspath(f'{os.path.dirname(__file__)}/..'), Gio.SettingsSchemaSource.get_default(), False)
-        schema = Gio.SettingsSchemaSource.lookup(
+        self._schema = Gio.SettingsSchemaSource.lookup(
             schema_source, "de.uni-freiburg.dtool-lookup-gui", False)
-        self.settings = Gio.Settings.new_full(schema, None, None)
+        self.settings = Gio.Settings.new_full(self._schema, None, None)
+
+    def reset(self):
+        """Reset Gtk app settings to defaults."""
+        keys = self._schema.list_keys()
+        for key in keys:
+            value = self.settings.get_value(key)
+            self.settings.reset(key)
+            default = self.settings.get_value(key)
+            logger.debug("Reset '%s': '%s' back to default '%s'", key, value, default)
 
     @property
     def dependency_keys(self):
