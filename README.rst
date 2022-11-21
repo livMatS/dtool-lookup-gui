@@ -54,6 +54,17 @@ call
 
 directly from the command line.
 
+Linux
+^^^^^
+
+After downloading and extracting the tar.gz-packaged Linux build, you may
+run the bundled scripts `set_launcher_icon.sh` and `soft_link_launcher.sh`
+subsequently to add this launcher icon to your desktop environment:
+
+.. image:: data/screenshots/screenshot-ubuntu-launcher.png
+
+This has been tested on Ubuntu 20.04 and GNOME 3.36.8.
+
 
 Requirements
 ------------
