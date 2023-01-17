@@ -5,7 +5,7 @@ dtool-lookup-gui
     :height: 20px
     :target: https://github.com/livMatS/dtool-lookup-gui
     :alt: dtool-lookup-gui icon
-.. image:: https://img.shields.io/github/workflow/status/livMatS/dtool-lookup-gui/build-and-publish   
+.. image:: https://img.shields.io/github/actions/workflow/status/livMatS/dtool-lookup-gui/build-and-publish.yml?branch=master
     :target: https://github.com/livMatS/dtool-lookup-gui/actions/workflows/build-and-publish.yml
     :alt: GitHub Workflow Status
 .. image:: https://img.shields.io/github/v/release/livMatS/dtool-lookup-gui
