@@ -65,6 +65,20 @@ subsequently to add this launcher icon to your desktop environment:
 
 This has been tested on Ubuntu 20.04 and GNOME 3.36.8.
 
+The packaged Linux build will fail to launch out-of-the box under Wayland. 
+If unsure whih display server is in use, check with
+
+.. code:: bash
+
+   echo $XDG_SESSION_TYPE
+   
+This will likely output either :code:`x11` or :code:`wayland`.
+If you are using Wayland, launch the app with environment variable 
+:code:`GDK_BACKEND=x11` set, e.g. via
+
+.. code:: bash
+
+    GDK_BACKEND=x11 ./dtool_lookup_gui
 
 Requirements
 ------------
