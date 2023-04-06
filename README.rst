@@ -58,7 +58,7 @@ Linux
 ^^^^^
 
 After downloading and extracting the tar.gz-packaged Linux build, you may
-run the bundled scripts `set_launcher_icon.sh` and `soft_link_launcher.sh`
+run the bundled scripts :code:`set_launcher_icon.sh` and :code:`soft_link_launcher.sh`
 subsequently to add this launcher icon to your desktop environment:
 
 .. image:: data/screenshots/screenshot-ubuntu-launcher.png
@@ -80,8 +80,11 @@ If you are using Wayland, launch the app with environment variable
 
     GDK_BACKEND=x11 ./dtool_lookup_gui
 
+Development
+-----------
+
 Requirements
-------------
+^^^^^^^^^^
 
 This application requires Gtk_ 3 and GtkSourceView_ 4.
 
@@ -130,34 +133,35 @@ Also refer to the build workflows `.github/workflows/build-on-[linux|macos|windo
 for understanding the requirements for the different systems.
 
 Installation
-------------
+^^^^^^^^^^^^
 
-The application uses setuptools_. It can be installed with pip_:
+For a locally editable install, clone this repository with
 
-.. code:: bash
+.. code:: console
 
-    pip install dtool-lookup-gui
+    git clone git+https://github.com/livMatS/dtool-lookup-gui.git
 
-If you want the latest development release, then use:
-
-.. code:: bash
-
-    pip install git+https://github.com/livMatS/dtool-lookup-gui.git
-
-When already clone into a local directly via ``git``, either use pip_ or install via the standard route
+change into the repository directory,
 
 .. code:: bash
 
-   python setup.py install
+    cd dtool-lookup-gui
 
-For an editable install,
+create and activate a clean virtual environment,
 
+.. code:: bash
+
+    python -m venv venv
+    source venv/bin/activate
+    pip install --upgrade pip
+
+and perform an editable install with
 
 .. code:: bash
 
    pip install -e .
 
-also run
+Also run
 
 .. code:: bash
 
@@ -185,9 +189,6 @@ username and a password. To do this, click on the "Burger" symbol and select
 *Settings*.
 
 
-Development
------------
-
 Pinned requirements
 ^^^^^^^^^^^^^^^^^^^
 
@@ -198,6 +199,23 @@ Pinned requirements
   pip install pip-tools
   pip-compile requirements.in > requirements.txt
 
+GTK debugging
+^^^^^^^^^^^^^
+
+After
+
+.. code-block:: bash
+
+  gsettings set org.gtk.Settings.Debug enable-inspector-keybinding true
+
+use CTRL-SHIFT-D during execution to display the GTK inspector for interactive debugging.
+
+GUI design
+^^^^^^^^^^
+
+The GUI uses custom Gtk widgets. To edit the the XML UI definition files with
+Glade_, add the directory ``glade/catalog`` to `Extra Catalog & Template paths`
+within Glade's preferences dialog.
 
 Testing github workflows locally
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -240,24 +258,6 @@ but usually belong to ``root``. The executable resides below ``dist``. Use
    git clean -fdx
 
 to remove the generated ``build``, ``dist``, and ``workflow`` folders and all other artifacts.
-
-GTK debugging
-^^^^^^^^^^^^^
-
-After
-
-.. code-block:: bash
-
-  gsettings set org.gtk.Settings.Debug enable-inspector-keybinding true
-
-use CTRL-SHIFT-D during execution to display the GTK inspector for interactive debugging.
-
-GUI design
-^^^^^^^^^^
-
-The GUI uses custom Gtk widgets. To edit the the XML UI definition files with
-Glade_, add the directory ``glade/catalog`` to `Extra Catalog & Template paths`
-within Glade's preferences dialog.
 
 Funding
 -------
