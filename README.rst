@@ -83,8 +83,10 @@ If you are using Wayland, launch the app with environment variable
 Development
 -----------
 
+Please read the `contributing guidelines`_ before diving into the development process.
+
 Requirements
-^^^^^^^^^^
+^^^^^^^^^^^^
 
 This application requires Gtk_ 3 and GtkSourceView_ 4.
 
@@ -263,6 +265,8 @@ Funding
 -------
 
 This development has received funding from the Deutsche Forschungsgemeinschaft within the Cluster of Excellence livMatS_.
+
+.. _contributing guidelines: CONTRIBUTING.md
 
 .. _dtool: https://github.com/jic-dtool/dtool
 
