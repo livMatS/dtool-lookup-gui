@@ -220,6 +220,7 @@ class SMBBaseURIModel(ConfigBaseURIModel):
 class LookupBaseURIModel(BaseURI):
     """Model for base URIs obtained from lookup server"""
 
+    # TODO: Needs pagination
     @classmethod
     async def all(cls, username):
         async with ConfigurationBasedLookupClient() as lookup_client:
