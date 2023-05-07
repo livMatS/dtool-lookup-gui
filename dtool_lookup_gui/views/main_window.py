@@ -293,16 +293,18 @@ class MainWindow(Gtk.ApplicationWindow):
         total_size = sum([0 if dataset.size_int is None else dataset.size_int for dataset in datasets])
         row.info_label.set_text(f'{len(datasets)} datasets, {sizeof_fmt(total_size).strip()}')
 
-    async def _fetch_search_results(self, keyword, on_show=None):
+    async def _fetch_search_results(self, keyword, on_show=None, page_number=1, page_size=5):
         row = self.base_uri_list_box.search_results_row
         row.start_spinner()
+        pagination = {}  # Add pagination dictionary
 
         try:
-            # datasets = await DatasetModel.search(keyword)
             if keyword:
                 if is_valid_query(keyword):
                     _logger.debug("Valid query specified.")
-                    datasets = await DatasetModel.query(keyword)
+                    datasets = await DatasetModel.query(keyword, page_number=page_number, page_size=page_size,
+                                                        pagination=pagination)  # Pass pagination dictionary and
+                    # page_number, page_size
                 else:
                     _logger.debug("Specified search text is not a valid query, just perform free text search.")
                     # NOTE: server side allows a dict with the key-value pairs
@@ -312,10 +314,16 @@ class MainWindow(Gtk.ApplicationWindow):
                     # constructs on the server side. With the special treatment
                     # of the 'uuid' keyword above, should we introduce similar
                     # options for the other available keywords?
-                    datasets = await DatasetModel.search(keyword)
+                    datasets = await DatasetModel.search(keyword, page_number=page_number, page_size=page_size,
+                                                         pagination=pagination)  # Pass pagination dictionary and
+                    # page_number, page_size
             else:
                 _logger.debug("No keyword specified, list all datasets.")
-                datasets = await DatasetModel.query_all()
+                datasets = await DatasetModel.query_all(page_number=page_number, page_size=page_size,
+                                                        pagination=pagination)  # Pass pagination dictionary and
+                # page_number, page_size
+                datasets = await DatasetModel.search(keyword, page_number=page_number, page_size=page_size,
+                                                     pagination=pagination)
 
             if len(datasets) > self._max_nb_datasets:
                 _logger.warning(
