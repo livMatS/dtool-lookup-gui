@@ -152,6 +152,8 @@ class MainWindow(Gtk.ApplicationWindow):
 
     settings_button = Gtk.Template.Child()
 
+    test_pagination_button = Gtk.Template.Child()
+
     error_bar = Gtk.Template.Child()
     error_label = Gtk.Template.Child()
 
@@ -223,6 +225,11 @@ class MainWindow(Gtk.ApplicationWindow):
         search_select_show_action = Gio.SimpleAction.new("search-select-show", row_index_variant.get_type())
         search_select_show_action.connect("activate", self.do_search_select_and_show)
         self.add_action(search_select_show_action)
+
+        # show next page action
+        show_next_page_action = Gio.SimpleAction.new("show-next-page")
+        show_next_page_action.connect("activate", self.do_show_next_page)
+        self.add_action(show_next_page_action)
 
         # get item
         dest_file_variant = GLib.Variant.new_string("dummy")
@@ -504,6 +511,10 @@ class MainWindow(Gtk.ApplicationWindow):
 
         asyncio.create_task(_get_item(dataset, item_uuid))
 
+    def do_show_next_page(selfself, action, value):
+        """Show next page of datasets."""
+        print("Show next page.")
+
     def do_refresh_view(self, action, value):
         """Refresh view by reloading base uri list, """
         self.refresh()
@@ -656,6 +667,11 @@ class MainWindow(Gtk.ApplicationWindow):
     def on_show_clicked(self, widget):
         uri = str(self.dataset_list_box.get_selected_row().dataset)
         launch_default_app_for_uri(uri)
+
+    @Gtk.Template.Callback()
+    def on_test_pagination_clicked(self, widget):
+        self.get_action_group("win").activate_action('show-next-page', None)
+        # print("Test pagination clicked")
 
     @Gtk.Template.Callback()
     def on_add_items_clicked(self, widget):

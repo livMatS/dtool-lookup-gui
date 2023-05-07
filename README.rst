@@ -219,6 +219,16 @@ The GUI uses custom Gtk widgets. To edit the the XML UI definition files with
 Glade_, add the directory ``glade/catalog`` to `Extra Catalog & Template paths`
 within Glade's preferences dialog.
 
+The GUI uses the `GtkSourceView` widget. When editing the user interface with Glade,
+a description of this widget needs to be available. On Ubuntu (20.04 and 22.04),
+the needed catalog file `/usr/share/glade/catalogs/gtksourceview.xml` is
+contained in package `libgtksourceview-4-dev`. Install with
+
+    sudo apt install libgtksourceview-4-dev
+
+and add the path `/usr/share/glade/catalogs` to `Extra Catalog & Template paths`
+within Glade's preferences dialog.
+
 Testing github workflows locally
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 

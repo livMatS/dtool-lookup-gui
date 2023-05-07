@@ -267,6 +267,7 @@ class DatasetModel:
         else:
             raise ValueError('Please provide either `uri` or `dateset_info`.')
 
+    # TODO: needs pagination
     @classmethod
     async def search(cls, keyword):
         async with ConfigurationBasedLookupClient() as lookup:
@@ -274,13 +275,16 @@ class DatasetModel:
 
         return [await cls.from_lookup(lookup_dict) for lookup_dict in datasets]
 
+    # TODO: needs pagination
     @classmethod
     async def query(cls, query_text):
+        """Query datasets from lookup server."""
         async with ConfigurationBasedLookupClient() as lookup:
             datasets = await lookup.by_query(query_text)
 
         return [await cls.from_lookup(lookup_dict) for lookup_dict in datasets]
 
+    # TODO: needs pagination
     @classmethod
     async def query_all(cls):
         """Query all datasets from lookup server."""
