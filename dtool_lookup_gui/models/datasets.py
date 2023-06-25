@@ -268,25 +268,23 @@ class DatasetModel:
             raise ValueError('Please provide either `uri` or `dateset_info`.')
 
     @classmethod
-    async def search(cls, keyword):
+    async def search(cls, keyword, page_number, page_size, pagination={}):
         async with ConfigurationBasedLookupClient() as lookup:
-            datasets = await lookup.search(keyword)
-
+            datasets = await lookup.search(keyword, page_number=page_number, page_size=page_size, pagination=pagination)
+        print(pagination['first_page']) #testfun
         return [await cls.from_lookup(lookup_dict) for lookup_dict in datasets]
 
     @classmethod
-    async def query(cls, query_text):
+    async def query(cls, query_text, *args, **kwargs):
         async with ConfigurationBasedLookupClient() as lookup:
-            datasets = await lookup.by_query(query_text)
-
+            datasets = await lookup.by_query(query_text, *args, **kwargs)
         return [await cls.from_lookup(lookup_dict) for lookup_dict in datasets]
 
     @classmethod
-    async def query_all(cls):
-        """Query all datasets from lookup server."""
+    async def query_all(cls, page_number=1, page_size=8, pagination={}):
+        """Query all datasets from the lookup server."""
         async with ConfigurationBasedLookupClient() as lookup:
-            datasets = await lookup.all()
-
+            datasets = await lookup.all(page_number=page_number, page_size=page_size, pagination=pagination)
         return [await cls.from_lookup(lookup_dict) for lookup_dict in datasets]
 
     def __str__(self):

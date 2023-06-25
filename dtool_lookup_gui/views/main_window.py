@@ -38,6 +38,7 @@ from dtool_info.utils import sizeof_fmt
 
 import dtool_lookup_api.core.config
 from dtool_lookup_api.core.LookupClient import ConfigurationBasedLookupClient
+
 # As of dtool-lookup-api 0.5.0, the following line still is a necessity to
 # disable prompting for credentials on the command line. This behavior
 # will change in future versions.
@@ -101,7 +102,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     search_entry = Gtk.Template.Child()
 
-    #copy_dataset_spinner = Gtk.Template.Child()
+    # copy_dataset_spinner = Gtk.Template.Child()
 
     base_uri_list_box = Gtk.Template.Child()
     dataset_list_box = Gtk.Template.Child()
@@ -154,6 +155,17 @@ class MainWindow(Gtk.ApplicationWindow):
 
     error_bar = Gtk.Template.Child()
     error_label = Gtk.Template.Child()
+
+
+    first_page_button = Gtk.Template.Child()
+    prev_page_button = Gtk.Template.Child()
+    curr_page_button = Gtk.Template.Child()
+    next_page_button = Gtk.Template.Child()
+    nextoption_page_button = Gtk.Template.Child()
+    last_page_button = Gtk.Template.Child()
+
+
+
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -241,6 +253,14 @@ class MainWindow(Gtk.ApplicationWindow):
 
         _logger.debug(f"Constructed main window for app '{self.application.get_application_id()}'")
 
+        self.pagination = {}
+
+        # show first page action
+        show_first_page_action = Gio.SimpleAction.new("show-first-page")
+        show_first_page_action.connect("activate", self.do_show_first_page)
+
+        self.add_action(show_first_page_action)
+
     # utility methods
     def refresh(self):
         """Refresh view."""
@@ -293,16 +313,18 @@ class MainWindow(Gtk.ApplicationWindow):
         total_size = sum([0 if dataset.size_int is None else dataset.size_int for dataset in datasets])
         row.info_label.set_text(f'{len(datasets)} datasets, {sizeof_fmt(total_size).strip()}')
 
-    async def _fetch_search_results(self, keyword, on_show=None):
+    async def _fetch_search_results(self, keyword, on_show=None, page_number=5, page_size=3):
         row = self.base_uri_list_box.search_results_row
         row.start_spinner()
+        self.pagination = {}  # Add pagination dictionary
 
         try:
-            # datasets = await DatasetModel.search(keyword)
             if keyword:
                 if is_valid_query(keyword):
                     _logger.debug("Valid query specified.")
-                    datasets = await DatasetModel.query(keyword)
+                    datasets = await DatasetModel.query(keyword, page_number=page_number, page_size=page_size,
+                                                        pagination=self.pagination)  # Pass pagination dictionary and
+                    # page_number, page_size
                 else:
                     _logger.debug("Specified search text is not a valid query, just perform free text search.")
                     # NOTE: server side allows a dict with the key-value pairs
@@ -312,10 +334,16 @@ class MainWindow(Gtk.ApplicationWindow):
                     # constructs on the server side. With the special treatment
                     # of the 'uuid' keyword above, should we introduce similar
                     # options for the other available keywords?
-                    datasets = await DatasetModel.search(keyword)
+                    datasets = await DatasetModel.search(keyword, page_number=page_number, page_size=page_size,
+                                                         pagination=self.pagination)  # Pass pagination dictionary and
+                    # page_number, page_size
             else:
                 _logger.debug("No keyword specified, list all datasets.")
-                datasets = await DatasetModel.query_all()
+                # datasets = await DatasetModel.query_all(page_number=page_number, page_size=page_size,
+                # pagination=pagination)  # Pass pagination dictionary and
+                # page_number, page_size
+                datasets = await DatasetModel.search("John von Neumann ", page_number=page_number, page_size=page_size,
+                                                     pagination=self.pagination)
 
             if len(datasets) > self._max_nb_datasets:
                 _logger.warning(
@@ -334,6 +362,8 @@ class MainWindow(Gtk.ApplicationWindow):
         self.base_uri_list_box.select_search_results_row()
         self.main_stack.set_visible_child(self.main_paned)
         row.stop_spinner()
+
+
 
     def _search_by_uuid(self, uuid):
         search_text = dump_single_line_query_text({"uuid": uuid})
@@ -489,7 +519,7 @@ class MainWindow(Gtk.ApplicationWindow):
         dataset = self.dataset_list_box.get_selected_row().dataset
 
         items = self._get_selected_items()
-        if len(items) !=1:
+        if len(items) != 1:
             raise ValueError("Can only get one item at a time.")
         item_name, item_uuid = items[0]
 
@@ -504,6 +534,14 @@ class MainWindow(Gtk.ApplicationWindow):
 
         asyncio.create_task(_get_item(dataset, item_uuid))
 
+    def do_show_first_page(self, action, value):
+        """Show next page of datasets."""
+
+        print("hi from 2nd")
+        print(self.pagination['first_page'])
+
+
+
     def do_refresh_view(self, action, value):
         """Refresh view by reloading base uri list, """
         self.refresh()
@@ -516,6 +554,7 @@ class MainWindow(Gtk.ApplicationWindow):
     @Gtk.Template.Callback()
     def on_logging_clicked(self, widget):
         self.log_window.show()
+
 
     @Gtk.Template.Callback()
     def on_about_clicked(self, widget):
@@ -687,6 +726,7 @@ class MainWindow(Gtk.ApplicationWindow):
             pass
         dialog.destroy()
 
+
     @Gtk.Template.Callback()
     def on_manifest_row_activated(self, tree_view, path, column):
         """Handler for "row-activated" signal.
@@ -696,7 +736,7 @@ class MainWindow(Gtk.ApplicationWindow):
         is pressed. (https://www.gnu.org/software/guile-gnome/docs/gtk/html/GtkTreeView.html)"""
 
         items = self._get_selected_items()
-        if len(items) !=1:
+        if len(items) != 1:
             raise ValueError("Can only get one item at a time.")
         item_name, item_uuid = items[0]
         self._show_get_item_dialog(item_name, item_uuid)
@@ -750,6 +790,35 @@ class MainWindow(Gtk.ApplicationWindow):
         if response_id == Gtk.ResponseType.CLOSE:
             self.error_bar.set_revealed(False)
 
+    @Gtk.Template.Callback()
+    def on_first_page_button_clicked(self, widget):
+        #self.get_action_group("win").activate_action('show-first-page', None)
+        asyncio.create_task(self._fetch_search_results(keyword=None, on_show=None, page_number=1, page_size=3))
+        #self.first_page_button.set_label(str(self.pagination['first_page']))
+        print(self.pagination)
+
+    @Gtk.Template.Callback()
+    def on_nextoption_page_button_clicked(self, widget):
+        if self.pagination['page'] < self.pagination['last_page']:
+            self.pagination['page'] += 1
+            page_number = self.pagination['page']
+            asyncio.create_task(
+                self._fetch_search_results(keyword=None, on_show=None, page_number=page_number, page_size=3))
+
+    @Gtk.Template.Callback()
+    def on_last_page_button_clicked(self, widget):
+        page_number = self.pagination['last_page']
+        asyncio.create_task(
+            self._fetch_search_results(keyword=None, on_show=None, page_number=page_number, page_size=3))
+
+    @Gtk.Template.Callback()
+    def on_prev_page_button_clicked(self, widget):
+        if self.pagination['page'] > 1:
+            self.pagination['page'] -= 1
+        page_number = self.pagination['page']
+        asyncio.create_task(
+            self._fetch_search_results(keyword=None, on_show=None, page_number=page_number, page_size=3))
+
     # @Gtk.Template.Callback(), not in .ui
     def on_copy_clicked(self, widget):
         async def _copy():
@@ -801,7 +870,6 @@ class MainWindow(Gtk.ApplicationWindow):
                 return
             dest_file = os.path.join(default_dir, item_name)
             self.activate_action('get-item', GLib.Variant.new_string(dest_file))
-
 
     # TODO: move to the model
     def _add_item(self, fpath):
