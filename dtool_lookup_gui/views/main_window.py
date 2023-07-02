@@ -160,7 +160,7 @@ class MainWindow(Gtk.ApplicationWindow):
     first_page_button = Gtk.Template.Child()
     prev_page_button = Gtk.Template.Child()
     curr_page_button = Gtk.Template.Child()
-    next_page_button = Gtk.Template.Child()
+
     nextoption_page_button = Gtk.Template.Child()
     last_page_button = Gtk.Template.Child()
 
@@ -255,11 +255,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self.pagination = {}
 
-        # show first page action
-        show_first_page_action = Gio.SimpleAction.new("show-first-page")
-        show_first_page_action.connect("activate", self.do_show_first_page)
 
-        self.add_action(show_first_page_action)
 
     # utility methods
     def refresh(self):
@@ -311,9 +307,11 @@ class MainWindow(Gtk.ApplicationWindow):
     def _update_search_summary(self, datasets):
         row = self.base_uri_list_box.search_results_row
         total_size = sum([0 if dataset.size_int is None else dataset.size_int for dataset in datasets])
-        row.info_label.set_text(f'{len(datasets)} datasets, {sizeof_fmt(total_size).strip()}')
+        total_value = self.pagination['total']
+        print(total_value)
+        row.info_label.set_text(f'{total_value} datasets, {sizeof_fmt(total_size).strip()}')
 
-    async def _fetch_search_results(self, keyword, on_show=None, page_number=5, page_size=3):
+    async def _fetch_search_results(self, keyword, on_show=None, page_number=1, page_size=3):
         row = self.base_uri_list_box.search_results_row
         row.start_spinner()
         self.pagination = {}  # Add pagination dictionary
@@ -533,12 +531,6 @@ class MainWindow(Gtk.ApplicationWindow):
                 launch_default_app_for_uri(dest_file)
 
         asyncio.create_task(_get_item(dataset, item_uuid))
-
-    def do_show_first_page(self, action, value):
-        """Show next page of datasets."""
-
-        print("hi from 2nd")
-        print(self.pagination['first_page'])
 
 
 
@@ -792,32 +784,44 @@ class MainWindow(Gtk.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def on_first_page_button_clicked(self, widget):
-        #self.get_action_group("win").activate_action('show-first-page', None)
-        asyncio.create_task(self._fetch_search_results(keyword=None, on_show=None, page_number=1, page_size=3))
-        #self.first_page_button.set_label(str(self.pagination['first_page']))
-        print(self.pagination)
+        page_number = 1
+        self.pagination['page'] = page_number
+        asyncio.create_task(
+            self._fetch_search_results(keyword=None, on_show=None, page_number=page_number))
+        self.curr_page_button.set_label(str(page_number))
+
 
     @Gtk.Template.Callback()
     def on_nextoption_page_button_clicked(self, widget):
         if self.pagination['page'] < self.pagination['last_page']:
-            self.pagination['page'] += 1
-            page_number = self.pagination['page']
+            page_number = self.pagination['page'] + 1
+            self.curr_page_button.set_label(str(page_number))
             asyncio.create_task(
-                self._fetch_search_results(keyword=None, on_show=None, page_number=page_number, page_size=3))
+                self._fetch_search_results(keyword=None, on_show=None, page_number=page_number))
 
     @Gtk.Template.Callback()
     def on_last_page_button_clicked(self, widget):
         page_number = self.pagination['last_page']
+        self.curr_page_button.set_label(str(page_number))
         asyncio.create_task(
-            self._fetch_search_results(keyword=None, on_show=None, page_number=page_number, page_size=3))
+            self._fetch_search_results(keyword=None, on_show=None, page_number=page_number))
 
     @Gtk.Template.Callback()
     def on_prev_page_button_clicked(self, widget):
         if self.pagination['page'] > 1:
             self.pagination['page'] -= 1
+            page_number = self.pagination['page']
+            self.curr_page_button.set_label(str(page_number))  # Update curr_page_button label
+            asyncio.create_task(
+                self._fetch_search_results(keyword=None, on_show=None, page_number=page_number))
+
+    @Gtk.Template.Callback()
+    def curr_page_button_clicked(self, widget):
         page_number = self.pagination['page']
         asyncio.create_task(
-            self._fetch_search_results(keyword=None, on_show=None, page_number=page_number, page_size=3))
+            self._fetch_search_results(keyword=None, on_show=None, page_number=page_number))
+        self.curr_page_button.set_label(str(page_number))
+
 
     # @Gtk.Template.Callback(), not in .ui
     def on_copy_clicked(self, widget):
