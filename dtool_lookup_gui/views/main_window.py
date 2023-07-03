@@ -337,11 +337,10 @@ class MainWindow(Gtk.ApplicationWindow):
                     # page_number, page_size
             else:
                 _logger.debug("No keyword specified, list all datasets.")
-                # datasets = await DatasetModel.query_all(page_number=page_number, page_size=page_size,
-                # pagination=pagination)  # Pass pagination dictionary and
+                datasets = await DatasetModel.query_all(page_number=page_number, page_size=page_size,pagination=self.pagination)  # Pass pagination dictionary and
                 # page_number, page_size
-                datasets = await DatasetModel.search("John von Neumann ", page_number=page_number, page_size=page_size,
-                                                     pagination=self.pagination)
+                #datasets = await DatasetModel.search("John von Neumann ", page_number=page_number, page_size=page_size,
+                                                     #pagination=self.pagination)
 
             if len(datasets) > self._max_nb_datasets:
                 _logger.warning(
