@@ -311,7 +311,7 @@ class MainWindow(Gtk.ApplicationWindow):
         print(total_value)
         row.info_label.set_text(f'{total_value} datasets, {sizeof_fmt(total_size).strip()}')
 
-    async def _fetch_search_results(self, keyword, on_show=None, page_number=1, page_size=3):
+    async def _fetch_search_results(self, keyword, on_show=None, page_number=1, page_size=8):
         row = self.base_uri_list_box.search_results_row
         row.start_spinner()
         self.pagination = {}  # Add pagination dictionary
