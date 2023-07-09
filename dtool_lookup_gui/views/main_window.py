@@ -160,7 +160,8 @@ class MainWindow(Gtk.ApplicationWindow):
     first_page_button = Gtk.Template.Child()
     prev_page_button = Gtk.Template.Child()
     curr_page_button = Gtk.Template.Child()
-
+    next_page_advancer_button = Gtk.Template.Child()
+    page_advancer_button = Gtk.Template.Child()
     nextoption_page_button = Gtk.Template.Child()
     last_page_button = Gtk.Template.Child()
 
@@ -308,7 +309,6 @@ class MainWindow(Gtk.ApplicationWindow):
         row = self.base_uri_list_box.search_results_row
         total_size = sum([0 if dataset.size_int is None else dataset.size_int for dataset in datasets])
         total_value = self.pagination['total']
-        print(total_value)
         row.info_label.set_text(f'{total_value} datasets, {sizeof_fmt(total_size).strip()}')
 
     async def _fetch_search_results(self, keyword, on_show=None, page_number=1, page_size=8):
@@ -338,9 +338,7 @@ class MainWindow(Gtk.ApplicationWindow):
             else:
                 _logger.debug("No keyword specified, list all datasets.")
                 datasets = await DatasetModel.query_all(page_number=page_number, page_size=page_size,pagination=self.pagination)  # Pass pagination dictionary and
-                # page_number, page_size
-                #datasets = await DatasetModel.search("John von Neumann ", page_number=page_number, page_size=page_size,
-                                                     #pagination=self.pagination)
+
 
             if len(datasets) > self._max_nb_datasets:
                 _logger.warning(
@@ -788,6 +786,8 @@ class MainWindow(Gtk.ApplicationWindow):
         asyncio.create_task(
             self._fetch_search_results(keyword=None, on_show=None, page_number=page_number))
         self.curr_page_button.set_label(str(page_number))
+        self.page_advancer_button.set_label(str(page_number - 1))
+        self.next_page_advancer_button.set_label(str(page_number + 1))
 
 
     @Gtk.Template.Callback()
@@ -795,6 +795,8 @@ class MainWindow(Gtk.ApplicationWindow):
         if self.pagination['page'] < self.pagination['last_page']:
             page_number = self.pagination['page'] + 1
             self.curr_page_button.set_label(str(page_number))
+            self.page_advancer_button.set_label(str(page_number - 1))
+            self.next_page_advancer_button.set_label(str(page_number + 1))
             asyncio.create_task(
                 self._fetch_search_results(keyword=None, on_show=None, page_number=page_number))
 
@@ -802,6 +804,8 @@ class MainWindow(Gtk.ApplicationWindow):
     def on_last_page_button_clicked(self, widget):
         page_number = self.pagination['last_page']
         self.curr_page_button.set_label(str(page_number))
+        self.page_advancer_button.set_label(str(page_number - 1))
+        self.next_page_advancer_button.set_label(str(page_number + 1))
         asyncio.create_task(
             self._fetch_search_results(keyword=None, on_show=None, page_number=page_number))
 
@@ -811,6 +815,8 @@ class MainWindow(Gtk.ApplicationWindow):
             self.pagination['page'] -= 1
             page_number = self.pagination['page']
             self.curr_page_button.set_label(str(page_number))  # Update curr_page_button label
+            self.page_advancer_button.set_label(str(page_number - 1))
+            self.next_page_advancer_button.set_label(str(page_number + 1))
             asyncio.create_task(
                 self._fetch_search_results(keyword=None, on_show=None, page_number=page_number))
 
@@ -820,7 +826,29 @@ class MainWindow(Gtk.ApplicationWindow):
         asyncio.create_task(
             self._fetch_search_results(keyword=None, on_show=None, page_number=page_number))
         self.curr_page_button.set_label(str(page_number))
+        self.page_advancer_button.set_label(str(page_number - 1))
+        self.next_page_advancer_button.set_label(str(page_number + 1))
 
+    @Gtk.Template.Callback()
+    def page_advancer_button_clicked(self, widget):
+        page_number = self.pagination['page']
+        if page_number > 1:
+            page_number -= 1
+            asyncio.create_task(
+                self._fetch_search_results(keyword=None, on_show=None, page_number=page_number))
+            self.curr_page_button.set_label(str(page_number))
+            self.page_advancer_button.set_label(str(page_number - 1))
+            self.next_page_advancer_button.set_label(str(page_number + 1))
+
+    @Gtk.Template.Callback()
+    def next_page_advancer_button_clicked(self, widget):
+        if self.pagination['page'] < self.pagination['last_page']:
+            page_number = self.pagination['page'] + 1
+            asyncio.create_task(
+                self._fetch_search_results(keyword=None, on_show=None, page_number=page_number))
+            self.curr_page_button.set_label(str(page_number))
+            self.page_advancer_button.set_label(str(page_number - 1))
+            self.next_page_advancer_button.set_label(str(page_number + 1))
 
     # @Gtk.Template.Callback(), not in .ui
     def on_copy_clicked(self, widget):

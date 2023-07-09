@@ -234,106 +234,129 @@
                                     <property name="visible">True</property>
                                     <property name="can-focus">False</property>
                                     <child>
-                                        <object class="GtkBox">
+                                      <object class="GtkBox">
+                                        <property name="visible">True</property>
+                                        <property name="can-focus">False</property>
+                                        <property name="orientation">vertical</property>
+                                        <child>
+                                          <object class="DtoolDatasetListBox" id="dataset_list_box">
                                             <property name="visible">True</property>
                                             <property name="can-focus">False</property>
-                                            <property name="orientation">vertical</property>
-
-                                            <!-- DtoolDatasetListBox occupying 95% -->
+                                            <signal name="row-selected" handler="on_dataset_selected" swapped="no"/>
+                                          </object>
+                                          <packing>
+                                            <property name="expand">True</property>
+                                            <property name="fill">True</property>
+                                            <property name="position">0</property>
+                                          </packing>
+                                        </child>
+                                        <child>
+                                          <!-- n-columns=7 n-rows=1 -->
+                                          <object class="GtkGrid">
+                                            <property name="visible">True</property>
+                                            <property name="can-focus">False</property>
+                                            <property name="column-homogeneous">True</property>
                                             <child>
-                                                <object class="DtoolDatasetListBox" id="dataset_list_box">
-                                                    <property name="visible">True</property>
-                                                    <property name="can-focus">False</property>
-                                                    <signal name="row-selected" handler="on_dataset_selected" swapped="no"/>
-                                                </object>
-                                                <packing>
-                                                    <property name="expand">True</property>
-                                                    <property name="fill">True</property>
-                                                </packing>
+                                              <object class="GtkButton" id="first_page_button">
+                                                <property name="label" translatable="yes">First</property>
+                                                <property name="visible">True</property>
+                                                <property name="can-focus">True</property>
+                                                <property name="receives-default">True</property>
+                                                <signal name="clicked" handler="on_first_page_button_clicked" swapped="no"/>
+                                              </object>
+                                              <packing>
+                                                <property name="left-attach">0</property>
+                                                <property name="top-attach">0</property>
+                                              </packing>
                                             </child>
-
-                                            <!-- Pagination buttons occupying 5% -->
                                             <child>
-                                                <object class="GtkGrid">
-                                                    <property name="visible">True</property>
-                                                    <property name="can-focus">False</property>
-                                                    <property name="column-homogeneous">True</property>
-                                                    <!-- The buttons go here -->
-                                                    <child>
-                                                        <object class="GtkButton" id="first_page_button">
-                                                            <property name="label" translatable="yes">First</property>
-                                                            <property name="visible">True</property>
-                                                            <property name="can-focus">True</property>
-                                                            <property name="receives-default">True</property>
-                                                            <signal name="clicked" handler="on_first_page_button_clicked" swapped="no"/>
-                                                        </object>
-                                                        <packing>
-                                                            <property name="left-attach">0</property>
-                                                            <property name="top-attach">0</property>
-                                                        </packing>
-                                                    </child>
-                                                    <child>
-                                                        <object class="GtkButton" id="prev_page_button">
-                                                            <property name="label" translatable="yes">Prev</property>
-                                                            <property name="visible">True</property>
-                                                            <property name="can-focus">True</property>
-                                                            <property name="receives-default">True</property>
-                                                            <signal name="clicked" handler="on_prev_page_button_clicked" swapped="no"/>
-                                                        </object>
-                                                        <packing>
-                                                            <property name="left-attach">1</property>
-                                                            <property name="top-attach">0</property>
-                                                        </packing>
-                                                    </child>
-                                                    <child>
-                                                        <object class="GtkButton" id="curr_page_button">
-                                                            <property name="label" translatable="yes">1</property>
-                                                            <property name="visible">True</property>
-                                                            <property name="can-focus">True</property>
-                                                            <property name="receives-default">True</property>
-                                                            <signal name="clicked" handler="curr_page_button_clicked" swapped="no"/>
-                                                        </object>
-                                                        <packing>
-                                                            <property name="left-attach">2</property>
-                                                            <property name="top-attach">0</property>
-                                                        </packing>
-                                                    </child>
-                                                    <child>
-                                                        <object class="GtkButton" id="nextoption_page_button">
-                                                            <property name="label" translatable="yes">Next</property>
-                                                            <property name="visible">True</property>
-                                                            <property name="can-focus">True</property>
-                                                            <property name="receives-default">True</property>
-                                                            <signal name="clicked" handler="on_nextoption_page_button_clicked" swapped="no"/>
-                                                        </object>
-                                                        <packing>
-                                                            <property name="left-attach">3</property>
-                                                            <property name="top-attach">0</property>
-                                                        </packing>
-                                                    </child>
-                                                    <child>
-                                                        <object class="GtkButton" id="last_page_button">
-                                                            <property name="label" translatable="yes">Last</property>
-                                                            <property name="visible">True</property>
-                                                            <property name="can-focus">True</property>
-                                                            <property name="receives-default">True</property>
-                                                            <signal name="clicked" handler="on_last_page_button_clicked" swapped="no"/>
-                                                        </object>
-                                                        <packing>
-                                                            <property name="left-attach">4</property>
-                                                            <property name="top-attach">0</property>
-                                                        </packing>
-                                                    </child>
-                                                </object>
-                                                <packing>
-                                                    <property name="expand">False</property>
-                                                    <property name="fill">True</property>
-                                                </packing>
+                                              <object class="GtkButton" id="prev_page_button">
+                                                <property name="label" translatable="yes">Prev</property>
+                                                <property name="visible">True</property>
+                                                <property name="can-focus">True</property>
+                                                <property name="receives-default">True</property>
+                                                <signal name="clicked" handler="on_prev_page_button_clicked" swapped="no"/>
+                                              </object>
+                                              <packing>
+                                                <property name="left-attach">1</property>
+                                                <property name="top-attach">0</property>
+                                              </packing>
                                             </child>
-                                        </object>
+                                            <child>
+                                              <object class="GtkButton" id="last_page_button">
+                                                <property name="label" translatable="yes">Last</property>
+                                                <property name="visible">True</property>
+                                                <property name="can-focus">True</property>
+                                                <property name="receives-default">True</property>
+                                                <signal name="clicked" handler="on_last_page_button_clicked" swapped="no"/>
+                                              </object>
+                                              <packing>
+                                                <property name="left-attach">6</property>
+                                                <property name="top-attach">0</property>
+                                              </packing>
+                                            </child>
+                                            <child>
+                                              <object class="GtkButton" id="nextoption_page_button">
+                                                <property name="label" translatable="yes">Next</property>
+                                                <property name="visible">True</property>
+                                                <property name="can-focus">True</property>
+                                                <property name="receives-default">True</property>
+                                                <signal name="clicked" handler="on_nextoption_page_button_clicked" swapped="no"/>
+                                              </object>
+                                              <packing>
+                                                <property name="left-attach">5</property>
+                                                <property name="top-attach">0</property>
+                                              </packing>
+                                            </child>
+                                            <child>
+                                              <object class="GtkButton" id="next_page_advancer_button">
+                                                <property name="label" translatable="yes">2</property>
+                                                <property name="visible">True</property>
+                                                <property name="can-focus">True</property>
+                                                <property name="receives-default">True</property>
+                                                <signal name="clicked" handler="next_page_advancer_button_clicked" swapped="no"/>
+                                              </object>
+                                              <packing>
+                                                <property name="left-attach">4</property>
+                                                <property name="top-attach">0</property>
+                                              </packing>
+                                            </child>
+                                            <child>
+                                              <object class="GtkButton" id="curr_page_button">
+                                                <property name="label" translatable="yes">1</property>
+                                                <property name="visible">True</property>
+                                                <property name="can-focus">True</property>
+                                                <property name="receives-default">True</property>
+                                                <signal name="clicked" handler="curr_page_button_clicked" swapped="no"/>
+                                              </object>
+                                              <packing>
+                                                <property name="left-attach">3</property>
+                                                <property name="top-attach">0</property>
+                                              </packing>
+                                            </child>
+                                            <child>
+                                              <object class="GtkButton" id="page_advancer_button">
+                                                <property name="label" translatable="yes">0</property>
+                                                <property name="visible">True</property>
+                                                <property name="can-focus">True</property>
+                                                <property name="receives-default">True</property>
+                                                <signal name="clicked" handler="page_advancer_button_clicked" swapped="no"/>
+                                              </object>
+                                              <packing>
+                                                <property name="left-attach">2</property>
+                                                <property name="top-attach">0</property>
+                                              </packing>
+                                            </child>
+                                          </object>
+                                          <packing>
+                                            <property name="expand">False</property>
+                                            <property name="fill">True</property>
+                                            <property name="position">1</property>
+                                          </packing>
+                                        </child>
+                                      </object>
                                     </child>
-                                </object>
-
+                                  </object>
                                 </child>
                               </object>
                               <packing>

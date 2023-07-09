@@ -271,7 +271,6 @@ class DatasetModel:
     async def search(cls, keyword, page_number, page_size, pagination={}):
         async with ConfigurationBasedLookupClient() as lookup:
             datasets = await lookup.search(keyword, page_number=page_number, page_size=page_size, pagination=pagination)
-        print(pagination['first_page']) #testfun
         return [await cls.from_lookup(lookup_dict) for lookup_dict in datasets]
 
     @classmethod
