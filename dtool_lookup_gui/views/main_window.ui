@@ -1095,16 +1095,17 @@ or search for a dataset</property>
             <property name="visible">True</property>
             <property name="can-focus">False</property>
             <child>
-              <object class="GtkStatusbar" id="main-statusbar">
+              <object class="GtkStatusbar" id="main_statusbar">
                 <property name="visible">True</property>
                 <property name="can-focus">False</property>
-                <property name="margin-left">10</property>
-                <property name="margin-right">10</property>
                 <property name="margin-start">10</property>
                 <property name="margin-end">10</property>
                 <property name="margin-top">6</property>
                 <property name="margin-bottom">6</property>
                 <property name="spacing">2</property>
+                <style>
+                  <class name="main-statusbar"/>
+                </style>
               </object>
               <packing>
                 <property name="name">page0</property>

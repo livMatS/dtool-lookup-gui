@@ -165,6 +165,8 @@ class MainWindow(Gtk.ApplicationWindow):
     nextoption_page_button = Gtk.Template.Child()
     last_page_button = Gtk.Template.Child()
 
+    main_statusbar = Gtk.Template.Child()
+
 
 
 
@@ -311,10 +313,18 @@ class MainWindow(Gtk.ApplicationWindow):
         total_value = self.pagination['total']
         row.info_label.set_text(f'{total_value} datasets, {sizeof_fmt(total_size).strip()}')
 
+    def _update_main_statusbar(self):
+        total_number = self.pagination['total']
+        current_page = self.pagination['page']
+        self.main_statusbar.push(0, f"Total Number of Dataset: {total_number}, Current page: {current_page}")
+
     async def _fetch_search_results(self, keyword, on_show=None, page_number=1, page_size=8):
         row = self.base_uri_list_box.search_results_row
         row.start_spinner()
         self.pagination = {}  # Add pagination dictionary
+
+
+
 
         try:
             if keyword:
@@ -347,6 +357,7 @@ class MainWindow(Gtk.ApplicationWindow):
             datasets = datasets[:self._max_nb_datasets]  # Limit number of datasets that are shown
             row.search_results = datasets  # Cache datasets
             self._update_search_summary(datasets)
+            self._update_main_statusbar()
             if self.base_uri_list_box.get_selected_row() == row:
                 # Only update if the row is still selected
                 self.dataset_list_box.fill(datasets, on_show=on_show)
