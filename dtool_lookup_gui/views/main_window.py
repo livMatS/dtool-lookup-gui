@@ -318,9 +318,9 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def contents_per_page_changed(self, widget):
         self.contents_per_page_value = widget.get_active_text()
-        asyncio.create_task(self.on_first_page_button_clicked(self.first_page_button))
+        self.on_first_page_button_clicked(self.first_page_button)  # Directly call the method
 
-    async def _fetch_search_results(self, keyword, on_show=None, page_number=1, page_size=10):
+    async def _fetch_search_results(self, keyword, on_show=None, page_number=1, page_size=10,widget=None):
         row = self.base_uri_list_box.search_results_row
         row.start_spinner()
         self.main_spinner.start()
@@ -373,6 +373,8 @@ class MainWindow(Gtk.ApplicationWindow):
         self.main_stack.set_visible_child(self.main_paned)
         row.stop_spinner()
         self.main_spinner.stop()
+        # If a widget was passed in, re-enable it
+        self.enable_pagination_buttons()
 
 
     def _search_by_uuid(self, uuid):
@@ -792,80 +794,103 @@ class MainWindow(Gtk.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def on_first_page_button_clicked(self, widget):
-        page_number = 1
-        self.pagination['page'] = page_number
-        asyncio.create_task(
-            self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
-                                       page_size=int(self.contents_per_page_value)))
-        self.curr_page_button.set_label(str(page_number))
-        self.page_advancer_button.set_label(str(page_number - 1))
-        self.next_page_advancer_button.set_label(str(page_number + 1))
-
-    @Gtk.Template.Callback()
-    def on_nextoption_page_button_clicked(self, widget):
-        if self.pagination['page'] < self.pagination['last_page']:
-            page_number = self.pagination['page'] + 1
+        if not self.fetching_results:
+            page_number = 1
+            self.pagination['page'] = page_number
+            self.disable_pagination_buttons()
+            asyncio.create_task(
+                self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
+                                           page_size=int(self.contents_per_page_value), widget=widget))
             self.curr_page_button.set_label(str(page_number))
             self.page_advancer_button.set_label(str(page_number - 1))
             self.next_page_advancer_button.set_label(str(page_number + 1))
+
+    @Gtk.Template.Callback()
+    def on_nextoption_page_button_clicked(self, widget):
+        if not self.fetching_results and self.pagination['page'] < self.pagination['last_page']:
+            page_number = self.pagination['page'] + 1
+            self.update_pagination_buttons(page_number, widget)
+            self.disable_pagination_buttons()
             asyncio.create_task(
                 self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
-                                           page_size=int(self.contents_per_page_value)))
+                                           page_size=int(self.contents_per_page_value), widget=widget))
 
     @Gtk.Template.Callback()
     def on_last_page_button_clicked(self, widget):
         page_number = self.pagination['last_page']
-        self.curr_page_button.set_label(str(page_number))
-        self.page_advancer_button.set_label(str(page_number - 1))
-        self.next_page_advancer_button.set_label(str(page_number + 1))
+        self.update_pagination_buttons(page_number, widget)
+        self.disable_pagination_buttons()
         asyncio.create_task(
             self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
-                                       page_size=int(self.contents_per_page_value)))
+                                       page_size=int(self.contents_per_page_value), widget=widget))
 
     @Gtk.Template.Callback()
     def on_prev_page_button_clicked(self, widget):
-        if self.pagination['page'] > 1:
+        if not self.fetching_results and self.pagination['page'] > 1:
             self.pagination['page'] -= 1
             page_number = self.pagination['page']
-            self.curr_page_button.set_label(str(page_number))  # Update curr_page_button label
-            self.page_advancer_button.set_label(str(page_number - 1))
-            self.next_page_advancer_button.set_label(str(page_number + 1))
+            self.update_pagination_buttons(page_number, widget)
+            self.disable_pagination_buttons()
             asyncio.create_task(
                 self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
-                                           page_size=int(self.contents_per_page_value)))
+                                           page_size=int(self.contents_per_page_value), widget=widget))
 
     @Gtk.Template.Callback()
     def curr_page_button_clicked(self, widget):
         page_number = self.pagination['page']
+        self.update_pagination_buttons(page_number, widget)
+        self.disable_pagination_buttons()
         asyncio.create_task(
             self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
-                                       page_size=int(self.contents_per_page_value)))
-        self.curr_page_button.set_label(str(page_number))
-        self.page_advancer_button.set_label(str(page_number - 1))
-        self.next_page_advancer_button.set_label(str(page_number + 1))
+                                       page_size=int(self.contents_per_page_value), widget=widget))
 
     @Gtk.Template.Callback()
     def page_advancer_button_clicked(self, widget):
         page_number = self.pagination['page']
-        if page_number > 1:
+        if not self.fetching_results and page_number > 1:
             page_number -= 1
+            self.update_pagination_buttons(page_number, widget)
+            self.disable_pagination_buttons()
             asyncio.create_task(
                 self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
-                                           page_size=int(self.contents_per_page_value)))
-            self.curr_page_button.set_label(str(page_number))
-            self.page_advancer_button.set_label(str(page_number - 1))
-            self.next_page_advancer_button.set_label(str(page_number + 1))
+                                           page_size=int(self.contents_per_page_value), widget=widget))
 
     @Gtk.Template.Callback()
     def next_page_advancer_button_clicked(self, widget):
-        if self.pagination['page'] < self.pagination['last_page']:
-            page_number = self.pagination['page'] + 1
+        page_number = self.pagination['page']
+        if not self.fetching_results and page_number < self.pagination['last_page']:
+            page_number += 1
+            self.update_pagination_buttons(page_number, widget)
+            self.disable_pagination_buttons()
             asyncio.create_task(
                 self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
-                                           page_size=int(self.contents_per_page_value)))
-            self.curr_page_button.set_label(str(page_number))
-            self.page_advancer_button.set_label(str(page_number - 1))
-            self.next_page_advancer_button.set_label(str(page_number + 1))
+                                           page_size=int(self.contents_per_page_value), widget=widget))
+
+    def update_pagination_buttons(self, page_number, widget):
+        self.pagination['page'] = page_number
+        self.curr_page_button.set_label(str(page_number))
+        self.page_advancer_button.set_label(str(page_number - 1))
+        self.next_page_advancer_button.set_label(str(page_number + 1))
+
+    def disable_pagination_buttons(self):
+        self.fetching_results = True
+        self.first_page_button.set_sensitive(False)
+        self.nextoption_page_button.set_sensitive(False)
+        self.last_page_button.set_sensitive(False)
+        self.prev_page_button.set_sensitive(False)
+        self.curr_page_button.set_sensitive(False)
+        self.page_advancer_button.set_sensitive(False)
+        self.next_page_advancer_button.set_sensitive(False)
+
+    def enable_pagination_buttons(self):
+        self.fetching_results = False
+        self.first_page_button.set_sensitive(True)
+        self.nextoption_page_button.set_sensitive(True)
+        self.last_page_button.set_sensitive(True)
+        self.prev_page_button.set_sensitive(True)
+        self.curr_page_button.set_sensitive(True)
+        self.page_advancer_button.set_sensitive(True)
+        self.next_page_advancer_button.set_sensitive(True)
 
     # @Gtk.Template.Callback(), not in .ui
     def on_copy_clicked(self, widget):
