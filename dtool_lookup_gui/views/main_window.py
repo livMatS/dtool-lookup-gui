@@ -60,6 +60,7 @@ from ..widgets.search_results_row import DtoolSearchResultsRow
 from .dataset_name_dialog import DatasetNameDialog
 from .about_dialog import AboutDialog
 from .settings_dialog import SettingsDialog
+from .server_versions_dialog import ServerVersionsDialog
 from .log_window import LogWindow
 
 _logger = logging.getLogger(__name__)
@@ -152,6 +153,7 @@ class MainWindow(Gtk.ApplicationWindow):
     manifest_view = Gtk.Template.Child()
 
     settings_button = Gtk.Template.Child()
+    version_button = Gtk.Template.Child()
 
     error_bar = Gtk.Template.Child()
     error_label = Gtk.Template.Child()
@@ -197,6 +199,9 @@ class MainWindow(Gtk.ApplicationWindow):
         self.log_window = LogWindow(application=self.application)
         self.settings_dialog = SettingsDialog(application=self.application)
         self.about_dialog = AboutDialog(application=self.application)
+
+        demo_server_versions = 1
+        self.server_versions_dialog = ServerVersionsDialog(server_versions=demo_server_versions)
 
         # window-scoped actions
 
@@ -320,10 +325,15 @@ class MainWindow(Gtk.ApplicationWindow):
         self.contents_per_page_value = widget.get_active_text()
         self.on_first_page_button_clicked(self.first_page_button)  # Directly call the method
 
+
+
+
+
     async def _fetch_search_results(self, keyword, on_show=None, page_number=1, page_size=10,widget=None):
         row = self.base_uri_list_box.search_results_row
         row.start_spinner()
         self.main_spinner.start()
+
 
         self.pagination = {}  # Add pagination dictionary
         try:
@@ -554,6 +564,10 @@ class MainWindow(Gtk.ApplicationWindow):
     @Gtk.Template.Callback()
     def on_settings_clicked(self, widget):
         self.settings_dialog.show()
+
+    @Gtk.Template.Callback()
+    def version_button_clicked(self, widget):
+        self.server_versions_dialog.show()
 
     @Gtk.Template.Callback()
     def on_logging_clicked(self, widget):
