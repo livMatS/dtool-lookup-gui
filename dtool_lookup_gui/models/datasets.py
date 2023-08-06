@@ -26,6 +26,7 @@
 import asyncio
 import logging
 import os
+import json
 
 import yaml
 from concurrent.futures import ProcessPoolExecutor
@@ -285,6 +286,13 @@ class DatasetModel:
         async with ConfigurationBasedLookupClient() as lookup:
             datasets = await lookup.all(page_number=page_number, page_size=page_size, pagination=pagination)
         return [await cls.from_lookup(lookup_dict) for lookup_dict in datasets]
+
+    @classmethod
+    async def versions(cls):
+        """To return version info from the server """
+        async with ConfigurationBasedLookupClient() as versions:
+            version_info = await versions()
+        print(version_info)
 
     def __str__(self):
         return self._dataset_info['uri']

@@ -61,6 +61,7 @@ from .dataset_name_dialog import DatasetNameDialog
 from .about_dialog import AboutDialog
 from .settings_dialog import SettingsDialog
 from .server_versions_dialog import ServerVersionsDialog
+from .login_window import LoginWindow
 from .log_window import LogWindow
 
 _logger = logging.getLogger(__name__)
@@ -169,6 +170,8 @@ class MainWindow(Gtk.ApplicationWindow):
     main_statusbar = Gtk.Template.Child()
     contents_per_page = Gtk.Template.Child()
 
+    test_login = Gtk.Template.Child()
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -202,7 +205,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         demo_server_versions = 1
         self.server_versions_dialog = ServerVersionsDialog(server_versions=demo_server_versions)
-
+        self.login_window = LoginWindow(application=self.application)
         # window-scoped actions
 
         # search action
@@ -335,6 +338,8 @@ class MainWindow(Gtk.ApplicationWindow):
         self.main_spinner.start()
 
 
+
+
         self.pagination = {}  # Add pagination dictionary
         try:
             if keyword:
@@ -361,6 +366,7 @@ class MainWindow(Gtk.ApplicationWindow):
                     page_size=page_size,
                     pagination=self.pagination
                 )
+
 
             if len(datasets) > self._max_nb_datasets:
                 _logger.warning(
@@ -568,6 +574,10 @@ class MainWindow(Gtk.ApplicationWindow):
     @Gtk.Template.Callback()
     def version_button_clicked(self, widget):
         self.server_versions_dialog.show()
+
+    @Gtk.Template.Callback()
+    def on_test_login_clicked(self, widget):
+        self.login_window.show()
 
     @Gtk.Template.Callback()
     def on_logging_clicked(self, widget):
