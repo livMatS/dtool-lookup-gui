@@ -225,6 +225,11 @@ class Application(Gtk.Application):
         export_config_action.connect("activate", self.do_export_config)
         self.add_action(export_config_action)
 
+        # renew-token action
+        renew_token_action = Gio.SimpleAction.new("renew-token", string_variant.get_type())
+        renew_token_action.connect("activate", self.do_renew_token)
+        self.add_action(renew_token_action)
+
         Gtk.Application.do_startup(self)
 
     # custom application-scoped actions
@@ -307,6 +312,35 @@ class Application(Gtk.Application):
         """Doesn't do anything, just documents how GTK calls this method
            first when emitting dtool-config-changed signal."""
         logger.debug("method handler for 'dtool-config-changed' called.")
+
+    def do_renew_token(self, action, value):
+        """Request new token."""
+        password = value.get_string()
+
+        # get username somewhere
+
+        # logger.debug(f"Export config to '{config_file}':")
+        config = dtoolcore.utils._get_config_dict_from_file()
+
+        from dtool_lookup_api.core.LookupClient import authenticate
+
+        async def retrieve_token(auth_url, username, password):
+            try:
+                token = await authenticate(auth_url, username, password)
+            except Exception as e:
+                logger.error(str(e))
+                return
+
+            self.token_entry.set_text(token) # store token somewhere
+
+        # def authenticate(username, password):
+        # await
+        asyncio.create_task(retrieve_token(
+            self.authenticator_url_entry.get_text(),
+            username,
+            password))
+
+        self.emit('dtool-token-changed')
 
 
 def run_gui():

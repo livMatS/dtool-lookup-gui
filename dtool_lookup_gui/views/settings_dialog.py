@@ -205,16 +205,11 @@ class SettingsDialog(Gtk.Window):
 
     @Gtk.Template.Callback()
     def on_renew_token_clicked(self, widget):
-        def authenticate(username, password):
-            asyncio.create_task(self.retrieve_token(
-                self.authenticator_url_entry.get_text(),
-                username,
-                password))
 
-            # Reconnect since settings may have been changed
-            #asyncio.create_task(self.main_application.lookup_tab.connect())
+        # show authentication dialoogue and get username and password
 
-        AuthenticationDialog(authenticate, Config.username, Config.password).show()
+        # TODO: check howto pass two strings
+        self.get_action_group("app").activate_action('renew-token', GLib.Variant.new_string(password))
 
     @Gtk.Template.Callback()
     def on_reset_config_clicked(self, widget):
@@ -276,14 +271,15 @@ class SettingsDialog(Gtk.Window):
         settings.item_download_directory = item_download_directory
 
     async def retrieve_token(self, auth_url, username, password):
-        #self.main_application.error_bar.hide()
+        # self.main_application.error_bar.hide()
         try:
             token = await authenticate(auth_url, username, password)
         except Exception as e:
             logger.error(str(e))
             return
-        #self.builder.get_object('token-entry').set_text(token)
+        # self.builder.get_object('token-entry').set_text(token)
         self.token_entry.set_text(token)
+
         await self._refresh_list_of_endpoints()
 
     _configuration_dialogs = {
