@@ -34,6 +34,8 @@ import sys
 import dtoolcore
 import dtool_lookup_api.core.config
 
+from dtool_lookup_api.core.LookupClient import authenticate
+
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('GtkSource', '4')
@@ -55,7 +57,6 @@ import dtool_lookup_gui.widgets.graph_widget
 import dtool_lookup_gui.widgets.transfer_popover_menu
 import dtool_lookup_gui.widgets.progress_chart
 import dtool_lookup_gui.widgets.progress_popover_menu
-
 
 logger = logging.getLogger(__name__)
 
@@ -319,12 +320,6 @@ class Application(Gtk.Application):
         # Unpack the username, password, and auth_url from the tuple variant
         username, password, auth_url = value.unpack()
 
-
-        # logger.debug(f"Export config to '{config_file}':")
-        config = dtoolcore.utils._get_config_dict_from_file()
-
-        from dtool_lookup_api.core.LookupClient import authenticate
-
         async def retrieve_token(auth_url, username, password):
             try:
                 token = await authenticate(auth_url, username, password)
@@ -332,16 +327,13 @@ class Application(Gtk.Application):
                 logger.error(str(e))
                 return
 
-            self.token_entry.set_text(token)  # store token somewhere
+            dtool_lookup_api.core.config.Config.token = token
+            self.emit('dtool-config-changed')
 
-        # def authenticate(username, password):
-        # await
         asyncio.create_task(retrieve_token(
             auth_url,
             username,
             password))
-
-        self.emit('dtool-token-changed')
 
 
 def run_gui():

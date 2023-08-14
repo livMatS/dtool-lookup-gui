@@ -172,7 +172,7 @@ class SettingsDialog(Gtk.Window):
         logger.debug("Done refreshing settings dialog.")
 
     def on_dtool_config_changed(self, widget):
-        """Signal handler for dtool-method-changed."""
+        """Signal handler for dtool-config-changed."""
         self._refresh_settings_dialog()
 
     # signal handlers
@@ -207,17 +207,15 @@ class SettingsDialog(Gtk.Window):
     def on_renew_token_clicked(self, widget):
 
         # show authentication dialogue and get username and password
+        def authenticate(username, password):
+            auth_url = self.authenticator_url_entry.get_text()
+            user_pass_auth_variant = GLib.Variant.new_tuple(GLib.Variant.new_string(username),
+                                                            GLib.Variant.new_string(password),
+                                                            GLib.Variant.new_string(auth_url))
+            self.get_action_group("app").activate_action('renew-token', user_pass_auth_variant)
+
         AuthenticationDialog(authenticate, Config.username, Config.password).show()
 
-        # Create a tuple variant containing username and password, using default values if None
-        username = Config.username if Config.username is not None else ""
-        password = Config.password if Config.password is not None else ""
-
-        auth_url = self.authenticator_url_entry.get_text()
-        user_pass_auth_variant = GLib.Variant.new_tuple(GLib.Variant.new_string(username),
-                                                        GLib.Variant.new_string(password),
-                                                        GLib.Variant.new_string(auth_url))
-        self.get_action_group("app").activate_action('renew-token', user_pass_auth_variant)
 
     @Gtk.Template.Callback()
     def on_reset_config_clicked(self, widget):
@@ -277,18 +275,6 @@ class SettingsDialog(Gtk.Window):
 
         logger.debug("Selected default item download directory '%s'.", item_download_directory)
         settings.item_download_directory = item_download_directory
-
-    async def retrieve_token(self, auth_url, username, password):
-        # self.main_application.error_bar.hide()
-        try:
-            token = await authenticate(auth_url, username, password)
-        except Exception as e:
-            logger.error(str(e))
-            return
-        # self.builder.get_object('token-entry').set_text(token)
-        self.token_entry.set_text(token)
-
-        await self._refresh_list_of_endpoints()
 
     _configuration_dialogs = {
         's3': S3ConfigurationDialog,
