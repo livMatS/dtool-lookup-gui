@@ -5,6 +5,7 @@ import pytest
 from dtool_lookup_gui.views.about_dialog import AboutDialog
 from dtool_lookup_gui.views.settings_dialog import SettingsDialog
 from dtool_lookup_gui.views.log_window import LogWindow
+from dtool_lookup_gui.views.login_window import LoginWindow
 from dtool_lookup_gui.views.main_window import MainWindow
 
 logger = logging.getLogger(__name__)
@@ -34,7 +35,7 @@ async def test_app_id(app):
 @pytest.mark.asyncio
 async def test_app_window_types(app):
     window_types = [type(win) for win in app.get_windows()]
-    assert set(window_types) == set([AboutDialog, SettingsDialog, LogWindow, MainWindow])
+    assert set(window_types) == set([AboutDialog, SettingsDialog, LogWindow, LoginWindow, MainWindow])
 
 
 @pytest.mark.asyncio
