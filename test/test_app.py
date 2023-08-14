@@ -42,6 +42,7 @@ async def test_app_list_actions(app):
     assert set(app.list_actions()) == set([
         'toggle-logging',
         'reset-config',
+        'renew-token',
         'set-loglevel',
         'set-logfile',
         'export-config',
