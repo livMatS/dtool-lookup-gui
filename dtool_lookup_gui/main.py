@@ -226,7 +226,7 @@ class Application(Gtk.Application):
         self.add_action(export_config_action)
 
         # renew-token action
-        renew_token_action = Gio.SimpleAction.new("renew-token", string_variant.get_type())
+        renew_token_action = Gio.SimpleAction.new("renew-token", GLib.VariantType.new("(sss)"))
         renew_token_action.connect("activate", self.do_renew_token)
         self.add_action(renew_token_action)
 
@@ -315,9 +315,10 @@ class Application(Gtk.Application):
 
     def do_renew_token(self, action, value):
         """Request new token."""
-        password = value.get_string()
 
-        # get username somewhere
+        # Unpack the username, password, and auth_url from the tuple variant
+        username, password, auth_url = value.unpack()
+
 
         # logger.debug(f"Export config to '{config_file}':")
         config = dtoolcore.utils._get_config_dict_from_file()
@@ -331,12 +332,12 @@ class Application(Gtk.Application):
                 logger.error(str(e))
                 return
 
-            self.token_entry.set_text(token) # store token somewhere
+            self.token_entry.set_text(token)  # store token somewhere
 
         # def authenticate(username, password):
         # await
         asyncio.create_task(retrieve_token(
-            self.authenticator_url_entry.get_text(),
+            auth_url,
             username,
             password))
 

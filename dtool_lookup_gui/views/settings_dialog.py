@@ -206,10 +206,18 @@ class SettingsDialog(Gtk.Window):
     @Gtk.Template.Callback()
     def on_renew_token_clicked(self, widget):
 
-        # show authentication dialoogue and get username and password
+        # show authentication dialogue and get username and password
+        AuthenticationDialog(authenticate, Config.username, Config.password).show()
 
-        # TODO: check howto pass two strings
-        self.get_action_group("app").activate_action('renew-token', GLib.Variant.new_string(password))
+        # Create a tuple variant containing username and password, using default values if None
+        username = Config.username if Config.username is not None else ""
+        password = Config.password if Config.password is not None else ""
+
+        auth_url = self.authenticator_url_entry.get_text()
+        user_pass_auth_variant = GLib.Variant.new_tuple(GLib.Variant.new_string(username),
+                                                        GLib.Variant.new_string(password),
+                                                        GLib.Variant.new_string(auth_url))
+        self.get_action_group("app").activate_action('renew-token', user_pass_auth_variant)
 
     @Gtk.Template.Callback()
     def on_reset_config_clicked(self, widget):
