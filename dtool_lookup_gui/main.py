@@ -46,7 +46,9 @@ gbulb.install(gtk=True)
 
 from .models.settings import settings
 
+
 from .views.main_window import MainWindow
+from .views.login_window import LoginWindow
 
 from .utils.logging import _log_nested
 
@@ -101,7 +103,7 @@ class Application(Gtk.Application):
             # self.window = AppWindow(application=self, title="Main Window")
             logger.debug("Build GUI.")
 
-            win = MainWindow(application=self)
+            win = LoginWindow(application=self)
             glob_pattern = os.path.join(os.path.dirname(__file__), os.pardir, 'data','icons','*','dtool_logo.xpm')
             icon_file_list = glob.glob(glob_pattern)
             if len(icon_file_list) > 0:
@@ -112,7 +114,7 @@ class Application(Gtk.Application):
             else:
                 logger.warning("Could not load app icons.")
             win.connect('destroy', lambda _: self.loop.stop())
-            self.loop.call_soon(win.refresh)  # Populate widgets after event loop starts
+            #self.loop.call_soon(win.refresh)  # Populate widgets after event loop starts
 
         logger.debug("Present main window.")
         win.present()

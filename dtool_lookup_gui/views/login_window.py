@@ -62,15 +62,14 @@ class LoginWindow(Gtk.ApplicationWindow):
         # Import MainWindow to switch to it when 'Skip' is clicked
         from .main_window import MainWindow
 
-        # Notify about the skip action
-        print("Skip was clicked!")
-
         # Create and display the main window
         main_win = MainWindow(application=self.get_application())
         main_win.show()
 
-        # Refresh the view of the main window
-        self.get_action_group("win").activate_action('refresh-view', None)
+        # Trigger the 'refresh-view' action in the main window
+        action_group = main_win.get_action_group("win")
+        if action_group:
+            action_group.activate_action('refresh-view', None)
 
         # Close the login window
         self.close()
