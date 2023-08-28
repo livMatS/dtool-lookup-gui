@@ -5,6 +5,7 @@ from gi.repository import Gio, GLib, Gtk, Gdk
 from dtool_lookup_api.core.config import Config
 from ..utils.about import pretty_version_text
 from ..utils.logging import _log_nested
+from .settings_dialog import SettingsDialog
 
 # Initialize logging
 logger = logging.getLogger(__name__)
@@ -19,10 +20,13 @@ class LoginWindow(Gtk.ApplicationWindow):
     password_entry = Gtk.Template.Child()
     login_button = Gtk.Template.Child()
     skip_button = Gtk.Template.Child()
+    settings_button = Gtk.Template.Child()
 
     # Initialize the LoginWindow instance
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.application = self.get_application()
+        self.settings_dialog = SettingsDialog(application=self.application)
 
     # Handle the 'Login' button click event
     @Gtk.Template.Callback()
@@ -74,8 +78,16 @@ class LoginWindow(Gtk.ApplicationWindow):
         # Close the login window
         self.close()
 
+    @Gtk.Template.Callback()
+    def settings_button_clicked_cb(self, widget):
+        self.settings_dialog.show()
+
+
+
     # Handle the window close event
     @Gtk.Template.Callback()
     def on_delete(self, widget, event):
         # Hide the window instead of deleting it
         return self.hide_on_delete()
+
+
