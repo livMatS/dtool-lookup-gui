@@ -7,6 +7,7 @@
     <property name="resizable">False</property>
     <property name="modal">True</property>
     <signal name="delete-event" handler="on_delete" swapped="no"/>
+    <signal name="show" handler="on_show" swapped="no"/>
     <child>
       <object class="GtkBox">
         <property name="visible">True</property>

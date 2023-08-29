@@ -203,8 +203,8 @@ class MainWindow(Gtk.ApplicationWindow):
         self.settings_dialog = SettingsDialog(application=self.application)
         self.about_dialog = AboutDialog(application=self.application)
 
-        demo_server_versions = 1
-        self.server_versions_dialog = ServerVersionsDialog(server_versions=demo_server_versions)
+        # demo_server_versions = 1
+        self.server_versions_dialog = ServerVersionsDialog(application=self.application)
         # self.login_window = LoginWindow(application=self.application)
         # window-scoped actions
 
