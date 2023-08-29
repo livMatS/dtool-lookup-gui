@@ -2,7 +2,7 @@
 <!-- Generated with glade 3.38.2 -->
 <interface>
   <requires lib="gtk+" version="3.24"/>
-  <template class="LoginWindow" parent="GtkApplicationWindow">
+  <template class="LoginWindow" parent="GtkWindow">
     <property name="can-focus">False</property>
     <property name="default-width">400</property>
     <property name="default-height">300</property>

@@ -205,7 +205,6 @@ class SettingsDialog(Gtk.Window):
 
     @Gtk.Template.Callback()
     def on_renew_token_clicked(self, widget):
-
         # show authentication dialogue and get username and password
         def authenticate(username, password):
             auth_url = self.authenticator_url_entry.get_text()
@@ -215,7 +214,6 @@ class SettingsDialog(Gtk.Window):
             self.get_action_group("app").activate_action('renew-token', user_pass_auth_variant)
 
         AuthenticationDialog(authenticate, Config.username, Config.password).show()
-
 
     @Gtk.Template.Callback()
     def on_reset_config_clicked(self, widget):

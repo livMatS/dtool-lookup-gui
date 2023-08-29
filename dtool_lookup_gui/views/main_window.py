@@ -205,7 +205,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         demo_server_versions = 1
         self.server_versions_dialog = ServerVersionsDialog(server_versions=demo_server_versions)
-        self.login_window = LoginWindow(application=self.application)
+        # self.login_window = LoginWindow(application=self.application)
         # window-scoped actions
 
         # search action
@@ -328,17 +328,10 @@ class MainWindow(Gtk.ApplicationWindow):
         self.contents_per_page_value = widget.get_active_text()
         self.on_first_page_button_clicked(self.first_page_button)  # Directly call the method
 
-
-
-
-
-    async def _fetch_search_results(self, keyword, on_show=None, page_number=1, page_size=10,widget=None):
+    async def _fetch_search_results(self, keyword, on_show=None, page_number=1, page_size=10, widget=None):
         row = self.base_uri_list_box.search_results_row
         row.start_spinner()
         self.main_spinner.start()
-
-
-
 
         self.pagination = {}  # Add pagination dictionary
         try:
@@ -367,7 +360,6 @@ class MainWindow(Gtk.ApplicationWindow):
                     pagination=self.pagination
                 )
 
-
             if len(datasets) > self._max_nb_datasets:
                 _logger.warning(
                     f"{len(datasets)} search results exceed allowed displayed maximum of {self._max_nb_datasets}. "
@@ -382,6 +374,14 @@ class MainWindow(Gtk.ApplicationWindow):
             if self.base_uri_list_box.get_selected_row() == row:
                 # Only update if the row is still selected
                 self.dataset_list_box.fill(datasets, on_show=on_show)
+        except RuntimeError as e:
+            # There should probably be a more explicit test on authentication failure.
+            # The API should
+            self.show_error(e)
+
+            def retry():
+                asyncio.create_task(self._fetch_search_results(keyword, on_show, page_number, page_size, widget))
+            LoginWindow(application=self.application, follow_up_action=retry).show()
         except Exception as e:
             self.show_error(e)
 

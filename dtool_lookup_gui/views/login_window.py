@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 # Define the LoginWindow class and associate it with its corresponding UI file
 @Gtk.Template(filename=f'{os.path.dirname(__file__)}/login_window.ui')
-class LoginWindow(Gtk.ApplicationWindow):
+class LoginWindow(Gtk.Window):
     __gtype_name__ = 'LoginWindow'
 
     # Map GTK Template Child widgets to Python attributes
@@ -23,16 +23,17 @@ class LoginWindow(Gtk.ApplicationWindow):
     settings_button = Gtk.Template.Child()
 
     # Initialize the LoginWindow instance
-    def __init__(self, *args, **kwargs):
+    def __init__(self, follow_up_action=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.application = self.get_application()
         self.settings_dialog = SettingsDialog(application=self.application)
+        self._follow_up_action = follow_up_action
 
     # Handle the 'Login' button click event
     @Gtk.Template.Callback()
     def on_login_button_clicked(self, widget):
         # Import MainWindow class to create an instance after successful login
-        from .main_window import MainWindow
+        # from .main_window import MainWindow
 
         # Fetch entered username and password
         username = self.username_entry.get_text()
@@ -48,33 +49,20 @@ class LoginWindow(Gtk.ApplicationWindow):
         # Trigger the 'renew-token' action for authentication
         self.get_action_group("app").activate_action('renew-token', user_pass_auth_variant)
 
-        # Create and display the main window
-        main_win = MainWindow(application=self.get_application())
-        main_win.show()
+        if self._follow_up_action is not None:
+            self._follow_up_action()
 
         # Trigger the 'refresh-view' action in the main window
-        action_group = main_win.get_action_group("win")
-        if action_group:
-            action_group.activate_action('refresh-view', None)
-
+        # self.get_action_group("win").activate_action('refresh-view', None)
+        # action_group = main_win.get_action_group("win")
+        # if action_group:
+        #    action_group.activate_action('refresh-view', None)
         # Close the login window
         self.close()
 
     # Handle the 'Skip' button click event
     @Gtk.Template.Callback()
     def on_skip_button_clicked(self, widget):
-        # Import MainWindow to switch to it when 'Skip' is clicked
-        from .main_window import MainWindow
-
-        # Create and display the main window
-        main_win = MainWindow(application=self.get_application())
-        main_win.show()
-
-        # Trigger the 'refresh-view' action in the main window
-        action_group = main_win.get_action_group("win")
-        if action_group:
-            action_group.activate_action('refresh-view', None)
-
         # Close the login window
         self.close()
 
