@@ -263,6 +263,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self.pagination = {}
         self.contents_per_page_value = 10
+        self.login_semaphore = asyncio.Semaphore(1)
 
     # utility methods
     def refresh(self):
@@ -379,9 +380,11 @@ class MainWindow(Gtk.ApplicationWindow):
             # The API should
             self.show_error(e)
 
-            def retry():
-                asyncio.create_task(self._fetch_search_results(keyword, on_show, page_number, page_size, widget))
-            LoginWindow(application=self.application, follow_up_action=retry).show()
+            async def retry():
+                await asyncio.sleep(1)
+                await self._fetch_search_results(keyword, on_show, page_number, page_size, widget)
+            LoginWindow(application=self.application, follow_up_action=lambda: asyncio.create_task(retry())).show()
+
         except Exception as e:
             self.show_error(e)
 

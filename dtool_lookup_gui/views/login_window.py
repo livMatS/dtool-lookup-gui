@@ -10,7 +10,6 @@ from .settings_dialog import SettingsDialog
 # Initialize logging
 logger = logging.getLogger(__name__)
 
-# Define the LoginWindow class and associate it with its corresponding UI file
 @Gtk.Template(filename=f'{os.path.dirname(__file__)}/login_window.ui')
 class LoginWindow(Gtk.Window):
     __gtype_name__ = 'LoginWindow'
@@ -29,11 +28,19 @@ class LoginWindow(Gtk.Window):
         self.settings_dialog = SettingsDialog(application=self.application)
         self._follow_up_action = follow_up_action
 
+        # Set the default values from the Config, ensuring they are not None
+        if Config.username is not None:
+            self.username_entry.set_text(Config.username)
+        if Config.password is not None:  # Consider security implications
+            self.password_entry.set_text(Config.password)
+
+
+
     # Handle the 'Login' button click event
     @Gtk.Template.Callback()
     def on_login_button_clicked(self, widget):
-        # Import MainWindow class to create an instance after successful login
-        # from .main_window import MainWindow
+
+
 
         # Fetch entered username and password
         username = self.username_entry.get_text()
@@ -52,12 +59,7 @@ class LoginWindow(Gtk.Window):
         if self._follow_up_action is not None:
             self._follow_up_action()
 
-        # Trigger the 'refresh-view' action in the main window
-        # self.get_action_group("win").activate_action('refresh-view', None)
-        # action_group = main_win.get_action_group("win")
-        # if action_group:
-        #    action_group.activate_action('refresh-view', None)
-        # Close the login window
+
         self.close()
 
     # Handle the 'Skip' button click event
