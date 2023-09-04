@@ -26,6 +26,7 @@
 import asyncio
 import logging
 import os
+import json
 
 import yaml
 from concurrent.futures import ProcessPoolExecutor
@@ -36,6 +37,8 @@ from dtool_info.utils import date_fmt, sizeof_fmt
 
 from dtool_info.inventory import _dataset_info
 from dtool_lookup_api.core.LookupClient import ConfigurationBasedLookupClient
+
+
 
 from ..utils.logging import _log_nested
 from ..utils.multiprocessing import StatusReportingChildProcessBuilder, process_initializer
@@ -280,11 +283,18 @@ class DatasetModel:
         return [await cls.from_lookup(lookup_dict) for lookup_dict in datasets]
 
     @classmethod
-    async def query_all(cls, page_number=1, page_size=8, pagination={}):
+    async def query_all(cls, page_number=1, page_size=10, pagination={}):
         """Query all datasets from the lookup server."""
         async with ConfigurationBasedLookupClient() as lookup:
             datasets = await lookup.all(page_number=page_number, page_size=page_size, pagination=pagination)
         return [await cls.from_lookup(lookup_dict) for lookup_dict in datasets]
+
+    @classmethod
+    async def versions(cls):
+        """To return version info from the server """
+        async with ConfigurationBasedLookupClient() as lookup:
+            version_info = await lookup.versions()
+        print(version_info)
 
     def __str__(self):
         return self._dataset_info['uri']

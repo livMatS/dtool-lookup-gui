@@ -34,6 +34,8 @@ import sys
 import dtoolcore
 import dtool_lookup_api.core.config
 
+from dtool_lookup_api.core.LookupClient import authenticate
+
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('GtkSource', '4')
@@ -44,7 +46,9 @@ gbulb.install(gtk=True)
 
 from .models.settings import settings
 
+
 from .views.main_window import MainWindow
+from .views.login_window import LoginWindow
 
 from .utils.logging import _log_nested
 
@@ -55,7 +59,6 @@ import dtool_lookup_gui.widgets.graph_widget
 import dtool_lookup_gui.widgets.transfer_popover_menu
 import dtool_lookup_gui.widgets.progress_chart
 import dtool_lookup_gui.widgets.progress_popover_menu
-
 
 logger = logging.getLogger(__name__)
 
@@ -225,6 +228,11 @@ class Application(Gtk.Application):
         export_config_action.connect("activate", self.do_export_config)
         self.add_action(export_config_action)
 
+        # renew-token action
+        renew_token_action = Gio.SimpleAction.new("renew-token", GLib.VariantType.new("(sss)"))
+        renew_token_action.connect("activate", self.do_renew_token)
+        self.add_action(renew_token_action)
+
         Gtk.Application.do_startup(self)
 
     # custom application-scoped actions
@@ -307,6 +315,27 @@ class Application(Gtk.Application):
         """Doesn't do anything, just documents how GTK calls this method
            first when emitting dtool-config-changed signal."""
         logger.debug("method handler for 'dtool-config-changed' called.")
+
+    def do_renew_token(self, action, value):
+        """Request new token."""
+
+        # Unpack the username, password, and auth_url from the tuple variant
+        username, password, auth_url = value.unpack()
+
+        async def retrieve_token(auth_url, username, password):
+            try:
+                token = await authenticate(auth_url, username, password)
+            except Exception as e:
+                logger.error(str(e))
+                return
+
+            dtool_lookup_api.core.config.Config.token = token
+            self.emit('dtool-config-changed')
+
+        asyncio.create_task(retrieve_token(
+            auth_url,
+            username,
+            password))
 
 
 def run_gui():

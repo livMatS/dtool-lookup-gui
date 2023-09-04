@@ -199,7 +199,7 @@ Pinned requirements
 .. code:: bash
 
   pip install pip-tools
-  pip-compile requirements.in > requirements.txt
+  pip-compile --resolver=backtracking requirements.in > requirements.txt
 
 GTK debugging
 ^^^^^^^^^^^^^
