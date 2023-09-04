@@ -104,8 +104,6 @@ class MainWindow(Gtk.ApplicationWindow):
 
     search_entry = Gtk.Template.Child()
 
-    # copy_dataset_spinner = Gtk.Template.Child()
-
     base_uri_list_box = Gtk.Template.Child()
     dataset_list_box = Gtk.Template.Child()
 
@@ -202,10 +200,8 @@ class MainWindow(Gtk.ApplicationWindow):
         self.log_window = LogWindow(application=self.application)
         self.settings_dialog = SettingsDialog(application=self.application)
         self.about_dialog = AboutDialog(application=self.application)
+        self.server_versions_dialog = ServerVersionsDialog(application=self.application)
 
-        demo_server_versions = 1
-        self.server_versions_dialog = ServerVersionsDialog(server_versions=demo_server_versions)
-        self.login_window = LoginWindow(application=self.application)
         # window-scoped actions
 
         # search action
@@ -328,17 +324,10 @@ class MainWindow(Gtk.ApplicationWindow):
         self.contents_per_page_value = widget.get_active_text()
         self.on_first_page_button_clicked(self.first_page_button)  # Directly call the method
 
-
-
-
-
-    async def _fetch_search_results(self, keyword, on_show=None, page_number=1, page_size=10,widget=None):
+    async def _fetch_search_results(self, keyword, on_show=None, page_number=1, page_size=10, widget=None):
         row = self.base_uri_list_box.search_results_row
         row.start_spinner()
         self.main_spinner.start()
-
-
-
 
         self.pagination = {}  # Add pagination dictionary
         try:
@@ -367,7 +356,6 @@ class MainWindow(Gtk.ApplicationWindow):
                     pagination=self.pagination
                 )
 
-
             if len(datasets) > self._max_nb_datasets:
                 _logger.warning(
                     f"{len(datasets)} search results exceed allowed displayed maximum of {self._max_nb_datasets}. "
@@ -382,6 +370,20 @@ class MainWindow(Gtk.ApplicationWindow):
             if self.base_uri_list_box.get_selected_row() == row:
                 # Only update if the row is still selected
                 self.dataset_list_box.fill(datasets, on_show=on_show)
+        except RuntimeError as e:
+            # TODO: There should probably be a more explicit test on authentication failure.
+            self.show_error(e)
+
+            async def retry():
+                await asyncio.sleep(1)  # TODO: This is a dirty workaround for not having the login window pop up twice
+                await self._fetch_search_results(keyword, on_show, page_number, page_size, widget)
+
+            # What happens is that the LoginWindow evokes the renew-token action via Gtk framework.
+            # This happens asynchronously as well. This means _fetch_search_results called again
+            # within the retry() function would open another LoginWindow here as the token renewal does
+            # not happen "quick" enough. Hence there is the asybcio.sleep(1).
+            LoginWindow(application=self.application, follow_up_action=lambda: asyncio.create_task(retry())).show()
+
         except Exception as e:
             self.show_error(e)
 
@@ -479,10 +481,6 @@ class MainWindow(Gtk.ApplicationWindow):
         """Select base uri row in dataset list box by uri."""
         index = self.base_uri_list_box.get_row_index_from_uri(uri)
         self._select_base_uri_row_by_row_index(index)
-
-    # def _show_base_uri(self, dataset):
-    #    asyncio.create_task(self._update_dataset_view(dataset))
-    #    self.dataset_stack.set_visible_child(self.dataset_box)
 
     # actions
 
