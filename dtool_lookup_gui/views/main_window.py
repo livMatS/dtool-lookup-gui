@@ -104,8 +104,6 @@ class MainWindow(Gtk.ApplicationWindow):
 
     search_entry = Gtk.Template.Child()
 
-    # copy_dataset_spinner = Gtk.Template.Child()
-
     base_uri_list_box = Gtk.Template.Child()
     dataset_list_box = Gtk.Template.Child()
 
@@ -202,10 +200,8 @@ class MainWindow(Gtk.ApplicationWindow):
         self.log_window = LogWindow(application=self.application)
         self.settings_dialog = SettingsDialog(application=self.application)
         self.about_dialog = AboutDialog(application=self.application)
-
-        # demo_server_versions = 1
         self.server_versions_dialog = ServerVersionsDialog(application=self.application)
-        # self.login_window = LoginWindow(application=self.application)
+
         # window-scoped actions
 
         # search action
@@ -263,7 +259,6 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self.pagination = {}
         self.contents_per_page_value = 10
-        self.login_semaphore = asyncio.Semaphore(1)
 
     # utility methods
     def refresh(self):
@@ -376,13 +371,17 @@ class MainWindow(Gtk.ApplicationWindow):
                 # Only update if the row is still selected
                 self.dataset_list_box.fill(datasets, on_show=on_show)
         except RuntimeError as e:
-            # There should probably be a more explicit test on authentication failure.
-            # The API should
+            # TODO: There should probably be a more explicit test on authentication failure.
             self.show_error(e)
 
             async def retry():
-                await asyncio.sleep(1)
+                await asyncio.sleep(1)  # TODO: This is a dirty workaround for not having the login window pop up twice
                 await self._fetch_search_results(keyword, on_show, page_number, page_size, widget)
+
+            # What happens is that the LoginWindow evokes the renew-token action via Gtk framework.
+            # This happens asynchronously as well. This means _fetch_search_results called again
+            # within the retry() function would open another LoginWindow here as the token renewal does
+            # not happen "quick" enough. Hence there is the asybcio.sleep(1).
             LoginWindow(application=self.application, follow_up_action=lambda: asyncio.create_task(retry())).show()
 
         except Exception as e:
@@ -482,10 +481,6 @@ class MainWindow(Gtk.ApplicationWindow):
         """Select base uri row in dataset list box by uri."""
         index = self.base_uri_list_box.get_row_index_from_uri(uri)
         self._select_base_uri_row_by_row_index(index)
-
-    # def _show_base_uri(self, dataset):
-    #    asyncio.create_task(self._update_dataset_view(dataset))
-    #    self.dataset_stack.set_visible_child(self.dataset_box)
 
     # actions
 

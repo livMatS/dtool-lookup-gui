@@ -59,7 +59,6 @@ class LoginWindow(Gtk.Window):
         if self._follow_up_action is not None:
             self._follow_up_action()
 
-
         self.close()
 
     # Handle the 'Skip' button click event
