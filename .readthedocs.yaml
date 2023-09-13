@@ -6,6 +6,7 @@ build:
     python: "3.10"
   apt_packages:
     - "gir1.2-gtksource-4"
+    - "libgirepository1.0-dev"
 
 python:
   install:
