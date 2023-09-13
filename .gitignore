@@ -7,6 +7,9 @@ __pycache__
 *egg-info
 /build
 /dist
+/docs/build
+/docs/source/generated
+/docs/source/data
 /dtool_lookup_gui/version.py
 /tests/*.png
 /helpers/*.png
