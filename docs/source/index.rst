@@ -10,4 +10,7 @@ Contents
 
 .. toctree::
 
+   readme
+   contributing
+   changelog
    api
