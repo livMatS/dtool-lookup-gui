@@ -36,7 +36,7 @@ async def test_app_id(app):
 @pytest.mark.asyncio
 async def test_app_window_types(app):
     window_types = [type(win) for win in app.get_windows()]
-    assert set(window_types) == set([AboutDialog, SettingsDialog, ServerVersionsDialog, LogWindow, LoginWindow, MainWindow])
+    assert set(window_types) == set([AboutDialog, SettingsDialog, ServerVersionsDialog, LogWindow, MainWindow])
 
 
 @pytest.mark.asyncio
