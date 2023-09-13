@@ -1,6 +1,4 @@
 # Configuration file for the Sphinx documentation builder.
-import os
-import sys
 
 # -- Prepare
 
@@ -17,24 +15,12 @@ data_destination_dir = os.path.join(root, 'data')
 shutil.rmtree(data_destination_dir, ignore_errors=True)  # Remove existing destination directory
 shutil.copytree(data_source_dir, data_destination_dir)  # Copy images
 
-# Add the new image path to the HTML static path
-# html_static_path.append(data_destination_dir)
-
-# root = os.path.dirname(sys.argv[0])
-
-def read_authors(fn):
-    return {email.strip('<>'): name for name, email in
-            [line.rsplit(maxsplit=1) for line in open(fn, 'r')]}
-
-authors = read_authors(os.path.join(root, '..', '..', 'AUTHORS'))
-
-authors_alphabetical = sorted(list(set(authors.values())))
-
 # -- Project information
 
 project = 'dtool-lookup-gui'
 copyright = '2023, livMatS'
-author = ', '.join(authors_alphabetical)
+author = 'Antoine Sanner, Ashwin Vazhappilly, Johannes Laurin Hörmann, Lars Pastewka, Michal Rössler, Wolfram Nöhring'
+
 
 import dtool_lookup_gui
 version = dtool_lookup_gui.__version__
