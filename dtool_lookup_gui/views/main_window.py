@@ -261,9 +261,14 @@ class MainWindow(Gtk.ApplicationWindow):
 
         _logger.debug(f"Constructed main window for app '{self.application.get_application_id()}'")
 
+
+        # Initialize pagination parameters, hide page advancer button by default, set default items per page, and highlight the current page button.
         self.pagination = {}
+        self.page_advancer_button.set_visible(False)
         self.contents_per_page_value = 10
-        self.login_semaphore = asyncio.Semaphore(1)
+        style_context = self.curr_page_button.get_style_context()
+        style_context.add_class('suggested-action')
+
 
     # utility methods
     def refresh(self):
@@ -381,7 +386,8 @@ class MainWindow(Gtk.ApplicationWindow):
             self.show_error(e)
 
             async def retry():
-                await asyncio.sleep(1)
+                await asyncio.sleep(0.5)
+
                 await self._fetch_search_results(keyword, on_show, page_number, page_size, widget)
             LoginWindow(application=self.application, follow_up_action=lambda: asyncio.create_task(retry())).show()
 
@@ -821,85 +827,93 @@ class MainWindow(Gtk.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def on_first_page_button_clicked(self, widget):
+        # Navigate to the first page if results are not currently being fetched
         if not self.fetching_results:
             page_number = 1
             self.pagination['page'] = page_number
             self.disable_pagination_buttons()
-            asyncio.create_task(
-                self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
-                                           page_size=int(self.contents_per_page_value), widget=widget))
-            self.curr_page_button.set_label(str(page_number))
-            self.page_advancer_button.set_label(str(page_number - 1))
-            self.next_page_advancer_button.set_label(str(page_number + 1))
+            asyncio.create_task(self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
+                                                           page_size=int(self.contents_per_page_value), widget=widget))
+            self.update_pagination_buttons(page_number, widget)
 
     @Gtk.Template.Callback()
     def on_nextoption_page_button_clicked(self, widget):
+        # Navigate to the next page if available
         if not self.fetching_results and self.pagination['page'] < self.pagination['last_page']:
             page_number = self.pagination['page'] + 1
             self.update_pagination_buttons(page_number, widget)
             self.disable_pagination_buttons()
-            asyncio.create_task(
-                self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
-                                           page_size=int(self.contents_per_page_value), widget=widget))
+            asyncio.create_task(self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
+                                                           page_size=int(self.contents_per_page_value), widget=widget))
 
     @Gtk.Template.Callback()
     def on_last_page_button_clicked(self, widget):
+        # Navigate to the last page
         page_number = self.pagination['last_page']
         self.update_pagination_buttons(page_number, widget)
         self.disable_pagination_buttons()
-        asyncio.create_task(
-            self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
-                                       page_size=int(self.contents_per_page_value), widget=widget))
+        asyncio.create_task(self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
+                                                       page_size=int(self.contents_per_page_value), widget=widget))
 
     @Gtk.Template.Callback()
     def on_prev_page_button_clicked(self, widget):
+        # Navigate to the previous page if it exists
         if not self.fetching_results and self.pagination['page'] > 1:
-            self.pagination['page'] -= 1
-            page_number = self.pagination['page']
+            page_number = self.pagination['page'] - 1
             self.update_pagination_buttons(page_number, widget)
             self.disable_pagination_buttons()
-            asyncio.create_task(
-                self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
-                                           page_size=int(self.contents_per_page_value), widget=widget))
+            asyncio.create_task(self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
+                                                           page_size=int(self.contents_per_page_value), widget=widget))
 
     @Gtk.Template.Callback()
     def curr_page_button_clicked(self, widget):
+        # Highlight the current page button and fetch its results
         page_number = self.pagination['page']
+        style_context = self.curr_page_button.get_style_context()
+        style_context.add_class('suggested-action')
         self.update_pagination_buttons(page_number, widget)
         self.disable_pagination_buttons()
-        asyncio.create_task(
-            self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
-                                       page_size=int(self.contents_per_page_value), widget=widget))
+        asyncio.create_task(self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
+                                                       page_size=int(self.contents_per_page_value), widget=widget))
 
     @Gtk.Template.Callback()
     def page_advancer_button_clicked(self, widget):
+        # Navigate to the previous page using the advancer button
         page_number = self.pagination['page']
         if not self.fetching_results and page_number > 1:
             page_number -= 1
             self.update_pagination_buttons(page_number, widget)
             self.disable_pagination_buttons()
-            asyncio.create_task(
-                self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
-                                           page_size=int(self.contents_per_page_value), widget=widget))
+            asyncio.create_task(self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
+                                                           page_size=int(self.contents_per_page_value), widget=widget))
 
     @Gtk.Template.Callback()
     def next_page_advancer_button_clicked(self, widget):
+        # Navigate to the next page using the advancer button
         page_number = self.pagination['page']
         if not self.fetching_results and page_number < self.pagination['last_page']:
             page_number += 1
             self.update_pagination_buttons(page_number, widget)
             self.disable_pagination_buttons()
-            asyncio.create_task(
-                self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
-                                           page_size=int(self.contents_per_page_value), widget=widget))
+            asyncio.create_task(self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
+                                                           page_size=int(self.contents_per_page_value), widget=widget))
 
     def update_pagination_buttons(self, page_number, widget):
+        # Update labels and visibility of pagination buttons based on current page
         self.pagination['page'] = page_number
         self.curr_page_button.set_label(str(page_number))
         self.page_advancer_button.set_label(str(page_number - 1))
         self.next_page_advancer_button.set_label(str(page_number + 1))
 
+        # Hide next_page_advancer_button if current page is the last page or beyond
+        if page_number >= self.pagination['last_page']:
+            self.next_page_advancer_button.set_visible(False)
+        else:
+            self.next_page_advancer_button.set_visible(True)
+        self.page_advancer_button.set_visible(page_number != 1)
+
     def disable_pagination_buttons(self):
+        # Disable all pagination buttons (typically while fetching results)
         self.fetching_results = True
         self.first_page_button.set_sensitive(False)
         self.nextoption_page_button.set_sensitive(False)
@@ -910,6 +924,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.next_page_advancer_button.set_sensitive(False)
 
     def enable_pagination_buttons(self):
+        # Enable all pagination buttons (typically after fetching results)
         self.fetching_results = False
         self.first_page_button.set_sensitive(True)
         self.nextoption_page_button.set_sensitive(True)
