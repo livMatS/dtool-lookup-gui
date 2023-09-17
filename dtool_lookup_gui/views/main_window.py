@@ -170,7 +170,7 @@ class MainWindow(Gtk.ApplicationWindow):
     main_statusbar = Gtk.Template.Child()
     contents_per_page = Gtk.Template.Child()
 
-    test_login = Gtk.Template.Child()
+
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -583,10 +583,6 @@ class MainWindow(Gtk.ApplicationWindow):
     @Gtk.Template.Callback()
     def version_button_clicked(self, widget):
         self.server_versions_dialog.show()
-
-    @Gtk.Template.Callback()
-    def on_test_login_clicked(self, widget):
-        self.login_window.show()
 
     @Gtk.Template.Callback()
     def on_logging_clicked(self, widget):
