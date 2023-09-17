@@ -61,6 +61,7 @@ from .dataset_name_dialog import DatasetNameDialog
 from .about_dialog import AboutDialog
 from .settings_dialog import SettingsDialog
 from .server_versions_dialog import ServerVersionsDialog
+from .config_details import ConfigDialog
 from .login_window import LoginWindow
 from .log_window import LogWindow
 
@@ -155,6 +156,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     settings_button = Gtk.Template.Child()
     version_button = Gtk.Template.Child()
+    config_button = Gtk.Template.Child()
 
     error_bar = Gtk.Template.Child()
     error_label = Gtk.Template.Child()
@@ -202,8 +204,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.log_window = LogWindow(application=self.application)
         self.settings_dialog = SettingsDialog(application=self.application)
         self.about_dialog = AboutDialog(application=self.application)
-
-        # demo_server_versions = 1
+        self.config_details = ConfigDialog(application=self.application)
         self.server_versions_dialog = ServerVersionsDialog(application=self.application)
         # self.login_window = LoginWindow(application=self.application)
         # window-scoped actions
@@ -583,6 +584,10 @@ class MainWindow(Gtk.ApplicationWindow):
     @Gtk.Template.Callback()
     def version_button_clicked(self, widget):
         self.server_versions_dialog.show()
+
+    @Gtk.Template.Callback()
+    def config_button_clicked(self, widget):
+        self.config_details.show()
 
     @Gtk.Template.Callback()
     def on_logging_clicked(self, widget):
