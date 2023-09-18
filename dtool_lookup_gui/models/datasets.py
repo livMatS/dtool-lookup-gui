@@ -1,5 +1,6 @@
 #
-# Copyright 2021-2022 Johannes Laurin Hörmann
+# Copyright 2023 Ashwin Vazhappilly
+#           2021-2023 Johannes Laurin Hörmann
 #           2020-2021 Lars Pastewka
 #
 # ### MIT license
@@ -347,8 +348,7 @@ class DatasetModel:
 
         logger.debug("README.yml queried from lookup server.")
         async with ConfigurationBasedLookupClient() as lookup:
-            readme_dict = await lookup.readme(self.uri)
-        self._dataset_info['readme_content'] = yaml.dump(readme_dict, allow_unicode=True)
+            self._dataset_info['readme_content'] = await lookup.readme(self.uri)
         return self._dataset_info['readme_content']
 
     async def get_manifest(self):

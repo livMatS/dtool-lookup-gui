@@ -1,5 +1,5 @@
 #
-# Copyright 2020-2022 Johannes Laurin Hörmann
+# Copyright 2020-2023 Johannes Laurin Hörmann
 #           2020-2021 Lars Pastewka
 #           2020 Antoine Sanner
 #
