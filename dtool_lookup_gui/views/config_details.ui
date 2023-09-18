@@ -3,11 +3,10 @@
 <interface>
   <requires lib="gtk+" version="3.22"/>
   <template class="ConfigDialog" parent="GtkWindow">
+    <property name="can-focus">False</property>
+    <property name="modal">True</property>
     <property name="default-width">800</property>
     <property name="default-height">600</property>
-    <property name="can-focus">False</property>
-    <property name="resizable">True</property>
-    <property name="modal">True</property>
     <signal name="delete-event" handler="on_config_delete" swapped="no"/>
     <signal name="show" handler="on_config_show" swapped="no"/>
     <child>
@@ -16,21 +15,7 @@
         <property name="can-focus">False</property>
         <property name="orientation">vertical</property>
         <child>
-          <object class="GtkLabel">
-            <property name="visible">True</property>
-            <property name="can-focus">False</property>
-            <property name="xpad">5</property>
-            <property name="ypad">5</property>
-            <property name="label" translatable="yes">Configurations</property>
-            <attributes>
-              <attribute name="font-desc" value="Sans Bold 10"/>
-            </attributes>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">0</property>
-          </packing>
+          <placeholder/>
         </child>
         <child>
           <object class="GtkSeparator">
@@ -47,14 +32,11 @@
           <object class="GtkScrolledWindow">
             <property name="visible">True</property>
             <property name="can-focus">True</property>
-            <property name="hscrollbar-policy">automatic</property>
-            <property name="vscrollbar-policy">automatic</property>
             <child>
               <object class="GtkTextView" id="config_text_view">
                 <property name="visible">True</property>
                 <property name="can-focus">True</property>
                 <property name="editable">False</property>
-                <property name="wrap-mode">none</property>
                 <property name="cursor-visible">False</property>
               </object>
             </child>
