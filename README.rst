@@ -23,8 +23,7 @@ dtool-lookup-server-dependency-graph-plugin_ written in Python_ and GTK_.
 Quick start
 -----------
 
-Just download the pre-packaged binaries of the `latest release`_
-and follow the `quick start guide`_ to get started.
+Just download the pre-packaged binaries of the `latest release`_.
 
 If the binaries won't run out-of-the-box on your system, continue below.
 
@@ -289,5 +288,3 @@ This development has received funding from the Deutsche Forschungsgemeinschaft w
 .. _livMatS: https://www.livmats.uni-freiburg.de/en
 
 .. _latest release: https://github.com/livMatS/dtool-lookup-gui/releases/latest
-
-.. _quick start guide: https://github.com/livMatS/RDM-Wiki-public/blob/master/rdm/dtool/src/020_gui/005_quick_start.md
