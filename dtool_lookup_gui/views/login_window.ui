@@ -6,8 +6,8 @@
     <property name="can-focus">False</property>
     <property name="default-width">400</property>
     <property name="default-height">200</property>
-    <property name="resizable">False</property>
-    <property name="modal">True</property>
+    <property name="modal">True</property> <!-- Added the modal property -->
+    <property name="window-position">center-on-parent</property> <!-- Ensures the window is centered -->
     <signal name="delete-event" handler="on_delete" swapped="no"/>
     <child>
       <!-- n-columns=3 n-rows=3 -->
