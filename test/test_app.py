@@ -3,7 +3,7 @@ import logging
 import pytest
 
 from dtool_lookup_gui.views.about_dialog import AboutDialog
-from dtool_lookup_gui.views.about_dialog import ConfigDialog
+from dtool_lookup_gui.views.config_details import ConfigDialog
 from dtool_lookup_gui.views.settings_dialog import SettingsDialog
 from dtool_lookup_gui.views.log_window import LogWindow
 from dtool_lookup_gui.views.login_window import LoginWindow
