@@ -218,48 +218,6 @@ The GUI uses custom Gtk widgets. To edit the the XML UI definition files with
 Glade_, add the directory ``glade/catalog`` to `Extra Catalog & Template paths`
 within Glade's preferences dialog.
 
-Testing github workflows locally
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-It is possible to run github workflows locally
-with the help of `docker <https://www.docker.com/>`_ and
-`act <https://github.com/nektos/act>`_.
-
-`Install and configure act <https://github.com/nektos/act#installation>`_
-at a specific version with
-
-.. code-block:: bash
-
-  go install github.com/nektos/act@v0.2.24
-
-and run a workflow with 
-
-.. code-block:: bash
-
-  act -s GITHUB_TOKEN=$GITHUB_TOKEN -W .github/workflows/publish-on-pypi.yml
-
-from within this repository. :code:`$GITHUB_TOKEN` must hold a valid
-`access token <https://github.com/settings/tokens>`_.
-The evoking user must be member of the :code:`docker` group.
-
-To generate a pyinstaller-packaged application by the according workflow and 
-store it locally, use the ``--bind`` flag, i.e.
-
-.. code-block:: bash
-
-  act -s GITHUB_TOKEN=$GITHUB_TOKEN -W .github/workflows/build-on-ubuntu.yml --bind
-
-This will bind-mount the current folder into the workflow-executing container.
-All locally generated artifacts will hence survive the container's lifespan,
-but usually belong to ``root``. The executable resides below ``dist``. Use 
-
-.. code-block:: bash
-
-   sudo chown -R $USER:$USER .
-   git clean -fdx
-
-to remove the generated ``build``, ``dist``, and ``workflow`` folders and all other artifacts.
-
 Funding
 -------
 
