@@ -40,6 +40,10 @@ from dtool_info.utils import sizeof_fmt
 import dtool_lookup_api.core.config
 from dtool_lookup_api.core.LookupClient import ConfigurationBasedLookupClient
 
+import yamllint
+from yamllint.config import YamlLintConfig
+from yamllint.linter import run
+
 # As of dtool-lookup-api 0.5.0, the following line still is a necessity to
 # disable prompting for credentials on the command line. This behavior
 # will change in future versions.
@@ -782,11 +786,24 @@ class MainWindow(Gtk.ApplicationWindow):
         item_name, item_uuid = items[0]
         self._show_get_item_dialog(item_name, item_uuid)
 
+    @Gtk.Template.Callback()
+    def on_save_metadata_button_clicked(self, widget):
+        # Get the YAML content from the source view
+        text_buffer = self.readme_source_view.get_buffer()
+        start_iter, end_iter = text_buffer.get_bounds()
+        yaml_content = text_buffer.get_text(start_iter, end_iter, True)
 
+        # Lint the YAML content
+        conf = YamlLintConfig('extends: default')  # using the default config
+        problems = list(run(yaml_content, conf))
 
-
-    #@Gtk.Template.Callback()
-    #def on_save_metadata_button_clicked(self, widget):
+        if problems:
+            print("YAML Linting Errors:")
+            for problem in problems:
+                print(problem)
+        else:
+            # Continue with saving or other actions if no linting issues
+            pass
 
 
 
