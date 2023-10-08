@@ -134,7 +134,7 @@ class MainWindow(Gtk.ApplicationWindow):
     progress_button = Gtk.Template.Child()
     progress_popover = Gtk.Template.Child()
 
-    edit_readme_switch = Gtk.Template.Child()
+
     save_metadata_button = Gtk.Template.Child()
 
     dependency_stack = Gtk.Template.Child()
@@ -186,6 +186,10 @@ class MainWindow(Gtk.ApplicationWindow):
         self.readme_buffer.set_language(lang_manager.get_language("yaml"))
         self.readme_buffer.set_highlight_syntax(True)
         self.readme_buffer.set_highlight_matching_brackets(True)
+        self.readme_source_view.set_editable(True)
+
+
+        self.readme_buffer.connect("changed", self.on_readme_buffer_changed)
 
         self.error_bar.set_revealed(False)
         self.progress_revealer.set_reveal_child(False)
@@ -492,6 +496,9 @@ class MainWindow(Gtk.ApplicationWindow):
         index = self.base_uri_list_box.get_row_index_from_uri(uri)
         self._select_base_uri_row_by_row_index(index)
 
+    def on_readme_buffer_changed(self, buffer):
+        self.save_metadata_button.set_sensitive(True)
+
     # actions
 
     # dataset selection actions
@@ -775,23 +782,13 @@ class MainWindow(Gtk.ApplicationWindow):
         item_name, item_uuid = items[0]
         self._show_get_item_dialog(item_name, item_uuid)
 
-    @Gtk.Template.Callback()
-    def on_edit_readme_state_set(self, widget, state):
-        self.readme_source_view.set_editable(state)
-        self.save_metadata_button.set_sensitive(state)
-        if not state:
-            # We need to save the metadata
-            text = self.readme_buffer.get_text(self.readme_buffer.get_start_iter(),
-                                               self.readme_buffer.get_end_iter(),
-                                               False)
-            try:
-                self.dataset_list_box.get_selected_row().dataset.put_readme(text)
-            except Exception as e:
-                self.show_error(e)
 
-    @Gtk.Template.Callback()
-    def on_save_metadata_button_clicked(self, widget):
-        self.edit_readme_switch.set_state(False)
+
+
+    #@Gtk.Template.Callback()
+    #def on_save_metadata_button_clicked(self, widget):
+
+
 
     @Gtk.Template.Callback()
     def on_freeze_clicked(self, widget):
@@ -1029,6 +1026,7 @@ class MainWindow(Gtk.ApplicationWindow):
             self.readme_stack.set_visible_child(self.readme_spinner)
             self.readme_buffer.set_text(await dataset.get_readme())
             self.readme_stack.set_visible_child(self.readme_view)
+            self.save_metadata_button.set_sensitive(False)
 
         async def _get_manifest():
             self.manifest_stack.set_visible_child(self.manifest_spinner)
