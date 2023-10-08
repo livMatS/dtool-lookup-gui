@@ -174,6 +174,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     main_statusbar = Gtk.Template.Child()
     contents_per_page = Gtk.Template.Child()
+    linting_errors_textview = Gtk.Template.Child()
 
 
 
@@ -797,15 +798,18 @@ class MainWindow(Gtk.ApplicationWindow):
         conf = YamlLintConfig('extends: default')  # using the default config
         problems = list(run(yaml_content, conf))
 
+        # Get the buffer for the linting_errors_textview
+        lint_buffer = self.linting_errors_textview.get_buffer()
+
         if problems:
-            print("YAML Linting Errors:")
+            error_message = "YAML Linting Errors:\n"
             for problem in problems:
-                print(problem)
+                error_message += str(problem) + '\n'
+            lint_buffer.set_text(error_message)
         else:
-            # Continue with saving or other actions if no linting issues
+            lint_buffer.set_text("No linting issues found!")
+            # Continue with saving if no linting issues
             pass
-
-
 
     @Gtk.Template.Callback()
     def on_freeze_clicked(self, widget):
