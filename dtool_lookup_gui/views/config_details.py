@@ -32,32 +32,10 @@ class ConfigDialog(Gtk.Window):
         buffer.set_text("")  # Clearing the buffer
         buffer.insert_at_cursor("\n".join(config_info))
 
-    def _format_server_config(self, server_config, indent=0):
-        """Format the server configuration into a human-readable string representation."""
-        formatted_lines = []
-
-        if isinstance(server_config, dict):
-            for key, value in server_config.items():
-                if isinstance(value, dict):
-                    formatted_lines.append(f"{key}:")
-                    for inner_key, inner_value in value.items():
-                        if isinstance(inner_value, dict):
-                            formatted_lines.append(f"{inner_key}:")
-                            for deep_key, deep_value in inner_value.items():
-                                formatted_lines.append(f"{deep_key}:{deep_value}")
-                        else:
-                            formatted_lines.append(f"{inner_key}:{inner_value}")
-                else:
-                    formatted_lines.append(f"{key}:{value}")
-
-        elif isinstance(server_config, list):
-            for item in server_config:
-                formatted_lines.append(f"- {item}")
-
-        else:
-            formatted_lines.append(str(server_config))
-
-        return formatted_lines
+    def _format_server_config(self, server_config):
+        """Format the server configuration into a human-readable string representation using json.dumps."""
+        formatted_config = json.dumps(server_config, indent=4)
+        return formatted_config.splitlines()
 
     @Gtk.Template.Callback()
     def on_config_show(self, widget):
