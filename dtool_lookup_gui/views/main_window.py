@@ -68,7 +68,9 @@ from .settings_dialog import SettingsDialog
 from .server_versions_dialog import ServerVersionsDialog
 from .config_details import ConfigDialog
 from .login_window import LoginWindow
+from .error_linting_dialog import LintingErrorsDialog
 from .log_window import LogWindow
+
 
 _logger = logging.getLogger(__name__)
 
@@ -174,7 +176,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     main_statusbar = Gtk.Template.Child()
     contents_per_page = Gtk.Template.Child()
-    linting_errors_textview = Gtk.Template.Child()
+    linting_errors_button = Gtk.Template.Child()
 
 
 
@@ -214,6 +216,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.about_dialog = AboutDialog(application=self.application)
         self.config_details = ConfigDialog(application=self.application)
         self.server_versions_dialog = ServerVersionsDialog(application=self.application)
+        self.error_linting_dialog = LintingErrorsDialog(application=self.application)
 
         # window-scoped actions
 
@@ -798,16 +801,21 @@ class MainWindow(Gtk.ApplicationWindow):
         conf = YamlLintConfig('extends: default')  # using the default config
         problems = list(run(yaml_content, conf))
 
-        # Get the buffer for the linting_errors_textview
-        lint_buffer = self.linting_errors_textview.get_buffer()
-
         if problems:
-            error_message = "YAML Linting Errors:\n"
-            for problem in problems:
-                error_message += str(problem) + '\n'
-            lint_buffer.set_text(error_message)
+            total_errors = len(problems)
+            if total_errors == 1:
+                error_message = f"YAML Linter Error:\n{str(problems[0])}"
+            else:
+                # Here, we display the first error and note the count of other errors.
+                other_errors_count = total_errors - 1  # since we're showing the first error
+                error_message = f"YAML Linter Error:\n{str(problems[0])} and {other_errors_count} other YAML linting errors.\nClick here for more details"
+
+            # Set the error message as the button label
+            self.linting_errors_button.set_label(error_message)
         else:
-            lint_buffer.set_text("No linting issues found!")
+            # Set the success message as the button label
+            self.linting_errors_button.set_label("No linting issues found!")
+
             # Continue with saving if no linting issues
             pass
 
