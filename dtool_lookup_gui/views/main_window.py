@@ -799,24 +799,38 @@ class MainWindow(Gtk.ApplicationWindow):
 
         # Lint the YAML content
         conf = YamlLintConfig('extends: default')  # using the default config
-        problems = list(run(yaml_content, conf))
-
-        if problems:
-            total_errors = len(problems)
+        self.problems = list(run(yaml_content, conf))  # Make it an instance variable
+        _logger.debug(str(self.problems))
+        if self.problems:
+            total_errors = len(self.problems)
             if total_errors == 1:
-                error_message = f"YAML Linter Error:\n{str(problems[0])}"
+                error_message = f"YAML Linter Error:\n{str(self.problems[0])}"
             else:
                 # Here, we display the first error and note the count of other errors.
                 other_errors_count = total_errors - 1  # since we're showing the first error
-                error_message = f"YAML Linter Error:\n{str(problems[0])} and {other_errors_count} other YAML linting errors.\nClick here for more details"
+                error_message = f"YAML Linter Error:\n{str(self.problems[0])} and {other_errors_count} other YAML linting errors.\nClick here for more details"
 
             # Set the error message as the button label
             self.linting_errors_button.set_label(error_message)
         else:
             # Set the success message as the button label
             self.linting_errors_button.set_label("No linting issues found!")
-
             # Continue with saving if no linting issues
+            pass
+
+    @Gtk.Template.Callback()
+    def on_linting_errors_button_clicked(self, widget):
+        # Check if the problems attribute exists
+        if hasattr(self, 'problems') and self.problems:
+            # Join the linting error messages into a single string
+            error_text = '\n\n'.join(str(problem) for problem in self.problems)
+
+            # Set the linting error text to the dialog
+            self.error_linting_dialog.set_error_text(error_text)
+
+            # Show the dialog
+            self.error_linting_dialog.show()
+        else:
             pass
 
     @Gtk.Template.Callback()

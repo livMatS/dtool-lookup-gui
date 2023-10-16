@@ -7,7 +7,7 @@
     <property name="modal">True</property>
     <property name="default-width">800</property>
     <property name="default-height">600</property>
-    <signal name="delete-event" handler="on_config_delete" swapped="no"/>
+    <signal name="delete-event" handler="on_delete" swapped="no"/>
     <signal name="show" handler="on_config_show" swapped="no"/>
     <child>
       <object class="GtkBox">
