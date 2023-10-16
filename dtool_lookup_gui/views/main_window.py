@@ -815,9 +815,8 @@ class MainWindow(Gtk.ApplicationWindow):
         else:
             # Set the success message as the button label
             self.linting_errors_button.set_label("No linting issues found!")
-            # Continue with saving if no linting issues
-            pass
-
+            # Save the content using the put_readme method
+            self.dataset_list_box.get_selected_row().dataset.put_readme(yaml_content)
     @Gtk.Template.Callback()
     def on_linting_errors_button_clicked(self, widget):
         # Check if the problems attribute exists
