@@ -218,6 +218,11 @@ The GUI uses custom Gtk widgets. To edit the the XML UI definition files with
 Glade_, add the directory ``glade/catalog`` to `Extra Catalog & Template paths`
 within Glade's preferences dialog.
 
+Running unit tests
+^^^^^^^^^^^^^^^^^^
+
+Running the unit tests requires `pytest` and `pytest-asyncio`. Then, run all tests from repository root with `pytest`.
+
 Funding
 -------
 
