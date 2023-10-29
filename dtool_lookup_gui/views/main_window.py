@@ -797,7 +797,14 @@ class MainWindow(Gtk.ApplicationWindow):
         start_iter, end_iter = text_buffer.get_bounds()
         yaml_content = text_buffer.get_text(start_iter, end_iter, True)
 
-        # Lint the YAML content
+        # Check the state of the linting switch before linting
+        if not settings.yaml_linting_enabled:
+            # If linting is turned off, just save
+            print("YAML Turned off")
+            self.dataset_list_box.get_selected_row().dataset.put_readme(yaml_content)
+            return
+
+        # Lint the YAML content if the above condition wasn't met (i.e., linting is enabled)
         conf = YamlLintConfig('extends: default')  # using the default config
         self.problems = list(run(yaml_content, conf))  # Make it an instance variable
         _logger.debug(str(self.problems))
@@ -806,17 +813,13 @@ class MainWindow(Gtk.ApplicationWindow):
             if total_errors == 1:
                 error_message = f"YAML Linter Error:\n{str(self.problems[0])}"
             else:
-                # Here, we display the first error and note the count of other errors.
                 other_errors_count = total_errors - 1  # since we're showing the first error
                 error_message = f"YAML Linter Error:\n{str(self.problems[0])} and {other_errors_count} other YAML linting errors.\nClick here for more details"
-
-            # Set the error message as the button label
             self.linting_errors_button.set_label(error_message)
         else:
-            # Set the success message as the button label
             self.linting_errors_button.set_label("No linting issues found!")
-            # Save the content using the put_readme method
             self.dataset_list_box.get_selected_row().dataset.put_readme(yaml_content)
+
     @Gtk.Template.Callback()
     def on_linting_errors_button_clicked(self, widget):
         # Check if the problems attribute exists
