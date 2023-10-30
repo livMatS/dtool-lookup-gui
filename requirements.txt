@@ -145,3 +145,6 @@ urllib3==1.26.16
     #   requests
 yarl==1.9.2
     # via aiohttp
+yamllint==1.32.0
+
+

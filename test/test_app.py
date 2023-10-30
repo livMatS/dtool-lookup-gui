@@ -9,6 +9,7 @@ from dtool_lookup_gui.views.log_window import LogWindow
 from dtool_lookup_gui.views.login_window import LoginWindow
 from dtool_lookup_gui.views.main_window import MainWindow
 from dtool_lookup_gui.views.server_versions_dialog import ServerVersionsDialog
+from dtool_lookup_gui.views.error_linting_dialog import LintingErrorsDialog
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,8 @@ async def test_app_window_types(app):
                                      SettingsDialog,
                                      ServerVersionsDialog,
                                      LogWindow,
-                                     MainWindow])
+                                     MainWindow,
+                                     LintingErrorsDialog])
 
 
 @pytest.mark.asyncio

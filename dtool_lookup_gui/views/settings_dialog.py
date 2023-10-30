@@ -80,6 +80,7 @@ class SettingsDialog(Gtk.Window):
     item_download_directory_file_chooser_button = Gtk.Template.Child()
     choose_item_download_target_directory_checkbox = Gtk.Template.Child()
     open_downloaded_item_checkbox = Gtk.Template.Child()
+    yaml_linting_switch = Gtk.Template.Child()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -92,6 +93,10 @@ class SettingsDialog(Gtk.Window):
         settings.settings.bind("open-downloaded-item",
                                self.open_downloaded_item_checkbox,
                                'active', Gio.SettingsBindFlags.DEFAULT)
+        settings.settings.bind("yaml-linting-enabled",
+                               self.yaml_linting_switch,
+                               'active', Gio.SettingsBindFlags.DEFAULT)
+
 
         # register own refresh method as listener for app-central dtool-config-changed signal
         self.get_application().connect("dtool-config-changed", self.on_dtool_config_changed)
@@ -288,3 +293,15 @@ class SettingsDialog(Gtk.Window):
     def on_base_uri_state_changed(self, widget, state):
         if state == Gtk.StateType.ACTIVE:
             S3ConfigurationDialog(lambda: asyncio.create_task(self._refresh_list_of_endpoints())).show()
+
+    @Gtk.Template.Callback()
+    def on_yaml_linting_switch_state_set(self, widget, state):
+        """Switch yaml linting on and off"""
+        settings.yaml_linting_enabled = state
+
+
+
+
+
+
+

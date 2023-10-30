@@ -40,6 +40,10 @@ from dtool_info.utils import sizeof_fmt
 import dtool_lookup_api.core.config
 from dtool_lookup_api.core.LookupClient import ConfigurationBasedLookupClient
 
+import yamllint
+from yamllint.config import YamlLintConfig
+import yamllint.linter
+
 # As of dtool-lookup-api 0.5.0, the following line still is a necessity to
 # disable prompting for credentials on the command line. This behavior
 # will change in future versions.
@@ -64,7 +68,9 @@ from .settings_dialog import SettingsDialog
 from .server_versions_dialog import ServerVersionsDialog
 from .config_details import ConfigDialog
 from .login_window import LoginWindow
+from .error_linting_dialog import LintingErrorsDialog
 from .log_window import LogWindow
+
 
 _logger = logging.getLogger(__name__)
 
@@ -134,7 +140,7 @@ class MainWindow(Gtk.ApplicationWindow):
     progress_button = Gtk.Template.Child()
     progress_popover = Gtk.Template.Child()
 
-    edit_readme_switch = Gtk.Template.Child()
+
     save_metadata_button = Gtk.Template.Child()
 
     dependency_stack = Gtk.Template.Child()
@@ -170,6 +176,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     main_statusbar = Gtk.Template.Child()
     contents_per_page = Gtk.Template.Child()
+    linting_errors_button = Gtk.Template.Child()
 
 
 
@@ -186,6 +193,10 @@ class MainWindow(Gtk.ApplicationWindow):
         self.readme_buffer.set_language(lang_manager.get_language("yaml"))
         self.readme_buffer.set_highlight_syntax(True)
         self.readme_buffer.set_highlight_matching_brackets(True)
+        self.readme_source_view.set_editable(True)
+
+
+        self.readme_buffer.connect("changed", self.on_readme_buffer_changed)
 
         self.error_bar.set_revealed(False)
         self.progress_revealer.set_reveal_child(False)
@@ -205,6 +216,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.about_dialog = AboutDialog(application=self.application)
         self.config_details = ConfigDialog(application=self.application)
         self.server_versions_dialog = ServerVersionsDialog(application=self.application)
+        self.error_linting_dialog = LintingErrorsDialog(application=self.application)
 
         # window-scoped actions
 
@@ -269,6 +281,9 @@ class MainWindow(Gtk.ApplicationWindow):
         
         style_context = self.curr_page_button.get_style_context()
         style_context.add_class('suggested-action')
+
+        # initialize linting_problems cache
+        self.linting_problems = None
 
     # utility methods
     def refresh(self):
@@ -491,6 +506,9 @@ class MainWindow(Gtk.ApplicationWindow):
         """Select base uri row in dataset list box by uri."""
         index = self.base_uri_list_box.get_row_index_from_uri(uri)
         self._select_base_uri_row_by_row_index(index)
+
+    def on_readme_buffer_changed(self, buffer):
+        self.save_metadata_button.set_sensitive(True)
 
     # actions
 
@@ -776,22 +794,49 @@ class MainWindow(Gtk.ApplicationWindow):
         self._show_get_item_dialog(item_name, item_uuid)
 
     @Gtk.Template.Callback()
-    def on_edit_readme_state_set(self, widget, state):
-        self.readme_source_view.set_editable(state)
-        self.save_metadata_button.set_sensitive(state)
-        if not state:
-            # We need to save the metadata
-            text = self.readme_buffer.get_text(self.readme_buffer.get_start_iter(),
-                                               self.readme_buffer.get_end_iter(),
-                                               False)
-            try:
-                self.dataset_list_box.get_selected_row().dataset.put_readme(text)
-            except Exception as e:
-                self.show_error(e)
+    def on_save_metadata_button_clicked(self, widget):
+        # Get the YAML content from the source view
+        text_buffer = self.readme_source_view.get_buffer()
+        start_iter, end_iter = text_buffer.get_bounds()
+        yaml_content = text_buffer.get_text(start_iter, end_iter, True)
+
+        # Check the state of the linting switch before linting
+        if settings.yaml_linting_enabled:
+            # Lint the YAML content if the above condition wasn't met (i.e., linting is enabled)
+            conf = YamlLintConfig('extends: default')  # using the default config
+            self.linting_problems = list(yamllint.linter.run(yaml_content, conf))  # Make it an instance variable
+            _logger.debug(str(self.linting_problems))
+            total_errors = len(self.linting_problems)
+            if total_errors > 0:
+                if total_errors == 1:
+                    error_message = f"YAML Linter Error:\n{str(self.linting_problems[0])}"
+                else:
+                    other_errors_count = total_errors - 1  # since we're showing the first error
+                    error_message = f"YAML Linter Error:\n{str(self.linting_problems[0])} and {other_errors_count} other YAML linting errors.\nClick here for more details"
+                self.linting_errors_button.set_label(error_message)
+            else:
+                self.linting_errors_button.set_label("No linting issues found!")
+                self.dataset_list_box.get_selected_row().dataset.put_readme(yaml_content)
+        else:
+            # if linting is turned off, just save as is
+            self.linting_errors_button.set_label("YAML linting turned off.")
+            _logger.debug("YAML linting turned off.")
+            self.dataset_list_box.get_selected_row().dataset.put_readme(yaml_content)
 
     @Gtk.Template.Callback()
-    def on_save_metadata_button_clicked(self, widget):
-        self.edit_readme_switch.set_state(False)
+    def on_linting_errors_button_clicked(self, widget):
+        # Check if the problems attribute exists
+        if hasattr(self, 'linting_problems') and self.linting_problems:
+            # Join the linting error messages into a single string
+            error_text = '\n\n'.join(str(problem) for problem in self.linting_problems)
+
+            # Set the linting error text to the dialog
+            self.error_linting_dialog.set_error_text(error_text)
+
+            # Show the dialog
+            self.error_linting_dialog.show()
+        else:
+            pass
 
     @Gtk.Template.Callback()
     def on_freeze_clicked(self, widget):
@@ -1029,6 +1074,7 @@ class MainWindow(Gtk.ApplicationWindow):
             self.readme_stack.set_visible_child(self.readme_spinner)
             self.readme_buffer.set_text(await dataset.get_readme())
             self.readme_stack.set_visible_child(self.readme_view)
+            self.save_metadata_button.set_sensitive(False)
 
         async def _get_manifest():
             self.manifest_stack.set_visible_child(self.manifest_spinner)

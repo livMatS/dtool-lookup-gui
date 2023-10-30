@@ -85,5 +85,13 @@ class Settings:
     def open_downloaded_item(self, value):
         self.settings.set_boolean('open-downloaded-item', value)
 
+    @property
+    def yaml_linting_enabled(self):
+        return self.settings.get_boolean('yaml-linting-enabled')
+
+    @yaml_linting_enabled.setter
+    def yaml_linting_enabled(self, value):
+        self.settings.set_boolean('yaml-linting-enabled', value)
+
 
 settings = Settings()
