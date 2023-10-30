@@ -44,7 +44,6 @@ async def test_app_window_types(app):
                                      ServerVersionsDialog,
                                      LogWindow,
                                      MainWindow,
-                                     LoginWindow,
                                      LintingErrorsDialog])
 
 
