@@ -42,7 +42,7 @@ from dtool_lookup_api.core.LookupClient import ConfigurationBasedLookupClient
 
 import yamllint
 from yamllint.config import YamlLintConfig
-from yamllint.linter import run
+import yamllint.linter
 
 # As of dtool-lookup-api 0.5.0, the following line still is a necessity to
 # disable prompting for credentials on the command line. This behavior
@@ -281,6 +281,9 @@ class MainWindow(Gtk.ApplicationWindow):
         
         style_context = self.curr_page_button.get_style_context()
         style_context.add_class('suggested-action')
+
+        # initialize linting_problems cache
+        self.linting_problems = None
 
     # utility methods
     def refresh(self):
@@ -797,32 +800,35 @@ class MainWindow(Gtk.ApplicationWindow):
         start_iter, end_iter = text_buffer.get_bounds()
         yaml_content = text_buffer.get_text(start_iter, end_iter, True)
 
-        # Lint the YAML content
-        conf = YamlLintConfig('extends: default')  # using the default config
-        self.problems = list(run(yaml_content, conf))  # Make it an instance variable
-        _logger.debug(str(self.problems))
-        if self.problems:
-            total_errors = len(self.problems)
-            if total_errors == 1:
-                error_message = f"YAML Linter Error:\n{str(self.problems[0])}"
+        # Check the state of the linting switch before linting
+        if settings.yaml_linting_enabled:
+            # Lint the YAML content if the above condition wasn't met (i.e., linting is enabled)
+            conf = YamlLintConfig('extends: default')  # using the default config
+            self.linting_problems = list(yamllint.linter.run(yaml_content, conf))  # Make it an instance variable
+            _logger.debug(str(self.linting_problems))
+            total_errors = len(self.linting_problems)
+            if total_errors > 0:
+                if total_errors == 1:
+                    error_message = f"YAML Linter Error:\n{str(self.linting_problems[0])}"
+                else:
+                    other_errors_count = total_errors - 1  # since we're showing the first error
+                    error_message = f"YAML Linter Error:\n{str(self.linting_problems[0])} and {other_errors_count} other YAML linting errors.\nClick here for more details"
+                self.linting_errors_button.set_label(error_message)
             else:
-                # Here, we display the first error and note the count of other errors.
-                other_errors_count = total_errors - 1  # since we're showing the first error
-                error_message = f"YAML Linter Error:\n{str(self.problems[0])} and {other_errors_count} other YAML linting errors.\nClick here for more details"
-
-            # Set the error message as the button label
-            self.linting_errors_button.set_label(error_message)
+                self.linting_errors_button.set_label("No linting issues found!")
+                self.dataset_list_box.get_selected_row().dataset.put_readme(yaml_content)
         else:
-            # Set the success message as the button label
-            self.linting_errors_button.set_label("No linting issues found!")
-            # Save the content using the put_readme method
+            # if linting is turned off, just save as is
+            self.linting_errors_button.set_label("YAML linting turned off.")
+            _logger.debug("YAML linting turned off.")
             self.dataset_list_box.get_selected_row().dataset.put_readme(yaml_content)
+
     @Gtk.Template.Callback()
     def on_linting_errors_button_clicked(self, widget):
         # Check if the problems attribute exists
-        if hasattr(self, 'problems') and self.problems:
+        if hasattr(self, 'linting_problems') and self.linting_problems:
             # Join the linting error messages into a single string
-            error_text = '\n\n'.join(str(problem) for problem in self.problems)
+            error_text = '\n\n'.join(str(problem) for problem in self.linting_problems)
 
             # Set the linting error text to the dialog
             self.error_linting_dialog.set_error_text(error_text)
