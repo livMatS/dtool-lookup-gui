@@ -93,7 +93,9 @@ class SettingsDialog(Gtk.Window):
         settings.settings.bind("open-downloaded-item",
                                self.open_downloaded_item_checkbox,
                                'active', Gio.SettingsBindFlags.DEFAULT)
-        settings.settings.bind("yaml-linting-enabled", self, "yaml_linting_enabled", Gio.SettingsBindFlags.DEFAULT)
+        settings.settings.bind("yaml-linting-enabled",
+                               self.yaml_linting_switch,
+                               'active', Gio.SettingsBindFlags.DEFAULT)
 
 
         # register own refresh method as listener for app-central dtool-config-changed signal
@@ -294,8 +296,8 @@ class SettingsDialog(Gtk.Window):
 
     @Gtk.Template.Callback()
     def on_yaml_linting_switch_state_set(self, widget, state):
-        if state != Gtk.StateType.ACTIVE:
-            self.yaml_linting_enabled = False
+        """Switch yaml linting on and off"""
+        settings.yaml_linting_enabled = state
 
 
 
