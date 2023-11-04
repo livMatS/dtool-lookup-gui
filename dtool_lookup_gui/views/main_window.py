@@ -282,8 +282,9 @@ class MainWindow(Gtk.ApplicationWindow):
         style_context = self.curr_page_button.get_style_context()
         style_context.add_class('suggested-action')
 
-        # initialize linting_problems cache
+        # Initialize linting_problems cache and make the linting_errors_button non-clickable (greyed out)
         self.linting_problems = None
+        self.linting_errors_button.set_sensitive(False)
 
     # utility methods
     def refresh(self):
@@ -800,6 +801,7 @@ class MainWindow(Gtk.ApplicationWindow):
         start_iter, end_iter = text_buffer.get_bounds()
         yaml_content = text_buffer.get_text(start_iter, end_iter, True)
 
+
         # Check the state of the linting switch before linting
         if settings.yaml_linting_enabled:
             # Lint the YAML content if the above condition wasn't met (i.e., linting is enabled)
@@ -808,6 +810,7 @@ class MainWindow(Gtk.ApplicationWindow):
             _logger.debug(str(self.linting_problems))
             total_errors = len(self.linting_problems)
             if total_errors > 0:
+                self.linting_errors_button.set_sensitive(True)
                 if total_errors == 1:
                     error_message = f"YAML Linter Error:\n{str(self.linting_problems[0])}"
                 else:
@@ -820,6 +823,7 @@ class MainWindow(Gtk.ApplicationWindow):
         else:
             # if linting is turned off, just save as is
             self.linting_errors_button.set_label("YAML linting turned off.")
+
             _logger.debug("YAML linting turned off.")
             self.dataset_list_box.get_selected_row().dataset.put_readme(yaml_content)
 
