@@ -12,6 +12,7 @@ Contents
 
    readme
    story
+   datasets
    contributing
    changelog
    api
