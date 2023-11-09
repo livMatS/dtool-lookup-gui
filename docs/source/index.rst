@@ -11,6 +11,7 @@ Contents
 .. toctree::
 
    readme
+   story
    contributing
    changelog
    api
