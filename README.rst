@@ -86,7 +86,7 @@ Searching
 ^^^^^^^^^
 
 The app searches the index of a dtool-lookup-server. How exactly the index is searched depends on the implementation of the search plugin on the server side.
-In the case of the reference search plugin, the `dtool-lookup-server-search-plugin-mongo`_, plain text in the search field will search for exactly that string within all information stored in the underlying database.
+In the case of the reference search plugin, the `dtool-lookup-server-search-plugin-mongo`_, a word in the search field will search for exactly that word within all string fields stored in the underlying database.
 This, of course, includes the content of the `README.yml` file attached to a dataset, but also matches against contents of the manifest (such as file names of the packaged items) and the basic set of  administrative metadata, namely the fields
 
 .. code:: json
@@ -105,6 +105,8 @@ This, of course, includes the content of the `README.yml` file attached to a dat
         "uri": "s3://test-bucket/26785c2a-e8f8-46bf-82a1-cec92dbdf28f",
         "uuid": "26785c2a-e8f8-46bf-82a1-cec92dbdf28f"
     }
+
+The `dtool-lookup-server-search-plugin-mongo`_ README offers more information on the exact search mechanism.
 
 If the `dtool-lookup-server-direct-mongo-plugin`_ is installed on the server side, very specific search queries that make use of operators from the MongoDB language are possible.
 Enclose a MongoDB language query in curly brackets ``{...}`` and all fields in double quotes ``"..."`` to use this direct Mongo query functionality.
@@ -283,6 +285,8 @@ This development has received funding from the Deutsche Forschungsgemeinschaft w
 .. _dtool-lookup-server-dependency-graph-plugin: https://github.com/livMatS/dtool-lookup-server-dependency-graph-plugin
 
 .. _dtool-lookup-server-direct-mongo-plugin: https://github.com/livMatS/dtool-lookup-server-direct-mongo-plugin
+
+.. _dtool-lookup-server-search-plugin-mongo: https://github.com/jic-dtool/dtool-lookup-server-search-plugin-mongo
 
 .. _Glade: https://glade.gnome.org/
 
