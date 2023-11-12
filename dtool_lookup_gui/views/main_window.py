@@ -821,7 +821,9 @@ class MainWindow(Gtk.ApplicationWindow):
                 self.linting_errors_button.set_label("No linting issues found!")
                 self.dataset_list_box.get_selected_row().dataset.put_readme(yaml_content)
         else:
-            # if linting is turned off, just save as is
+
+            # Clear previous linting problems when linting is turned off
+            self.linting_problems = None
             self.linting_errors_button.set_label("YAML linting turned off.")
 
             _logger.debug("YAML linting turned off.")
