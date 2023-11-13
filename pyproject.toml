@@ -4,7 +4,6 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dtool-lookup-gui"
-packages = ["dtool_lookup_gui"]
 authors = [
     {name = "Johannes L. Hoermann", email = "johannes.hoermann@imtek.uni-freiburg.de"},
     {name = "Lars Pastewka", email = "lars.pastewka@imtek.uni-freiburg.de"},
@@ -50,6 +49,9 @@ test = [
 documentation = "https://dtool-lookup-gui.readthedocs.io"
 repository = "https://github.com/livMatS/dtool-lookup-gui"
 changelog = "https://dtool-lookup-gui.readthedocs.io/en/latest/changelog.html"
+
+[tool.setuptools]
+packages = ["dtool_lookup_gui"]
 
 [tool.setuptools_scm]
 version_file = "dtool_lookup_gui/version.py"
