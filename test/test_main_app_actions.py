@@ -1,16 +1,14 @@
-import os
 import json
 import logging
 import types
 from unittest import mock
-from unittest.mock import patch, mock_open, Mock, MagicMock ,AsyncMock
+from unittest.mock import patch, mock_open, MagicMock, ANY, AsyncMock
 import pytest
 import dtoolcore
-from unittest.mock import MagicMock, patch, ANY
-
 
 from dtool_lookup_gui.models.settings import settings as app_settings
 from dtool_lookup_api.core.LookupClient import authenticate
+
 
 @pytest.mark.asyncio
 async def test_app_id(app):
@@ -24,10 +22,99 @@ def settings():
 
 
 @pytest.mark.asyncio
+async def test_do_toggle_logging(app):
+    """Test do_toggle_logging action."""
+
+    with patch('logging.disable') as mock_logging_disable:
+        # Mock value to mimic the GVariant returned by the value parameter
+        value = MagicMock()
+        value.get_boolean.return_value = True  # Testing the True case
+
+        # Mock action to mimic the Gio.SimpleAction
+        action = MagicMock()
+
+        # Perform the toggle logging action for enabling logging
+        app.do_toggle_logging(action, value)
+
+        # Assert that logging.disable was called with logging.NOTSET
+        mock_logging_disable.assert_called_once_with(logging.NOTSET)
+        action.set_state.assert_called_once_with(value)
+
+        # Reset mocks to test the False case
+        mock_logging_disable.reset_mock()
+        action.set_state.reset_mock()
+        value.get_boolean.return_value = False
+
+        # Perform the toggle logging action for disabling logging
+        app.do_toggle_logging(action, value)
+
+        # Assert that logging.disable was called with logging.WARNING
+        mock_logging_disable.assert_called_once_with(logging.WARNING)
+        action.set_state.assert_called_once_with(value)
+
+
+@pytest.mark.asyncio
+async def test_do_set_loglevel(app):
+    """Test do_set_loglevel action."""
+
+    with patch.object(logging.getLogger(), 'setLevel') as mock_set_level:
+        # Mock values for loglevel
+        loglevel = 20  # Example log level (e.g., logging.INFO)
+
+        # Mock value to mimic the GVariant returned by the value parameter
+        value = MagicMock()
+        value.get_uint16.return_value = loglevel
+
+        # Mock action to mimic the Gio.SimpleAction
+        action = MagicMock()
+        action_state = MagicMock()
+        action_state.get_uint16.return_value = 0
+        action.get_state.return_value = action_state
+
+        # Perform the set loglevel action
+        app.do_set_loglevel(action, value)
+
+        # Assert that the root logger's setLevel was called with the correct level
+        mock_set_level.assert_called_once_with(loglevel)
+        action.set_state.assert_called_once_with(value)
+
+
+@pytest.mark.asyncio
+async def test_do_set_logfile(app):
+    """Test do_set_logfile action."""
+    with patch('logging.FileHandler') as mock_file_handler, \
+            patch.object(logging.getLogger(), 'addHandler') as mock_add_handler:
+        # Mock values for logfile
+        logfile = "/path/to/logfile.log"
+
+        # Mock value to mimic the GVariant returned by the value parameter
+        value = MagicMock()
+        value.get_string.return_value = logfile
+
+        # Mock action to mimic the Gio.SimpleAction
+        action = MagicMock()
+        action_state = MagicMock()
+        action_state.get_string.return_value = ""
+        action.get_state.return_value = action_state
+
+        # Perform the set logfile action
+        app.do_set_logfile(action, value)
+
+        # Assert that logging.FileHandler was called with the correct path
+        mock_file_handler.assert_called_once_with(logfile)
+
+        # Assert that the FileHandler was added to the root logger
+        mock_add_handler.assert_called_once_with(ANY)
+
+        # Assert that the action's state was set to the new logfile value
+        action.set_state.assert_called_once_with(value)
+
+
+@pytest.mark.asyncio
 async def test_do_reset_config(app, settings):
     """Test do_reset_config action."""
     with patch('os.remove') as mock_remove, \
-         patch.object(app, 'emit') as mock_emit:  # Patch the emit method
+            patch.object(app, 'emit') as mock_emit:  # Patch the emit method
 
         settings.reset = MagicMock()  # Mock the settings reset method
 
@@ -59,10 +146,9 @@ async def test_do_import_config(app, settings):
     config_file_path = '/path/to/mock/config.json'
 
     with patch('builtins.open', mock_open(read_data=json.dumps(mock_config))) as mock_file, \
-         patch('json.load', return_value=mock_config), \
-         patch('dtoolcore.utils.write_config_value_to_file') as mock_write_config, \
-         patch.object(app, 'emit') as mock_emit:
-
+            patch('json.load', return_value=mock_config), \
+            patch('dtoolcore.utils.write_config_value_to_file') as mock_write_config, \
+            patch.object(app, 'emit') as mock_emit:
         # Create a mock for the GLib.Variant object
         mock_value = mock.Mock()
         mock_value.get_string.return_value = config_file_path
@@ -91,9 +177,8 @@ async def test_do_export_config(app, settings):
     # Setup mock open
     mock_file_handle = mock_open()
     with patch('builtins.open', mock_file_handle) as mock_file, \
-         patch('dtoolcore.utils._get_config_dict_from_file', return_value=mock_config), \
-         patch.object(app, 'emit') as mock_emit:
-
+            patch('dtoolcore.utils._get_config_dict_from_file', return_value=mock_config), \
+            patch.object(app, 'emit') as mock_emit:
         # Create a mock for the GLib.Variant object
         mock_value = mock.Mock()
         mock_value.get_string.return_value = config_file_path
@@ -145,88 +230,3 @@ async def test_do_renew_token(app):
         # Since the actual token retrieval is asynchronous and mocked,
         # we cannot assert this directly in this test.
         # mock_emit.assert_called_once_with('dtool-config-changed')
-@pytest.mark.asyncio
-async def test_do_set_logfile(app):
-    """Test do_set_logfile action."""
-    with patch('logging.FileHandler') as mock_file_handler, \
-         patch.object(logging.getLogger(), 'addHandler') as mock_add_handler:
-
-        # Mock values for logfile
-        logfile = "/path/to/logfile.log"
-
-        # Mock value to mimic the GVariant returned by the value parameter
-        value = MagicMock()
-        value.get_string.return_value = logfile
-
-        # Mock action to mimic the Gio.SimpleAction
-        action = MagicMock()
-        action_state = MagicMock()
-        action_state.get_string.return_value = ""
-        action.get_state.return_value = action_state
-
-        # Perform the set logfile action
-        app.do_set_logfile(action, value)
-
-        # Assert that logging.FileHandler was called with the correct path
-        mock_file_handler.assert_called_once_with(logfile)
-
-        # Assert that the FileHandler was added to the root logger
-        mock_add_handler.assert_called_once_with(ANY)
-
-        # Assert that the action's state was set to the new logfile value
-        action.set_state.assert_called_once_with(value)
-
-@pytest.mark.asyncio
-async def test_do_toggle_logging(app):
-    """Test do_toggle_logging action."""
-
-    with patch('logging.disable') as mock_logging_disable:
-        # Mock value to mimic the GVariant returned by the value parameter
-        value = MagicMock()
-        value.get_boolean.return_value = True  # Testing the True case
-
-        # Mock action to mimic the Gio.SimpleAction
-        action = MagicMock()
-
-        # Perform the toggle logging action for enabling logging
-        app.do_toggle_logging(action, value)
-
-        # Assert that logging.disable was called with logging.NOTSET
-        mock_logging_disable.assert_called_once_with(logging.NOTSET)
-        action.set_state.assert_called_once_with(value)
-
-        # Reset mocks to test the False case
-        mock_logging_disable.reset_mock()
-        action.set_state.reset_mock()
-        value.get_boolean.return_value = False
-
-        # Perform the toggle logging action for disabling logging
-        app.do_toggle_logging(action, value)
-
-        # Assert that logging.disable was called with logging.WARNING
-        mock_logging_disable.assert_called_once_with(logging.WARNING)
-        action.set_state.assert_called_once_with(value)
-@pytest.mark.asyncio
-async def test_do_set_loglevel(app):
-    """Test do_set_loglevel action."""
-
-    with patch.object(logging.getLogger(), 'setLevel') as mock_set_level:
-        # Mock values for loglevel
-        loglevel = 20  # Example log level (e.g., logging.INFO)
-
-        # Mock value to mimic the GVariant returned by the value parameter
-        value = MagicMock()
-        value.get_uint16.return_value = loglevel
-
-        # Mock action to mimic the Gio.SimpleAction
-        action = MagicMock()
-        action_state = MagicMock()
-        action_state.get_uint16.return_value = 0
-        action.get_state.return_value = action_state
-
-        # Perform the set loglevel action
-        app.do_set_loglevel(action, value)
-
-        # Assert that the root logger's setLevel was called with the correct level
-        mock_set_level.assert_called_once_with(loglevel)
-        action.set_state.assert_called_once_with(value)
