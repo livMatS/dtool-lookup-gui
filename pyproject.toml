@@ -1,6 +1,8 @@
 [build-system]
 requires = ["setuptools>=60", "setuptools-scm>=8.0", "wheel"]
-build-backend = "setuptools.build_meta"
+build-backend = "custom_build_backend"
+backend-path = ["maintenance"]
+
 
 [project]
 name = "dtool-lookup-gui"

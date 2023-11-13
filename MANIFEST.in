@@ -1,3 +1,4 @@
 recursive-include data/icons *.xpm
 recursive-include dtool_lookup_gui *.ui
 include dtool_lookup_gui/de.uni-freiburg.dtool-lookup-gui.gschema.xml
+include maintenance/custom_build_backend.py
