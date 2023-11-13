@@ -88,6 +88,8 @@ class Application(Gtk.Application):
         self.loop = loop
         self.args = None
 
+        # TODO: instantiate CopyManager here and assign as a property of this Application class
+
     def do_activate(self):
         logger.debug("do_activate")
 
