@@ -12,7 +12,7 @@ authors = [
 ]
 description = "Graphical user interface for dtool"
 readme = "README.rst"
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 keywords = ["research data management", "dtool"]
 license = {file = "LICENSE.md"}
 classifiers = [
