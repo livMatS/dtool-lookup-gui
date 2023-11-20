@@ -49,7 +49,7 @@ jobs:
       id: fix_version
       run: |
         source venv/bin/activate
-        version=$(SETUPTOOLS_SCM_DEBUG=1 python setup.py --version)  # have version written to file to appear in bundled app as well
+        version=$(SETUPTOOLS_SCM_DEBUG=1 python -m setuptools_scm)  # have version written to file to appear in bundled app as well
         echo "::set-output name=version::$(echo $version)"
 
     - name: Log python package info

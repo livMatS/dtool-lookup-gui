@@ -54,14 +54,9 @@ jobs:
           pip install wheel
           pip install -r requirements.txt
 
-      - name: Build and install
-        run: |
-          python setup.py build
-          python setup.py install
-
       - name: Package distribution
         run: |
-          python setup.py sdist bdist_wheel
+          python -m build --sdist --wheel
           ls -1 dist/
 
       - name: Get master HEAD SHA
@@ -114,7 +109,7 @@ jobs:
         id: fix_version
         run: |
           pip install setuptools_scm
-          version=$(SETUPTOOLS_SCM_DEBUG=1 python setup.py --version)
+          version=$(SETUPTOOLS_SCM_DEBUG=1 python -m setuptools_scm)
           echo "::set-output name=version::$(echo $version)"
 
       - name: Download Linux build
