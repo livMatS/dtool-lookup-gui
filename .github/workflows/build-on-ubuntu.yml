@@ -52,7 +52,7 @@ jobs:
     - name: Install pythonic dependencies
       run: |
         pip install --upgrade pip
-        pip install wheel
+        pip install wheel setuptools_scm
         pip install -r requirements.txt
         pip install pyinstaller
 
