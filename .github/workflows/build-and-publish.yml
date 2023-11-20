@@ -100,10 +100,10 @@ jobs:
         id: get_version
         uses: battila7/get-version-action@v2
 
-      - name: Set up Python 3.8
+      - name: Set up Python 3.12
         uses: actions/setup-python@v4
         with:
-          python-version: 3.8
+          python-version: 3.12
 
       - name: Fix setuptools_scm-generated version
         id: fix_version
