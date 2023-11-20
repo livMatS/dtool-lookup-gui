@@ -225,7 +225,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.progress_popover = None  # Replace this with actual initialization
 
         # Initialize the CopyManager
-        self._copy_manager = CopyManager(self.progress_revealer, self.progress_popover)
+        # self._copy_manager = CopyManager(self.progress_revealer, self.progress_popover)
 
         # window-scoped actions
 
