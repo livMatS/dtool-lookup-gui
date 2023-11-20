@@ -9,19 +9,19 @@ on:
 
 jobs:
   build-on-ubuntu:
-    uses: livMatS/dtool-lookup-gui/.github/workflows/build-on-ubuntu.yml@master
+    uses: livMatS/dtool-lookup-gui/.github/workflows/build-on-ubuntu.yml@2023-11-13-pyproject-toml
 
   build-on-windows:
-    uses: livMatS/dtool-lookup-gui/.github/workflows/build-on-windows.yml@master
+    uses: livMatS/dtool-lookup-gui/.github/workflows/build-on-windows.yml@2023-11-13-pyproject-toml
 
   build-installer-on-windows:
-    uses: livMatS/dtool-lookup-gui/.github/workflows/build-installer-on-windows.yml@master
+    uses: livMatS/dtool-lookup-gui/.github/workflows/build-installer-on-windows.yml@2023-11-13-pyproject-toml
 
   build-on-macos:
-    uses: livMatS/dtool-lookup-gui/.github/workflows/build-on-macos.yml@master
+    uses: livMatS/dtool-lookup-gui/.github/workflows/build-on-macos.yml@2023-11-13-pyproject-toml
 
   publish-on-pypi:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout
@@ -32,10 +32,10 @@ jobs:
           git fetch --prune --unshallow
           git fetch --depth=1 origin +refs/tags/*:refs/tags/*
 
-      - name: Set up Python 3.8
+      - name: Set up Python 3.12
         uses: actions/setup-python@v4
         with:
-          python-version: 3.8
+          python-version: 3.12
 
       - name: Install system dependencies
         run: |
@@ -51,17 +51,12 @@ jobs:
       - name: Install pythonic dependencies
         run: |
           pip install --upgrade pip
-          pip install wheel
+          pip install wheel build
           pip install -r requirements.txt
-
-      - name: Build and install
-        run: |
-          python setup.py build
-          python setup.py install
 
       - name: Package distribution
         run: |
-          python setup.py sdist bdist_wheel
+          python -m build --sdist --wheel
           ls -1 dist/
 
       - name: Get master HEAD SHA
@@ -70,7 +65,7 @@ jobs:
           git fetch --depth 1 origin master
           echo "Commit that triggered this workflow: ${{ github.sha }}"
           echo "HEAD at master: $(git rev-parse origin/master)"
-          echo "::set-output name=sha::$(git rev-parse origin/master)"
+          echo "sha=$(git rev-parse origin/master)" >> $GITHUB_OUTPUT
 
       - name: Publish package
         if: >-
@@ -114,8 +109,8 @@ jobs:
         id: fix_version
         run: |
           pip install setuptools_scm
-          version=$(SETUPTOOLS_SCM_DEBUG=1 python setup.py --version)
-          echo "::set-output name=version::$(echo $version)"
+          version=$(SETUPTOOLS_SCM_DEBUG=1 python -m setuptools_scm)
+          echo "version=$version" >> $GITHUB_OUTPUT
 
       - name: Download Linux build
         uses: actions/download-artifact@v3
@@ -147,7 +142,7 @@ jobs:
           git fetch --depth 1 origin master
           echo "Commit that triggered this workflow: ${{ github.sha }}"
           echo "HEAD at master: $(git rev-parse master)"
-          echo "::set-output name=sha::$(git rev-parse origin/master)"
+          echo "sha=$(git rev-parse origin/master)" >> $GITHUB_OUTPUT
 
       - name: Make release
         if: >-

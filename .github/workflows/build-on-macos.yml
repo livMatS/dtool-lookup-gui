@@ -41,7 +41,7 @@ jobs:
         source venv/bin/activate
 
         pip install --upgrade pip
-        pip install wheel
+        pip install wheel setuptools setuptools_scm
         pip install -r requirements.txt
         pip install pyinstaller
 
@@ -49,8 +49,8 @@ jobs:
       id: fix_version
       run: |
         source venv/bin/activate
-        version=$(SETUPTOOLS_SCM_DEBUG=1 python setup.py --version)  # have version written to file to appear in bundled app as well
-        echo "::set-output name=version::$(echo $version)"
+        version=$(SETUPTOOLS_SCM_DEBUG=1 python -m setuptools_scm)  # have version written to file to appear in bundled app as well
+        echo "version=$version" >> $GITHUB_OUTPUT
 
     - name: Log python package info
       run: |
