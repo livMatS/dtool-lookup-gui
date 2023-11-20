@@ -87,7 +87,11 @@ class Application(Gtk.Application):
         self.args = None
         self._progress_revealer = None
         self._progress_popover = None
+        self._main_window = None
 
+    @property
+    def main_window(self):
+        return self._main_window
 
     def do_activate(self):
         logger.debug("do_activate")
@@ -105,7 +109,10 @@ class Application(Gtk.Application):
             # self.window = AppWindow(application=self, title="Main Window")
             logger.debug("Build GUI.")
 
-            win = LoginWindow(application=self)
+            win = MainWindow(application=self)
+            self._main_window = win
+            logger.debug("New main window ID: %s", win.get_id())
+
             glob_pattern = os.path.join(os.path.dirname(__file__), os.pardir, 'data','icons','*','dtool_logo.xpm')
             icon_file_list = glob.glob(glob_pattern)
             if len(icon_file_list) > 0:
@@ -239,7 +246,6 @@ class Application(Gtk.Application):
         copy_action = Gio.SimpleAction.new("start-copy", GLib.VariantType.new("(ss)"))
         copy_action.connect("activate", self.do_copy)
         self.add_action(copy_action)
-
 
         Gtk.Application.do_startup(self)
 
