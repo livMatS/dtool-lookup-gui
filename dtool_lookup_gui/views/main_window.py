@@ -201,8 +201,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self.readme_buffer.connect("changed", self.on_readme_buffer_changed)
 
-        self.error_bar.set_revealed(False)
-        self.progress_revealer.set_reveal_child(False)
+
 
         # connect log handler to error bar
         root_logger = logging.getLogger()
@@ -220,6 +219,13 @@ class MainWindow(Gtk.ApplicationWindow):
         self.config_details = ConfigDialog(application=self.application)
         self.server_versions_dialog = ServerVersionsDialog(application=self.application)
         self.error_linting_dialog = LintingErrorsDialog(application=self.application)
+
+        # Initialize the progress revealer and popover
+        self.progress_revealer = None  # Replace this with actual initialization
+        self.progress_popover = None  # Replace this with actual initialization
+
+        # Initialize the CopyManager
+        self._copy_manager = CopyManager(self.progress_revealer, self.progress_popover)
 
         # window-scoped actions
 
@@ -278,7 +284,8 @@ class MainWindow(Gtk.ApplicationWindow):
         # The copy manager lives at the Application scope.
         # The main window here attaches its own progress_revealer and progress_popover to the
         # CopyManager of the application instead of instantiating the copy manager here.
-        self._copy_manager = CopyManager(self.progress_revealer, self.progress_popover)
+        self.get_action_group("app").activate_action("start-copy-manager", None)
+
 
         _logger.debug(f"Constructed main window for app '{self.application.get_application_id()}'")
 
