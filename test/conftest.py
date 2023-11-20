@@ -79,20 +79,6 @@ def app(gtk_loop):
     yield app
 
 
-@pytest.fixture(scope="function")
-def main_window(app):
-    # Assuming MainWindow can be instantiated without parameters
-    # app.do_startup() # cannot directly call startup action, segmentation fault
-    window = MainWindow(application=app)
-    # issue: app level actions not available at this point, window init fails with
-    #       set_loglevel_action = self.get_action_group("app").lookup_action('set-loglevel')
-    #       E       AttributeError: 'NoneType' object has no attribute 'lookup_action'
-
-    # window.dataset_list_box = Mock()
-    # window.dataset_list_box.get_selected_row.return_value = Mock(dataset=Mock())
-    return window
-
-
 # ================================================================
 # fixtures related to https://github.com/pytest-dev/pytest-asyncio
 # ================================================================
