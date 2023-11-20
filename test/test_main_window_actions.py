@@ -3,17 +3,11 @@ from unittest.mock import Mock, patch, ANY
 from gi.repository import Gtk
 from dtool_lookup_gui.views.main_window import MainWindow
 
-@pytest.fixture
-def main_window():
-    # Assuming MainWindow can be instantiated without parameters
-    window = MainWindow()
-    window.dataset_list_box = Mock()
-    window.dataset_list_box.get_selected_row.return_value = Mock(dataset=Mock())
-    return window
 
 @pytest.mark.asyncio
 async def test_app_id(app):
     assert app.get_application_id() == 'de.uni-freiburg.dtool-lookup-gui'
+
 
 @pytest.mark.asyncio
 async def test_do_refresh_view(main_window):
@@ -22,6 +16,7 @@ async def test_do_refresh_view(main_window):
         mock_value = Mock()
         await main_window.do_refresh_view(mock_action, mock_value)
         mock_refresh.assert_called_once()
+
 
 @pytest.mark.asyncio
 async def test_do_get_item(main_window):
@@ -53,6 +48,7 @@ async def test_do_get_item(main_window):
         # Optionally assert launch_default_app_for_uri call based on settings
         if mock_settings.open_downloaded_item:
             mock_launch_app.assert_called_once_with("/path/to/destination")
+
 @pytest.mark.asyncio
 async def test_do_search_select_and_show(main_window):
     """Test the do_search_select_and_show action."""

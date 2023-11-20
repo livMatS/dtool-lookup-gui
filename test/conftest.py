@@ -6,10 +6,12 @@ gi.require_version('Gtk', '3.0')
 gi.require_version('GtkSource', '4')
 from gi.repository import GLib, GObject, Gio, Gtk, GtkSource, GdkPixbuf
 
+import asyncio
 import gbulb
 gbulb.install(gtk=True)
 
 from dtool_lookup_gui.main import Application
+from dtool_lookup_gui.views.main_window import MainWindow
 
 
 logger = logging.getLogger(__name__)
@@ -75,6 +77,20 @@ def gtk_loop(gtk_policy):
 def app(gtk_loop):
     app = Application(loop=gtk_loop)
     yield app
+
+
+@pytest.fixture(scope="function")
+def main_window(app):
+    # Assuming MainWindow can be instantiated without parameters
+    # app.do_startup() # cannot directly call startup action, segmentation fault
+    window = MainWindow(application=app)
+    # issue: app level actions not available at this point, window init fails with
+    #       set_loglevel_action = self.get_action_group("app").lookup_action('set-loglevel')
+    #       E       AttributeError: 'NoneType' object has no attribute 'lookup_action'
+
+    # window.dataset_list_box = Mock()
+    # window.dataset_list_box.get_selected_row.return_value = Mock(dataset=Mock())
+    return window
 
 
 # ================================================================
