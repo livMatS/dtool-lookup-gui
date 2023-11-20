@@ -13,11 +13,8 @@ async def test_app_id(app):
 
 @pytest.mark.asyncio
 async def test_do_refresh_view(app):
-    await asyncio.sleep(3)  # we will need a functionality to actively await the availability of the app and main window
     with patch.object(app.main_window, 'refresh', new_callable=Mock) as mock_refresh:
-        mock_action = Mock()
-        mock_value = Mock()
-        await app.main_window.do_refresh_view(mock_action, mock_value)
+        app.main_window.activate_action('refresh-view')
         mock_refresh.assert_called_once()
 
 
