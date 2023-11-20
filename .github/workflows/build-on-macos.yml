@@ -50,7 +50,7 @@ jobs:
       run: |
         source venv/bin/activate
         version=$(SETUPTOOLS_SCM_DEBUG=1 python -m setuptools_scm)  # have version written to file to appear in bundled app as well
-        echo "::set-output name=version::$(echo $version)"
+        echo "version=$version" >> $GITHUB_OUTPUT
 
     - name: Log python package info
       run: |

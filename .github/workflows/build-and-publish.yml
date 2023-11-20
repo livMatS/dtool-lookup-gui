@@ -65,7 +65,7 @@ jobs:
           git fetch --depth 1 origin master
           echo "Commit that triggered this workflow: ${{ github.sha }}"
           echo "HEAD at master: $(git rev-parse origin/master)"
-          echo "::set-output name=sha::$(git rev-parse origin/master)"
+          echo "sha=$(git rev-parse origin/master)" >> $GITHUB_OUTPUT
 
       - name: Publish package
         if: >-
@@ -110,7 +110,7 @@ jobs:
         run: |
           pip install setuptools_scm
           version=$(SETUPTOOLS_SCM_DEBUG=1 python -m setuptools_scm)
-          echo "::set-output name=version::$(echo $version)"
+          echo "version=$version" >> $GITHUB_OUTPUT
 
       - name: Download Linux build
         uses: actions/download-artifact@v3
@@ -142,7 +142,7 @@ jobs:
           git fetch --depth 1 origin master
           echo "Commit that triggered this workflow: ${{ github.sha }}"
           echo "HEAD at master: $(git rev-parse master)"
-          echo "::set-output name=sha::$(git rev-parse origin/master)"
+          echo "sha=$(git rev-parse origin/master)" >> $GITHUB_OUTPUT
 
       - name: Make release
         if: >-

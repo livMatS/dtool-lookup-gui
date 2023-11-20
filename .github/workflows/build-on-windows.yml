@@ -110,7 +110,7 @@ jobs:
       id: fix_version
       run: |
         version=$(SETUPTOOLS_SCM_DEBUG=1 python -m setuptools_scm)  # have version written to file to appear in bundled app as well
-        echo "::set-output name=version::$(echo $version)"
+        echo "version=$version" >> $GITHUB_OUTPUT
 
     - name: Create local venv
       run: |
