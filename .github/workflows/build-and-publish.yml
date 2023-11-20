@@ -51,7 +51,7 @@ jobs:
       - name: Install pythonic dependencies
         run: |
           pip install --upgrade pip
-          pip install wheel
+          pip install wheel build
           pip install -r requirements.txt
 
       - name: Package distribution
