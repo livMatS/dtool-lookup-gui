@@ -52,8 +52,8 @@ documentation = "https://dtool-lookup-gui.readthedocs.io"
 repository = "https://github.com/livMatS/dtool-lookup-gui"
 changelog = "https://dtool-lookup-gui.readthedocs.io/en/latest/changelog.html"
 
-[tool.setuptools]
-packages = ["dtool_lookup_gui"]
+[tool.setuptools.packages.find]
+include = ["dtool_lookup_gui"]
 
 [tool.setuptools_scm]
 version_file = "dtool_lookup_gui/version.py"
