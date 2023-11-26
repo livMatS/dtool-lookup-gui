@@ -22,7 +22,9 @@ async def test_main_window_creation(main_window_instance):
     """Simple test to check if MainWindow is created with the mocked GTK application."""
     assert main_window_instance is not None
     assert isinstance(main_window_instance.application, MagicMock), "The application should be a MagicMock."
+    assert isinstance(main_window_instance.builder, MagicMock), "The builder should be a MagicMock."
+    assert isinstance(main_window_instance.window, MagicMock), "The window should be a MagicMock."
+    assert isinstance(main_window_instance.search_button, MagicMock), "The search_button should be a MagicMock."
+    assert isinstance(main_window_instance.search_entry, MagicMock), "The search_entry should be a MagicMock."
+    assert isinstance(main_window_instance.search_results_treeview, MagicMock), "The search_results_treeview should be a MagicMock."
 
-    # Optionally, test if certain methods or properties are called or set
-    # main_window_instance.application.some_method.assert_called_once()
-    # assert main_window_instance.application.some_property == 'expected_value'
