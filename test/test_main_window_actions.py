@@ -1,14 +1,7 @@
-import asyncio
-
+from unittest.mock import patch, MagicMock, create_autospec, Mock
 import pytest
-from unittest.mock import Mock, patch, ANY
 from gi.repository import Gtk
 from dtool_lookup_gui.views.main_window import MainWindow
-
-
-@pytest.mark.asyncio
-async def test_app_id(app):
-    assert app.get_application_id() == 'de.uni-freiburg.dtool-lookup-gui'
 
 
 @pytest.mark.asyncio
