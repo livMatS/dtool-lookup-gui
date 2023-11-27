@@ -1,46 +1,25 @@
 from unittest.mock import patch, MagicMock, create_autospec, Mock
 import pytest
-from gi.repository import Gio, GLib, Gtk, GtkSource, Gdk
+from gi.repository import Gtk
 from dtool_lookup_gui.views.main_window import MainWindow
 
-@pytest.fixture
-def mocked_gtk_app():
-    """Create a mocked GTK application."""
-    mock_app = create_autospec(Gtk.Application, instance=True)
-    # Set up any specific properties or return values you need for the mock here
-    return mock_app
-
-@pytest.fixture
-def main_window_instance(mocked_gtk_app):
-    """Create an instance of MainWindow for testing with a mocked GTK application."""
-    with patch('dtool_lookup_gui.views.main_window.MainWindow') as mock_main_window:
-        instance = mock_main_window(application=mocked_gtk_app)
-        yield instance
 
 @pytest.mark.asyncio
-async def test_main_window_creation(main_window_instance):
-    """Simple test to check if MainWindow is created with the mocked GTK application."""
-    assert main_window_instance is not None
-    assert isinstance(main_window_instance.application, MagicMock), "The application should be a MagicMock."
-    assert isinstance(main_window_instance.builder, MagicMock), "The builder should be a MagicMock."
-    assert isinstance(main_window_instance.window, MagicMock), "The window should be a MagicMock."
-    assert isinstance(main_window_instance.search_button, MagicMock), "The search_button should be a MagicMock."
-    assert isinstance(main_window_instance.search_entry, MagicMock), "The search_entry should be a MagicMock."
-    assert isinstance(main_window_instance.search_results_treeview, MagicMock), "The search_results_treeview should be a MagicMock."
+async def test_do_refresh_view(app):
+    """Test the do_refresh_view method triggers the refresh method."""
+    
+    # Actually activate the untempered method with all side effects
+    app.main_window.do_refresh_view(None, None)
 
+    # We could check for any effects of the action here, e.g.
+    # have Gtk widgets been  populated with teh right data?
 
-@pytest.mark.asyncio
-async def test_do_refresh_view(main_window_instance):
-    """Test the do_refresh_view action."""
-
-    # Mock the necessary method
-    with patch.object(main_window_instance, 'refresh', new_callable=Mock) as mock_refresh:
-        # Mock the action and value as needed, adjust based on your actual method signature
-        action = MagicMock()
-        value = MagicMock()  # Adjust this if your action requires a specific value
-
-        # Perform the refresh view action
-        main_window_instance.do_refresh_view(action, value)
-
-        # Assert that the refresh method was called
+    # Patch the main window's refresh method and make sure it's called when
+    # action activated via the Gtk framework
+    with patch.object(app.main_window, 'refresh', new_callable=Mock) as mock_refresh:
+        app.main_window.activate_action('refresh-view')
         mock_refresh.assert_called_once()
+
+        # We could replace the refresh mock with mocks of other calls
+        # embedded deeper in the hierarchy and assert that the call
+        # hierarchy is preserved as we expect it
