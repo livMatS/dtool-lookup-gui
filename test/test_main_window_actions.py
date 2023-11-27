@@ -1,6 +1,6 @@
 from unittest.mock import patch, MagicMock, create_autospec, Mock
 import pytest
-from gi.repository import Gtk
+from gi.repository import Gio, GLib, Gtk, GtkSource, Gdk
 from dtool_lookup_gui.views.main_window import MainWindow
 
 @pytest.fixture
@@ -28,22 +28,19 @@ async def test_main_window_creation(main_window_instance):
     assert isinstance(main_window_instance.search_entry, MagicMock), "The search_entry should be a MagicMock."
     assert isinstance(main_window_instance.search_results_treeview, MagicMock), "The search_results_treeview should be a MagicMock."
 
+
 @pytest.mark.asyncio
 async def test_do_refresh_view(main_window_instance):
-    """Test the do_refresh_view method triggers the refresh method."""
+    """Test the do_refresh_view action."""
 
-    # 3. Validate Method Existence
-    assert hasattr(main_window_instance, 'refresh'), "MainWindow instance does not have a refresh method"
-
+    # Mock the necessary method
     with patch.object(main_window_instance, 'refresh', new_callable=Mock) as mock_refresh:
-        # Trigger the do_refresh_view action
-        main_window_instance.do_refresh_view(None, None)
+        # Mock the action and value as needed, adjust based on your actual method signature
+        action = MagicMock()
+        value = MagicMock()  # Adjust this if your action requires a specific value
 
-        # Check if the refresh method was called
-        #mock_refresh.assert_called_once()
+        # Perform the refresh view action
+        main_window_instance.do_refresh_view(action, value)
 
-
-    # Temporarily replacing the refresh method
-    main_window_instance.refresh = Mock()
-    main_window_instance.refresh()
-    main_window_instance.refresh.assert_called_once()
+        # Assert that the refresh method was called
+        mock_refresh.assert_called_once()
