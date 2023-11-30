@@ -1,3 +1,11 @@
+# 1. Direct calls in tests isolate specific functionalities for focused, independent testing of components.
+# 2. Triggering actions and using mocks are crucial for integration testing, ensuring components interact correctly.
+# 3. Mocking and action triggering simulate real-world user interactions and application responses.
+# 4. Separating tests for direct calls and action triggers aids in maintaining clear, organized test structures.
+# 5. This approach enhances test suite readability and makes it easier to understand and update.
+
+
+
 import pytest
 from unittest.mock import patch, MagicMock, AsyncMock
 from gi.repository import Gtk, Gio, GLib
@@ -85,3 +93,5 @@ async def test_do_get_item_action_trigger(app):
 
         # Assert that do_get_item was called once
         mock_do_get_item.assert_called_once_with(get_item_action, dest_file_variant)
+
+
