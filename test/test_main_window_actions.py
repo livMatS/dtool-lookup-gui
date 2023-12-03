@@ -192,3 +192,151 @@ async def test_do_show_dataset_details_by_uri_action_trigger(app):
 
         # Assert that do_show_dataset_details_by_uri was called once
         mock_do_show_dataset_details_by_uri.assert_called_once_with(show_dataset_by_uri_action, uri_variant)
+
+@pytest.mark.asyncio
+async def test_do_show_dataset_details_by_row_index_direct_call(app):
+    """Test the do_show_dataset_details_by_row_index method for showing dataset details by index directly."""
+
+    # Mock dependencies
+    mock_dataset_list_box = MagicMock()
+    app.main_window.dataset_list_box = mock_dataset_list_box
+
+    # Mock _show_dataset_details_by_row_index to simulate behavior
+    app.main_window._show_dataset_details_by_row_index = MagicMock()
+
+    # Create a mock action and variant
+    mock_action = MagicMock(spec=Gio.SimpleAction)
+    mock_variant = GLib.Variant.new_uint32(1)  # Example index
+
+    # Directly call the method with mock objects
+    app.main_window.do_show_dataset_details_by_row_index(mock_action, mock_variant)
+
+    # Assert that _show_dataset_details_by_row_index was called with the correct index
+    app.main_window._show_dataset_details_by_row_index.assert_called_once_with(1)
+
+
+@pytest.mark.asyncio
+async def test_do_show_dataset_details_by_row_index_action_trigger(app):
+    """Test if 'show-dataset' action triggers do_show_dataset_details_by_row_index method."""
+
+    # Mock dependencies
+    mock_dataset_list_box = MagicMock()
+    app.main_window.dataset_list_box = mock_dataset_list_box
+
+    # Setup necessary mocks for the action trigger
+    app.main_window._show_dataset_details_by_row_index = MagicMock()
+
+    # Create and add the action
+    row_index_variant = GLib.Variant.new_uint32(1)  # Example index
+    show_dataset_action = Gio.SimpleAction.new("show-dataset", row_index_variant.get_type())
+    app.main_window.add_action(show_dataset_action)
+
+    # Patch do_show_dataset_details_by_row_index method after action is added
+    with patch.object(app.main_window, 'do_show_dataset_details_by_row_index', new_callable=MagicMock) as mock_do_show_dataset_details_by_row_index:
+        # Connect the action
+        show_dataset_action.connect("activate", app.main_window.do_show_dataset_details_by_row_index)
+
+        # Trigger the action
+        show_dataset_action.activate(row_index_variant)
+
+        # Assert that do_show_dataset_details_by_row_index was called once
+        mock_do_show_dataset_details_by_row_index.assert_called_once_with(show_dataset_action, row_index_variant)
+
+
+@pytest.mark.asyncio
+async def test_do_select_dataset_row_by_row_index_direct_call(app):
+    """Test the do_select_dataset_row_by_row_index method for selecting a dataset row directly."""
+
+    # Mock dependencies
+    mock_dataset_list_box = MagicMock()
+    app.main_window.dataset_list_box = mock_dataset_list_box
+
+    # Mock _select_dataset_row_by_row_index to simulate behavior
+    app.main_window._select_dataset_row_by_row_index = MagicMock()
+
+    # Create a mock action and variant
+    mock_action = MagicMock(spec=Gio.SimpleAction)
+    mock_variant = GLib.Variant.new_uint32(1)  # Example index
+
+    # Directly call the method with mock objects
+    app.main_window.do_select_dataset_row_by_row_index(mock_action, mock_variant)
+
+    # Assert that _select_dataset_row_by_row_index was called with the correct index
+    app.main_window._select_dataset_row_by_row_index.assert_called_once_with(1)
+
+
+@pytest.mark.asyncio
+async def test_do_select_dataset_row_by_row_index_action_trigger(app):
+    """Test if 'select-dataset' action triggers do_select_dataset_row_by_row_index method."""
+
+    # Mock dependencies
+    mock_dataset_list_box = MagicMock()
+    app.main_window.dataset_list_box = mock_dataset_list_box
+
+    # Setup necessary mocks for the action trigger
+    app.main_window._select_dataset_row_by_row_index = MagicMock()
+
+    # Create and add the action
+    row_index_variant = GLib.Variant.new_uint32(1)  # Example index
+    select_dataset_action = Gio.SimpleAction.new("select-dataset", row_index_variant.get_type())
+    app.main_window.add_action(select_dataset_action)
+
+    # Patch do_select_dataset_row_by_row_index method after action is added
+    with patch.object(app.main_window, 'do_select_dataset_row_by_row_index', new_callable=MagicMock) as mock_do_select_dataset_row_by_row_index:
+        # Connect the action
+        select_dataset_action.connect("activate", app.main_window.do_select_dataset_row_by_row_index)
+
+        # Trigger the action
+        select_dataset_action.activate(row_index_variant)
+
+        # Assert that do_select_dataset_row_by_row_index was called once
+        mock_do_select_dataset_row_by_row_index.assert_called_once_with(select_dataset_action, row_index_variant)
+
+@pytest.mark.asyncio
+async def test_do_search_direct_call(app):
+    """Test the do_search method for initiating a search directly."""
+
+    # Mock dependencies
+    mock_base_uri_list_box = MagicMock()
+    app.main_window.base_uri_list_box = mock_base_uri_list_box
+
+    # Mock _search to simulate behavior
+    app.main_window._search = MagicMock()
+
+    # Create a mock action and variant
+    mock_action = MagicMock(spec=Gio.SimpleAction)
+    mock_variant = GLib.Variant.new_string("test_search_query")
+
+    # Directly call the method with mock objects
+    app.main_window.do_search(mock_action, mock_variant)
+
+    # Assert that _search was called with the correct search text
+    app.main_window._search.assert_called_once_with("test_search_query")
+
+
+@pytest.mark.asyncio
+async def test_do_search_action_trigger(app):
+    """Test if 'search' action triggers do_search method."""
+
+    # Mock dependencies
+    mock_base_uri_list_box = MagicMock()
+    app.main_window.base_uri_list_box = mock_base_uri_list_box
+
+    # Setup necessary mocks for the action trigger
+    app.main_window._search = MagicMock()
+
+    # Create and add the action
+    search_text_variant = GLib.Variant.new_string("test_search_query")
+    search_action = Gio.SimpleAction.new("search", search_text_variant.get_type())
+    app.main_window.add_action(search_action)
+
+    # Patch do_search method after action is added
+    with patch.object(app.main_window, 'do_search', new_callable=MagicMock) as mock_do_search:
+        # Connect the action
+        search_action.connect("activate", app.main_window.do_search)
+
+        # Trigger the action
+        search_action.activate(search_text_variant)
+
+        # Assert that do_search was called once
+        mock_do_search.assert_called_once_with(search_action, search_text_variant)
