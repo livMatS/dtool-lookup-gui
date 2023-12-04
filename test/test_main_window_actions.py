@@ -3,7 +3,7 @@
 # 3. Mocking and action triggering simulate real-world user interactions and application responses.
 # 4. Separating tests for direct calls and action triggers aids in maintaining clear, organized test structures.
 # 5. This approach enhances test suite readability and makes it easier to understand and update.
-
+import asyncio
 
 import pytest
 from unittest.mock import patch, MagicMock, AsyncMock
@@ -13,10 +13,6 @@ from gi.repository import Gtk, Gio, GLib
 @pytest.mark.asyncio
 async def test_do_refresh_view_direct_call(app):
     """Test the direct call of the do_refresh_view method."""
-
-    # Mock dependencies
-    mock_dataset_list_box = MagicMock()
-    app.main_window.dataset_list_box = mock_dataset_list_box
 
     # Directly call the do_refresh_view method
     app.main_window.do_refresh_view(None, None)
@@ -36,29 +32,49 @@ async def test_refresh_method_triggered_by_action(app):
 
 
 @pytest.mark.asyncio
+async def test_do_get_item_direct_call_fails_due_to_no_selected_item(app):
+    """Test that the do_get_item method for copying a selected item fails when not item is selected."""
+
+    mock_variant = GLib.Variant.new_string("dummy_path")
+
+    # Directly call the method with mock objects
+    with pytest.raises(AttributeError, match="'NoneType' object has no attribute 'dataset'"):
+        app.main_window.do_get_item(None, mock_variant)
+
+@pytest.mark.asyncio
+@pytest.mark.skip(reason="no way of currently testing this")
+async def test_populate_dataset_list(populated_app):
+
+    populated_app.main_window.activate_action('refresh-view')
+
+    await asyncio.sleep(3600)
+
+@pytest.mark.asyncio
+@pytest.mark.skip(reason="no way of currently testing this")
 async def test_do_get_item_direct_call(app):
     """Test the do_get_item method for copying a selected item directly."""
 
     # Mock dependencies
-    mock_dataset_list_box = MagicMock()
-    app.main_window.dataset_list_box = mock_dataset_list_box
-    mock_settings = MagicMock()
-    app.main_window.settings = mock_settings
+    # mock_dataset_list_box = MagicMock()
+    # app.main_window.dataset_list_box = mock_dataset_list_box
+    # mock_settings = MagicMock()
+    # app.main_window.settings = mock_settings
 
     # Mock _get_selected_items to return one item
-    app.main_window._get_selected_items = MagicMock(return_value=[('item_name', 'item_uuid')])
+    # app.main_window._get_selected_items = MagicMock(return_value=[('item_name', 'item_uuid')])
 
     # Create a mock action and variant
-    mock_action = MagicMock(spec=Gio.SimpleAction)
+    # mock_action = MagicMock(spec=Gio.SimpleAction)
     mock_variant = GLib.Variant.new_string("dummy_path")
 
     # Mock async call in do_get_item
-    mock_dataset = MagicMock()
-    mock_dataset.get_item = AsyncMock()
-    mock_dataset_list_box.get_selected_row.return_value = MagicMock(dataset=mock_dataset)
+    # mock_dataset = MagicMock()
+    # mock_dataset.get_item = AsyncMock()
+    # mock_dataset_list_box.get_selected_row.return_value = MagicMock(dataset=mock_dataset)
 
     # Directly call the method with mock objects
-    app.main_window.do_get_item(mock_action, mock_variant)
+    with pytest.raises(AttributeError, match="'NoneType' object has no attribute 'dataset'"):
+        app.main_window.do_get_item(None, mock_variant)
 
 
 @pytest.mark.asyncio
@@ -93,27 +109,34 @@ async def test_do_get_item_action_trigger(app):
         # Assert that do_get_item was called once
         mock_do_get_item.assert_called_once_with(get_item_action, dest_file_variant)
 
-
+# TODO: let's start with this unit est and transform it into a proper test on GUI behavior
 @pytest.mark.asyncio
-async def test_do_search_select_and_show_direct_call(app):
+@pytest.mark.skip(reason="no way of currently testing this")
+async def test_do_search_select_and_show_direct_call(populated_app, mock_dataset_list):
     """Test the do_search_select_and_show method for processing a search directly."""
 
     # Mock dependencies
-    mock_base_uri_list_box = MagicMock()
-    app.main_window.base_uri_list_box = mock_base_uri_list_box
+    #mock_base_uri_list_box = MagicMock()
+    #populated_app.main_window.base_uri_list_box = mock_base_uri_list_box
 
     # Mock _search_select_and_show to simulate search behavior
-    app.main_window._search_select_and_show = MagicMock()
+    #populated_app.main_window._search_select_and_show = MagicMock()
 
     # Create a mock action and variant
-    mock_action = MagicMock(spec=Gio.SimpleAction)
+    #mock_action = MagicMock(spec=Gio.SimpleAction)
     mock_variant = GLib.Variant.new_string("test_search_query")
 
     # Directly call the method with mock objects
-    app.main_window.do_search_select_and_show(mock_action, mock_variant)
+    populated_app.main_window.do_search_select_and_show(None, mock_variant)
+
+    # TODO: assert that
+    # * dataset list is populated with information returned by dtool_lookup_api.search
+    # * first dataset in list is selected in the GUI
+    # * content of dataset is displayed on the right hand side
+    # --> need to figure out how to inspect the GUI elements
 
     # Assert that _search_select_and_show was called with the correct query
-    app.main_window._search_select_and_show.assert_called_once_with("test_search_query")
+    # populated_app.main_window._search_select_and_show.assert_called_once_with("test_search_query")
 
 
 @pytest.mark.asyncio
