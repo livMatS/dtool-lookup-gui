@@ -352,15 +352,23 @@ class MainWindow(Gtk.ApplicationWindow):
     def _update_search_summary(self, datasets):
         row = self.base_uri_list_box.search_results_row
         total_size = sum([0 if dataset.size_int is None else dataset.size_int for dataset in datasets])
-        total_value = self.pagination['total']
+        if hasattr(self.pagination, 'total'):
+            total_value = self.pagination['total']
+        else:
+            _logger.warning("No pagination information available.")
+            total_value = len(datasets)
+
         row.info_label.set_text(f'{total_value} datasets, {sizeof_fmt(total_size).strip()}')
 
     def _update_main_statusbar(self):
-        total_number = self.pagination['total']
-        current_page = self.pagination['page']
-        last_page = self.pagination['last_page']
-        self.main_statusbar.push(0,
-                                 f"Total Number of Datasets: {total_number}, Current Page: {current_page} of {last_page}")
+        if hasattr(self.pagination, 'total') and hasattr(self.pagination, 'page') and hasattr(self.pagination, 'last_page'):
+            total_number = self.pagination['total']
+            current_page = self.pagination['page']
+            last_page = self.pagination['last_page']
+            self.main_statusbar.push(0,
+                                     f"Total Number of Datasets: {total_number}, Current Page: {current_page} of {last_page}")
+        else:
+            _logger.warning("No pagination information available to display in status bar.")
 
     def contents_per_page_changed(self, widget):
         self.contents_per_page_value = widget.get_active_text()
