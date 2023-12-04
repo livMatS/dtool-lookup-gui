@@ -5,11 +5,9 @@
 # 5. This approach enhances test suite readability and makes it easier to understand and update.
 
 
-
 import pytest
 from unittest.mock import patch, MagicMock, AsyncMock
 from gi.repository import Gtk, Gio, GLib
-
 
 
 @pytest.mark.asyncio
@@ -22,6 +20,7 @@ async def test_do_refresh_view_direct_call(app):
 
     # Directly call the do_refresh_view method
     app.main_window.do_refresh_view(None, None)
+
 
 @pytest.mark.asyncio
 async def test_refresh_method_triggered_by_action(app):
@@ -134,7 +133,8 @@ async def test_do_search_select_and_show_action_trigger(app):
     app.main_window.add_action(search_select_show_action)
 
     # Patch do_search_select_and_show method after action is added
-    with patch.object(app.main_window, 'do_search_select_and_show', new_callable=MagicMock) as mock_do_search_select_and_show:
+    with patch.object(app.main_window, 'do_search_select_and_show',
+                      new_callable=MagicMock) as mock_do_search_select_and_show:
         # Connect the action
         search_select_show_action.connect("activate", app.main_window.do_search_select_and_show)
 
@@ -143,6 +143,7 @@ async def test_do_search_select_and_show_action_trigger(app):
 
         # Assert that do_search_select_and_show was called once
         mock_do_search_select_and_show.assert_called_once_with(search_select_show_action, search_variant)
+
 
 @pytest.mark.asyncio
 async def test_do_show_dataset_details_by_uri_direct_call(app):
@@ -183,7 +184,8 @@ async def test_do_show_dataset_details_by_uri_action_trigger(app):
     app.main_window.add_action(show_dataset_by_uri_action)
 
     # Patch do_show_dataset_details_by_uri method after action is added
-    with patch.object(app.main_window, 'do_show_dataset_details_by_uri', new_callable=MagicMock) as mock_do_show_dataset_details_by_uri:
+    with patch.object(app.main_window, 'do_show_dataset_details_by_uri',
+                      new_callable=MagicMock) as mock_do_show_dataset_details_by_uri:
         # Connect the action
         show_dataset_by_uri_action.connect("activate", app.main_window.do_show_dataset_details_by_uri)
 
@@ -192,6 +194,7 @@ async def test_do_show_dataset_details_by_uri_action_trigger(app):
 
         # Assert that do_show_dataset_details_by_uri was called once
         mock_do_show_dataset_details_by_uri.assert_called_once_with(show_dataset_by_uri_action, uri_variant)
+
 
 @pytest.mark.asyncio
 async def test_do_show_dataset_details_by_row_index_direct_call(app):
@@ -232,7 +235,8 @@ async def test_do_show_dataset_details_by_row_index_action_trigger(app):
     app.main_window.add_action(show_dataset_action)
 
     # Patch do_show_dataset_details_by_row_index method after action is added
-    with patch.object(app.main_window, 'do_show_dataset_details_by_row_index', new_callable=MagicMock) as mock_do_show_dataset_details_by_row_index:
+    with patch.object(app.main_window, 'do_show_dataset_details_by_row_index',
+                      new_callable=MagicMock) as mock_do_show_dataset_details_by_row_index:
         # Connect the action
         show_dataset_action.connect("activate", app.main_window.do_show_dataset_details_by_row_index)
 
@@ -282,7 +286,8 @@ async def test_do_select_dataset_row_by_row_index_action_trigger(app):
     app.main_window.add_action(select_dataset_action)
 
     # Patch do_select_dataset_row_by_row_index method after action is added
-    with patch.object(app.main_window, 'do_select_dataset_row_by_row_index', new_callable=MagicMock) as mock_do_select_dataset_row_by_row_index:
+    with patch.object(app.main_window, 'do_select_dataset_row_by_row_index',
+                      new_callable=MagicMock) as mock_do_select_dataset_row_by_row_index:
         # Connect the action
         select_dataset_action.connect("activate", app.main_window.do_select_dataset_row_by_row_index)
 
@@ -291,6 +296,7 @@ async def test_do_select_dataset_row_by_row_index_action_trigger(app):
 
         # Assert that do_select_dataset_row_by_row_index was called once
         mock_do_select_dataset_row_by_row_index.assert_called_once_with(select_dataset_action, row_index_variant)
+
 
 @pytest.mark.asyncio
 async def test_do_search_direct_call(app):
