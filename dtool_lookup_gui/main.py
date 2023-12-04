@@ -1,5 +1,6 @@
 #
-# Copyright 2021-2022 Johannes Laurin Hörmann
+# Copyright 2021-2023 Johannes Laurin Hörmann
+#           2023 Ashwin Vazhappilly
 #           2021 Lars Pastewka
 #
 # ### MIT license
@@ -33,6 +34,7 @@ import sys
 
 import dtoolcore
 import dtool_lookup_api.core.config
+
 from dtool_lookup_api.core.LookupClient import authenticate
 
 import gi
@@ -85,13 +87,6 @@ class Application(Gtk.Application):
                          flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE, **kwargs)
         self.loop = loop
         self.args = None
-        self._progress_revealer = None
-        self._progress_popover = None
-        self._main_window = None
-
-    @property
-    def main_window(self):
-        return self._main_window
 
     def do_activate(self):
         logger.debug("do_activate")
@@ -110,9 +105,6 @@ class Application(Gtk.Application):
             logger.debug("Build GUI.")
 
             win = MainWindow(application=self)
-            self._main_window = win
-            logger.debug("New main window ID: %s", win.get_id())
-
             glob_pattern = os.path.join(os.path.dirname(__file__), os.pardir, 'data','icons','*','dtool_logo.xpm')
             icon_file_list = glob.glob(glob_pattern)
             if len(icon_file_list) > 0:
@@ -123,7 +115,7 @@ class Application(Gtk.Application):
             else:
                 logger.warning("Could not load app icons.")
             win.connect('destroy', lambda _: self.loop.stop())
-            #self.loop.call_soon(win.refresh)  # Populate widgets after event loop starts
+            self.loop.call_soon(win.refresh)  # Populate widgets after event loop starts
 
         logger.debug("Present main window.")
         win.present()
@@ -242,11 +234,6 @@ class Application(Gtk.Application):
         renew_token_action.connect("activate", self.do_renew_token)
         self.add_action(renew_token_action)
 
-        # copy-manager action
-        copy_action = Gio.SimpleAction.new("start-copy", GLib.VariantType.new("(ss)"))
-        copy_action.connect("activate", self.do_copy)
-        self.add_action(copy_action)
-
         Gtk.Application.do_startup(self)
 
     # custom application-scoped actions
@@ -350,43 +337,6 @@ class Application(Gtk.Application):
             auth_url,
             username,
             password))
-
-    async def do_copy(self, action, value):
-        dataset, destination = value.unpack()
-
-        # Ensure that _progress_revealer and _progress_popover are initialized
-        if not self._progress_revealer or not self._progress_popover:
-            logger.error("Progress revealer or popover not initialized")
-            return
-
-        self._progress_revealer.set_reveal_child(True)
-        tracker = self._progress_popover.add_status_box(
-            self.progress_update, f'Copying dataset "{dataset}" to "{destination}"')
-
-        try:
-            await dataset.copy(destination, progressbar=tracker)
-        except ChildProcessError as exc:
-            logger.error(str(exc))
-            # Handle specific exceptions here
-        except Exception as e:
-            logger.error(f"Unexpected error: {e}")
-            # Handle other unexpected errors
-
-        tracker.set_done()
-        self.check_all_operations_done()
-
-    def progress_update(self):
-        if not self._progress_popover or not self._progress_chart:
-            logger.error("Progress popover or chart not initialized")
-            return
-
-        total_length = sum([len(tracker) for tracker in self._progress_popover.status_boxes])
-        total_step = sum([tracker.step for tracker in self._progress_popover.status_boxes])
-
-        if total_length > 0:
-            self._progress_chart.set_fraction(total_step / total_length)
-        else:
-            self._progress_chart.set_fraction(1.0)
 
 
 def run_gui():
