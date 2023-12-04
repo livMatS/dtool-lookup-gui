@@ -24,6 +24,11 @@
 # SOFTWARE.
 #
 
+# TODO: any atomic operations that reflect core dtool behavior as documented
+# on https://dtoolcore.readthedocs.io/en/latest/api/dtoolcore.html#dtoolcore.DataSetCreator
+# or https://dtoolcore.readthedocs.io/en/latest/api/dtoolcore.html#dtoolcore.ProtoDataSet
+# should move to atomic actions on the main app level
+
 import asyncio
 import logging
 import os
@@ -178,8 +183,6 @@ class MainWindow(Gtk.ApplicationWindow):
     contents_per_page = Gtk.Template.Child()
     linting_errors_button = Gtk.Template.Child()
 
-
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
@@ -198,8 +201,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self.readme_buffer.connect("changed", self.on_readme_buffer_changed)
 
-        self.error_bar.set_revealed(False)
-        self.progress_revealer.set_reveal_child(False)
+
 
         # connect log handler to error bar
         root_logger = logging.getLogger()
@@ -217,6 +219,13 @@ class MainWindow(Gtk.ApplicationWindow):
         self.config_details = ConfigDialog(application=self.application)
         self.server_versions_dialog = ServerVersionsDialog(application=self.application)
         self.error_linting_dialog = LintingErrorsDialog(application=self.application)
+
+        # Initialize the progress revealer and popover
+        self.progress_revealer = None  # Replace this with actual initialization
+        self.progress_popover = None  # Replace this with actual initialization
+
+        # Initialize the CopyManager
+        # self._copy_manager = CopyManager(self.progress_revealer, self.progress_popover)
 
         # window-scoped actions
 
@@ -269,7 +278,14 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self.dependency_graph_widget.search_by_uuid = self._search_by_uuid
 
-        self._copy_manager = CopyManager(self.progress_revealer, self.progress_popover)
+        # TODO: is it possible to attach the CopyManager to the main app instead of this main window?
+        # One possibility would be to refactor the CopyManager in a way that it can have any
+        # number of arbitrary progress_revealer and progress_popover components attached.
+        # The copy manager lives at the Application scope.
+        # The main window here attaches its own progress_revealer and progress_popover to the
+        # CopyManager of the application instead of instantiating the copy manager here.
+        self.get_action_group("app").activate_action("start-copy-manager", None)
+
 
         _logger.debug(f"Constructed main window for app '{self.application.get_application_id()}'")
 
@@ -336,15 +352,23 @@ class MainWindow(Gtk.ApplicationWindow):
     def _update_search_summary(self, datasets):
         row = self.base_uri_list_box.search_results_row
         total_size = sum([0 if dataset.size_int is None else dataset.size_int for dataset in datasets])
-        total_value = self.pagination['total']
+        if hasattr(self.pagination, 'total'):
+            total_value = self.pagination['total']
+        else:
+            _logger.warning("No pagination information available.")
+            total_value = len(datasets)
+
         row.info_label.set_text(f'{total_value} datasets, {sizeof_fmt(total_size).strip()}')
 
     def _update_main_statusbar(self):
-        total_number = self.pagination['total']
-        current_page = self.pagination['page']
-        last_page = self.pagination['last_page']
-        self.main_statusbar.push(0,
-                                 f"Total Number of Datasets: {total_number}, Current Page: {current_page} of {last_page}")
+        if hasattr(self.pagination, 'total') and hasattr(self.pagination, 'page') and hasattr(self.pagination, 'last_page'):
+            total_number = self.pagination['total']
+            current_page = self.pagination['page']
+            last_page = self.pagination['last_page']
+            self.main_statusbar.push(0,
+                                     f"Total Number of Datasets: {total_number}, Current Page: {current_page} of {last_page}")
+        else:
+            _logger.warning("No pagination information available to display in status bar.")
 
     def contents_per_page_changed(self, widget):
         self.contents_per_page_value = widget.get_active_text()
@@ -419,7 +443,6 @@ class MainWindow(Gtk.ApplicationWindow):
         self.main_spinner.stop()
         # If a widget was passed in, re-enable it
         self.enable_pagination_buttons()
-
 
     def _search_by_uuid(self, uuid):
         search_text = dump_single_line_query_text({"uuid": uuid})
@@ -775,6 +798,7 @@ class MainWindow(Gtk.ApplicationWindow):
             fpaths = dialog.get_filenames()
             for fpath in fpaths:
                 # uri = urllib.parse.unquote(uri, encoding='utf-8', errors='replace')
+                # TODO: _add_item should turn into an action on the app level as well
                 self._add_item(fpath)
         elif response == Gtk.ResponseType.CANCEL:
             pass
@@ -844,6 +868,7 @@ class MainWindow(Gtk.ApplicationWindow):
         else:
             pass
 
+    # TODO: try to refactor into a do_freeze action in the main app as well
     @Gtk.Template.Callback()
     def on_freeze_clicked(self, widget):
         row = self.dataset_list_box.get_selected_row()
@@ -984,7 +1009,9 @@ class MainWindow(Gtk.ApplicationWindow):
         self.page_advancer_button.set_sensitive(True)
         self.next_page_advancer_button.set_sensitive(True)
 
-    # @Gtk.Template.Callback(), not in .ui
+    # TODO: this should be an action do_copy
+    # if it is possible to hand to strings, e.g. source and destination to an action, then this action should
+    # go to the main app.
     def on_copy_clicked(self, widget):
         async def _copy():
             try:
