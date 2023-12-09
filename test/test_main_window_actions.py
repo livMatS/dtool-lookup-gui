@@ -41,13 +41,22 @@ async def test_do_get_item_direct_call_fails_due_to_no_selected_item(app):
     with pytest.raises(AttributeError, match="'NoneType' object has no attribute 'dataset'"):
         app.main_window.do_get_item(None, mock_variant)
 
-@pytest.mark.asyncio
-@pytest.mark.skip(reason="no way of currently testing this")
-async def test_populate_dataset_list(populated_app):
 
+@pytest.mark.asyncio
+async def test_populate_dataset_list(populated_app):
+    """
+    Generates test data and selects the first URI. This test triggers the 'refresh-view' action
+    to simulate the data loading process, which is necessary for validating the functionality
+    of the application in a test environment.
+    """
+
+
+    # Call the activate_action method to trigger the 'refresh-view' action
     populated_app.main_window.activate_action('refresh-view')
 
-    await asyncio.sleep(3600)
+    # Wait for a reasonable amount of time to ensure data loading and UI updates are complete
+    await asyncio.sleep(500)
+
 
 @pytest.mark.asyncio
 @pytest.mark.skip(reason="no way of currently testing this")
