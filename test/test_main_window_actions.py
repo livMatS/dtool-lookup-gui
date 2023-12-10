@@ -4,6 +4,7 @@
 # 4. Separating tests for direct calls and action triggers aids in maintaining clear, organized test structures.
 # 5. This approach enhances test suite readability and makes it easier to understand and update.
 import asyncio
+import time
 
 import pytest
 from unittest.mock import patch, MagicMock, AsyncMock
@@ -120,23 +121,12 @@ async def test_do_get_item_action_trigger(app):
 
 # TODO: let's start with this unit est and transform it into a proper test on GUI behavior
 @pytest.mark.asyncio
-@pytest.mark.skip(reason="no way of currently testing this")
 async def test_do_search_select_and_show_direct_call(populated_app, mock_dataset_list):
-    """Test the do_search_select_and_show method for processing a search directly."""
-
-    # Mock dependencies
-    #mock_base_uri_list_box = MagicMock()
-    #populated_app.main_window.base_uri_list_box = mock_base_uri_list_box
-
-    # Mock _search_select_and_show to simulate search behavior
-    #populated_app.main_window._search_select_and_show = MagicMock()
-
-    # Create a mock action and variant
-    #mock_action = MagicMock(spec=Gio.SimpleAction)
-    mock_variant = GLib.Variant.new_string("test_search_query")
-
-    # Directly call the method with mock objects
-    populated_app.main_window.do_search_select_and_show(None, mock_variant)
+    """
+    Test the do_search_select_and_show method for processing a search directly. It verifies
+    if the dataset list is correctly populated, the first dataset is selected, and its
+    content is displayed.
+    """
 
     # TODO: assert that
     # * dataset list is populated with information returned by dtool_lookup_api.search
@@ -146,6 +136,44 @@ async def test_do_search_select_and_show_direct_call(populated_app, mock_dataset
 
     # Assert that _search_select_and_show was called with the correct query
     # populated_app.main_window._search_select_and_show.assert_called_once_with("test_search_query")
+
+    async def wait_for_datasets_to_load(list_box, timeout=10):
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            if len(list_box.get_children()) > 0:
+                return True  # Datasets are loaded
+            await asyncio.sleep(0.1)  # Short sleep to yield control and wait
+        return False  # Timeout reached
+
+    # Trigger the 'refresh-view' action
+    populated_app.main_window.activate_action('refresh-view')
+
+    # Wait until datasets are loaded
+    datasets_loaded = await wait_for_datasets_to_load(populated_app.main_window.dataset_list_box)
+    assert datasets_loaded, "Datasets were not loaded in time"
+
+    # Create a GLib.Variant with the test search query
+    mock_variant = GLib.Variant.new_string("test_search_query")
+
+    # Call the method with the test search query
+    populated_app.main_window.do_search_select_and_show(None, mock_variant)
+
+
+    # Assertions to check the state of the application after the search
+    assert len(populated_app.main_window.dataset_list_box.get_children()) > 0
+    first_dataset_row = populated_app.main_window.dataset_list_box.get_children()[0]
+
+    # Access the dataset from the first row
+    dataset = first_dataset_row.dataset
+
+    # Assert that the dataset's URI matches the first item in your mock dataset list
+    assert dataset.uri == mock_dataset_list[0]['uri']
+
+    #print("dataset.uri: ", dataset.uri)
+
+    await asyncio.sleep(1)
+
+
 
 
 @pytest.mark.asyncio
