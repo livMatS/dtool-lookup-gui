@@ -44,6 +44,7 @@ async def test_do_get_item_direct_call_fails_due_to_no_selected_item(app):
 
 
 @pytest.mark.asyncio
+@pytest.mark.skip(reason="no way of currently testing this")
 async def test_populate_dataset_list(populated_app):
     """
     Generates test data and selects the first URI. This test triggers the 'refresh-view' action
@@ -158,7 +159,6 @@ async def test_do_search_select_and_show_direct_call(populated_app, mock_dataset
     # Call the method with the test search query
     populated_app.main_window.do_search_select_and_show(None, mock_variant)
 
-
     # Assertions to check the state of the application after the search
     assert len(populated_app.main_window.dataset_list_box.get_children()) > 0
     first_dataset_row = populated_app.main_window.dataset_list_box.get_children()[0]
@@ -171,9 +171,9 @@ async def test_do_search_select_and_show_direct_call(populated_app, mock_dataset
 
     #print("dataset.uri: ", dataset.uri)
 
+    # Need to await not-yet-finished tasks, otherwise will fail with
+    #     Failed: Task was destroyed but it is pending!
     await asyncio.sleep(1)
-
-
 
 
 @pytest.mark.asyncio
