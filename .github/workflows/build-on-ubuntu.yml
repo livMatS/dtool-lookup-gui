@@ -106,14 +106,14 @@ jobs:
         ls -lhv /tmp/release/
 
     - name: Upload build artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: dtool-lookup-gui-linux
         path: dtool-lookup-gui-linux.tar
         if-no-files-found: error
 
     - name: Upload release artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: dtool-lookup-gui-linux-release
         path: /tmp/release/dtool-lookup-gui-${{ steps.fix_version.outputs.version }}-linux.tar.gz
