@@ -237,7 +237,42 @@ def mock_config_info():
 
 
 @pytest.fixture(scope="function")
-def app_with_mock_dtool_lookup_api_calls(
+def local_dataset_uri(tmp_path):
+    """Create a proper local dataset to test against."""
+
+    from dtoolcore import ProtoDataSet, generate_admin_metadata
+    from dtoolcore.storagebroker import DiskStorageBroker
+
+    name = "test_dataset"
+    admin_metadata = generate_admin_metadata(name)
+    dest_uri = DiskStorageBroker.generate_uri(
+        name=name,
+        uuid=admin_metadata["uuid"],
+        base_uri=str(tmp_path))
+
+    # create a proto dataset
+    proto_dataset = ProtoDataSet(
+        uri=dest_uri,
+        admin_metadata=admin_metadata,
+        config_path=None)
+    proto_dataset.create()
+    proto_dataset.put_readme("")
+
+    # put two local files
+    handle = "sample_dataset_content.txt"
+    local_file_path = os.path.join(_HERE, 'data', handle)
+    proto_dataset.put_item(local_file_path, handle)
+
+    second_fname = "tiny.png"
+    local_file_path = os.path.join(_HERE, 'data', second_fname)
+    proto_dataset.put_item(local_file_path, second_fname)
+
+    proto_dataset.freeze()
+
+    yield dest_uri
+
+@pytest.fixture(scope="function")
+def populated_app_with_mock_data(
         app, mock_dataset_list, mock_manifest, mock_readme, mock_config_info):
     """Replaces lookup api calls with mock methods that return fake lists of datasets."""
 
@@ -261,13 +296,48 @@ def app_with_mock_dtool_lookup_api_calls(
 
 
 @pytest.fixture(scope="function")
-def populated_app(app_with_mock_dtool_lookup_api_calls):
-    """Provides app populated with mock datasets."""
+def populated_app_with_local_dataset_data(
+        app, local_dataset_uri, mock_token, mock_readme, mock_config_info):
+    """Replaces lookup api calls with mock methods that return fake lists of datasets."""
 
-    # TODO: figure out how to populate and refresh app with data here before app launched
-    # app.main_window.activate_action('refresh-view')
+    import dtool_lookup_api.core.config
+    dtool_lookup_api.core.config.Config = MockDtoolLookupAPIConfig()
 
-    yield app_with_mock_dtool_lookup_api_calls
+    from dtoolcore import DataSet
+    dataset = DataSet.from_uri(local_dataset_uri)
+
+    dataset_info = dataset._admin_metadata
+    # this returns a dict like
+    #   {'uuid': 'f9904c40-aff3-43eb-b062-58919c00062a',
+    #    'dtoolcore_version': '3.18.2',
+    #    'name': 'test_dataset',
+    #    'type': 'dataset',
+    #    'creator_username': 'jotelha',
+    #    'created_at': 1702902057.239987,
+    #    'frozen_at': 1702902057.241831
+    #   }
+
+
+    dataset_info["uri"] = dataset.uri
+    dataset_info["base_uri"] = os.path.dirname(local_dataset_uri)
+
+    dataset_list = [dataset_info]
+
+    manifest = dataset.generate_manifest()
+
+    with (
+            patch("dtool_lookup_api.core.LookupClient.authenticate", return_value=mock_token),
+            patch("dtool_lookup_api.core.LookupClient.ConfigurationBasedLookupClient.connect", return_value=None),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.all", return_value=dataset_list),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.search", return_value=dataset_list),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.graph", return_value=[]),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.manifest", return_value=manifest),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.readme", return_value=mock_readme),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.config", return_value=mock_config_info),
+            patch("dtool_lookup_api.core.LookupClient.ConfigurationBasedLookupClient.has_valid_token", return_value=True)
+        ):
+
+        yield app
 
 
 # ================================================================

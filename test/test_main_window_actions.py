@@ -25,13 +25,14 @@
 import asyncio
 import time
 
+import dtoolcore
 import pytest
 from unittest.mock import patch, MagicMock, AsyncMock, Mock
 from gi.repository import Gtk, Gio, GLib
 
 
 @pytest.mark.asyncio
-async def test_do_search_direct_call(populated_app):
+async def test_do_search_direct_call(populated_app_with_mock_data):
     """
     Test the do_search method for directly processing a search in a populated application.
     This test checks if the search action correctly triggers the search process and
@@ -48,10 +49,10 @@ async def test_do_search_direct_call(populated_app):
         return False  # Timeout reached if datasets are not loaded within the specified time
 
     # Trigger the 'refresh-view' action to load datasets
-    populated_app.main_window.activate_action('refresh-view')
+    populated_app_with_mock_data.main_window.activate_action('refresh-view')
 
     # Wait until datasets are loaded in the dataset list box
-    datasets_loaded = await wait_for_datasets_to_load(populated_app.main_window.dataset_list_box)
+    datasets_loaded = await wait_for_datasets_to_load(populated_app_with_mock_data.main_window.dataset_list_box)
     assert datasets_loaded, "Datasets were not loaded in time"
 
     # Create a GLib.Variant with a test search query
@@ -60,10 +61,10 @@ async def test_do_search_direct_call(populated_app):
 
     # Create and add the search action to the main window of the application
     search_action = Gio.SimpleAction.new("search", search_text_variant.get_type())
-    populated_app.main_window.add_action(search_action)
+    populated_app_with_mock_data.main_window.add_action(search_action)
 
     # Connect the search action to the do_search method of the main window
-    search_action.connect("activate", populated_app.main_window.do_search)
+    search_action.connect("activate", populated_app_with_mock_data.main_window.do_search)
 
     # Trigger the search action with the test search query
     search_action.activate(search_text_variant)
@@ -73,7 +74,7 @@ async def test_do_search_direct_call(populated_app):
     await asyncio.sleep(1)  # Adjust this sleep duration as needed
 
     # Perform assertions to verify that the search results are correctly displayed
-    assert len(populated_app.main_window.base_uri_list_box.get_children()) > 0, "No search results found"
+    assert len(populated_app_with_mock_data.main_window.base_uri_list_box.get_children()) > 0, "No search results found"
     # Additional assertions can be added here based on the expected outcomes of the search
 
     # Await completion of any remaining asynchronous tasks related to the search
@@ -111,7 +112,7 @@ async def test_do_search_action_trigger(app):
 
 
 @pytest.mark.asyncio
-async def test_do_select_dataset_row_by_row_index_direct_call(populated_app):
+async def test_do_select_dataset_row_by_row_index_direct_call(populated_app_with_mock_data):
     """
     Test the do_select_dataset_row_by_row_index method for directly selecting a dataset row by index.
     It verifies if the dataset list is correctly populated and the specified dataset row is selected.
@@ -126,8 +127,8 @@ async def test_do_select_dataset_row_by_row_index_direct_call(populated_app):
         return False
 
     # Trigger the 'refresh-view' action and wait for datasets to load
-    populated_app.main_window.activate_action('refresh-view')
-    datasets_loaded = await wait_for_datasets_to_load(populated_app.main_window.dataset_list_box)
+    populated_app_with_mock_data.main_window.activate_action('refresh-view')
+    datasets_loaded = await wait_for_datasets_to_load(populated_app_with_mock_data.main_window.dataset_list_box)
     assert datasets_loaded, "Datasets were not loaded in time"
 
     # Create a GLib.Variant with a valid test row index (e.g., 0 for the first row)
@@ -136,10 +137,10 @@ async def test_do_select_dataset_row_by_row_index_direct_call(populated_app):
 
     # Create and add the select dataset action to the main window of the application
     select_dataset_action = Gio.SimpleAction.new("select-dataset", row_index_variant.get_type())
-    populated_app.main_window.add_action(select_dataset_action)
+    populated_app_with_mock_data.main_window.add_action(select_dataset_action)
 
     # Connect the select dataset action to the do_select_dataset_row_by_row_index method
-    select_dataset_action.connect("activate", populated_app.main_window.do_select_dataset_row_by_row_index)
+    select_dataset_action.connect("activate", populated_app_with_mock_data.main_window.do_select_dataset_row_by_row_index)
 
     # Trigger the select dataset action with the test row index
     select_dataset_action.activate(row_index_variant)
@@ -148,7 +149,7 @@ async def test_do_select_dataset_row_by_row_index_direct_call(populated_app):
     await asyncio.sleep(0.1)  # Adjust this sleep duration as needed
 
     # Perform assertions to verify that the correct dataset row is selected
-    selected_row = populated_app.main_window.dataset_list_box.get_selected_row()
+    selected_row = populated_app_with_mock_data.main_window.dataset_list_box.get_selected_row()
 
     # Assert that the selected row is not None and has the expected index
     assert selected_row is not None, "No dataset row was selected"
@@ -190,7 +191,7 @@ async def test_do_select_dataset_row_by_row_index_action_trigger(app):
 
 
 @pytest.mark.asyncio
-async def test_do_show_dataset_details_by_uri_direct_call(populated_app):
+async def test_do_show_dataset_details_by_uri_direct_call(populated_app_with_mock_data):
     """
     Test the do_show_dataset_details_by_uri method for processing a URI directly. It verifies
     if the correct dataset is selected and its content is displayed based on the URI.
@@ -205,10 +206,10 @@ async def test_do_show_dataset_details_by_uri_direct_call(populated_app):
         return False  # Timeout reached
 
     # Trigger the 'refresh-view' action
-    populated_app.main_window.activate_action('refresh-view')
+    populated_app_with_mock_data.main_window.activate_action('refresh-view')
 
     # Wait until datasets are loaded
-    datasets_loaded = await wait_for_datasets_to_load(populated_app.main_window.dataset_list_box)
+    datasets_loaded = await wait_for_datasets_to_load(populated_app_with_mock_data.main_window.dataset_list_box)
     assert datasets_loaded, "Datasets were not loaded in time"
 
     # Define a URI that corresponds to a dataset in the populated dataset list
@@ -218,11 +219,11 @@ async def test_do_show_dataset_details_by_uri_direct_call(populated_app):
     uri_variant = GLib.Variant.new_string(test_uri)
 
     # Call the do_show_dataset_details_by_uri method with the test URI
-    populated_app.main_window.do_show_dataset_details_by_uri(None, uri_variant)
+    populated_app_with_mock_data.main_window.do_show_dataset_details_by_uri(None, uri_variant)
 
     # Retrieve the dataset that should be selected based on the URI
-    index = populated_app.main_window.dataset_list_box.get_row_index_from_uri(test_uri)
-    selected_row = populated_app.main_window.dataset_list_box.get_row_at_index(index)
+    index = populated_app_with_mock_data.main_window.dataset_list_box.get_row_index_from_uri(test_uri)
+    selected_row = populated_app_with_mock_data.main_window.dataset_list_box.get_row_at_index(index)
     selected_dataset = selected_row.dataset if selected_row is not None else None
 
     # Assert that the dataset with the given URI is selected
@@ -265,7 +266,7 @@ async def test_do_show_dataset_details_by_uri_action_trigger(app):
 
 
 @pytest.mark.asyncio
-async def test_do_show_dataset_details_by_row_index_direct_call(populated_app, mock_dataset_list):
+async def test_do_show_dataset_details_by_row_index_direct_call(populated_app_with_mock_data, mock_dataset_list):
     """
     Test the do_show_dataset_details_by_row_index method for directly showing dataset details by row index.
     It verifies if the dataset list is correctly populated and the specified dataset details are displayed.
@@ -280,8 +281,8 @@ async def test_do_show_dataset_details_by_row_index_direct_call(populated_app, m
         return False  # Timeout reached if datasets are not loaded within the specified time
 
     # Trigger the 'refresh-view' action and wait for datasets to load
-    populated_app.main_window.activate_action('refresh-view')
-    datasets_loaded = await wait_for_datasets_to_load(populated_app.main_window.dataset_list_box)
+    populated_app_with_mock_data.main_window.activate_action('refresh-view')
+    datasets_loaded = await wait_for_datasets_to_load(populated_app_with_mock_data.main_window.dataset_list_box)
     assert datasets_loaded, "Datasets were not loaded in time"
 
     # Create a GLib.Variant with a test row index (e.g., 0 for the first row)
@@ -290,10 +291,10 @@ async def test_do_show_dataset_details_by_row_index_direct_call(populated_app, m
 
     # Create and add the show dataset action to the main window of the application
     show_dataset_action = Gio.SimpleAction.new("show-dataset", row_index_variant.get_type())
-    populated_app.main_window.add_action(show_dataset_action)
+    populated_app_with_mock_data.main_window.add_action(show_dataset_action)
 
     # Connect the show dataset action to the do_show_dataset_details_by_row_index method
-    show_dataset_action.connect("activate", populated_app.main_window.do_show_dataset_details_by_row_index)
+    show_dataset_action.connect("activate", populated_app_with_mock_data.main_window.do_show_dataset_details_by_row_index)
 
     # Trigger the show dataset action with the test row index
     show_dataset_action.activate(row_index_variant)
@@ -302,7 +303,7 @@ async def test_do_show_dataset_details_by_row_index_direct_call(populated_app, m
     await asyncio.sleep(0.1)  # Adjust this sleep duration as needed
 
     # Perform assertions to verify that the dataset details are correctly displayed
-    selected_dataset = populated_app.main_window.dataset_list_box.get_row_at_index(row_index).dataset
+    selected_dataset = populated_app_with_mock_data.main_window.dataset_list_box.get_row_at_index(row_index).dataset
 
     expected_uri = mock_dataset_list[1]['uri']
     expected_uuid = mock_dataset_list[1]['uuid']
@@ -348,7 +349,7 @@ async def test_do_show_dataset_details_by_row_index_action_trigger(app):
 
 
 @pytest.mark.asyncio
-async def test_do_search_select_and_show_direct_call(populated_app, mock_dataset_list):
+async def test_do_search_select_and_show_direct_call(populated_app_with_mock_data, mock_dataset_list):
     """
     Test the do_search_select_and_show method for processing a search directly. It verifies
     if the dataset list is correctly populated, the first dataset is selected, and its
@@ -364,21 +365,21 @@ async def test_do_search_select_and_show_direct_call(populated_app, mock_dataset
         return False  # Timeout reached
 
     # Trigger the 'refresh-view' action
-    populated_app.main_window.activate_action('refresh-view')
+    populated_app_with_mock_data.main_window.activate_action('refresh-view')
 
     # Wait until datasets are loaded
-    datasets_loaded = await wait_for_datasets_to_load(populated_app.main_window.dataset_list_box)
+    datasets_loaded = await wait_for_datasets_to_load(populated_app_with_mock_data.main_window.dataset_list_box)
     assert datasets_loaded, "Datasets were not loaded in time"
 
     # Create a GLib.Variant with the test search query
     mock_variant = GLib.Variant.new_string("test_search_query")
 
     # Call the method with the test search query
-    populated_app.main_window.do_search_select_and_show(None, mock_variant)
+    populated_app_with_mock_data.main_window.do_search_select_and_show(None, mock_variant)
 
     # Assertions to check the state of the application after the search
-    assert len(populated_app.main_window.dataset_list_box.get_children()) > 0, "No datasets found in the list box"
-    first_dataset_row = populated_app.main_window.dataset_list_box.get_children()[0]
+    assert len(populated_app_with_mock_data.main_window.dataset_list_box.get_children()) > 0, "No datasets found in the list box"
+    first_dataset_row = populated_app_with_mock_data.main_window.dataset_list_box.get_children()[0]
     dataset = first_dataset_row.dataset
 
     # Assert that the dataset's URI matches the expected URI
@@ -420,8 +421,8 @@ async def test_do_search_select_and_show_action_trigger(app):
 
 
 @pytest.mark.asyncio
-@pytest.mark.skip(reason="no way of currently testing this")
-async def test_do_get_item_direct_call(populated_app, tmp_path):
+# @pytest.mark.skip(reason="no way of currently testing this")
+async def test_do_get_item_direct_call(populated_app_with_local_dataset_data, local_dataset_uri, tmp_path):
     """
     Test the do_get_item method for copying a selected item directly.
     It verifies if the selected item is correctly copied to the specified destination.
@@ -436,19 +437,31 @@ async def test_do_get_item_direct_call(populated_app, tmp_path):
         return False  # Timeout reached
 
     # Trigger the 'refresh-view' action to load datasets
-    populated_app.main_window.activate_action('refresh-view')
+    populated_app_with_local_dataset_data.main_window.activate_action('refresh-view')
 
     # Wait until datasets are loaded
-    datasets_loaded = await wait_for_datasets_to_load(populated_app.main_window.dataset_list_box)
+    datasets_loaded = await wait_for_datasets_to_load(populated_app_with_local_dataset_data.main_window.dataset_list_box)
     assert datasets_loaded, "Datasets were not loaded in time"
 
     # Select the first dataset
-    first_dataset_row = populated_app.main_window.dataset_list_box.get_children()[0]
-    dataset = first_dataset_row.dataset
+    # first_dataset_row = app_with_mock_dtool_lookup_api_calls_on_local_dataset.main_window.dataset_list_box.get_children()[0]
+    # dataset = first_dataset_row.dataset
 
     # Assuming the first dataset's UUID as the item UUID (Replace this with the actual item UUID logic)
-    item_uuid = dataset.uuid
-    populated_app.main_window._get_selected_items = lambda: [('item_name', item_uuid)]
+
+    def get_item_uuid(dataset, relpath):
+        for identifier, properties in dataset.generate_manifest()["items"].items():
+            if properties["relpath"] == relpath:
+                return identifier
+        return None
+
+    dataset = dtoolcore.DataSet.from_uri(local_dataset_uri)
+    print(dataset.generate_manifest())
+
+    item_uuid = get_item_uuid(dataset, "tiny.png")
+    populated_app_with_local_dataset_data.main_window._get_selected_items = lambda: [('item_name', item_uuid)]
+
+    # TODO: assert file size and file content agree with "tiny.png" in data folder
 
     # Define the destination file path
     dest_file = tmp_path / "destination_file"
@@ -461,7 +474,7 @@ async def test_do_get_item_direct_call(populated_app, tmp_path):
 
     # Call the do_get_item method without 'await'
     try:
-        populated_app.main_window.do_get_item(None, dest_file_variant)
+        populated_app_with_local_dataset_data.main_window.do_get_item(None, dest_file_variant)
     except Exception as e:
         print(f"Error during 'do_get_item': {e}")
         raise
