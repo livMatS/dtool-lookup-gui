@@ -1,5 +1,7 @@
 #
-# Copyright 2021-2022 Johannes Laurin Hörmann
+# Copyright 2021-2023 Johannes Laurin Hörmann
+#           2023 42440470+ashdriod@users.noreply.github.com
+#           2023 Ashwin Vazhappilly
 #           2021 Lars Pastewka
 #
 # ### MIT license

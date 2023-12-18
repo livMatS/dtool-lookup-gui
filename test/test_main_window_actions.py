@@ -1,8 +1,27 @@
-# 1. Direct calls in tests isolate specific functionalities for focused, independent testing of components.
-# 2. Triggering actions and using mocks are crucial for integration testing, ensuring components interact correctly.
-# 3. Mocking and action triggering simulate real-world user interactions and application responses.
-# 4. Separating tests for direct calls and action triggers aids in maintaining clear, organized test structures.
-# 5. This approach enhances test suite readability and makes it easier to understand and update.
+#
+# Copyright 2023 Ashwin Vazhappilly
+#           2022-2023 Johannes Laurin Hörmann
+#
+# ### MIT license
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
 import asyncio
 import time
 
