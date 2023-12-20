@@ -24,6 +24,7 @@
 #
 import asyncio
 import time
+from pathlib import Path
 
 import dtoolcore
 import pytest
@@ -493,6 +494,19 @@ async def test_do_get_item_direct_call(populated_app_with_local_dataset_data, lo
     print(f"File exists: {file_exists}")
     assert file_exists, "The item was not copied to the specified destination"
 
+    # Assert File Size
+    original_file = Path('test/data/tiny.png')  # Path to the original file
+    assert dest_file.stat().st_size == original_file.stat().st_size, "Downloaded file size does not match the original file size"
+
+    # Assert File Content
+    with open(dest_file, 'rb') as f_downloaded, open(original_file, 'rb') as f_original:
+        assert f_downloaded.read() == f_original.read(), "Downloaded file content does not match the original file content"
+
+    # Assert Modification Time
+    current_time = time.time()
+    assert dest_file.stat().st_mtime <= current_time, "Downloaded file modification time is in the future"
+
+    # Optional: Assert File Permissions
 
 @pytest.mark.asyncio
 async def test_do_get_item_action_trigger(app):
