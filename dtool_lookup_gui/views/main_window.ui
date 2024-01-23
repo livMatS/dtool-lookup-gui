@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.38.2 -->
+<!-- Generated with glade 3.40.0 -->
 <interface>
   <requires lib="gtk+" version="3.22"/>
   <requires lib="dtool_gtk_catalog" version="1.0"/>
@@ -665,7 +665,7 @@
                                         <property name="vexpand">True</property>
                                         <property name="orientation">vertical</property>
                                         <child>
-                                          <!-- n-columns=3 n-rows=6 -->
+                                          <!-- n-columns=3 n-rows=7 -->
                                           <object class="GtkGrid">
                                             <property name="visible">True</property>
                                             <property name="can-focus">False</property>
@@ -845,6 +845,115 @@
                                                 <property name="left-attach">1</property>
                                                 <property name="top-attach">5</property>
                                               </packing>
+                                            </child>
+                                            <!-- Tags Label -->
+                                            <child>
+                                              <object class="GtkLabel">
+                                                <property name="visible">True</property>
+                                                <property name="can-focus">False</property>
+                                                <property name="halign">start</property>
+                                                <property name="label" translatable="yes">Tags</property>
+                                                <attributes>
+                                                  <attribute name="weight" value="bold"/>
+                                                </attributes>
+                                              </object>
+                                              <packing>
+                                                <property name="left-attach">0</property>
+                                                <property name="top-attach">6</property>
+                                              </packing>
+                                            </child>
+
+                                            <!-- Tags Label -->
+                                            <child>
+                                              <object class="GtkLabel">
+                                                <property name="visible">True</property>
+                                                <property name="can-focus">False</property>
+                                                <property name="halign">start</property>
+                                                <property name="label" translatable="yes">Tags</property>
+                                                <attributes>
+                                                  <attribute name="weight" value="bold"/>
+                                                </attributes>
+                                              </object>
+                                              <packing>
+                                                <property name="left-attach">0</property>
+                                                <property name="top-attach">6</property>
+                                              </packing>
+                                            </child>
+
+                                            <!-- Nested Grid for Tag Management -->
+                                            <child>
+                                              <object class="GtkGrid">
+                                                <property name="visible">True</property>
+                                                <property name="can-focus">False</property>
+                                                <property name="row-spacing">5</property>
+                                                <property name="column-spacing">5</property>
+
+                                                <!-- Tag Display (GtkFlowBox or GtkListBox) -->
+                                                <child>
+                                                  <object class="GtkFlowBox" id="tag_flowbox">
+                                                    <property name="visible">True</property>
+                                                    <property name="can-focus">True</property>
+                                                    <property name="halign">start</property>
+                                                    <!-- Tags will be dynamically added here -->
+                                                  </object>
+                                                  <packing>
+                                                    <property name="left-attach">0</property>
+                                                    <property name="top-attach">0</property>
+                                                    <property name="width">2</property> <!-- Adjust width as needed -->
+                                                  </packing>
+                                                </child>
+
+                                                <!-- Tag Entry for adding new tags -->
+                                                <child>
+                                                  <object class="GtkEntry" id="tag_entry">
+                                                    <property name="visible">True</property>
+                                                    <property name="can-focus">True</property>
+                                                    <property name="halign">start</property>
+                                                  </object>
+                                                  <packing>
+                                                    <property name="left-attach">2</property>
+                                                    <property name="top-attach">0</property>
+                                                  </packing>
+                                                </child>
+
+                                                <!-- Add Button -->
+                                                <child>
+                                                  <object class="GtkButton" id="add_button">
+                                                    <property name="label">+</property>
+                                                    <property name="visible">True</property>
+                                                    <property name="can-focus">True</property>
+                                                  </object>
+                                                  <packing>
+                                                    <property name="left-attach">3</property>
+                                                    <property name="top-attach">0</property>
+                                                  </packing>
+                                                </child>
+
+                                                <!-- Delete Button -->
+                                                <child>
+                                                  <object class="GtkButton" id="delete_button">
+                                                    <property name="label">-</property>
+                                                    <property name="visible">True</property>
+                                                    <property name="can-focus">True</property>
+                                                  </object>
+                                                  <packing>
+                                                    <property name="left-attach">4</property>
+                                                    <property name="top-attach">0</property>
+                                                  </packing>
+                                                </child>
+
+                                              </object>
+                                              <packing>
+                                                <property name="left-attach">1</property>
+                                                <property name="top-attach">6</property>
+                                              </packing>
+                                            </child>
+
+                                            <child>
+                                              <placeholder/>
+                                            </child>
+                                            <child>
+                                              <placeholder/>
                                             </child>
                                             <child>
                                               <placeholder/>
