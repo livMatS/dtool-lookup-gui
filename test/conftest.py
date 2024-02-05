@@ -23,24 +23,17 @@
 #
 import json
 import logging
-import os
 import pytest
-
-from unittest.mock import patch
 
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('GtkSource', '4')
 from gi.repository import GLib, GObject, Gio, Gtk, GtkSource, GdkPixbuf
 
-import asyncio
 import gbulb
 gbulb.install(gtk=True)
 
-import dtool_lookup_api.core.LookupClient
-
 from dtool_lookup_gui.main import Application
-from dtool_lookup_gui.views.main_window import MainWindow
 
 
 logger = logging.getLogger(__name__)

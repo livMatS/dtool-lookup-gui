@@ -41,7 +41,7 @@ jobs:
         source venv/bin/activate
 
         pip install --upgrade pip
-        pip install wheel
+        pip install wheel setuptools setuptools_scm
         pip install -r requirements.txt
         pip install pyinstaller
 
@@ -49,8 +49,8 @@ jobs:
       id: fix_version
       run: |
         source venv/bin/activate
-        version=$(SETUPTOOLS_SCM_DEBUG=1 python setup.py --version)  # have version written to file to appear in bundled app as well
-        echo "::set-output name=version::$(echo $version)"
+        version=$(SETUPTOOLS_SCM_DEBUG=1 python -m setuptools_scm)  # have version written to file to appear in bundled app as well
+        echo "version=$version" >> $GITHUB_OUTPUT
 
     - name: Log python package info
       run: |
@@ -107,14 +107,14 @@ jobs:
           "release/"
 
     - name: Upload build artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: dtool-lookup-gui-macos
         path: dtool-lookup-gui-macos.tar
         if-no-files-found: error
 
     - name: Upload release artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: dtool-lookup-gui-macos-release
         path: dtool-lookup-gui-${{ steps.fix_version.outputs.version }}-macos.dmg

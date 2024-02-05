@@ -36,16 +36,11 @@ class CopyManager:
 
     def __init__(self, progress_revealer, progress_popover):
         # Note: This is not particularly abstract, as it interacts directly with the Gtk widgets
-
-        # TODO: instead of a single progress_revealer and progress_popover assigned at instantiation,
-        # the copy manager would have an arbitrary amount of those that can be dynamically attached and detached
-
         self._progress_revealer = progress_revealer
         self._progress_chart = progress_revealer.get_child().get_child()
         self._progress_popover = progress_popover
 
     async def copy(self, dataset, destination):
-        # TODO: here the copy manager would loop over all attached status widgets
         self._progress_revealer.set_reveal_child(True)
         tracker = self._progress_popover.add_status_box(
             self.progress_update, f'Copying dataset »{dataset}« to »{destination}«')
@@ -66,7 +61,6 @@ class CopyManager:
             self._progress_revealer.set_reveal_child(False)
 
     def progress_update(self):
-        # TODO: here the copy manager would loop over all attached status widgets
         # Refresh pie chart
         total_length = sum([len(tracker) for tracker in self._progress_popover.status_boxes])
         total_step = sum([tracker.step for tracker in self._progress_popover.status_boxes])
