@@ -133,6 +133,12 @@ on the GTK project's pages.
 Also refer to the build workflows `.github/workflows/build-on-[linux|macos|windows].yml` within this repository 
 for understanding the requirements for the different systems.
 
+On Windows WSL, install
+
+    apt install gcc cmake python3-dev libcairo2-dev gir1.2-gtksource-4 libgirepository1.0-dev
+
+to allow a development installation of the GUI as described below.
+
 Installation
 ^^^^^^^^^^^^
 
