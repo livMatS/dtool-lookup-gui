@@ -41,12 +41,11 @@ import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('GtkSource', '4')
 from gi.repository import GLib, GObject, Gio, Gtk, GtkSource, GdkPixbuf
+from gi.events import GLibEventLoopPolicy
 
-import gbulb
-gbulb.install(gtk=True)
+asyncio.set_event_loop_policy(GlibEventLoopPolicy())
 
 from .models.settings import settings
-
 
 from .views.main_window import MainWindow
 from .views.login_window import LoginWindow

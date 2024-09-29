@@ -5,9 +5,9 @@ import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('GtkSource', '4')
 from gi.repository import GLib, GObject, Gio, Gtk, GtkSource, GdkPixbuf
+from gi.events import GLibEventLoopPolicy
 
-import gbulb
-gbulb.install(gtk=True)
+asyncio.set_event_loop_policy(GlibEventLoopPolicy())
 
 from dtool_lookup_gui.main import Application
 
@@ -35,7 +35,7 @@ def check_loop_failures(loop):  # pragma: no cover
 
 @pytest.fixture(scope="function")
 def glib_policy():
-    from gbulb.glib_events import GLibEventLoopPolicy
+    from gi.events import GLibEventLoopPolicy
 
     logger.debug("Apply GLibEventLoopPolicy")
     return GLibEventLoopPolicy()
@@ -43,7 +43,7 @@ def glib_policy():
 
 @pytest.fixture(scope="function")
 def gtk_policy():
-    from gbulb.gtk import GtkEventLoopPolicy
+    from gi.events import GtkEventLoopPolicy
     logger.debug("Apply GtkEventLoopPolicy")
     return GtkEventLoopPolicy()
 
