@@ -15,7 +15,7 @@ dtool-lookup-gui
     :target: https://badge.fury.io/py/dtool-lookup-gui
     :alt: PyPI package
 
-dtool-lookup-gui is a graphical user interface for dtool_, dtool-lookup-server_ and
+dtool-lookup-gui is a graphical user interface for dtool_, the dtool-lookup-server_, the dtool-lookup-server-direct-mongo-plugin_ and the
 dtool-lookup-server-dependency-graph-plugin_ written in Python_ and GTK_.
 
 .. image:: data/screenshots/screenshot1.png
@@ -78,6 +78,57 @@ If you are using Wayland, launch the app with environment variable
 .. code:: bash
 
     GDK_BACKEND=x11 ./dtool_lookup_gui
+
+Use
+---
+
+Searching
+^^^^^^^^^
+
+The app searches the index of a dtool-lookup-server. How exactly the index is searched depends on the implementation of the search plugin on the server side.
+In the case of the reference search plugin, the `dtool-lookup-server-search-plugin-mongo`_, a word in the search field will search for exactly that word within all string fields stored in the underlying database.
+This, of course, includes the content of the `README.yml` file attached to a dataset, but also matches against contents of the manifest (such as file names of the packaged items) and the basic set of  administrative metadata, namely the fields
+
+.. code:: json
+
+    {
+        "base_uri": "s3://test-bucket",
+        "created_at": 1683797360.056,
+        "creator_username": "jotelha",
+        "dtoolcore_version": "3.18.2",
+        "frozen_at": 1683797362.855,
+        "name": "test_dataset_2",
+        "number_of_items": 1,
+        "size_in_bytes": 19347,
+        "tags": [],
+        "type": "dataset",
+        "uri": "s3://test-bucket/26785c2a-e8f8-46bf-82a1-cec92dbdf28f",
+        "uuid": "26785c2a-e8f8-46bf-82a1-cec92dbdf28f"
+    }
+
+The `dtool-lookup-server-search-plugin-mongo`_ README offers more information on the exact search mechanism.
+
+If the `dtool-lookup-server-direct-mongo-plugin`_ is installed on the server side, very specific search queries that make use of operators from the MongoDB language are possible.
+Enclose a MongoDB language query in curly brackets ``{...}`` and all fields in double quotes ``"..."`` to use this direct Mongo query functionality.
+
+The query
+
+.. code:: json
+
+    {
+       "creator_username": {
+            "$in": ["anna", "bert"]
+        },
+        "readme.description": {
+            "$regex": "toluene"
+        }
+    }
+
+searches for all datasets created by users with the either the local user name "anna" or "bert" on the machine of dataset creation and with the word "toluene" included in the README field "description".
+The regular expression operator can of course formulate more sophisticated criteria than a plain text search on the content of a specific field.
+
+The `direct query`_ section of the `dtool-lookup-server-direct-mongo-plugin`_ README lists a few
+other query examples.
 
 Development
 -----------
@@ -230,11 +281,17 @@ This development has received funding from the Deutsche Forschungsgemeinschaft w
 
 .. _contributing guidelines: CONTRIBUTING.md
 
+.. _direct query: https://github.com/livMatS/dtool-lookup-server-direct-mongo-plugin#direct-query
+
 .. _dtool: https://github.com/jic-dtool/dtool
 
 .. _dtool-lookup-server: https://github.com/jic-dtool/dtool-lookup-server
 
 .. _dtool-lookup-server-dependency-graph-plugin: https://github.com/livMatS/dtool-lookup-server-dependency-graph-plugin
+
+.. _dtool-lookup-server-direct-mongo-plugin: https://github.com/livMatS/dtool-lookup-server-direct-mongo-plugin
+
+.. _dtool-lookup-server-search-plugin-mongo: https://github.com/jic-dtool/dtool-lookup-server-search-plugin-mongo
 
 .. _Glade: https://glade.gnome.org/
 
@@ -251,3 +308,4 @@ This development has received funding from the Deutsche Forschungsgemeinschaft w
 .. _livMatS: https://www.livmats.uni-freiburg.de/en
 
 .. _latest release: https://github.com/livMatS/dtool-lookup-gui/releases/latest
+
