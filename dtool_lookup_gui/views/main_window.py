@@ -1,6 +1,6 @@
 #
-# Copyright 2021-2023 Johannes Laurin Hörmann
-#           2023 Ashwin Vazhappilly
+# Copyright 2023 Ashwin Vazhappilly
+#           2021-2023 Johannes Laurin Hörmann
 #           2021 Lars Pastewka
 #
 # ### MIT license
@@ -299,6 +299,7 @@ class MainWindow(Gtk.ApplicationWindow):
         async def _refresh():
             # first, refresh base uri list and its selection
             await self._refresh_base_uri_list_box()
+            self.select_and_load_first_uri()
 
             _logger.debug(f"Done refreshing base URIs.")
             # on_base_uri_selected(self, list_box, row) called by selection
@@ -592,6 +593,7 @@ class MainWindow(Gtk.ApplicationWindow):
     def do_refresh_view(self, action, value):
         """Refresh view by reloading base uri list, """
         self.refresh()
+
 
     # signal handlers
     @Gtk.Template.Callback()
@@ -984,6 +986,20 @@ class MainWindow(Gtk.ApplicationWindow):
         self.page_advancer_button.set_sensitive(True)
         self.next_page_advancer_button.set_sensitive(True)
 
+    def select_and_load_first_uri(self):
+        """
+        This function is used exclusively for testing purposes. It automatically reloads the data
+        and selects the first URI. This function is designed to operate only when there is exactly
+        one URI in the list box, ensuring that tests can be automated effectively.
+        """
+        if len(self.base_uri_list_box.get_children()) == 1:
+            first_row = self.base_uri_list_box.get_children()[0]
+            self.base_uri_list_box.select_row(first_row)
+            self.on_base_uri_selected(self.base_uri_list_box, first_row)
+
+    # TODO: this should be an action do_copy
+    # if it is possible to hand to strings, e.g. source and destination to an action, then this action should
+    # go to the main app.
     # @Gtk.Template.Callback(), not in .ui
     def on_copy_clicked(self, widget):
         async def _copy():
