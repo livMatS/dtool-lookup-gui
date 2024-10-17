@@ -29,7 +29,7 @@ import gi
 
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
-from dtool_lookup_api.asynchronous import versions
+from dtool_lookup_api.asynchronous import get_versions
 from ..utils.logging import _log_nested
 
 # Set up logger for this module
@@ -52,7 +52,7 @@ class ServerVersionsDialog(Gtk.Window):
 
     async def _retrieve_versions(self):
         """Asynchronously fetch server versions and update the label with formatted information."""
-        server_versions = await versions()
+        server_versions = await get_versions()
         version_info = self._format_server_versions(server_versions)
         _log_nested(logger.info, version_info)
         self.server_versions_label.set_markup(version_info)

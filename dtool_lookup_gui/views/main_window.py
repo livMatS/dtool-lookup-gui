@@ -368,7 +368,7 @@ class MainWindow(Gtk.ApplicationWindow):
                     )
                 else:
                     _logger.debug("Specified search text is not a valid query, just perform free text search.")
-                    datasets = await DatasetModel.search(
+                    datasets = await DatasetModel.get_datasets(
                         keyword,
                         page_number=page_number,
                         page_size=page_size,
