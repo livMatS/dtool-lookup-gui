@@ -272,29 +272,29 @@ class DatasetModel:
             raise ValueError('Please provide either `uri` or `dateset_info`.')
 
     @classmethod
-    async def search(cls, keyword, page_number, page_size, pagination={}):
+    async def get_datasets(cls, keyword, page_number, page_size, pagination={}):
         async with ConfigurationBasedLookupClient() as lookup:
-            datasets = await lookup.search(keyword, page_number=page_number, page_size=page_size, pagination=pagination)
+            datasets = await lookup.get_datasets(keyword, page_number=page_number, page_size=page_size, pagination=pagination)
         return [await cls.from_lookup(lookup_dict) for lookup_dict in datasets]
 
     @classmethod
     async def query(cls, query_text, *args, **kwargs):
         async with ConfigurationBasedLookupClient() as lookup:
-            datasets = await lookup.by_query(query_text, *args, **kwargs)
+            datasets = await lookup.query(query_text, *args, **kwargs)
         return [await cls.from_lookup(lookup_dict) for lookup_dict in datasets]
 
     @classmethod
     async def query_all(cls, page_number=1, page_size=10, pagination={}):
         """Query all datasets from the lookup server."""
         async with ConfigurationBasedLookupClient() as lookup:
-            datasets = await lookup.all(page_number=page_number, page_size=page_size, pagination=pagination)
+            datasets = await lookup.get_datasets(page_number=page_number, page_size=page_size, pagination=pagination)
         return [await cls.from_lookup(lookup_dict) for lookup_dict in datasets]
 
     @classmethod
     async def versions(cls):
         """To return version info from the server """
         async with ConfigurationBasedLookupClient() as lookup:
-            version_info = await lookup.versions()
+            version_info = await lookup.get_versions()
         print(version_info)
 
     def __str__(self):
@@ -348,7 +348,7 @@ class DatasetModel:
 
         logger.debug("README.yml queried from lookup server.")
         async with ConfigurationBasedLookupClient() as lookup:
-            self._dataset_info['readme_content'] = await lookup.readme(self.uri)
+            self._dataset_info['readme_content'] = await lookup.get_readme(self.uri)
         return self._dataset_info['readme_content']
 
     async def get_manifest(self):
@@ -358,7 +358,7 @@ class DatasetModel:
         if 'manifest' in self._dataset_info:
             return self._dataset_info['manifest']
         async with ConfigurationBasedLookupClient() as lookup:
-            manifest_dict = await lookup.manifest(self.uri)
+            manifest_dict = await lookup.get_manifest(self.uri)
         self._dataset_info['manifest'] = _mangle_lookup_manifest(manifest_dict)
         return self._dataset_info['manifest']
 
