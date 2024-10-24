@@ -178,7 +178,8 @@ class MainWindow(Gtk.ApplicationWindow):
     contents_per_page = Gtk.Template.Child()
     linting_errors_button = Gtk.Template.Child()
 
-
+    sort_field_combo_box = Gtk.Template.Child()
+    sort_order_switch = Gtk.Template.Child()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -272,7 +273,6 @@ class MainWindow(Gtk.ApplicationWindow):
         self._copy_manager = CopyManager(self.progress_revealer, self.progress_popover)
 
         _logger.debug(f"Constructed main window for app '{self.application.get_application_id()}'")
-
 
         # Initialize pagination parameters, hide page advancer button by default, set default items per page, and highlight the current page button.
         self.pagination = {}
@@ -876,6 +876,14 @@ class MainWindow(Gtk.ApplicationWindow):
     def on_error_bar_response(self, widget, response_id):
         if response_id == Gtk.ResponseType.CLOSE:
             self.error_bar.set_revealed(False)
+
+    # sort signal handlers
+    @Gtk.Template.Callback()
+    def on_sort_field_combo_box_changed(self, widget):
+        sort_field = widget.get_active_text()
+        _logger.debug("sort field changed to %s", sort_field)
+
+    # pagination signal handlers
 
     @Gtk.Template.Callback()
     def on_first_page_button_clicked(self, widget):
