@@ -494,7 +494,7 @@
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkComboBoxText">
+                                  <object class="GtkComboBoxText" id="sort_field_combo_box">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
                                     <property name="halign">start</property>
@@ -503,6 +503,7 @@
                                       <item id="&lt;Enter ID&gt;" translatable="yes">uri</item>
                                       <item translatable="yes">name</item>
                                     </items>
+                                    <signal name="changed" handler="on_sort_field_combo_box_changed" swapped="no"/>
                                   </object>
                                   <packing>
                                     <property name="left_attach">1</property>
@@ -510,7 +511,7 @@
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkSwitch">
+                                  <object class="GtkSwitch" id="sort_order_switch">
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="halign">start</property>
