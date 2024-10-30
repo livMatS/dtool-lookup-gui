@@ -272,9 +272,9 @@ class DatasetModel:
             raise ValueError('Please provide either `uri` or `dateset_info`.')
 
     @classmethod
-    async def get_datasets(cls, keyword, page_number, page_size, pagination={}):
+    async def get_datasets(cls, keyword, page_number, page_size,sort_fields,sort_order, pagination={} ,sorting={}):
         async with ConfigurationBasedLookupClient() as lookup:
-            datasets = await lookup.get_datasets(keyword, page_number=page_number, page_size=page_size, pagination=pagination)
+            datasets = await lookup.get_datasets(keyword, page_number=page_number, page_size=page_size,sort_fields=sort_fields,sort_order=sort_order, pagination=pagination,sorting=sorting)
         return [await cls.from_lookup(lookup_dict) for lookup_dict in datasets]
 
     @classmethod
@@ -284,10 +284,10 @@ class DatasetModel:
         return [await cls.from_lookup(lookup_dict) for lookup_dict in datasets]
 
     @classmethod
-    async def query_all(cls, page_number=1, page_size=10, pagination={}):
+    async def query_all(cls,sort_fields,sort_order, page_number=1, page_size=10, pagination={},sorting={}):
         """Query all datasets from the lookup server."""
         async with ConfigurationBasedLookupClient() as lookup:
-            datasets = await lookup.get_datasets(page_number=page_number, page_size=page_size, pagination=pagination)
+            datasets = await lookup.get_datasets(page_number=page_number, page_size=page_size,sort_fields=sort_fields,sort_order=sort_order, pagination=pagination,sorting=sorting)
         return [await cls.from_lookup(lookup_dict) for lookup_dict in datasets]
 
     @classmethod

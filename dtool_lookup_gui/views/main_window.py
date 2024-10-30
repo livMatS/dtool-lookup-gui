@@ -176,13 +176,14 @@ class MainWindow(Gtk.ApplicationWindow):
 
     main_statusbar = Gtk.Template.Child()
     contents_per_page = Gtk.Template.Child()
-    linting_errors_button = Gtk.Template.Child()
-
     sort_field_combo_box = Gtk.Template.Child()
-    sort_order_switch = Gtk.Template.Child()
+
+    linting_errors_button = Gtk.Template.Child()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        
+        self.sort_order = 1 # default ascending sort order
 
         self.application = self.get_application()
 
@@ -350,13 +351,46 @@ class MainWindow(Gtk.ApplicationWindow):
     def contents_per_page_changed(self, widget):
         self.contents_per_page_value = widget.get_active_text()
         self.on_first_page_button_clicked(self.first_page_button)  # Directly call the method
+    
+    def on_sort_field_combo_box_changed(self, widget):
+        transformed_fields = {
+            "Uri": "uri",
+            "Name": "name",
+            "Base Uri": "base_uri",
+            "Created At": "created_at",
+            "Frozen At": "frozen_at",
+            "Uuid": "uuid",
+            "Creator Username": "creator_username",
+        }
+        
+        selected_text = widget.get_active_text()
 
-    async def _fetch_search_results(self, keyword, on_show=None, page_number=1, page_size=10, widget=None):
+        transformed_text = transformed_fields.get(selected_text)
+
+        sort_order = self.sort_order
+
+        asyncio.create_task(self._fetch_search_results(keyword=None, sort_fields=[transformed_text], sort_order=[sort_order]))
+
+    @Gtk.Template.Callback()
+    def on_sort_order_switch_state_set(self, widget,state):
+        # Toggle sort order based on the switch state
+        if state:
+            self.sort_order = -1  # Switch is on, use ascending order
+        else:
+            self.sort_order = 1  # Switch is off, use descending order
+                
+        self.on_sort_field_combo_box_changed(self.sort_field_combo_box)
+
+        
+
+    async def _fetch_search_results(self, keyword, on_show=None, page_number=1, page_size=10,sort_fields=["uri"],sort_order=[1] , widget=None):
+        # Here sort order 1 implies ascending 
         row = self.base_uri_list_box.search_results_row
         row.start_spinner()
         self.main_spinner.start()
 
         self.pagination = {}  # Add pagination dictionary
+        self.sorting = {} # Add sorting dictionary
         try:
             if keyword:
                 if is_valid_query(keyword):
@@ -365,7 +399,11 @@ class MainWindow(Gtk.ApplicationWindow):
                         keyword,
                         page_number=page_number,
                         page_size=page_size,
-                        pagination=self.pagination
+                        sort_fields = sort_fields,
+                        sort_order = sort_order,
+                        pagination=self.pagination,
+                        sorting = self.sorting
+
                     )
                 else:
                     _logger.debug("Specified search text is not a valid query, just perform free text search.")
@@ -373,14 +411,21 @@ class MainWindow(Gtk.ApplicationWindow):
                         keyword,
                         page_number=page_number,
                         page_size=page_size,
-                        pagination=self.pagination
+                        sort_fields = sort_fields,
+                        sort_order = sort_order,
+                        pagination=self.pagination,
+                        sorting = self.sorting
                     )
             else:
                 _logger.debug("No keyword specified, list all datasets.")
                 datasets = await DatasetModel.query_all(
                     page_number=page_number,
                     page_size=page_size,
-                    pagination=self.pagination
+                    sort_fields = sort_fields,
+                    sort_order = sort_order,
+                    pagination=self.pagination,
+                    sorting = self.sorting
+
                 )
 
             if len(datasets) > self._max_nb_datasets:
@@ -394,6 +439,7 @@ class MainWindow(Gtk.ApplicationWindow):
             self._update_search_summary(datasets)
             self._update_main_statusbar()
             self.contents_per_page.connect("changed", self.contents_per_page_changed)
+            self.sort_field_combo_box.connect("changed", self.on_sort_field_combo_box_changed)
             if self.base_uri_list_box.get_selected_row() == row:
                 # Only update if the row is still selected
                 self.dataset_list_box.fill(datasets, on_show=on_show)
@@ -878,10 +924,10 @@ class MainWindow(Gtk.ApplicationWindow):
             self.error_bar.set_revealed(False)
 
     # sort signal handlers
-    @Gtk.Template.Callback()
-    def on_sort_field_combo_box_changed(self, widget):
-        sort_field = widget.get_active_text()
-        _logger.debug("sort field changed to %s", sort_field)
+    # @Gtk.Template.Callback()
+    # def on_sort_field_combo_box_changed(self, widget):
+    #     sort_field = widget.get_active_text()
+    #     _logger.debug("sort field changed to %s", sort_field)
 
     # pagination signal handlers
 
