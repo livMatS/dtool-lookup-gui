@@ -101,7 +101,7 @@ jobs:
         python --version
         pip --version
         echo "### install pythonic dependencies ###"
-        pip install --upgrade pip
+        python -m pip install --upgrade pip
         pip install -r pyinstaller/mingw64_requirements.txt
         pip install PyInstaller
         echo "PyInstaller version: $(python -m PyInstaller --version)"
