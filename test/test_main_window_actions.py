@@ -95,10 +95,6 @@ async def test_do_search_action_trigger(app):
     windows = app.get_windows()
     main_window = [w for w in windows if isinstance(w, MainWindow)][0]
 
-    # Mock dependencies
-    mock_base_uri_list_box = MagicMock()
-    main_window.base_uri_list_box = mock_base_uri_list_box
-
     # Setup necessary mocks for the action trigger
     main_window._search = MagicMock()
 
@@ -428,8 +424,8 @@ async def test_do_search_select_and_show_action_trigger(app):
     main_window = [w for w in windows if isinstance(w, MainWindow)][0]
 
     # Mock dependencies
-    mock_base_uri_list_box = MagicMock()
-    main_window.base_uri_list_box = mock_base_uri_list_box
+    # mock_base_uri_list_box = MagicMock()
+    # main_window.base_uri_list_box = mock_base_uri_list_box
 
     # Setup necessary mocks for the action trigger
     main_window._search_select_and_show = MagicMock()

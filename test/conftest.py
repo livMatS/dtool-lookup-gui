@@ -135,11 +135,7 @@ def setup_test_loop(loop):
 
 def check_loop_failures(loop):  # pragma: no cover
     if loop.test_failure is not None:
-        if hasattr(loop.test_failure, 'message') and hasattr(loop.test_failure, 'exception'):
-            pytest.fail("{message}: {exception}".format(**loop.test_failure))
-        else:
-            pytest.fail("{message}".format(**loop.test_failure))
-
+        pytest.fail("%s" % dict(loop.test_failure))
 
 @pytest.fixture(scope="function")
 def glib_policy():
@@ -321,7 +317,6 @@ def populated_app_with_local_dataset_data(
     #    'frozen_at': 1702902057.241831
     #   }
 
-
     dataset_info["uri"] = dataset.uri
     dataset_info["base_uri"] = os.path.dirname(local_dataset_uri)
 
@@ -332,12 +327,11 @@ def populated_app_with_local_dataset_data(
     with (
             patch("dtool_lookup_api.core.LookupClient.authenticate", return_value=mock_token),
             patch("dtool_lookup_api.core.LookupClient.ConfigurationBasedLookupClient.connect", return_value=None),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.all", return_value=dataset_list),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.search", return_value=dataset_list),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_datasets", return_value=dataset_list),
             patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.graph", return_value=[]),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.manifest", return_value=manifest),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.readme", return_value=mock_get_readme),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.config", return_value=mock_get_config),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_manifest", return_value=manifest),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_readme", return_value=mock_get_readme),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_config", return_value=mock_get_config),
             patch("dtool_lookup_api.core.LookupClient.ConfigurationBasedLookupClient.has_valid_token", return_value=True)
         ):
 
