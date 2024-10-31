@@ -399,10 +399,10 @@ class MainWindow(Gtk.ApplicationWindow):
                         keyword,
                         page_number=page_number,
                         page_size=page_size,
-                        sort_fields = sort_fields,
-                        sort_order = sort_order,
+                        sort_fields=sort_fields,
+                        sort_order=sort_order,
                         pagination=self.pagination,
-                        sorting = self.sorting
+                        sorting=self.sorting
 
                     )
                 else:
@@ -411,22 +411,28 @@ class MainWindow(Gtk.ApplicationWindow):
                         keyword,
                         page_number=page_number,
                         page_size=page_size,
-                        sort_fields = sort_fields,
-                        sort_order = sort_order,
+                        sort_fields=sort_fields,
+                        sort_order=sort_order,
                         pagination=self.pagination,
-                        sorting = self.sorting
+                        sorting=self.sorting
                     )
             else:
                 _logger.debug("No keyword specified, list all datasets.")
                 datasets = await DatasetModel.query_all(
                     page_number=page_number,
                     page_size=page_size,
-                    sort_fields = sort_fields,
-                    sort_order = sort_order,
+                    sort_fields=sort_fields,
+                    sort_order=sort_order,
                     pagination=self.pagination,
-                    sorting = self.sorting
-
+                    sorting=self.sorting
                 )
+
+            if self.pagination == {}:  # server did not provide pagination information
+                self.pagination = {
+                    'total': len(datasets),
+                    'page': 1,
+                    'last_page': 1
+                }
 
             if len(datasets) > self._max_nb_datasets:
                 _logger.warning(
@@ -1042,14 +1048,11 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def select_and_load_first_uri(self):
         """
-        This function is used exclusively for testing purposes. It automatically reloads the data
-        and selects the first URI. This function is designed to operate only when there is exactly
-        one URI in the list box, ensuring that tests can be automated effectively.
+        This function automatically reloads the data and selects the first URI.
         """
-        if len(self.base_uri_list_box.get_children()) == 1:
-            first_row = self.base_uri_list_box.get_children()[0]
-            self.base_uri_list_box.select_row(first_row)
-            self.on_base_uri_selected(self.base_uri_list_box, first_row)
+        first_row = self.base_uri_list_box.get_children()[0]
+        self.base_uri_list_box.select_row(first_row)
+        self.on_base_uri_selected(self.base_uri_list_box, first_row)
 
     # TODO: this should be an action do_copy
     # if it is possible to hand to strings, e.g. source and destination to an action, then this action should

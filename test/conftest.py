@@ -36,6 +36,7 @@ gbulb.install(gtk=True)
 
 from dtool_lookup_gui.main import Application
 
+from unittest.mock import patch
 
 logger = logging.getLogger(__name__)
 
@@ -44,12 +45,12 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 
 # dtool_lookup_api Config
 
-DTOOL_LOOKUP_SERVER_URL = "https://localhost:5000/lookup"
-DTOOL_LOOKUP_SERVER_TOKEN = r"eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTcwMTY4OTU5MywianRpIjoiYTdkN2Y5ZWItZGI3MS00YjExLWFhMzktZGQ2YzgzOTJmOWE4IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6InRlc3R1c2VyIiwibmJmIjoxNzAxNjg5NTkzLCJleHAiOjE3MDE2OTMxOTN9.t9SQ00ecZRc-pspz-Du7321xfWIzgTTFKobkNed1CuQYHvtNrc3vdHYbqCWaYCqZpEVF8RlltldT4Lookx6vNgnW4olpiS2KTZ-X2asMhn7SShDtUJuU54CGeViWzYX_V_Pzckoe_cgjFkOutRvnwy_072Whnmc0TwYojwNqUScAIJRu0pzym84JngloXfdI7r25GcRVNtzsGUl7DDfrIz4aSOeVDAVEXhPjgEatKsvNdVZl1DIJsTZpuI7Jh7ZW1WsyjonqHR0J0kIVQn9imQyLyS9_CtmURBQ3kabx6cxhpx5LADrzLutSu24eA4FyECOdzjJ3SPGb9nIVTEDxQg"
-DTOOL_LOOKUP_SERVER_TOKEN_GENERATOR_URL = "https://localhost:5000/token"
-DTOOL_LOOKUP_SERVER_USERNAME = "testuser"
-DTOOL_LOOKUP_SERVER_PASSWORD = "test_password"
-DTOOL_LOOKUP_SERVER_VERIFY_SSL = True
+DSERVER_URL = "https://localhost:5000/lookup"
+DSERVER_TOKEN = r"eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTcwMTY4OTU5MywianRpIjoiYTdkN2Y5ZWItZGI3MS00YjExLWFhMzktZGQ2YzgzOTJmOWE4IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6InRlc3R1c2VyIiwibmJmIjoxNzAxNjg5NTkzLCJleHAiOjE3MDE2OTMxOTN9.t9SQ00ecZRc-pspz-Du7321xfWIzgTTFKobkNed1CuQYHvtNrc3vdHYbqCWaYCqZpEVF8RlltldT4Lookx6vNgnW4olpiS2KTZ-X2asMhn7SShDtUJuU54CGeViWzYX_V_Pzckoe_cgjFkOutRvnwy_072Whnmc0TwYojwNqUScAIJRu0pzym84JngloXfdI7r25GcRVNtzsGUl7DDfrIz4aSOeVDAVEXhPjgEatKsvNdVZl1DIJsTZpuI7Jh7ZW1WsyjonqHR0J0kIVQn9imQyLyS9_CtmURBQ3kabx6cxhpx5LADrzLutSu24eA4FyECOdzjJ3SPGb9nIVTEDxQg"
+DSERVER_TOKEN_GENERATOR_URL = "https://localhost:5000/token"
+DSERVER_USERNAME = "testuser"
+DSERVER_PASSWORD = "test_password"
+DSERVER_VERIFY_SSL = True
 
 AFFIRMATIVE_EXPRESSIONS = ['true', '1', 'y', 'yes', 'on']
 NEGATIVE_EXPRESSIONS = ['false', '0', 'n', 'no', 'off']
@@ -60,13 +61,12 @@ class MockDtoolLookupAPIConfig():
     """Mock dtool configuration without touching the local config file."""
 
     def __init__(self, *args, **kwargs):
-        self._lookup_server_url = DTOOL_LOOKUP_SERVER_URL
-        self._lookup_server_token = DTOOL_LOOKUP_SERVER_URL
-        self._lookup_server_token_generator_url = DTOOL_LOOKUP_SERVER_TOKEN_GENERATOR_URL
-        self._lookup_server_username = DTOOL_LOOKUP_SERVER_USERNAME
-        self._lookup_server_password = DTOOL_LOOKUP_SERVER_PASSWORD
-        self._lookup_server_verify_ssl = DTOOL_LOOKUP_SERVER_VERIFY_SSL
-
+        self._lookup_server_url = DSERVER_URL
+        self._lookup_server_token = DSERVER_URL
+        self._lookup_server_token_generator_url = DSERVER_TOKEN_GENERATOR_URL
+        self._lookup_server_username = DSERVER_USERNAME
+        self._lookup_server_password = DSERVER_PASSWORD
+        self._lookup_server_verify_ssl = DSERVER_VERIFY_SSL
 
     @property
     def lookup_url(self):
@@ -185,7 +185,10 @@ def gtk_loop(gtk_policy):
 
 @pytest.fixture(scope="function")
 def app(gtk_loop):
+    from dtool_lookup_gui.views.main_window import MainWindow
+
     app = Application(loop=gtk_loop)
+
     yield app
 
 @pytest.fixture(scope="function")
@@ -285,12 +288,11 @@ def populated_app_with_mock_data(
     with (
             patch("dtool_lookup_api.core.LookupClient.authenticate", return_value=mock_token),
             patch("dtool_lookup_api.core.LookupClient.ConfigurationBasedLookupClient.connect", return_value=None),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.all", return_value=mock_get_datasets),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.search", return_value=mock_get_datasets),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_datasets", return_value=mock_get_datasets),
             patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.graph", return_value=[]),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.manifest", return_value=mock_get_manifest),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.readme", return_value=mock_get_readme),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.config", return_value=mock_get_config),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_manifest", return_value=mock_get_manifest),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_readme", return_value=mock_get_readme),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_config", return_value=mock_get_config),
             patch("dtool_lookup_api.core.LookupClient.ConfigurationBasedLookupClient.has_valid_token", return_value=True)
         ):
 
