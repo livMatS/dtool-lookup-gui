@@ -223,7 +223,7 @@ class LookupBaseURIModel(BaseURI):
     @classmethod
     async def all(cls, username):
         async with ConfigurationBasedLookupClient() as lookup_client:
-            user_info = await lookup_client.user_info(username)
+            user_info = await lookup_client.get_user(username)
         if 'search_permissions_on_base_uris' not in user_info:
             raise RuntimeError(f"Request for user '{username}' info failed, possibly not authenticated.")
 

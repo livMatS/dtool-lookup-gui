@@ -29,7 +29,7 @@ import json
 
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk
-from dtool_lookup_api.asynchronous import config
+from dtool_lookup_api.asynchronous import get_config
 
 # Set up logger for this module
 logger = logging.getLogger(__name__)
@@ -49,7 +49,7 @@ class ConfigDialog(Gtk.Window):
 
     async def _retrieve_config(self):
         """Asynchronously fetch server configuration and update the text view."""
-        server_config = await config()
+        server_config = await get_config()
         config_info = self._format_server_config(server_config)
         buffer = self.config_text_view.get_buffer()
         buffer.set_text("")  # Clearing the buffer

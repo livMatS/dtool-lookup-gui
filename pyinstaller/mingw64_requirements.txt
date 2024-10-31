@@ -8,8 +8,8 @@ dtool-lookup-api==0.7.0
 dtool-s3==0.14.1
 dtool-smb==0.1.0
 dtool-symlink==0.3.1
-dtoolcore==3.18.2
-gbulb==0.6.4
+dtoolcore==3.18.3
+gbulb==0.6.6
 pyasn1==0.6.0
 pysmb==1.2.9.1
-urllib3==2.1.0
+urllib3==2.2.2
