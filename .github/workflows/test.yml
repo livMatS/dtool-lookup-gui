@@ -51,7 +51,7 @@ jobs:
 
       - name: Install app
         run: |
-          pip install .
+          pip install .[test]
 
       # run in virtual X server, see https://github.com/pygobject/pygobject-travis-ci-docker-examples
       - name: Test with pytest
