@@ -195,40 +195,48 @@ def mock_token(scope="function"):
 
 
 @pytest.fixture(scope="function")
-def mock_dataset_list():
+def mock_get_datasets():
     """Provide a mock dataset list"""
-    with open(os.path.join(_HERE, 'data', 'mock_dataset_search_response.json'), 'r') as f:
+    with open(os.path.join(_HERE, 'data', 'mock_get_datasets_response.json'), 'r') as f:
         dataset_list = json.load(f)
 
     yield dataset_list
 
 
 @pytest.fixture(scope="function")
-def mock_manifest():
+def mock_get_manifest():
     """Provide a mock dataset list"""
-    with open(os.path.join(_HERE, 'data', 'mock_manifest_response.json'), 'r') as f:
+    with open(os.path.join(_HERE, 'data', 'mock_get_manifest_response.json'), 'r') as f:
         manifest = json.load(f)
 
     yield manifest
 
 
 @pytest.fixture(scope="function")
-def mock_readme():
+def mock_get_readme():
     """Provide a mock dataset list"""
-    with open(os.path.join(_HERE, 'data', 'mock_readme_response.json'), 'r') as f:
+    with open(os.path.join(_HERE, 'data', 'mock_get_readme_response.json'), 'r') as f:
         readme = json.load(f)
 
     yield readme
 
 
 @pytest.fixture(scope="function")
-def mock_config_info():
+def mock_get_config():
     """Provide a mock server config info"""
-    with open(os.path.join(_HERE, 'data', 'mock_config_info_response.json'), 'r') as f:
+    with open(os.path.join(_HERE, 'data', 'mock_get_config_response.json'), 'r') as f:
         config_info = json.load(f)
 
     yield config_info
 
+
+@pytest.fixture(scope="function")
+def mock_get_versions():
+    """Provide a mock server versions info"""
+    with open(os.path.join(_HERE, 'data', 'mock_get_versions_response.json'), 'r') as f:
+        config_info = json.load(f)
+
+    yield config_info
 
 @pytest.fixture(scope="function")
 def local_dataset_uri(tmp_path):
@@ -267,7 +275,7 @@ def local_dataset_uri(tmp_path):
 
 @pytest.fixture(scope="function")
 def populated_app_with_mock_data(
-        app, mock_dataset_list, mock_manifest, mock_readme, mock_config_info):
+        app, mock_get_datasets, mock_get_manifest, mock_get_readme, mock_get_config):
     """Replaces lookup api calls with mock methods that return fake lists of datasets."""
 
     import dtool_lookup_api.core.config
@@ -277,12 +285,12 @@ def populated_app_with_mock_data(
     with (
             patch("dtool_lookup_api.core.LookupClient.authenticate", return_value=mock_token),
             patch("dtool_lookup_api.core.LookupClient.ConfigurationBasedLookupClient.connect", return_value=None),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.all", return_value=mock_dataset_list),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.search", return_value=mock_dataset_list),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.all", return_value=mock_get_datasets),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.search", return_value=mock_get_datasets),
             patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.graph", return_value=[]),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.manifest", return_value=mock_manifest),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.readme", return_value=mock_readme),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.config", return_value=mock_config_info),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.manifest", return_value=mock_get_manifest),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.readme", return_value=mock_get_readme),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.config", return_value=mock_get_config),
             patch("dtool_lookup_api.core.LookupClient.ConfigurationBasedLookupClient.has_valid_token", return_value=True)
         ):
 
@@ -291,7 +299,7 @@ def populated_app_with_mock_data(
 
 @pytest.fixture(scope="function")
 def populated_app_with_local_dataset_data(
-        app, local_dataset_uri, mock_token, mock_readme, mock_config_info):
+        app, local_dataset_uri, mock_token, mock_get_readme, mock_get_config):
     """Replaces lookup api calls with mock methods that return fake lists of datasets."""
 
     import dtool_lookup_api.core.config
@@ -326,8 +334,8 @@ def populated_app_with_local_dataset_data(
             patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.search", return_value=dataset_list),
             patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.graph", return_value=[]),
             patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.manifest", return_value=manifest),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.readme", return_value=mock_readme),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.config", return_value=mock_config_info),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.readme", return_value=mock_get_readme),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.config", return_value=mock_get_config),
             patch("dtool_lookup_api.core.LookupClient.ConfigurationBasedLookupClient.has_valid_token", return_value=True)
         ):
 

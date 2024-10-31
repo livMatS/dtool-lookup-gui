@@ -1,0 +1,112 @@
+[
+    {
+        "base_uri": "s3://test-bucket",
+        "created_at": 1604860720.736269,
+        "creator_username": "jotelha",
+        "frozen_at": 1604864525.691079,
+        "name": "simple_test_dataset",
+        "number_of_items": 1,
+        "size_in_bytes": 17,
+        "uri": "s3://test-bucket/1a1f9fad-8589-413e-9602-5bbd66bfe675",
+        "uuid": "1a1f9fad-8589-413e-9602-5bbd66bfe675"
+    },
+    {
+        "base_uri": "smb://test-share",
+        "created_at": 1681394343.769833,
+        "creator_username": "jotelha",
+        "frozen_at": 1681394343.780084,
+        "name": "2021-02-25-03-53-23-833298-probeonsubst--econversionminimizationandequilibration",
+        "number_of_items": 3,
+        "size_in_bytes": 12,
+        "uri": "smb://test-share/01211ad2-45ee-42f3-bc82-b24725462605",
+        "uuid": "01211ad2-45ee-42f3-bc82-b24725462605"
+    },
+    {
+        "base_uri": "smb://test-share",
+        "created_at": 1681394346.136923,
+        "creator_username": "jotelha",
+        "frozen_at": 1681394346.145776,
+        "name": "2020-12-15-12-53-46-616912-c-15-n-338-m-338-s-monolayer-substratepassivation",
+        "number_of_items": 3,
+        "size_in_bytes": 12,
+        "uri": "smb://test-share/022dd70a-4348-472b-9f8a-e4c5e9d965cd",
+        "uuid": "022dd70a-4348-472b-9f8a-e4c5e9d965cd"
+    },
+    {
+        "base_uri": "smb://test-share",
+        "created_at": 1681394346.591043,
+        "creator_username": "jotelha",
+        "frozen_at": 1681394346.600744,
+        "name": "2021-02-25-02-41-42-389659-probeonsubst--econversionminimizationandequilibration",
+        "number_of_items": 3,
+        "size_in_bytes": 12,
+        "uri": "smb://test-share/027e9128-56ed-4099-a959-4f41874f2f02",
+        "uuid": "027e9128-56ed-4099-a959-4f41874f2f02"
+    },
+    {
+        "base_uri": "smb://test-share",
+        "created_at": 1681394345.510788,
+        "creator_username": "jotelha",
+        "frozen_at": 1681394345.520288,
+        "name": "2020-12-15-12-53-46-563151-c-10-n-225-m-225-s-monolayer-substratepassivation",
+        "number_of_items": 3,
+        "size_in_bytes": 12,
+        "uri": "smb://test-share/037da239-3945-4741-8bd0-da30e8e37a3f",
+        "uuid": "037da239-3945-4741-8bd0-da30e8e37a3f"
+    },
+    {
+        "base_uri": "smb://test-share",
+        "created_at": 1681394344.518091,
+        "creator_username": "jotelha",
+        "frozen_at": 1681394344.527685,
+        "name": "2021-02-25-03-52-50-532419-probeonsubst--econversionminimizationandequilibration",
+        "number_of_items": 3,
+        "size_in_bytes": 12,
+        "uri": "smb://test-share/055732f4-5f34-4a1d-b28f-79de9bc23b4c",
+        "uuid": "055732f4-5f34-4a1d-b28f-79de9bc23b4c"
+    },
+    {
+        "base_uri": "smb://test-share",
+        "created_at": 1681394346.088572,
+        "creator_username": "jotelha",
+        "frozen_at": 1681394346.097612,
+        "name": "2021-02-25-02-41-42-396990-probeonsubst--econversionminimizationandequilibration",
+        "number_of_items": 3,
+        "size_in_bytes": 12,
+        "uri": "smb://test-share/0630faa2-0205-443c-81a5-62d3e30cd5dd",
+        "uuid": "0630faa2-0205-443c-81a5-62d3e30cd5dd"
+    },
+    {
+        "base_uri": "smb://test-share",
+        "created_at": 1681394345.344017,
+        "creator_username": "jotelha",
+        "frozen_at": 1681394345.353556,
+        "name": "2020-12-15-12-53-46-495570-c-025-n-56-m-56-s-hemicylinders-substratepassivation",
+        "number_of_items": 3,
+        "size_in_bytes": 12,
+        "uri": "smb://test-share/0867c9c7-449c-450d-89b3-67e964b8235d",
+        "uuid": "0867c9c7-449c-450d-89b3-67e964b8235d"
+    },
+    {
+        "base_uri": "smb://test-share",
+        "created_at": 1681394344.847091,
+        "creator_username": "jotelha",
+        "frozen_at": 1681394344.857004,
+        "name": "2021-02-25-03-52-38-486325-probeonsubst--econversionminimizationandequilibration",
+        "number_of_items": 3,
+        "size_in_bytes": 12,
+        "uri": "smb://test-share/08e9a59d-6050-4c85-b72d-497b2cc9202d",
+        "uuid": "08e9a59d-6050-4c85-b72d-497b2cc9202d"
+    },
+    {
+        "base_uri": "smb://test-share",
+        "created_at": 1681394344.786125,
+        "creator_username": "jotelha",
+        "frozen_at": 1681394344.795586,
+        "name": "2020-12-15-12-53-46-616772-c-15-n-338-m-338-s-monolayer-substratepassivation",
+        "number_of_items": 3,
+        "size_in_bytes": 12,
+        "uri": "smb://test-share/09c42267-f6fa-4274-b71b-07d52977cab2",
+        "uuid": "09c42267-f6fa-4274-b71b-07d52977cab2"
+    }
+]

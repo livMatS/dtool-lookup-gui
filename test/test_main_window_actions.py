@@ -267,7 +267,7 @@ async def test_do_show_dataset_details_by_uri_action_trigger(app):
 
 
 @pytest.mark.asyncio
-async def test_do_show_dataset_details_by_row_index_direct_call(populated_app_with_mock_data, mock_dataset_list):
+async def test_do_show_dataset_details_by_row_index_direct_call(populated_app_with_mock_data, mock_get_datasets):
     """
     Test the do_show_dataset_details_by_row_index method for directly showing dataset details by row index.
     It verifies if the dataset list is correctly populated and the specified dataset details are displayed.
@@ -306,8 +306,8 @@ async def test_do_show_dataset_details_by_row_index_direct_call(populated_app_wi
     # Perform assertions to verify that the dataset details are correctly displayed
     selected_dataset = populated_app_with_mock_data.main_window.dataset_list_box.get_row_at_index(row_index).dataset
 
-    expected_uri = mock_dataset_list[1]['uri']
-    expected_uuid = mock_dataset_list[1]['uuid']
+    expected_uri = mock_get_datasets[1]['uri']
+    expected_uuid = mock_get_datasets[1]['uuid']
 
     assert selected_dataset.uri == expected_uri, f"Expected URI {expected_uri}, got {selected_dataset.uri}"
     assert selected_dataset.uuid == expected_uuid, f"Expected UUID {expected_uuid}, got {selected_dataset.uuid}"
@@ -350,7 +350,7 @@ async def test_do_show_dataset_details_by_row_index_action_trigger(app):
 
 
 @pytest.mark.asyncio
-async def test_do_search_select_and_show_direct_call(populated_app_with_mock_data, mock_dataset_list):
+async def test_do_search_select_and_show_direct_call(populated_app_with_mock_data, mock_get_datasets):
     """
     Test the do_search_select_and_show method for processing a search directly. It verifies
     if the dataset list is correctly populated, the first dataset is selected, and its
@@ -384,7 +384,7 @@ async def test_do_search_select_and_show_direct_call(populated_app_with_mock_dat
     dataset = first_dataset_row.dataset
 
     # Assert that the dataset's URI matches the expected URI
-    assert dataset.uri == mock_dataset_list[0]['uri'], f"Expected URI {mock_dataset_list[0]['uri']}, got {dataset.uri}"
+    assert dataset.uri == mock_get_datasets[0]['uri'], f"Expected URI {mock_get_datasets[0]['uri']}, got {dataset.uri}"
 
     # Await completion of all tasks related to the test
     pending_tasks = [task for task in asyncio.all_tasks() if task is not asyncio.current_task()]
