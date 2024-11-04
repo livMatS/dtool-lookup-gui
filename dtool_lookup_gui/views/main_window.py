@@ -246,11 +246,23 @@ class MainWindow(Gtk.ApplicationWindow):
         show_dataset_action.connect("activate", self.do_show_dataset_details_by_row_index)
         self.add_action(show_dataset_action)
 
+        # build dependency graph by row index in dataset list box action
+        row_index_variant = GLib.Variant.new_uint32(0)
+        build_dependency_graph_action = Gio.SimpleAction.new("build-dependency-graph", row_index_variant.get_type())
+        build_dependency_graph_action.connect("activate", self.do_build_dependency_graph_by_row_index)
+        self.add_action(build_dependency_graph_action)
+
         # show details of dataset by uri in dataset list box action
         uri_variant = GLib.Variant.new_string("dummy")
         show_dataset_by_uri_action = Gio.SimpleAction.new("show-dataset-by-uri", uri_variant.get_type())
         show_dataset_by_uri_action.connect("activate", self.do_show_dataset_details_by_uri)
         self.add_action(show_dataset_by_uri_action)
+
+        # build dependency graph by uri in dataset list box action
+        uri_variant = GLib.Variant.new_string("dummy")
+        build_dependency_graph_by_uri_action = Gio.SimpleAction.new("build-dependency-graph-by-uri", uri_variant.get_type())
+        build_dependency_graph_by_uri_action.connect("activate", self.do_build_dependency_graph_by_uri)
+        self.add_action(build_dependency_graph_by_uri_action)
 
         # search, select and show first search result subsequently
         row_index_variant = GLib.Variant.new_string("dummy")
@@ -500,6 +512,9 @@ class MainWindow(Gtk.ApplicationWindow):
         asyncio.create_task(self._update_dataset_view(dataset))
         self.dataset_stack.set_visible_child(self.dataset_box)
 
+    def _build_dependency_graph(self, dataset):
+        asyncio.create_task(self._compute_dependencies(dataset))
+
     def _show_dataset_details_by_row_index(self, index):
         row = self.dataset_list_box.get_row_at_index(index)
         if row is not None:
@@ -508,10 +523,24 @@ class MainWindow(Gtk.ApplicationWindow):
         else:
             _logger.info(f"No dataset row with index {index} available for selection.")
 
+    def _build_dependency_graph_by_row_index(self, index):
+        """Build dependency graph by row index."""
+        row = self.dataset_list_box.get_row_at_index(index)
+        if row is not None:
+            _logger.debug(f"{row.dataset.name} shown.")
+            self._build_dependency_graph(row.dataset)
+        else:
+            _logger.info(f"No dataset row with index {index} available for selection.")
+
     def _show_dataset_details_by_uri(self, uri):
         """Select dataset row in dataset list box by uri."""
         index = self.dataset_list_box.get_row_index_from_uri(uri)
         self._show_dataset_details_by_row_index(index)
+
+    def _build_dependency_graph_by_uri(self, uri):
+        """Build dependency graph by uri."""
+        index = self.dataset_list_box.get_row_index_from_uri(uri)
+        self._build_dependency_graph_by_row_index(index)
 
     def _select_and_show_by_row_index(self, index=0):
         self._select_dataset_row_by_row_index(index)
@@ -582,10 +611,20 @@ class MainWindow(Gtk.ApplicationWindow):
         row_index = value.get_uint32()
         self._show_dataset_details_by_row_index(row_index)
 
+    def do_build_dependency_graph_by_row_index(self, action, value):
+        """Build the dependency graph by row index."""
+        row_index = value.get_uint32()
+        self._build_dependency_graph_by_row_index(row_index)
+
     def do_show_dataset_details_by_uri(self, action, value):
         """Show dataset details by uri."""
         uri = value.get_string()
         self._show_dataset_details_by_uri(uri)
+
+    def do_build_dependency_graph_by_uri(self, action, value):
+        """Build the dependency graph by uri."""
+        uri = value.get_string()
+        self._build_dependency_graph_by_uri(uri)
 
     # search actions
     def do_search(self, action, value):
@@ -645,7 +684,6 @@ class MainWindow(Gtk.ApplicationWindow):
     def do_refresh_view(self, action, value):
         """Refresh view by reloading base uri list, """
         self.refresh()
-
 
     # signal handlers
     @Gtk.Template.Callback()
@@ -1168,7 +1206,7 @@ class MainWindow(Gtk.ApplicationWindow):
         if dataset.type == 'lookup':
             self.dependency_stack.show()
             _logger.debug("Selected dataset is lookup result.")
-            asyncio.create_task(self._compute_dependencies(dataset))
+            self.get_action_group("win").activate_action('build-dependency-graph-by-uri', GLib.Variant.new_string(dataset.uri))
         else:
             _logger.debug("Selected dataset is accessed directly.")
             self.dependency_stack.hide()
