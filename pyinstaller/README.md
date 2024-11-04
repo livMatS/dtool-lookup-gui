@@ -22,17 +22,23 @@
 * `mingw64_venv_pip_freeze.txt` contains the output of `pip freeze` right before building the app.
 * `mingw64_venv_pip_freeze_local.txt` contains the output of `pip freeze --local` right before building the app.
 
-The typical workflow for building and bundling the app with `mingw64`:
+The typical workflow for building and bundling the app with `mingw64` while updating the version reference files looks like this:
 
 ```bash
 pacman -S $(cat pyinstaller/mingw64_pacman_S.txt | xargs)
 python -m pip install --upgrade pip
-pip-compile --upgrade pyinstaller/mingw64_requirements.in > pyinstaller/mingw64_requirements.txt
+
+pip-compile --upgrade pyinstaller/mingw64_requirements.in --output-file pyinstaller/mingw64_requirements.txt
+
+pip install --ignore-installed -r pyinstaller/mingw64_requirements.txt
 pip install PyInstaller
 
 python -m venv --system-site-packages venv
 source venv/bin/activate
 pip install --ignore-installed six
+
+pip freeze --local | tee pyinstaller/mingw64_venv_pip_freeze_local.txt
+pip freeze | tee pyinstaller/mingw64_venv_pip_freeze.txt
 
 cd dtool_lookup_gui &&  glib-compile-schemas . && cd ..
 
