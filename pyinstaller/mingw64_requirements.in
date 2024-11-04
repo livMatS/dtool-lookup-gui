@@ -9,7 +9,6 @@ dtool-s3
 dtool-smb
 dtool-symlink
 dtoolcore
-gbulb
 pyasn1
 pysmb
 urllib3
