@@ -30,6 +30,7 @@ import glob
 import json
 import logging
 import os
+import ssl
 import sys
 
 import dtoolcore
@@ -326,6 +327,7 @@ class Application(Gtk.Application):
         # Unpack the username, password, and auth_url from the tuple variant
         username, password, auth_url = value.unpack()
 
+        logger.debug("look for certificates in %s", ssl.get_default_verify_paths())
         async def retrieve_token(auth_url, username, password):
             try:
                 token = await authenticate(auth_url, username, password)
