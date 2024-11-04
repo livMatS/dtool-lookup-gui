@@ -24,7 +24,7 @@ jobs:
 
     - name: Install system dependencies
       run: |
-        brew install python pygobject3 gtk+3 gtksourceview4 gnome-icon-theme create-dmg
+        brew install python pygobject3 gtk+3 gtksourceview4 gnome-icon-theme create-dmg gcc
 
     - name: Log system package info
       run: |

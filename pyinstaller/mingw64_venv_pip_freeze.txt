@@ -32,7 +32,6 @@ dtool-symlink==0.3.1
 dtoolcore==3.18.3
 filelock==3.14.0
 frozenlist==1.5.0
-gbulb==0.6.6
 idna==3.10
 importlib_metadata==8.0.0
 Jinja2==3.1.4
@@ -46,6 +45,7 @@ more-itertools==10.3.0
 multidict==6.1.0
 numpy==2.1.1
 packaging==24.1
+pathspec==0.12.1
 pefile==2023.2.7
 pip-tools==7.4.1
 pipdeptree==2.23.4
@@ -55,7 +55,7 @@ pyasn1==0.6.1
 pycairo==1.27.0
 pycparser==2.22
 Pygments==2.18.0
-PyGObject==3.48.2
+PyGObject==3.50.0
 pyinstaller==6.11.0
 pyinstaller-hooks-contrib==2024.9
 PyJWT==2.9.0
@@ -80,5 +80,6 @@ tomli==2.0.1
 tqdm==4.66.6
 typing_extensions==4.12.2
 urllib3==2.2.3
+yamllint==1.35.1
 yarl==1.17.1
 zipp==3.19.2
