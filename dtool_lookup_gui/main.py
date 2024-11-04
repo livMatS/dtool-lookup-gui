@@ -43,7 +43,7 @@ gi.require_version('GtkSource', '4')
 from gi.repository import GLib, GObject, Gio, Gtk, GtkSource, GdkPixbuf
 from gi.events import GLibEventLoopPolicy
 
-asyncio.set_event_loop_policy(GlibEventLoopPolicy())
+asyncio.set_event_loop_policy(GLibEventLoopPolicy())
 
 from .models.settings import settings
 
@@ -87,6 +87,10 @@ class Application(Gtk.Application):
         self.loop = loop
         self.args = None
 
+    def on_window_delete(self, window, event):
+        self.quit()
+        return False
+
     def do_activate(self):
         logger.debug("do_activate")
 
@@ -113,7 +117,7 @@ class Application(Gtk.Application):
                 logger.debug("{}", icon_file_list)
             else:
                 logger.warning("Could not load app icons.")
-            win.connect('destroy', lambda _: self.loop.stop())
+            win.connect("delete-event", self.on_window_delete)
             self.loop.call_soon(win.refresh)  # Populate widgets after event loop starts
 
         logger.debug("Present main window.")
@@ -343,7 +347,7 @@ def run_gui():
 
     loop = asyncio.get_event_loop()
     app = Application(loop=loop)
+
     logger.debug("do_startup")
-    # see https://github.com/beeware/gbulb#gapplicationgtkapplication-event-loop
-    loop.run_forever(application=app, argv=sys.argv)
+    app.run(sys.argv)
 
