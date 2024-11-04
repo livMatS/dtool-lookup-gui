@@ -28,18 +28,26 @@ The typical workflow for building and bundling the app with `mingw64` while upda
 pacman -S $(cat pyinstaller/mingw64_pacman_S.txt | xargs)
 python -m pip install --upgrade pip
 
-pip-compile --upgrade pyinstaller/mingw64_requirements.in --output-file pyinstaller/mingw64_requirements.txt
+pip-compile --upgrade pyinstaller/mingw64_requirements.in --output-file pyinstaller/mingw64_full_requirements.txt
+
+python maintenance/extract_toplevel_requirements.py
 
 pip install --ignore-installed -r pyinstaller/mingw64_requirements.txt
+ 
 pip install PyInstaller
 
 python -m venv --system-site-packages venv
 source venv/bin/activate
+python -m pip install --upgrade pip
+
 pip install --ignore-installed six
+
+pip install pipdeptree
 
 pip freeze --local | tee pyinstaller/mingw64_venv_pip_freeze_local.txt
 pip freeze | tee pyinstaller/mingw64_venv_pip_freeze.txt
 
+pipdeptree | tee pyinstaller/mingw64_venv_pipdeptree.txt
 cd dtool_lookup_gui &&  glib-compile-schemas . && cd ..
 
 python -m PyInstaller -y ./pyinstaller/dtool-lookup-gui-windows-one-file.spec
