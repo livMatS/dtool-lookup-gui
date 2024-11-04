@@ -5,7 +5,6 @@ dtool-lookup-api
 dtool-s3
 dtool-smb
 aiohttp
-gbulb
 pyyaml
 ruamel.yaml
 PyGObject
@@ -13,4 +12,3 @@ numpy>=1.26.0
 scipy>=1.11
 jwt
 yamllint
-markupsafe==2.0.1
