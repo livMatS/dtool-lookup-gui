@@ -12,3 +12,4 @@ dtoolcore
 pyasn1
 pysmb
 urllib3
+yamllint

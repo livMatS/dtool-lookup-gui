@@ -100,6 +100,8 @@ multidict==6.1.0
     #   yarl
 packaging==24.1
     # via dtool-s3
+pathspec==0.12.1
+    # via yamllint
 propcache==0.2.0
     # via yarl
 pyasn1==0.6.1
@@ -115,7 +117,9 @@ pysmb==1.2.10
 python-dateutil==2.9.0.post0
     # via botocore
 pyyaml==6.0.2
-    # via dtool-lookup-api
+    # via
+    #   dtool-lookup-api
+    #   yamllint
 requests==2.32.3
     # via dtool-http
 ruamel-yaml==0.18.6
@@ -133,6 +137,8 @@ urllib3==2.2.3
     #   -r pyinstaller/mingw64_requirements.in
     #   botocore
     #   requests
+yamllint==1.35.1
+    # via -r pyinstaller/mingw64_requirements.in
 yarl==1.17.1
     # via aiohttp
 

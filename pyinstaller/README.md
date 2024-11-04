@@ -32,7 +32,7 @@ pip-compile --upgrade pyinstaller/mingw64_requirements.in --output-file pyinstal
 
 python maintenance/extract_toplevel_requirements.py
 
-pip install --ignore-installed -r pyinstaller/mingw64_requirements.txt
+pip install -r pyinstaller/mingw64_requirements.txt
  
 pip install PyInstaller
 
