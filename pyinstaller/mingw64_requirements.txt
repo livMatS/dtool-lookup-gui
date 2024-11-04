@@ -11,6 +11,5 @@ dtool-symlink==0.3.1
 dtoolcore==3.18.3
 pyasn1==0.6.1
 pysmb==1.2.10
-urllib3==2.2.3
 yamllint==1.35.1
 
