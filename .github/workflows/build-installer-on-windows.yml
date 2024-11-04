@@ -24,8 +24,10 @@ jobs:
           curl
           git
           zip
+          mingw-w64-x86_64-cmake
           mingw-w64-x86_64-cython
           mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-gobject-introspection
           mingw-w64-x86_64-gtk3
           mingw-w64-x86_64-gtksourceview4
           mingw-w64-x86_64-openssl
@@ -101,8 +103,8 @@ jobs:
         python --version
         pip --version
         echo "### install pythonic dependencies ###"
-        pip install --upgrade pip
-        pip install -r pyinstaller/mingw64_requirements.txt
+        python -m pip install --upgrade pip
+        pip install --ignore-installed -r pyinstaller/mingw64_requirements.txt
         pip install PyInstaller
         echo "PyInstaller version: $(python -m PyInstaller --version)"
 

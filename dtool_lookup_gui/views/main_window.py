@@ -1,6 +1,6 @@
 #
-# Copyright 2021-2023 Johannes Laurin Hörmann
-#           2023 Ashwin Vazhappilly
+# Copyright 2023 Ashwin Vazhappilly
+#           2021-2023 Johannes Laurin Hörmann
 #           2021 Lars Pastewka
 #
 # ### MIT license
@@ -176,12 +176,14 @@ class MainWindow(Gtk.ApplicationWindow):
 
     main_statusbar = Gtk.Template.Child()
     contents_per_page = Gtk.Template.Child()
+    sort_field_combo_box = Gtk.Template.Child()
+
     linting_errors_button = Gtk.Template.Child()
-
-
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        
+        self.sort_order = 1 # default ascending sort order
 
         self.application = self.get_application()
 
@@ -244,11 +246,23 @@ class MainWindow(Gtk.ApplicationWindow):
         show_dataset_action.connect("activate", self.do_show_dataset_details_by_row_index)
         self.add_action(show_dataset_action)
 
+        # build dependency graph by row index in dataset list box action
+        row_index_variant = GLib.Variant.new_uint32(0)
+        build_dependency_graph_action = Gio.SimpleAction.new("build-dependency-graph", row_index_variant.get_type())
+        build_dependency_graph_action.connect("activate", self.do_build_dependency_graph_by_row_index)
+        self.add_action(build_dependency_graph_action)
+
         # show details of dataset by uri in dataset list box action
         uri_variant = GLib.Variant.new_string("dummy")
         show_dataset_by_uri_action = Gio.SimpleAction.new("show-dataset-by-uri", uri_variant.get_type())
         show_dataset_by_uri_action.connect("activate", self.do_show_dataset_details_by_uri)
         self.add_action(show_dataset_by_uri_action)
+
+        # build dependency graph by uri in dataset list box action
+        uri_variant = GLib.Variant.new_string("dummy")
+        build_dependency_graph_by_uri_action = Gio.SimpleAction.new("build-dependency-graph-by-uri", uri_variant.get_type())
+        build_dependency_graph_by_uri_action.connect("activate", self.do_build_dependency_graph_by_uri)
+        self.add_action(build_dependency_graph_by_uri_action)
 
         # search, select and show first search result subsequently
         row_index_variant = GLib.Variant.new_string("dummy")
@@ -272,7 +286,6 @@ class MainWindow(Gtk.ApplicationWindow):
         self._copy_manager = CopyManager(self.progress_revealer, self.progress_popover)
 
         _logger.debug(f"Constructed main window for app '{self.application.get_application_id()}'")
-
 
         # Initialize pagination parameters, hide page advancer button by default, set default items per page, and highlight the current page button.
         self.pagination = {}
@@ -299,6 +312,7 @@ class MainWindow(Gtk.ApplicationWindow):
         async def _refresh():
             # first, refresh base uri list and its selection
             await self._refresh_base_uri_list_box()
+            self.select_and_load_first_uri()
 
             _logger.debug(f"Done refreshing base URIs.")
             # on_base_uri_selected(self, list_box, row) called by selection
@@ -349,13 +363,46 @@ class MainWindow(Gtk.ApplicationWindow):
     def contents_per_page_changed(self, widget):
         self.contents_per_page_value = widget.get_active_text()
         self.on_first_page_button_clicked(self.first_page_button)  # Directly call the method
+    
+    def on_sort_field_combo_box_changed(self, widget):
+        transformed_fields = {
+            "Uri": "uri",
+            "Name": "name",
+            "Base Uri": "base_uri",
+            "Created At": "created_at",
+            "Frozen At": "frozen_at",
+            "Uuid": "uuid",
+            "Creator Username": "creator_username",
+        }
+        
+        selected_text = widget.get_active_text()
 
-    async def _fetch_search_results(self, keyword, on_show=None, page_number=1, page_size=10, widget=None):
+        transformed_text = transformed_fields.get(selected_text)
+
+        sort_order = self.sort_order
+
+        asyncio.create_task(self._fetch_search_results(keyword=None, sort_fields=[transformed_text], sort_order=[sort_order]))
+
+    @Gtk.Template.Callback()
+    def on_sort_order_switch_state_set(self, widget,state):
+        # Toggle sort order based on the switch state
+        if state:
+            self.sort_order = -1  # Switch is on, use ascending order
+        else:
+            self.sort_order = 1  # Switch is off, use descending order
+                
+        self.on_sort_field_combo_box_changed(self.sort_field_combo_box)
+
+        
+
+    async def _fetch_search_results(self, keyword, on_show=None, page_number=1, page_size=10,sort_fields=["uri"],sort_order=[1] , widget=None):
+        # Here sort order 1 implies ascending 
         row = self.base_uri_list_box.search_results_row
         row.start_spinner()
         self.main_spinner.start()
 
         self.pagination = {}  # Add pagination dictionary
+        self.sorting = {} # Add sorting dictionary
         try:
             if keyword:
                 if is_valid_query(keyword):
@@ -364,23 +411,40 @@ class MainWindow(Gtk.ApplicationWindow):
                         keyword,
                         page_number=page_number,
                         page_size=page_size,
-                        pagination=self.pagination
+                        sort_fields=sort_fields,
+                        sort_order=sort_order,
+                        pagination=self.pagination,
+                        sorting=self.sorting
+
                     )
                 else:
                     _logger.debug("Specified search text is not a valid query, just perform free text search.")
-                    datasets = await DatasetModel.search(
+                    datasets = await DatasetModel.get_datasets(
                         keyword,
                         page_number=page_number,
                         page_size=page_size,
-                        pagination=self.pagination
+                        sort_fields=sort_fields,
+                        sort_order=sort_order,
+                        pagination=self.pagination,
+                        sorting=self.sorting
                     )
             else:
                 _logger.debug("No keyword specified, list all datasets.")
                 datasets = await DatasetModel.query_all(
                     page_number=page_number,
                     page_size=page_size,
-                    pagination=self.pagination
+                    sort_fields=sort_fields,
+                    sort_order=sort_order,
+                    pagination=self.pagination,
+                    sorting=self.sorting
                 )
+
+            if self.pagination == {}:  # server did not provide pagination information
+                self.pagination = {
+                    'total': len(datasets),
+                    'page': 1,
+                    'last_page': 1
+                }
 
             if len(datasets) > self._max_nb_datasets:
                 _logger.warning(
@@ -393,6 +457,7 @@ class MainWindow(Gtk.ApplicationWindow):
             self._update_search_summary(datasets)
             self._update_main_statusbar()
             self.contents_per_page.connect("changed", self.contents_per_page_changed)
+            self.sort_field_combo_box.connect("changed", self.on_sort_field_combo_box_changed)
             if self.base_uri_list_box.get_selected_row() == row:
                 # Only update if the row is still selected
                 self.dataset_list_box.fill(datasets, on_show=on_show)
@@ -447,6 +512,9 @@ class MainWindow(Gtk.ApplicationWindow):
         asyncio.create_task(self._update_dataset_view(dataset))
         self.dataset_stack.set_visible_child(self.dataset_box)
 
+    def _build_dependency_graph(self, dataset):
+        asyncio.create_task(self._compute_dependencies(dataset))
+
     def _show_dataset_details_by_row_index(self, index):
         row = self.dataset_list_box.get_row_at_index(index)
         if row is not None:
@@ -455,10 +523,24 @@ class MainWindow(Gtk.ApplicationWindow):
         else:
             _logger.info(f"No dataset row with index {index} available for selection.")
 
+    def _build_dependency_graph_by_row_index(self, index):
+        """Build dependency graph by row index."""
+        row = self.dataset_list_box.get_row_at_index(index)
+        if row is not None:
+            _logger.debug(f"{row.dataset.name} shown.")
+            self._build_dependency_graph(row.dataset)
+        else:
+            _logger.info(f"No dataset row with index {index} available for selection.")
+
     def _show_dataset_details_by_uri(self, uri):
         """Select dataset row in dataset list box by uri."""
         index = self.dataset_list_box.get_row_index_from_uri(uri)
         self._show_dataset_details_by_row_index(index)
+
+    def _build_dependency_graph_by_uri(self, uri):
+        """Build dependency graph by uri."""
+        index = self.dataset_list_box.get_row_index_from_uri(uri)
+        self._build_dependency_graph_by_row_index(index)
 
     def _select_and_show_by_row_index(self, index=0):
         self._select_dataset_row_by_row_index(index)
@@ -529,10 +611,20 @@ class MainWindow(Gtk.ApplicationWindow):
         row_index = value.get_uint32()
         self._show_dataset_details_by_row_index(row_index)
 
+    def do_build_dependency_graph_by_row_index(self, action, value):
+        """Build the dependency graph by row index."""
+        row_index = value.get_uint32()
+        self._build_dependency_graph_by_row_index(row_index)
+
     def do_show_dataset_details_by_uri(self, action, value):
         """Show dataset details by uri."""
         uri = value.get_string()
         self._show_dataset_details_by_uri(uri)
+
+    def do_build_dependency_graph_by_uri(self, action, value):
+        """Build the dependency graph by uri."""
+        uri = value.get_string()
+        self._build_dependency_graph_by_uri(uri)
 
     # search actions
     def do_search(self, action, value):
@@ -875,6 +967,14 @@ class MainWindow(Gtk.ApplicationWindow):
         if response_id == Gtk.ResponseType.CLOSE:
             self.error_bar.set_revealed(False)
 
+    # sort signal handlers
+    # @Gtk.Template.Callback()
+    # def on_sort_field_combo_box_changed(self, widget):
+    #     sort_field = widget.get_active_text()
+    #     _logger.debug("sort field changed to %s", sort_field)
+
+    # pagination signal handlers
+
     @Gtk.Template.Callback()
     def on_first_page_button_clicked(self, widget):
         # Navigate to the first page if results are not currently being fetched
@@ -984,6 +1084,17 @@ class MainWindow(Gtk.ApplicationWindow):
         self.page_advancer_button.set_sensitive(True)
         self.next_page_advancer_button.set_sensitive(True)
 
+    def select_and_load_first_uri(self):
+        """
+        This function automatically reloads the data and selects the first URI.
+        """
+        first_row = self.base_uri_list_box.get_children()[0]
+        self.base_uri_list_box.select_row(first_row)
+        self.on_base_uri_selected(self.base_uri_list_box, first_row)
+
+    # TODO: this should be an action do_copy
+    # if it is possible to hand to strings, e.g. source and destination to an action, then this action should
+    # go to the main app.
     # @Gtk.Template.Callback(), not in .ui
     def on_copy_clicked(self, widget):
         async def _copy():
@@ -1095,7 +1206,7 @@ class MainWindow(Gtk.ApplicationWindow):
         if dataset.type == 'lookup':
             self.dependency_stack.show()
             _logger.debug("Selected dataset is lookup result.")
-            asyncio.create_task(self._compute_dependencies(dataset))
+            self.get_action_group("win").activate_action('build-dependency-graph-by-uri', GLib.Variant.new_string(dataset.uri))
         else:
             _logger.debug("Selected dataset is accessed directly.")
             self.dependency_stack.hide()

@@ -1,0 +1,8 @@
+{
+    "dserver_dependency_graph_plugin": "0.4.1",
+    "dserver_direct_mongo_plugin": "0.4.1",
+    "dserver_notification_plugin": "0.4.1",
+    "dserver_retrieve_plugin_mongo": "0.4.2",
+    "dserver_search_plugin_mongo": "0.4.2",
+    "dservercore": "0.21.0"
+}

@@ -313,6 +313,106 @@
                             <property name="can-focus">False</property>
                             <property name="orientation">vertical</property>
                             <child>
+                              <!-- n-columns=4 n-rows=3 -->
+                              <object class="GtkGrid">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="hexpand">True</property>
+                                <property name="column-spacing">6</property>
+                                <child>
+                                  <object class="GtkLabel">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                    <property name="halign">end</property>
+                                    <property name="hexpand">True</property>
+                                    <property name="label" translatable="yes">Ordering:</property>
+                                  </object>
+                                  <packing>
+                                    <property name="left-attach">0</property>
+                                    <property name="top-attach">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkSwitch" id="sort_order_switch">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="halign">start</property>
+                                    <property name="valign">center</property>
+                                    <signal name="state-set" handler="on_sort_order_switch_state_set" swapped="no"/>
+                                  </object>
+                                  <packing>
+                                    <property name="left-attach">3</property>
+                                    <property name="top-attach">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkLabel">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                    <property name="label" translatable="yes">ascending/descending</property>
+                                  </object>
+                                  <packing>
+                                    <property name="left-attach">2</property>
+                                    <property name="top-attach">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkComboBoxText" id="sort_field_combo_box">
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">False</property>
+                                    <property name="double-buffered">False</property>
+                                    <property name="halign">start</property>
+                                    <property name="valign">center</property>
+                                    <property name="active">0</property>
+                                    <items>
+                                      <item id="&lt;Enter ID&gt;" translatable="yes">Uri</item>
+                                      <item translatable="yes">Name</item>
+                                      <item translatable="yes">Base Uri</item>
+                                      <item translatable="yes">Created At</item>
+                                      <item translatable="yes">Creator Username</item>
+                                      <item translatable="yes">Frozen At</item>
+                                      <item translatable="yes">Uuid</item>
+                                    </items>
+                                    <signal name="changed" handler="on_sort_field_combo_box_changed" swapped="no"/>
+                                  </object>
+                                  <packing>
+                                    <property name="left-attach">1</property>
+                                    <property name="top-attach">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <placeholder/>
+                                </child>
+                                <child>
+                                  <placeholder/>
+                                </child>
+                                <child>
+                                  <placeholder/>
+                                </child>
+                                <child>
+                                  <placeholder/>
+                                </child>
+                                <child>
+                                  <placeholder/>
+                                </child>
+                                <child>
+                                  <placeholder/>
+                                </child>
+                                <child>
+                                  <placeholder/>
+                                </child>
+                                <child>
+                                  <placeholder/>
+                                </child>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="padding">2</property>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
                               <object class="GtkScrolledWindow">
                                 <property name="visible">True</property>
                                 <property name="can-focus">True</property>
@@ -339,186 +439,6 @@
                                             <property name="position">0</property>
                                           </packing>
                                         </child>
-                                        <child>
-                                          <!-- n-columns=7 n-rows=3 -->
-                                          <object class="GtkGrid">
-                                            <property name="visible">True</property>
-                                            <property name="can-focus">False</property>
-                                            <property name="column-homogeneous">True</property>
-                                            <child>
-                                              <object class="GtkButton" id="first_page_button">
-                                                <property name="label" translatable="yes">First</property>
-                                                <property name="height-request">30</property>
-                                                <property name="visible">True</property>
-                                                <property name="can-focus">True</property>
-                                                <property name="receives-default">True</property>
-                                                <signal name="clicked" handler="on_first_page_button_clicked" swapped="no"/>
-                                                <style>
-                                                  <class name="first-page-button-style"/>
-                                                </style>
-                                              </object>
-                                              <packing>
-                                                <property name="left-attach">0</property>
-                                                <property name="top-attach">0</property>
-                                              </packing>
-                                            </child>
-                                            <child>
-                                              <object class="GtkButton" id="prev_page_button">
-                                                <property name="label" translatable="yes">Prev</property>
-                                                <property name="width-request">100</property>
-                                                <property name="height-request">30</property>
-                                                <property name="visible">True</property>
-                                                <property name="can-focus">True</property>
-                                                <property name="receives-default">True</property>
-                                                <signal name="clicked" handler="on_prev_page_button_clicked" swapped="no"/>
-                                                <style>
-                                                  <class name="prev-page-button-style"/>
-                                                </style>
-                                              </object>
-                                              <packing>
-                                                <property name="left-attach">1</property>
-                                                <property name="top-attach">0</property>
-                                              </packing>
-                                            </child>
-                                            <child>
-                                              <object class="GtkButton" id="last_page_button">
-                                                <property name="label" translatable="yes">Last</property>
-                                                <property name="width-request">100</property>
-                                                <property name="height-request">30</property>
-                                                <property name="visible">True</property>
-                                                <property name="can-focus">True</property>
-                                                <property name="receives-default">True</property>
-                                                <signal name="clicked" handler="on_last_page_button_clicked" swapped="no"/>
-                                                <style>
-                                                  <class name="last-page-button-style"/>
-                                                </style>
-                                              </object>
-                                              <packing>
-                                                <property name="left-attach">6</property>
-                                                <property name="top-attach">0</property>
-                                              </packing>
-                                            </child>
-                                            <child>
-                                              <object class="GtkButton" id="nextoption_page_button">
-                                                <property name="label" translatable="yes">Next</property>
-                                                <property name="width-request">100</property>
-                                                <property name="height-request">30</property>
-                                                <property name="visible">True</property>
-                                                <property name="can-focus">True</property>
-                                                <property name="receives-default">True</property>
-                                                <signal name="clicked" handler="on_nextoption_page_button_clicked" swapped="no"/>
-                                                <style>
-                                                  <class name="next-page-button-style"/>
-                                                </style>
-                                              </object>
-                                              <packing>
-                                                <property name="left-attach">5</property>
-                                                <property name="top-attach">0</property>
-                                              </packing>
-                                            </child>
-                                            <child>
-                                              <object class="GtkButton" id="next_page_advancer_button">
-                                                <property name="label" translatable="yes">2</property>
-                                                <property name="width-request">100</property>
-                                                <property name="height-request">30</property>
-                                                <property name="visible">True</property>
-                                                <property name="can-focus">True</property>
-                                                <property name="receives-default">True</property>
-                                                <signal name="clicked" handler="next_page_advancer_button_clicked" swapped="no"/>
-                                                <style>
-                                                  <class name="next-page-advancer-button-style"/>
-                                                </style>
-                                              </object>
-                                              <packing>
-                                                <property name="left-attach">4</property>
-                                                <property name="top-attach">0</property>
-                                              </packing>
-                                            </child>
-                                            <child>
-                                              <object class="GtkButton" id="curr_page_button">
-                                                <property name="label" translatable="yes">1</property>
-                                                <property name="width-request">100</property>
-                                                <property name="height-request">30</property>
-                                                <property name="visible">True</property>
-                                                <property name="can-focus">True</property>
-                                                <property name="receives-default">True</property>
-                                                <signal name="clicked" handler="curr_page_button_clicked" swapped="no"/>
-                                                <style>
-                                                  <class name="curr-page-button-style"/>
-                                                </style>
-                                              </object>
-                                              <packing>
-                                                <property name="left-attach">3</property>
-                                                <property name="top-attach">0</property>
-                                              </packing>
-                                            </child>
-                                            <child>
-                                              <object class="GtkButton" id="page_advancer_button">
-                                                <property name="label" translatable="yes">0</property>
-                                                <property name="width-request">100</property>
-                                                <property name="height-request">30</property>
-                                                <property name="visible">True</property>
-                                                <property name="can-focus">True</property>
-                                                <property name="receives-default">True</property>
-                                                <signal name="clicked" handler="page_advancer_button_clicked" swapped="no"/>
-                                                <style>
-                                                  <class name="page-advancer-button-style"/>
-                                                </style>
-                                              </object>
-                                              <packing>
-                                                <property name="left-attach">2</property>
-                                                <property name="top-attach">0</property>
-                                              </packing>
-                                            </child>
-                                            <child>
-                                              <placeholder/>
-                                            </child>
-                                            <child>
-                                              <placeholder/>
-                                            </child>
-                                            <child>
-                                              <placeholder/>
-                                            </child>
-                                            <child>
-                                              <placeholder/>
-                                            </child>
-                                            <child>
-                                              <placeholder/>
-                                            </child>
-                                            <child>
-                                              <placeholder/>
-                                            </child>
-                                            <child>
-                                              <placeholder/>
-                                            </child>
-                                            <child>
-                                              <placeholder/>
-                                            </child>
-                                            <child>
-                                              <placeholder/>
-                                            </child>
-                                            <child>
-                                              <placeholder/>
-                                            </child>
-                                            <child>
-                                              <placeholder/>
-                                            </child>
-                                            <child>
-                                              <placeholder/>
-                                            </child>
-                                            <child>
-                                              <placeholder/>
-                                            </child>
-                                            <child>
-                                              <placeholder/>
-                                            </child>
-                                          </object>
-                                          <packing>
-                                            <property name="expand">False</property>
-                                            <property name="fill">True</property>
-                                            <property name="position">1</property>
-                                          </packing>
-                                        </child>
                                       </object>
                                     </child>
                                   </object>
@@ -527,7 +447,189 @@
                               <packing>
                                 <property name="expand">True</property>
                                 <property name="fill">True</property>
-                                <property name="position">0</property>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <!-- n-columns=7 n-rows=3 -->
+                              <object class="GtkGrid">
+                                <property name="visible">True</property>
+                                <property name="can-focus">False</property>
+                                <property name="halign">start</property>
+                                <property name="hexpand">False</property>
+                                <child>
+                                  <object class="GtkButton" id="first_page_button">
+                                    <property name="label" translatable="yes">First</property>
+                                    <property name="height-request">30</property>
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="receives-default">True</property>
+                                    <property name="halign">start</property>
+                                    <signal name="clicked" handler="on_first_page_button_clicked" swapped="no"/>
+                                    <style>
+                                      <class name="first-page-button-style"/>
+                                    </style>
+                                  </object>
+                                  <packing>
+                                    <property name="left-attach">0</property>
+                                    <property name="top-attach">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkButton" id="prev_page_button">
+                                    <property name="label" translatable="yes">Prev</property>
+                                    <property name="height-request">30</property>
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="receives-default">True</property>
+                                    <property name="halign">start</property>
+                                    <signal name="clicked" handler="on_prev_page_button_clicked" swapped="no"/>
+                                    <style>
+                                      <class name="prev-page-button-style"/>
+                                    </style>
+                                  </object>
+                                  <packing>
+                                    <property name="left-attach">1</property>
+                                    <property name="top-attach">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkButton" id="last_page_button">
+                                    <property name="label" translatable="yes">Last</property>
+                                    <property name="height-request">30</property>
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="receives-default">True</property>
+                                    <property name="halign">start</property>
+                                    <signal name="clicked" handler="on_last_page_button_clicked" swapped="no"/>
+                                    <style>
+                                      <class name="last-page-button-style"/>
+                                    </style>
+                                  </object>
+                                  <packing>
+                                    <property name="left-attach">6</property>
+                                    <property name="top-attach">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkButton" id="nextoption_page_button">
+                                    <property name="label" translatable="yes">Next</property>
+                                    <property name="height-request">30</property>
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="receives-default">True</property>
+                                    <property name="halign">start</property>
+                                    <signal name="clicked" handler="on_nextoption_page_button_clicked" swapped="no"/>
+                                    <style>
+                                      <class name="next-page-button-style"/>
+                                    </style>
+                                  </object>
+                                  <packing>
+                                    <property name="left-attach">5</property>
+                                    <property name="top-attach">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkButton" id="next_page_advancer_button">
+                                    <property name="label" translatable="yes">2</property>
+                                    <property name="height-request">30</property>
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="receives-default">True</property>
+                                    <property name="halign">start</property>
+                                    <signal name="clicked" handler="next_page_advancer_button_clicked" swapped="no"/>
+                                    <style>
+                                      <class name="next-page-advancer-button-style"/>
+                                    </style>
+                                  </object>
+                                  <packing>
+                                    <property name="left-attach">4</property>
+                                    <property name="top-attach">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkButton" id="page_advancer_button">
+                                    <property name="label" translatable="yes">0</property>
+                                    <property name="height-request">30</property>
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="receives-default">True</property>
+                                    <property name="halign">start</property>
+                                    <signal name="clicked" handler="page_advancer_button_clicked" swapped="no"/>
+                                    <style>
+                                      <class name="page-advancer-button-style"/>
+                                    </style>
+                                  </object>
+                                  <packing>
+                                    <property name="left-attach">2</property>
+                                    <property name="top-attach">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkButton" id="curr_page_button">
+                                    <property name="label" translatable="yes">1</property>
+                                    <property name="height-request">30</property>
+                                    <property name="visible">True</property>
+                                    <property name="can-focus">True</property>
+                                    <property name="receives-default">True</property>
+                                    <property name="halign">start</property>
+                                    <signal name="clicked" handler="curr_page_button_clicked" swapped="no"/>
+                                    <style>
+                                      <class name="curr-page-button-style"/>
+                                    </style>
+                                  </object>
+                                  <packing>
+                                    <property name="left-attach">3</property>
+                                    <property name="top-attach">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <placeholder/>
+                                </child>
+                                <child>
+                                  <placeholder/>
+                                </child>
+                                <child>
+                                  <placeholder/>
+                                </child>
+                                <child>
+                                  <placeholder/>
+                                </child>
+                                <child>
+                                  <placeholder/>
+                                </child>
+                                <child>
+                                  <placeholder/>
+                                </child>
+                                <child>
+                                  <placeholder/>
+                                </child>
+                                <child>
+                                  <placeholder/>
+                                </child>
+                                <child>
+                                  <placeholder/>
+                                </child>
+                                <child>
+                                  <placeholder/>
+                                </child>
+                                <child>
+                                  <placeholder/>
+                                </child>
+                                <child>
+                                  <placeholder/>
+                                </child>
+                                <child>
+                                  <placeholder/>
+                                </child>
+                                <child>
+                                  <placeholder/>
+                                </child>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">False</property>
+                                <property name="position">2</property>
                               </packing>
                             </child>
                           </object>
@@ -665,7 +767,7 @@
                                         <property name="vexpand">True</property>
                                         <property name="orientation">vertical</property>
                                         <child>
-                                          <!-- n-columns=3 n-rows=6 -->
+                                          <!-- n-columns=3 n-rows=7 -->
                                           <object class="GtkGrid">
                                             <property name="visible">True</property>
                                             <property name="can-focus">False</property>
@@ -845,6 +947,129 @@
                                                 <property name="left-attach">1</property>
                                                 <property name="top-attach">5</property>
                                               </packing>
+                                            </child>
+                                            <child>
+                                              <object class="GtkLabel">
+                                                <property name="visible">True</property>
+                                                <property name="can-focus">False</property>
+                                                <property name="halign">start</property>
+                                                <property name="label" translatable="yes">Tags</property>
+                                                <attributes>
+                                                  <attribute name="weight" value="bold"/>
+                                                </attributes>
+                                              </object>
+                                              <packing>
+                                                <property name="left-attach">0</property>
+                                                <property name="top-attach">6</property>
+                                              </packing>
+                                            </child>
+                                            <child>
+                                              <object class="GtkLabel">
+                                                <property name="visible">True</property>
+                                                <property name="can-focus">False</property>
+                                                <property name="halign">start</property>
+                                                <property name="label" translatable="yes">Tags</property>
+                                                <attributes>
+                                                  <attribute name="weight" value="bold"/>
+                                                </attributes>
+                                              </object>
+                                              <packing>
+                                                <property name="left-attach">0</property>
+                                                <property name="top-attach">6</property>
+                                              </packing>
+                                            </child>
+                                            <child>
+                                              <!-- n-columns=5 n-rows=3 -->
+                                              <object class="GtkGrid">
+                                                <property name="visible">True</property>
+                                                <property name="can-focus">False</property>
+                                                <property name="row-spacing">5</property>
+                                                <property name="column-spacing">5</property>
+                                                <child>
+                                                  <object class="GtkFlowBox" id="tag_flowbox">
+                                                    <property name="visible">True</property>
+                                                    <property name="can-focus">True</property>
+                                                    <property name="halign">start</property>
+                                                  </object>
+                                                  <packing>
+                                                    <property name="left-attach">0</property>
+                                                    <property name="top-attach">0</property>
+                                                    <property name="width">2</property>
+                                                  </packing>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkEntry" id="tag_entry">
+                                                    <property name="visible">True</property>
+                                                    <property name="can-focus">True</property>
+                                                    <property name="halign">start</property>
+                                                  </object>
+                                                  <packing>
+                                                    <property name="left-attach">2</property>
+                                                    <property name="top-attach">0</property>
+                                                  </packing>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkButton" id="add_button">
+                                                    <property name="label">+</property>
+                                                    <property name="visible">True</property>
+                                                    <property name="can-focus">True</property>
+                                                    <property name="receives-default">False</property>
+                                                  </object>
+                                                  <packing>
+                                                    <property name="left-attach">3</property>
+                                                    <property name="top-attach">0</property>
+                                                  </packing>
+                                                </child>
+                                                <child>
+                                                  <object class="GtkButton" id="delete_button">
+                                                    <property name="label">-</property>
+                                                    <property name="visible">True</property>
+                                                    <property name="can-focus">True</property>
+                                                    <property name="receives-default">False</property>
+                                                  </object>
+                                                  <packing>
+                                                    <property name="left-attach">4</property>
+                                                    <property name="top-attach">0</property>
+                                                  </packing>
+                                                </child>
+                                                <child>
+                                                  <placeholder/>
+                                                </child>
+                                                <child>
+                                                  <placeholder/>
+                                                </child>
+                                                <child>
+                                                  <placeholder/>
+                                                </child>
+                                                <child>
+                                                  <placeholder/>
+                                                </child>
+                                                <child>
+                                                  <placeholder/>
+                                                </child>
+                                                <child>
+                                                  <placeholder/>
+                                                </child>
+                                                <child>
+                                                  <placeholder/>
+                                                </child>
+                                                <child>
+                                                  <placeholder/>
+                                                </child>
+                                                <child>
+                                                  <placeholder/>
+                                                </child>
+                                                <child>
+                                                  <placeholder/>
+                                                </child>
+                                              </object>
+                                              <packing>
+                                                <property name="left-attach">1</property>
+                                                <property name="top-attach">6</property>
+                                              </packing>
+                                            </child>
+                                            <child>
+                                              <placeholder/>
                                             </child>
                                             <child>
                                               <placeholder/>

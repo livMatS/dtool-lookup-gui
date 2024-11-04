@@ -53,3 +53,11 @@ In most cases, you will want to use the [Gio.SimpleAction](https://lazka.github.
 You will find usage examples within the code, in the [GTK Python developer handbook: Working with GIO Actions](https://bharatkalluri.gitbook.io/gnome-developer-handbook/writing-apps-using-python/working-with-gio-gactions). 
 Write actions as methods prefixed with `do_*`, e.g. `do_search` and attach them to the app itself or to the window they relate to.
 Write at least one unit test for each action, e.g. `test_do_search` for the action `do_search`.
+
+Tests
+-----
+
+For testing, we mock the `dtool_lookup_api` in `conftest.py` to return dummy data on all API calls used within `dtool-lookup-gui`.
+With for functionality packed in atomic actions, it is then straight forward to write unit tests. 
+We aim at writing two test cases for each action. One test case directly calls the action, e.g. `app.do_reset_config(...)` and tests against its operation on the provided dummy data without mocking anything other than the `dtool_lookup_api` calls.
+The second test mocks many internal functions evoked by an action, activates the action via the intended GTK framework mechanism, e.g. `app.activate_action('reset-config')` and subsequently asserts the expected evocation of mocked methods.
