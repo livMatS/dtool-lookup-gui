@@ -6,7 +6,7 @@ on:
 jobs:
   build:
 
-    runs-on: macos-13
+    runs-on: macos-14
       
     steps:
 
@@ -24,7 +24,7 @@ jobs:
 
     - name: Install system dependencies
       run: |
-        brew install python pygobject3 gtk+3 gtksourceview4 gnome-icon-theme create-dmg gcc gfortran
+        brew install python pygobject3 gtk+3 gtksourceview4 adwaita-icon-theme create-dmg gfortran
 
     - name: Log system package info
       run: |
