@@ -56,7 +56,7 @@ dtool-http==0.5.1
     #   dtool-create
 dtool-info==0.16.2
     # via -r pyinstaller/mingw64_requirements.in
-dtool-lookup-api==0.9.1
+dtool-lookup-api==0.10.0
     # via -r pyinstaller/mingw64_requirements.in
 dtool-s3==0.14.1
     # via -r pyinstaller/mingw64_requirements.in
