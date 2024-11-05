@@ -36,7 +36,7 @@ import sys
 import dtoolcore
 import dtool_lookup_api.core.config
 
-from dtool_lookup_api.core.LookupClient import authenticate
+from dtool_lookup_api.core.LookupClient import ConfigurationBasedLookupClient
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -330,7 +330,8 @@ class Application(Gtk.Application):
         logger.debug("look for certificates in %s", ssl.get_default_verify_paths())
         async def retrieve_token(auth_url, username, password):
             try:
-                token = await authenticate(auth_url, username, password)
+                async with ConfigurationBasedLookupClient(auth_url=auth_url, username=username, password=password) as lookup_client:
+                    token = await lookup_client.authenticate(auth_url, username, password)
             except Exception as e:
                 logger.error(str(e))
                 return
