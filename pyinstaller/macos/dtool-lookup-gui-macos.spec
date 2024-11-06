@@ -5,7 +5,7 @@ from glob import glob
 root_dir = os.path.abspath(os.curdir)
 block_cipher = None
 
-other_hidden_imports = ['cairo']
+other_hidden_imports = ['cairo', 'gi']
 
 icon_parent_folder_glob_pattern = os.path.join('data', 'icons', '*x*')
 icon_parent_folders = list(glob(icon_parent_folder_glob_pattern))
