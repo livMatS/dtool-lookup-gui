@@ -94,7 +94,7 @@ jobs:
     name: Publish to PyPI
     if: startsWith(github.ref, 'refs/tags/')  # only publish to PyPI on tag pushes
     needs:
-      - build
+      - build-python-package
     runs-on: ubuntu-latest
     environment:
       name: pypi
