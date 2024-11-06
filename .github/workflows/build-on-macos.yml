@@ -41,6 +41,7 @@ jobs:
         source venv/bin/activate
 
         pip install --upgrade pip
+        pip install wheel setuptools_scm
         pip install -r pyinstaller/macos/requirements.txt
         pip install pyinstaller
 

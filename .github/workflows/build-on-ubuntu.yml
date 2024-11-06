@@ -74,7 +74,7 @@ jobs:
 
     - name: Package executable with pyinstaller
       run: |
-        pyinstaller -y ./pyinstaller/dtool-lookup-gui-linux-one-file.spec 2>&1 | tee pyinstaller.log
+        pyinstaller -y ./pyinstaller/linux/dtool-lookup-gui-linux-one-file.spec 2>&1 | tee pyinstaller.log
         mv dist/dtool-lookup-gui dtool-lookup-gui
         chmod +x dtool-lookup-gui
 
