@@ -108,6 +108,8 @@ jobs:
         max_retries=3
         retry_count=0
         
+        hdiutil info
+        
         echo "Killing XProtect if running..."
         sudo pkill -9 XProtect >/dev/null || true
         
@@ -118,7 +120,7 @@ jobs:
         
         while (( retry_count < max_retries )); do
           echo "Attempt $(($retry_count + 1)) to create dmg..."
-          sudo create-dmg \
+          create-dmg \
             --volname "dtool-lookup-gui" \
             --eula "LICENSE.txt" \
             --volicon "data/icons/dtool_logo.icns" \
@@ -143,6 +145,8 @@ jobs:
               sleep 10
           fi
         done
+
+        hdiutil info
         
         if (( retry_count == max_retries )); then
             echo "Failed to create dmg after $max_retries attempts."
