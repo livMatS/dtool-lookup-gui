@@ -95,7 +95,9 @@ jobs:
       run: |
         echo killing...; sudo pkill -9 XProtect >/dev/null || true;
         echo waiting...; while pgrep XProtect; do sleep 3; done;
-        create-dmg \
+        sleep 10
+        lsof +D release/
+        sudo create-dmg \
           --volname "dtool-lookup-gui" \
           --eula "LICENSE.txt" \
           --volicon "data/icons/dtool_logo.icns" \
@@ -106,6 +108,7 @@ jobs:
           --hide-extension "dtool-lookup-gui.app" \
           --app-drop-link 425 120 \
           --hdiutil-verbose \
+          --hdiutil-timeout 180 \
           "dtool-lookup-gui-${{ steps.fix_version.outputs.version }}-macos.dmg" \
           "release/"
 
