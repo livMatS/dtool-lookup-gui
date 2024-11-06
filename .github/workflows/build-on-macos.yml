@@ -108,7 +108,6 @@ jobs:
           --hide-extension "dtool-lookup-gui.app" \
           --app-drop-link 425 120 \
           --hdiutil-verbose \
-          --hdiutil-timeout 180 \
           "dtool-lookup-gui-${{ steps.fix_version.outputs.version }}-macos.dmg" \
           "release/"
 
