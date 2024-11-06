@@ -53,7 +53,8 @@ jobs:
 
         pip install --upgrade pip
         pip install wheel setuptools_scm
-        pip install -r pyinstaller/macos/requirements.txt
+        # pip install -r pyinstaller/macos/requirements.txt
+        pip install .
         pip install pyinstaller pyinstaller-hooks-contrib
 
     - name: Fix setuptools_scm-generated version
