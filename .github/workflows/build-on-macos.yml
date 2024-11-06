@@ -103,23 +103,51 @@ jobs:
 
     # see hditutil issue https://github.com/actions/runner-images/issues/7522
     - name: Create dmg
+      shell: bash {0}
       run: |
-        echo killing...; sudo pkill -9 XProtect >/dev/null || true;
-        echo waiting...; while pgrep XProtect; do sleep 3; done;
+        max_retries=3
+        retry_count=0
+        
+        echo "Killing XProtect if running..."
+        sudo pkill -9 XProtect >/dev/null || true
+        
+        echo "Waiting for XProtect to stop..."
+        while pgrep XProtect; do sleep 3; done
+        
         sleep 10
-        sudo create-dmg \
-          --volname "dtool-lookup-gui" \
-          --eula "LICENSE.txt" \
-          --volicon "data/icons/dtool_logo.icns" \
-          --window-pos 200 120 \
-          --window-size 600 300 \
-          --icon-size 100 \
-          --icon "dtool-lookup-gui.app" 175 120 \
-          --hide-extension "dtool-lookup-gui.app" \
-          --app-drop-link 425 120 \
-          --hdiutil-verbose \
-          "dtool-lookup-gui-${{ steps.fix_version.outputs.version }}-macos.dmg" \
-          "release/"
+        
+        while (( retry_count < max_retries )); do
+          echo "Attempt $(($retry_count + 1)) to create dmg..."
+          sudo create-dmg \
+            --volname "dtool-lookup-gui" \
+            --eula "LICENSE.txt" \
+            --volicon "data/icons/dtool_logo.icns" \
+            --window-pos 200 120 \
+            --window-size 600 300 \
+            --icon-size 100 \
+            --icon "dtool-lookup-gui.app" 175 120 \
+            --hide-extension "dtool-lookup-gui.app" \
+            --app-drop-link 425 120 \
+            --hdiutil-verbose \
+            "dtool-lookup-gui-${{ steps.fix_version.outputs.version }}-macos.dmg" \
+            "release/"
+        
+          # Check if create-dmg succeeded
+          if [[ $? -eq 0 ]]; then
+              echo "Disk image created successfully."
+              break
+          else
+              echo "Failed to create dmg. Resource might be busy."
+              ((retry_count++))
+              echo "Retrying in 10 seconds... (Attempt $retry_count of $max_retries)"
+              sleep 10
+          fi
+        done
+        
+        if (( retry_count == max_retries )); then
+            echo "Failed to create dmg after $max_retries attempts."
+            exit 1
+        fi
 
     - name: Upload build artifact
       uses: actions/upload-artifact@v4
