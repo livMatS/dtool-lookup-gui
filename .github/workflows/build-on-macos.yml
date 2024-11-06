@@ -24,7 +24,18 @@ jobs:
 
     - name: Install system dependencies
       run: |
-        brew install python pygobject3 gtk+3 gtksourceview4 adwaita-icon-theme create-dmg gfortran numpy scipy
+        brew install \
+          python \
+          glib \
+          gobject-introspection \
+          pygobject3 \
+          gtk+3 \
+          gtksourceview4 \
+          adwaita-icon-theme \
+          create-dmg \
+          gfortran \
+          numpy \
+          scipy
 
     - name: Log system package info
       run: |
@@ -37,24 +48,24 @@ jobs:
 
     - name: Install pythonic dependencies
       run: |
-        python3 -m venv --system-site-packages venv
-        source venv/bin/activate
+        # python3 -m venv --system-site-packages venv
+        # source venv/bin/activate
 
         pip install --upgrade pip
         pip install wheel setuptools_scm
         pip install -r pyinstaller/macos/requirements.txt
-        pip install pyinstaller
+        pip install pyinstaller pyinstaller-hooks-contrib
 
     - name: Fix setuptools_scm-generated version
       id: fix_version
       run: |
-        source venv/bin/activate
+        # source venv/bin/activate
         version=$(SETUPTOOLS_SCM_DEBUG=1 python -m setuptools_scm)  # have version written to file to appear in bundled app as well
         echo "version=$version" >> $GITHUB_OUTPUT
 
     - name: Log python package info
       run: |
-        source venv/bin/activate
+        # source venv/bin/activate
 
         echo "### pip freeze --local ###"
         pip freeze --local | tee pip_freeze_local.txt
@@ -69,7 +80,7 @@ jobs:
 
     - name: Package executable with pyinstaller
       run: |
-        source venv/bin/activate
+        # source venv/bin/activate
         pyinstaller -y ./pyinstaller/macos/dtool-lookup-gui-macos.spec 2>&1 | tee pyinstaller.log
         ls -lh dist
         mv dist/dtool-lookup-gui.app dtool-lookup-gui.app
