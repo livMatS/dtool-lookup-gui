@@ -362,6 +362,11 @@ class DatasetModel:
         self._dataset_info['manifest'] = _mangle_lookup_manifest(manifest_dict)
         return self._dataset_info['manifest']
 
+    async def get_tags(uri):
+        async with ConfigurationBasedLookupClient() as lookup:
+            tags_list = await lookup.get_tags(uri)
+        return tags_list
+
     async def get_item(self, item_uuid):
         """Get item from dataset by item UUID"""
         if not self.is_frozen:

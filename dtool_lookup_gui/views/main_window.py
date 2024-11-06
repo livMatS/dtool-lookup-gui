@@ -177,6 +177,7 @@ class MainWindow(Gtk.ApplicationWindow):
     main_statusbar = Gtk.Template.Child()
     contents_per_page = Gtk.Template.Child()
     sort_field_combo_box = Gtk.Template.Child()
+    show_tags_box = Gtk.Template.Child()
 
     linting_errors_button = Gtk.Template.Child()
 
@@ -1127,7 +1128,6 @@ class MainWindow(Gtk.ApplicationWindow):
         self.created_by_label.set_text(dataset.creator)
         self.frozen_at_label.set_text(dataset.date)
         self.size_label.set_text(dataset.size_str.strip())
-
         # This binary distinction will allow manipulation of all datasets via
         # the according StorageBroker, as long as latter implements the
         # desired functionality
@@ -1156,11 +1156,40 @@ class MainWindow(Gtk.ApplicationWindow):
             self.manifest_stack.set_visible_child(self.manifest_spinner)
             _fill_manifest_tree_store(self.manifest_tree_store, await dataset.get_manifest())
             self.manifest_stack.set_visible_child(self.manifest_view)
+        
+        async def _get_tags():
+            tags = await DatasetModel.get_tags(uri = dataset.uri)
+            
+            # Remove the widgets of previous datasets already present
+            for child in self.show_tags_box.get_children():
+                self.show_tags_box.remove(child)
+
+            for tag in tags :
+                box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+
+                # the label for the tag
+                label = Gtk.Label(label=tag)
+
+                # the remove button for the label generated
+                button = Gtk.Button(label="-")
+        
+                # button.connect("clicked", self.on_remove_tag, tag)
+
+                # Adding the label and button to the box
+                box.pack_start(label, False, False, 0)
+                box.pack_end(button, False, False, 0)
+
+                 # Adding the box to the show_tags_box
+                self.show_tags_box.pack_start(box, False, False, 0)
+            
+            self.show_all()
 
         _logger.debug("Get readme.")
         asyncio.create_task(_get_readme())
         _logger.debug("Get manifest.")
         asyncio.create_task(_get_manifest())
+        _logger.debug("Get tags.")
+        asyncio.create_task(_get_tags())
 
         if dataset.type == 'lookup':
             self.dependency_stack.show()
