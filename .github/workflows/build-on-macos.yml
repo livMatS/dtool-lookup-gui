@@ -96,8 +96,7 @@ jobs:
         echo killing...; sudo pkill -9 XProtect >/dev/null || true;
         echo waiting...; while pgrep XProtect; do sleep 3; done;
         sleep 10
-        lsof +D release/
-        sudo create-dmg \
+        create-dmg \
           --volname "dtool-lookup-gui" \
           --eula "LICENSE.txt" \
           --volicon "data/icons/dtool_logo.icns" \
