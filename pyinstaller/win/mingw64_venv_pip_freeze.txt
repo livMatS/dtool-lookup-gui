@@ -60,7 +60,7 @@ pyinstaller==6.11.0
 pyinstaller-hooks-contrib==2024.9
 PyJWT==2.9.0
 pyparsing==3.1.2
-pyproject_hooks==1.1.0
+pyproject_hooks==1.2.0
 pyrsistent==0.20.0
 pysmb==1.2.10
 python-dateutil==2.9.0.post0
