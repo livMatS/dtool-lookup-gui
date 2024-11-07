@@ -58,6 +58,15 @@ class LoginWindow(Gtk.Window):
         if Config.password is not None:  # Consider security implications
             self.password_entry.set_text(Config.password)
 
+        self.username_entry.connect("activate", self.on_username_activate)
+        self.password_entry.connect("activate", self.on_password_activate)
+
+    def on_username_activate(self, entry):
+        self.password_entry.grab_focus()
+
+    def on_password_activate(self, entry):
+        self.on_login_button_clicked(None)
+
     # Handle the 'Login' button click event
     @Gtk.Template.Callback()
     def on_login_button_clicked(self, widget):
