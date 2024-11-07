@@ -101,14 +101,10 @@ propcache==0.2.0
     # via yarl
 pyasn1==0.6.1
     # via pysmb
-pycairo==1.27.0
-    # via pygobject
 pycparser==2.22
     # via cffi
 pygments==2.18.0
     # via dtool-info
-pygobject==3.50.0
-    # via -r requirements.in
 pysmb==1.2.10
     # via dtool-smb
 python-dateutil==2.9.0.post0
