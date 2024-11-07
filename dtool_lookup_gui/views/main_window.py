@@ -74,18 +74,180 @@ from .log_window import LogWindow
 
 _logger = logging.getLogger(__name__)
 
+
 class SearchState:
     def __init__(self):
-        self.search_text = ""
-        self.current_page = 1  # current page
-        self.page_size = 10  # entries per page
 
-        self.fetching_results = False  # mark whether waiting for results
+        self._search_text = ""
 
-        # dtool-lookup-api supports multiple sort fields, dtool-lookup-gui currently only one
-        self.sort_fields = ["uri"]
-        self.sort_order = [1]
+        self.reset_pagination()
+        self.reset_sorting()
 
+        self._fetching_results = False
+        self.sort_field_label_dict = {
+            "uri": "URI",
+            "name": "name",
+            "base_uri": "base URI",
+            "created_at": "created at",
+            "frozen_at": "frozen at",
+            "uuid": "UUID",
+            "creator_username": "creator username",
+        }
+        self.label_sort_field_dict = {value: key for key, value in self.sort_field_label_dict.items()}
+        self.page_size_choices = [5, 10, 20, 50, 100]
+
+    def reset_pagination(self):
+        self._current_page = 1
+        self._first_page = 1
+        self._last_page = 1
+        self._page_size = 10
+        self._total_pages = 1
+        self._total_number_of_entries = 0
+
+    def reset_sorting(self):
+        self._sort_fields = ["uri"]
+        self._sort_order = [1]
+
+    # search_text property
+    def get_search_text(self):
+        return self._search_text
+
+    def set_search_text(self, value):
+        self._search_text = value
+
+    # current_page property
+    def get_current_page(self):
+        return self._current_page
+
+    def set_current_page(self, value):
+        # if not isinstance(value, int) or value < 1:
+        #    raise ValueError("Current page must be a positive integer")
+        if value < 1:
+            value = 1
+        elif value > self.last_page:
+            value = self.last_page
+        self._current_page = value
+
+    # last_page property
+    def get_last_page(self):
+        return self._last_page
+
+    def set_last_page(self, value):
+        if not isinstance(value, int) or value < 1:
+            raise ValueError("Last page must be a positive integer")
+        self._last_page = value
+
+    # first_page property
+    def get_first_page(self):
+        return self._first_page
+
+    def set_first_page(self, value):
+        if not isinstance(value, int) or value < 1:
+            raise ValueError("Last page must be a positive integer")
+        self._first_page = value
+
+    # page_size property
+    def get_page_size(self):
+        return self._page_size
+
+    def set_page_size(self, value):
+        if not isinstance(value, int) or value < 1:
+            raise ValueError("Page size must be a positive integer")
+        self._page_size = value
+
+    # fetching_results property
+    def get_fetching_results(self):
+        return self._fetching_results
+
+    def set_fetching_results(self, value):
+        if not isinstance(value, bool):
+            raise ValueError("Fetching results must be a boolean")
+        self._fetching_results = value
+
+    # sort_fields property
+    def get_sort_fields(self):
+        return self._sort_fields
+
+    def set_sort_fields(self, value):
+        if isinstance(value, str):
+            value = [value]
+        if not isinstance(value, list):
+            raise ValueError("Sort fields must be a list")
+        for sort_field in value:
+            if sort_field not in self.sort_field_label_dict:
+                raise ValueError("Sort field %s not allowed", sort_field)
+        self._sort_fields = value
+
+    # sort_order property
+    def get_sort_order(self):
+        return self._sort_order
+
+    def set_sort_order(self, value):
+        if isinstance(value, int):
+            value = [value]
+        if not isinstance(value, list):
+            raise ValueError("Sort order must be a list")
+        if len(value) != len(self.sort_fields):
+            raise ValueError("Sort order list must have same length as sort fields list")
+        self._sort_order = value
+
+    def ingest_pagination_information(self, pagination):
+        """Sets pagination information to values found in dict of format
+
+           {"total": 284, "total_pages": 29, "first_page": 1, "last_page": 29, "page": 1, "next_page": 2}
+        """
+        self.first_page = pagination.get("first_page", 1)
+        self.last_page = pagination.get("last_page", 1)
+        self.current_page = pagination.get("page", 1)
+        self._total_pages = pagination.get("total_pages", 1)
+        self._total_number_of_entries = pagination.get("total", 0)
+
+    def ingest_sorting_information(self, sorting):
+        """Sets sorting information to values found in dict of format
+
+               {"base_uri": 1, "name": -1}
+        """
+        sort_fields = []
+        sort_order = []
+
+        sort_info = sorting.get("sort", {})
+        for key, value in sort_info.items():
+            sort_fields.append(key)
+            sort_order.append(value)
+
+        self.sort_fields = sort_fields
+        self.sort_order = sort_order
+
+    # Properties
+    search_text = property(get_search_text, set_search_text)
+    current_page = property(get_current_page, set_current_page)
+    last_page = property(get_last_page, set_last_page)
+    first_page = property(get_first_page, set_first_page)
+    page_size = property(get_page_size, set_page_size)
+    fetching_results = property(get_fetching_results, set_fetching_results)
+    sort_fields = property(get_sort_fields, set_sort_fields)
+    sort_order = property(get_sort_order, set_sort_order)
+
+    @property
+    def next_page(self):
+        if self.current_page >= self.last_page:
+            return self.last_page
+        else:
+            return self.current_page + 1
+
+    @property
+    def previous_page(self):
+        if self.current_page <= self.first_page:
+            return self.first_page
+        else:
+            return self.current_page - 1
+    @property
+    def total_pages(self):
+        return self._total_pages
+
+    @property
+    def total_number_of_entries(self):
+        return self._total_number_of_entries
 
 def _fill_manifest_tree_store(store, manifest, parent=None):
     nodes = {}
@@ -179,23 +341,24 @@ class MainWindow(Gtk.ApplicationWindow):
     error_label = Gtk.Template.Child()
 
     first_page_button = Gtk.Template.Child()
-    prev_page_button = Gtk.Template.Child()
-    curr_page_button = Gtk.Template.Child()
-    next_page_advancer_button = Gtk.Template.Child()
-    page_advancer_button = Gtk.Template.Child()
-    nextoption_page_button = Gtk.Template.Child()
+    decrease_page_button = Gtk.Template.Child()
+    previous_page_button = Gtk.Template.Child()
+    current_page_button = Gtk.Template.Child()
+    next_page_button = Gtk.Template.Child()
+    increase_page_button = Gtk.Template.Child()
     last_page_button = Gtk.Template.Child()
 
     main_statusbar = Gtk.Template.Child()
-    contents_per_page = Gtk.Template.Child()
+    contents_per_page_combo_box = Gtk.Template.Child()
     sort_field_combo_box = Gtk.Template.Child()
 
     linting_errors_button = Gtk.Template.Child()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
-        self.sort_order = 1 # default ascending sort order
+
+        # Initialize pagination and sort parameters
+        self.search_state = SearchState()
 
         self.application = self.get_application()
 
@@ -208,9 +371,6 @@ class MainWindow(Gtk.ApplicationWindow):
         self.readme_buffer.set_highlight_syntax(True)
         self.readme_buffer.set_highlight_matching_brackets(True)
         self.readme_source_view.set_editable(True)
-
-
-        self.readme_buffer.connect("changed", self.on_readme_buffer_changed)
 
         self.error_bar.set_revealed(False)
         self.progress_revealer.set_reveal_child(False)
@@ -233,8 +393,49 @@ class MainWindow(Gtk.ApplicationWindow):
         self.error_linting_dialog = LintingErrorsDialog(application=self.application)
 
         # signal handlers
-        self.contents_per_page.connect("changed", self.on_contents_per_page_changed)
+        self.readme_buffer.connect("changed", self.on_readme_buffer_changed)
+        self.contents_per_page_combo_box.connect("changed", self.on_contents_per_page_combo_box_changed)
         self.sort_field_combo_box.connect("changed", self.on_sort_field_combo_box_changed)
+
+        # populate sort field combo box
+
+        # Create a ListStore to hold the data
+        list_store = Gtk.ListStore(str, str)
+
+        # Populate the ListStore with the labels from your dictionary
+        for key, value in self.search_state.sort_field_label_dict.items():
+            list_store.append([key, value])
+
+        # Set the model for the combo box
+        self.sort_field_combo_box.set_model(list_store)
+
+        # Add a CellRendererText to display the text
+        renderer_text = Gtk.CellRendererText()
+        self.sort_field_combo_box.pack_start(renderer_text, True)
+        self.sort_field_combo_box.add_attribute(renderer_text, "text", 1)
+
+        # Set the active item (optional)
+        self.sort_field_combo_box.set_active(0)
+
+        # populate contents per page combo box
+
+        # Create a ListStore to hold the data
+        list_store = Gtk.ListStore(int, str)
+
+        # Populate the ListStore with the labels from your dictionary
+        for key in self.search_state.page_size_choices:
+            list_store.append([key, str(key)])
+
+        # Set the model for the combo box
+        self.contents_per_page_combo_box.set_model(list_store)
+
+        # Add a CellRendererText to display the text
+        renderer_text = Gtk.CellRendererText()
+        self.contents_per_page_combo_box.pack_start(renderer_text, True)
+        self.contents_per_page_combo_box.add_attribute(renderer_text, "text", 1)
+
+        # Set the active item (optional)
+        self.contents_per_page_combo_box.set_active(1)
 
         # window-scoped actions
 
@@ -292,6 +493,10 @@ class MainWindow(Gtk.ApplicationWindow):
         show_page_action.connect("activate", self.do_show_page)
         self.add_action(show_page_action)
 
+        show_current_page_action = Gio.SimpleAction.new("show-current-page")
+        show_current_page_action.connect("activate", self.do_show_current_page)
+        self.add_action(show_current_page_action)
+
         show_first_page_action = Gio.SimpleAction.new("show-first-page")
         show_first_page_action.connect("activate", self.do_show_first_page)
         self.add_action(show_first_page_action)
@@ -325,14 +530,9 @@ class MainWindow(Gtk.ApplicationWindow):
 
         _logger.debug(f"Constructed main window for app '{self.application.get_application_id()}'")
 
-        # Initialize pagination parameters, hide page advancer button by default, set default items per page, and highlight the current page button.
-        # self.pagination = {}
-        self.search_state = SearchState()
+        self.decrease_page_button.set_visible(False)
 
-        self.page_advancer_button.set_visible(False)
-        # self.contents_per_page_value = 10
-        
-        style_context = self.curr_page_button.get_style_context()
+        style_context = self.current_page_button.get_style_context()
         style_context.add_class('suggested-action')
 
         # Initialize linting_problems cache and make the linting_errors_button non-clickable (greyed out)
@@ -352,7 +552,7 @@ class MainWindow(Gtk.ApplicationWindow):
         async def _refresh():
             # first, refresh base uri list and its selection
             await self._refresh_base_uri_list_box()
-            self.select_and_load_first_uri()
+            self._select_and_load_first_uri()
 
             _logger.debug(f"Done refreshing base URIs.")
             # on_base_uri_selected(self, list_box, row) called by selection
@@ -389,50 +589,19 @@ class MainWindow(Gtk.ApplicationWindow):
     # in order to decouple actual signal handler and functionality
     def _update_search_summary(self, datasets):
         row = self.base_uri_list_box.search_results_row
+        total_value = self.search_state.total_number_of_entries
+        row.info_label.set_text(f'{total_value} datasets')
+
+    def _update_main_statusbar(self, datasets):
+        total_number = self.search_state.total_number_of_entries
+        current_page = self.search_state.current_page
+        last_page = self.search_state.last_page
+        page_size = self.search_state.page_size
         total_size = sum([0 if dataset.size_int is None else dataset.size_int for dataset in datasets])
-        total_value = self.pagination['total']
-        row.info_label.set_text(f'{total_value} datasets, {sizeof_fmt(total_size).strip()}')
-
-    def _update_main_statusbar(self):
-        total_number = self.pagination['total']
-        current_page = self.pagination['page']
-        last_page = self.pagination['last_page']
         self.main_statusbar.push(0,
-                                 f"Total Number of Datasets: {total_number}, Current Page: {current_page} of {last_page}")
-
-    def on_contents_per_page_changed(self, widget):
-        self.contents_per_page_value = widget.get_active_text()
-
-        # self.on_first_page_button_clicked(self.first_page_button)  # Directly call the method
-    
-    def on_sort_field_combo_box_changed(self, widget):
-        transformed_fields = {
-            "Uri": "uri",
-            "Name": "name",
-            "Base Uri": "base_uri",
-            "Created At": "created_at",
-            "Frozen At": "frozen_at",
-            "Uuid": "uuid",
-            "Creator Username": "creator_username",
-        }
-        
-        selected_text = widget.get_active_text()
-
-        transformed_text = transformed_fields.get(selected_text)
-
-        sort_order = self.sort_order
-
-        asyncio.create_task(self._fetch_search_results(keyword=None, sort_fields=[transformed_text], sort_order=[sort_order]))
-
-    @Gtk.Template.Callback()
-    def on_sort_order_switch_state_set(self, widget,state):
-        # Toggle sort order based on the switch state
-        if state:
-            self.sort_order = -1  # Switch is on, use ascending order
-        else:
-            self.sort_order = 1  # Switch is off, use descending order
-                
-        self.on_sort_field_combo_box_changed(self.sort_field_combo_box)
+            f"{total_number} datasets in total at {page_size} per page, "
+            f"{sizeof_fmt(total_size).strip()} total size of {len(datasets)} datasets on current page, "
+            f"on page {current_page} of {last_page}")
 
     async def _fetch_search_results(self, on_show=None):
         """Retrieve search results from lookup server."""
@@ -444,15 +613,13 @@ class MainWindow(Gtk.ApplicationWindow):
         row.start_spinner()
         self.main_spinner.start()
 
-        # self.pagination = {}  # Add pagination dictionary
-        # self.sorting = {} # Add sorting dictionary
         pagination = {}
         sorting = {}
         try:
             if self.search_state.search_text:
                 if is_valid_query(self.search_state.search_text):
                     _logger.debug("Valid query specified.")
-                    datasets = await DatasetModel.get_datasets_by_mongodb_query(
+                    datasets = await DatasetModel.get_datasets_by_mongo_query(
                         query=self.search_state.search_text,
                         page_number=self.search_state.current_page,
                         page_size=self.search_state.page_size,
@@ -484,12 +651,15 @@ class MainWindow(Gtk.ApplicationWindow):
                     sorting=sorting
                 )
 
-            if pagination == {}:  # server did not provide pagination information
-                pagination = {
-                    'total': len(datasets),
-                    'page': 1,
-                    'last_page': 1
-                }
+            # if pagination == {}:  # server did not provide pagination information
+            #     pagination = {
+            #         'total': len(datasets),
+            #         'page': 1,
+            #         'last_page': 1
+            #     }
+
+            self.search_state.ingest_pagination_information(pagination)
+            self.search_state.ingest_sorting_information(sorting)
 
             if len(datasets) > self._max_nb_datasets:
                 _logger.warning(
@@ -501,7 +671,7 @@ class MainWindow(Gtk.ApplicationWindow):
             row.search_results = datasets  # Cache datasets
 
             self._update_search_summary(datasets)
-            self._update_main_statusbar()
+            self._update_main_statusbar(datasets)
 
             if self.base_uri_list_box.get_selected_row() == row:
                 # Only update if the row is still selected
@@ -554,13 +724,16 @@ class MainWindow(Gtk.ApplicationWindow):
         self._select_dataset_row_by_row_index(index)
 
     def _show_dataset_details(self, dataset):
+        """Kick off asynchronous task to show dataset details."""
         asyncio.create_task(self._update_dataset_view(dataset))
         self.dataset_stack.set_visible_child(self.dataset_box)
 
     def _build_dependency_graph(self, dataset):
+        """Kick off asynchronous task to build dependency graph."""
         asyncio.create_task(self._compute_dependencies(dataset))
 
     def _show_dataset_details_by_row_index(self, index):
+        """Show dataset details by row index."""
         row = self.dataset_list_box.get_row_at_index(index)
         if row is not None:
             _logger.debug(f"{row.dataset.name} shown.")
@@ -588,73 +761,82 @@ class MainWindow(Gtk.ApplicationWindow):
         self._build_dependency_graph_by_row_index(index)
 
     def _select_and_show_by_row_index(self, index=0):
+        """Select dataset entry by row index and show details."""
         self._select_dataset_row_by_row_index(index)
         self._show_dataset_details_by_row_index(index)
 
     def _select_and_show_by_uri(self, uri):
+        """Select dataset entry by URI and show details."""
         self._select_dataset_row_by_uri(uri)
         self._show_dataset_details_by_uri(uri)
 
     def _search(self, search_text, on_show=None):
-        _logger.debug(f"Evoke search with search text {search_text}.")
+        """Get datasets by text search."""
+        self.search_state.search_text = search_text
+        self.search_state.reset_pagination()
+        # self.search_state.current_page = 1
+        self._refresh_datasets(on_show=on_show)
+
+    def _refresh_datasets(self, on_show=None):
+        """Reset dataset list, show spinner, and kick off async task for retrieving dataset entries."""
         self.main_stack.set_visible_child(self.main_spinner)
         row = self.base_uri_list_box.search_results_row
         row.search_results = None
-        self.search_state.search_text = search_text
-        asyncio.create_task(self._fetch_search_results(on_show))
+        asyncio.create_task(self._fetch_search_results(on_show=on_show))
 
     def _search_select_and_show(self, search_text):
+        """Get datasets by text search, select first row and show dataset details."""
         _logger.debug(f"Search '{search_text}'...")
         self._search(search_text, on_show=lambda _: self._select_and_show_by_row_index())
 
     # pagination functionality
     def _show_page(self, page_index):
+        """Get datasets by page, select first row and show dataset details."""
         if not self.search_state.fetching_results:
             self.search_state.current_page = page_index
-            # self.pagination['page'] = page_number
-            self._disable_pagination_buttons()
-            asyncio.create_task(self._fetch_search_results())
+            # self._disable_pagination_buttons()
+            self._refresh_datasets(on_show=lambda _: self._select_and_show_by_row_index())
+            # asyncio.create_task(self._fetch_search_results())
             # self._update_pagination_buttons(page_number, widget)
 
     def _update_pagination_buttons(self):
-        # Update labels and visibility of pagination buttons based on current page
-        # self.pagination['page'] = page_number
-        self.curr_page_button.set_label(str(self.search_state.current_page))
-        self.page_advancer_button.set_label(str(self.search_state.current_page - 1))
-        self.next_page_advancer_button.set_label(str(self.search_state.current_page + 1))
+        """Update pagination buttons to match current search state."""
 
-        # Hide next_page_advancer_button if current page is the last page or beyond
+        self.current_page_button.set_label(str(self.search_state.current_page))
+        self.next_page_button.set_label(str(self.search_state.next_page))
+        self.previous_page_button.set_label(str(self.search_state.previous_page))
+
         if self.search_state.current_page >= self.search_state.last_page:
-            self.next_page_advancer_button.set_visible(False)
+            self.next_page_button.set_visible(False)
         else:
-            self.next_page_advancer_button.set_visible(True)
+            self.next_page_button.set_visible(True)
 
-        if self.search_state.current_page <= 1:
-            self.page_advancer_button.set_visible(False)
+        if self.search_state.current_page <= self.search_state.first_page:
+            self.previous_page_button.set_visible(False)
         else:
-            self.page_advancer_button.set_visible(True)
+            self.previous_page_button.set_visible(True)
 
     def _disable_pagination_buttons(self):
-        # Disable all pagination buttons (typically while fetching results)
+        """Disable all pagination buttons (typically while fetching results)"""
         self.fetching_results = True
         self.first_page_button.set_sensitive(False)
-        self.nextoption_page_button.set_sensitive(False)
+        self.next_page_button.set_sensitive(False)
         self.last_page_button.set_sensitive(False)
-        self.prev_page_button.set_sensitive(False)
-        self.curr_page_button.set_sensitive(False)
-        self.page_advancer_button.set_sensitive(False)
-        self.next_page_advancer_button.set_sensitive(False)
+        self.previous_page_button.set_sensitive(False)
+        self.current_page_button.set_sensitive(False)
+        self.decrease_page_button.set_sensitive(False)
+        self.increase_page_button.set_sensitive(False)
 
     def _enable_pagination_buttons(self):
-        # Enable all pagination buttons (typically after fetching results)
+        """Enable all pagination buttons (typically after fetching results)"""
         self.fetching_results = False
         self.first_page_button.set_sensitive(True)
-        self.nextoption_page_button.set_sensitive(True)
+        self.next_page_button.set_sensitive(True)
         self.last_page_button.set_sensitive(True)
-        self.prev_page_button.set_sensitive(True)
-        self.curr_page_button.set_sensitive(True)
-        self.page_advancer_button.set_sensitive(True)
-        self.next_page_advancer_button.set_sensitive(True)
+        self.previous_page_button.set_sensitive(True)
+        self.current_page_button.set_sensitive(True)
+        self.decrease_page_button.set_sensitive(True)
+        self.increase_page_button.set_sensitive(True)
 
     # other helper functions
     def _get_selected_items(self):
@@ -686,8 +868,13 @@ class MainWindow(Gtk.ApplicationWindow):
         index = self.base_uri_list_box.get_row_index_from_uri(uri)
         self._select_base_uri_row_by_row_index(index)
 
-    def on_readme_buffer_changed(self, buffer):
-        self.save_metadata_button.set_sensitive(True)
+    def _select_and_load_first_uri(self):
+        """
+        This function automatically reloads the data and selects the first URI.
+        """
+        first_row = self.base_uri_list_box.get_children()[0]
+        self.base_uri_list_box.select_row(first_row)
+        self.on_base_uri_selected(self.base_uri_list_box, first_row)
 
     # actions
 
@@ -756,14 +943,39 @@ class MainWindow(Gtk.ApplicationWindow):
 
     # pagination actions
     def do_show_page(self, action, value):
-        """Show base uri by row index"""
+        """Show page of specific index"""
         page_index = value.get_uint32()
         self._show_page(page_index)
-        # self._show_base_uri_by_row_index(row_index)
+
+    def do_show_current_page(self, action, value):
+        """Show current page"""
+        page_index = self.search_state.current_page
+        self._show_page(page_index)
+
+    def do_show_first_page(self, action, value):
+        """Show first page"""
+        page_index = self.search_state.first_page
+        self._show_page(page_index)
+
+    def do_show_last_page(self, action, value):
+        """Show last page"""
+        page_index = self.search_state.last_page
+        self._show_page(page_index)
+
+    def do_show_next_page(self, action, value):
+        """Show next page"""
+        page_index = self.search_state.next_page
+        self._show_page(page_index)
+
+    def do_show_previous_page(self, action, value):
+        """Show previous page"""
+        page_index = self.search_state.previous_page
+        self._show_page(page_index)
 
     # other actions
     def do_get_item(self, action, value):
-        """Copy currently selected manifest item in currently selected dataset to specified destination."""
+        """"Copy currently selected manifest item in currently selected dataset to specified destination."""
+
         dest_file = value.get_string()
 
         dataset = self.dataset_list_box.get_selected_row().dataset
@@ -789,6 +1001,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.refresh()
 
     # signal handlers
+
     @Gtk.Template.Callback()
     def on_settings_clicked(self, widget):
         self.settings_dialog.show()
@@ -863,7 +1076,7 @@ class MainWindow(Gtk.ApplicationWindow):
     def on_search_activate(self, widget):
         """Search activated (usually by hitting Enter after typing in the search entry)."""
         search_text = self.search_entry.get_text()
-        self._search_by_search_text(search_text)
+        self.activate_action('search-select-show', GLib.Variant.new_string(search_text))
 
     @Gtk.Template.Callback()
     def on_search_drop_down_clicked(self, widget):
@@ -1076,88 +1289,81 @@ class MainWindow(Gtk.ApplicationWindow):
     #     sort_field = widget.get_active_text()
     #     _logger.debug("sort field changed to %s", sort_field)
 
+    @Gtk.Template.Callback()
+    def on_sort_order_switch_state_set(self, widget, state):
+        # Toggle sort order based on the switch state
+        if state:
+            sort_order = -1  # Switch is on, use ascending order
+        else:
+            sort_order = 1  # Switch is off, use descending order
+
+        self.search_state.sort_order = [sort_order]
+        self.activate_action('show-current-page')
+        # self.on_sort_field_combo_box_changed(self.sort_field_combo_box)
+
+    @Gtk.Template.Callback()
+    def on_contents_per_page_combo_box_changed(self, widget):
+        # Get the active iter and retrieve the key from the first column
+        model = widget.get_model()
+        active_iter = widget.get_active_iter()
+        if active_iter is not None:
+            selected_key = model[active_iter][0]  # This is the key
+
+        self.search_state.page_size = selected_key
+        self.activate_action('show-first-page')
+
+    @Gtk.Template.Callback()
+    def on_sort_field_combo_box_changed(self, widget):
+        # Get the active iter and retrieve the key from the first column
+        model = widget.get_model()
+        active_iter = widget.get_active_iter()
+        if active_iter is not None:
+            selected_key = model[active_iter][0]  # This is the key
+
+        self.search_state.sort_fields = [selected_key]
+        self.activate_action('show-current-page')
+
     # pagination signal handlers
 
     @Gtk.Template.Callback()
     def on_first_page_button_clicked(self, widget):
         # Navigate to the first page if results are not currently being fetched
-        if not self.fetching_results:
-            page_number = 1
-            self.pagination['page'] = page_number
-            self._disable_pagination_buttons()
-            asyncio.create_task(self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
-                                                           page_size=int(self.contents_per_page_value), widget=widget))
-            self._update_pagination_buttons(page_number, widget)
+        self.activate_action('show-first-page')
 
     @Gtk.Template.Callback()
-    def on_nextoption_page_button_clicked(self, widget):
+    def on_decrease_page_button_clicked(self, widget):
+        """Navigate to the previous page if it exists"""
+        self.activate_action('show-previous-page')
+
+    @Gtk.Template.Callback()
+    def on_previous_page_button_clicked(self, widget):
+        """Navigate to the previous page if it exists"""
+        self.activate_action('show-previous-page')
+
+    @Gtk.Template.Callback()
+    def on_current_page_button_clicked(self, widget):
+        """Highlight the current page button and fetch its results"""
+        style_context = self.current_page_button.get_style_context()
+        style_context.add_class('suggested-action')
+        self.activate_action('show-current-page')
+
+    @Gtk.Template.Callback()
+    def on_next_page_button_clicked(self, widget):
         # Navigate to the next page if available
-        if not self.fetching_results and self.pagination['page'] < self.pagination['last_page']:
-            page_number = self.pagination['page'] + 1
-            self._update_pagination_buttons(page_number, widget)
-            self._disable_pagination_buttons()
-            asyncio.create_task(self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
-                                                           page_size=int(self.contents_per_page_value), widget=widget))
+        self.activate_action('show-next-page')
+
+    @Gtk.Template.Callback()
+    def on_increase_page_button_clicked(self, widget):
+        """Navigate to the next page uif it exists"""
+        self.activate_action('show-next-page')
 
     @Gtk.Template.Callback()
     def on_last_page_button_clicked(self, widget):
-        # Navigate to the last page
-        page_number = self.pagination['last_page']
-        self._update_pagination_buttons(page_number, widget)
-        self._disable_pagination_buttons()
-        asyncio.create_task(self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
-                                                       page_size=int(self.contents_per_page_value), widget=widget))
+        """Navigate to the last page"""
+        self.activate_action('show-last-page')
 
-    @Gtk.Template.Callback()
-    def on_prev_page_button_clicked(self, widget):
-        # Navigate to the previous page if it exists
-        if not self.fetching_results and self.pagination['page'] > 1:
-            page_number = self.pagination['page'] - 1
-            self._update_pagination_buttons(page_number, widget)
-            self._disable_pagination_buttons()
-            asyncio.create_task(self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
-                                                           page_size=int(self.contents_per_page_value), widget=widget))
-
-    @Gtk.Template.Callback()
-    def curr_page_button_clicked(self, widget):
-        # Highlight the current page button and fetch its results
-        page_number = self.pagination['page']
-        style_context = self.curr_page_button.get_style_context()
-        style_context.add_class('suggested-action')
-        self._update_pagination_buttons(page_number, widget)
-        self._disable_pagination_buttons()
-        asyncio.create_task(self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
-                                                       page_size=int(self.contents_per_page_value), widget=widget))
-
-    @Gtk.Template.Callback()
-    def page_advancer_button_clicked(self, widget):
-        # Navigate to the previous page using the advancer button
-        page_number = self.pagination['page']
-        if not self.fetching_results and page_number > 1:
-            page_number -= 1
-            self._update_pagination_buttons(page_number, widget)
-            self._disable_pagination_buttons()
-            asyncio.create_task(self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
-                                                           page_size=int(self.contents_per_page_value), widget=widget))
-
-    @Gtk.Template.Callback()
-    def next_page_advancer_button_clicked(self, widget):
-        # Navigate to the next page using the advancer button
-        page_number = self.pagination['page']
-        if not self.fetching_results and page_number < self.pagination['last_page']:
-            page_number += 1
-            self._update_pagination_buttons(page_number, widget)
-            self._disable_pagination_buttons()
-            asyncio.create_task(self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
-                                                           page_size=int(self.contents_per_page_value), widget=widget))
-
-    def select_and_load_first_uri(self):
-        """
-        This function automatically reloads the data and selects the first URI.
-        """
-        first_row = self.base_uri_list_box.get_children()[0]
-        self.base_uri_list_box.select_row(first_row)
-        self.on_base_uri_selected(self.base_uri_list_box, first_row)
+    def on_readme_buffer_changed(self, buffer):
+        self.save_metadata_button.set_sensitive(True)
 
     # TODO: this should be an action do_copy
     # if it is possible to hand two strings, e.g. source and destination to an action, then this action should

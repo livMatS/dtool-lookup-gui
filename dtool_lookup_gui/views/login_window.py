@@ -96,7 +96,7 @@ class LoginWindow(Gtk.Window):
         self.close()
 
     @Gtk.Template.Callback()
-    def settings_button_clicked_cb(self, widget):
+    def on_settings_button_clicked_cb(self, widget):
         logger.info("Settings button clicked. Opening settings dialog.")
         self.settings_dialog.show()
 

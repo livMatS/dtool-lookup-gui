@@ -474,50 +474,6 @@
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkComboBoxText" id="sort_field_combo_box">
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">False</property>
-                                    <property name="double_buffered">False</property>
-                                    <property name="halign">end</property>
-                                    <property name="valign">center</property>
-                                    <property name="active">0</property>
-                                    <items>
-                                      <item id="&lt;Enter ID&gt;" translatable="yes">Uri</item>
-                                      <item translatable="yes">Name</item>
-                                      <item translatable="yes">Base Uri</item>
-                                      <item translatable="yes">Created At</item>
-                                      <item translatable="yes">Creator Username</item>
-                                      <item translatable="yes">Frozen At</item>
-                                      <item translatable="yes">Uuid</item>
-                                    </items>
-                                    <signal name="changed" handler="on_sort_field_combo_box_changed" swapped="no"/>
-                                  </object>
-                                  <packing>
-                                    <property name="left_attach">3</property>
-                                    <property name="top_attach">0</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <object class="GtkComboBoxText" id="contents_per_page">
-                                    <property name="visible">True</property>
-                                    <property name="can_focus">True</property>
-                                    <property name="halign">end</property>
-                                    <property name="hexpand">False</property>
-                                    <property name="active">0</property>
-                                    <items>
-                                      <item>10</item>
-                                      <item>25</item>
-                                      <item>50</item>
-                                      <item>75</item>
-                                    </items>
-                                    <signal name="changed" handler="contents_per_page_changed" swapped="no"/>
-                                  </object>
-                                  <packing>
-                                    <property name="left_attach">1</property>
-                                    <property name="top_attach">0</property>
-                                  </packing>
-                                </child>
-                                <child>
                                   <object class="GtkLabel">
                                     <property name="visible">True</property>
                                     <property name="can_focus">False</property>
@@ -528,6 +484,28 @@
                                   </object>
                                   <packing>
                                     <property name="left_attach">0</property>
+                                    <property name="top_attach">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkComboBox" id="sort_field_combo_box">
+                                    <property name="visible">True</property>
+                                    <property name="can_focus">False</property>
+                                    <signal name="changed" handler="on_sort_field_combo_box_changed" swapped="no"/>
+                                  </object>
+                                  <packing>
+                                    <property name="left_attach">3</property>
+                                    <property name="top_attach">0</property>
+                                  </packing>
+                                </child>
+                                <child>
+                                  <object class="GtkComboBox" id="contents_per_page_combo_box">
+                                    <property name="visible">True</property>
+                                    <property name="can_focus">False</property>
+                                    <signal name="changed" handler="on_contents_per_page_combo_box_changed" swapped="no"/>
+                                  </object>
+                                  <packing>
+                                    <property name="left_attach">1</property>
                                     <property name="top_attach">0</property>
                                   </packing>
                                 </child>
@@ -602,14 +580,14 @@
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkButton" id="prev_page_button">
+                                  <object class="GtkButton" id="decrease_page_button">
                                     <property name="label" translatable="yes">Prev</property>
                                     <property name="height_request">30</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">True</property>
                                     <property name="halign">start</property>
-                                    <signal name="clicked" handler="on_prev_page_button_clicked" swapped="no"/>
+                                    <signal name="clicked" handler="on_decrease_page_button_clicked" swapped="no"/>
                                     <style>
                                       <class name="prev-page-button-style"/>
                                     </style>
@@ -638,14 +616,14 @@
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkButton" id="nextoption_page_button">
+                                  <object class="GtkButton" id="increase_page_button">
                                     <property name="label" translatable="yes">Next</property>
                                     <property name="height_request">30</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">True</property>
                                     <property name="halign">start</property>
-                                    <signal name="clicked" handler="on_nextoption_page_button_clicked" swapped="no"/>
+                                    <signal name="clicked" handler="on_increase_page_button_clicked" swapped="no"/>
                                     <style>
                                       <class name="next-page-button-style"/>
                                     </style>
@@ -656,14 +634,14 @@
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkButton" id="next_page_advancer_button">
+                                  <object class="GtkButton" id="next_page_button">
                                     <property name="label" translatable="yes">2</property>
                                     <property name="height_request">30</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">True</property>
                                     <property name="halign">start</property>
-                                    <signal name="clicked" handler="next_page_advancer_button_clicked" swapped="no"/>
+                                    <signal name="clicked" handler="on_next_page_button_clicked" swapped="no"/>
                                     <style>
                                       <class name="next-page-advancer-button-style"/>
                                     </style>
@@ -674,14 +652,14 @@
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkButton" id="page_advancer_button">
+                                  <object class="GtkButton" id="previous_page_button">
                                     <property name="label" translatable="yes">0</property>
                                     <property name="height_request">30</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">True</property>
                                     <property name="halign">start</property>
-                                    <signal name="clicked" handler="page_advancer_button_clicked" swapped="no"/>
+                                    <signal name="clicked" handler="on_previous_page_button_clicked" swapped="no"/>
                                     <style>
                                       <class name="page-advancer-button-style"/>
                                     </style>
@@ -692,14 +670,14 @@
                                   </packing>
                                 </child>
                                 <child>
-                                  <object class="GtkButton" id="curr_page_button">
+                                  <object class="GtkButton" id="current_page_button">
                                     <property name="label" translatable="yes">1</property>
                                     <property name="height_request">30</property>
                                     <property name="visible">True</property>
                                     <property name="can_focus">True</property>
                                     <property name="receives_default">True</property>
                                     <property name="halign">start</property>
-                                    <signal name="clicked" handler="curr_page_button_clicked" swapped="no"/>
+                                    <signal name="clicked" handler="on_current_page_button_clicked" swapped="no"/>
                                     <style>
                                       <class name="curr-page-button-style"/>
                                     </style>
