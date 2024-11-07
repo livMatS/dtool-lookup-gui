@@ -74,6 +74,18 @@ from .log_window import LogWindow
 
 _logger = logging.getLogger(__name__)
 
+class SearchState:
+    def __init__(self):
+        self.search_text = ""
+        self.current_page = 1  # current page
+        self.page_size = 10  # entries per page
+
+        self.fetching_results = False  # mark whether waiting for results
+
+        # dtool-lookup-api supports multiple sort fields, dtool-lookup-gui currently only one
+        self.sort_fields = ["uri"]
+        self.sort_order = [1]
+
 
 def _fill_manifest_tree_store(store, manifest, parent=None):
     nodes = {}
@@ -220,6 +232,10 @@ class MainWindow(Gtk.ApplicationWindow):
         self.server_versions_dialog = ServerVersionsDialog(application=self.application)
         self.error_linting_dialog = LintingErrorsDialog(application=self.application)
 
+        # signal handlers
+        self.contents_per_page.connect("changed", self.on_contents_per_page_changed)
+        self.sort_field_combo_box.connect("changed", self.on_sort_field_combo_box_changed)
+
         # window-scoped actions
 
         # search action
@@ -270,6 +286,28 @@ class MainWindow(Gtk.ApplicationWindow):
         search_select_show_action.connect("activate", self.do_search_select_and_show)
         self.add_action(search_select_show_action)
 
+        # pagination actions
+        page_index_variant = GLib.Variant.new_uint32(0)
+        show_page_action = Gio.SimpleAction.new("show-page", page_index_variant.get_type())
+        show_page_action.connect("activate", self.do_show_page)
+        self.add_action(show_page_action)
+
+        show_first_page_action = Gio.SimpleAction.new("show-first-page")
+        show_first_page_action.connect("activate", self.do_show_first_page)
+        self.add_action(show_first_page_action)
+
+        show_last_page_action = Gio.SimpleAction.new("show-last-page")
+        show_last_page_action.connect("activate", self.do_show_last_page)
+        self.add_action(show_last_page_action)
+
+        show_next_page_action = Gio.SimpleAction.new("show-next-page")
+        show_next_page_action.connect("activate", self.do_show_next_page)
+        self.add_action(show_next_page_action)
+
+        show_previous_page_action = Gio.SimpleAction.new("show-previous-page")
+        show_previous_page_action.connect("activate", self.do_show_previous_page)
+        self.add_action(show_previous_page_action)
+
         # get item
         dest_file_variant = GLib.Variant.new_string("dummy")
         get_item_action = Gio.SimpleAction.new("get-item", dest_file_variant.get_type())
@@ -288,9 +326,11 @@ class MainWindow(Gtk.ApplicationWindow):
         _logger.debug(f"Constructed main window for app '{self.application.get_application_id()}'")
 
         # Initialize pagination parameters, hide page advancer button by default, set default items per page, and highlight the current page button.
-        self.pagination = {}
+        # self.pagination = {}
+        self.search_state = SearchState()
+
         self.page_advancer_button.set_visible(False)
-        self.contents_per_page_value = 10
+        # self.contents_per_page_value = 10
         
         style_context = self.curr_page_button.get_style_context()
         style_context.add_class('suggested-action')
@@ -360,9 +400,10 @@ class MainWindow(Gtk.ApplicationWindow):
         self.main_statusbar.push(0,
                                  f"Total Number of Datasets: {total_number}, Current Page: {current_page} of {last_page}")
 
-    def contents_per_page_changed(self, widget):
+    def on_contents_per_page_changed(self, widget):
         self.contents_per_page_value = widget.get_active_text()
-        self.on_first_page_button_clicked(self.first_page_button)  # Directly call the method
+
+        # self.on_first_page_button_clicked(self.first_page_button)  # Directly call the method
     
     def on_sort_field_combo_box_changed(self, widget):
         transformed_fields = {
@@ -393,54 +434,58 @@ class MainWindow(Gtk.ApplicationWindow):
                 
         self.on_sort_field_combo_box_changed(self.sort_field_combo_box)
 
-        
+    async def _fetch_search_results(self, on_show=None):
+        """Retrieve search results from lookup server."""
 
-    async def _fetch_search_results(self, keyword, on_show=None, page_number=1, page_size=10,sort_fields=["uri"],sort_order=[1] , widget=None):
+        self._disable_pagination_buttons()
+
         # Here sort order 1 implies ascending 
         row = self.base_uri_list_box.search_results_row
         row.start_spinner()
         self.main_spinner.start()
 
-        self.pagination = {}  # Add pagination dictionary
-        self.sorting = {} # Add sorting dictionary
+        # self.pagination = {}  # Add pagination dictionary
+        # self.sorting = {} # Add sorting dictionary
+        pagination = {}
+        sorting = {}
         try:
-            if keyword:
-                if is_valid_query(keyword):
+            if self.search_state.search_text:
+                if is_valid_query(self.search_state.search_text):
                     _logger.debug("Valid query specified.")
-                    datasets = await DatasetModel.query(
-                        keyword,
-                        page_number=page_number,
-                        page_size=page_size,
-                        sort_fields=sort_fields,
-                        sort_order=sort_order,
-                        pagination=self.pagination,
-                        sorting=self.sorting
+                    datasets = await DatasetModel.get_datasets_by_mongodb_query(
+                        query=self.search_state.search_text,
+                        page_number=self.search_state.current_page,
+                        page_size=self.search_state.page_size,
+                        sort_fields=self.search_state.sort_fields,
+                        sort_order=self.search_state.sort_order,
+                        pagination=pagination,
+                        sorting=sorting
 
                     )
                 else:
                     _logger.debug("Specified search text is not a valid query, just perform free text search.")
                     datasets = await DatasetModel.get_datasets(
-                        keyword,
-                        page_number=page_number,
-                        page_size=page_size,
-                        sort_fields=sort_fields,
-                        sort_order=sort_order,
-                        pagination=self.pagination,
-                        sorting=self.sorting
+                        free_text=self.search_state.search_text,
+                        page_number=self.search_state.current_page,
+                        page_size=self.search_state.page_size,
+                        sort_fields=self.search_state.sort_fields,
+                        sort_order=self.search_state.sort_order,
+                        pagination=pagination,
+                        sorting=sorting
                     )
             else:
                 _logger.debug("No keyword specified, list all datasets.")
-                datasets = await DatasetModel.query_all(
-                    page_number=page_number,
-                    page_size=page_size,
-                    sort_fields=sort_fields,
-                    sort_order=sort_order,
-                    pagination=self.pagination,
-                    sorting=self.sorting
+                datasets = await DatasetModel.get_datasets(
+                    page_number=self.search_state.current_page,
+                    page_size=self.search_state.page_size,
+                    sort_fields=self.search_state.sort_fields,
+                    sort_order=self.search_state.sort_order,
+                    pagination=pagination,
+                    sorting=sorting
                 )
 
-            if self.pagination == {}:  # server did not provide pagination information
-                self.pagination = {
+            if pagination == {}:  # server did not provide pagination information
+                pagination = {
                     'total': len(datasets),
                     'page': 1,
                     'last_page': 1
@@ -454,10 +499,10 @@ class MainWindow(Gtk.ApplicationWindow):
                 datasets = datasets[:self._max_nb_datasets]  # Limit number of datasets that are shown
 
             row.search_results = datasets  # Cache datasets
+
             self._update_search_summary(datasets)
             self._update_main_statusbar()
-            self.contents_per_page.connect("changed", self.contents_per_page_changed)
-            self.sort_field_combo_box.connect("changed", self.on_sort_field_combo_box_changed)
+
             if self.base_uri_list_box.get_selected_row() == row:
                 # Only update if the row is still selected
                 self.dataset_list_box.fill(datasets, on_show=on_show)
@@ -467,12 +512,12 @@ class MainWindow(Gtk.ApplicationWindow):
 
             async def retry():
                 await asyncio.sleep(0.5)  # TODO: This is a dirty workaround for not having the login window pop up twice
-                await self._fetch_search_results(keyword, on_show, page_number, page_size, widget)
+                await self._fetch_search_results(on_show)
 
             # What happens is that the LoginWindow evokes the renew-token action via Gtk framework.
             # This happens asynchronously as well. This means _fetch_search_results called again
             # within the retry() function would open another LoginWindow here as the token renewal does
-            # not happen "quick" enough. Hence there is the asybcio.sleep(1).
+            # not happen "quick" enough. Hence there is the asyncio.sleep(1).
             LoginWindow(application=self.application, follow_up_action=lambda: asyncio.create_task(retry())).show()
 
         except Exception as e:
@@ -482,9 +527,9 @@ class MainWindow(Gtk.ApplicationWindow):
         self.main_stack.set_visible_child(self.main_paned)
         row.stop_spinner()
         self.main_spinner.stop()
-        # If a widget was passed in, re-enable it
-        self.enable_pagination_buttons()
 
+        self._enable_pagination_buttons()
+        self._update_pagination_buttons()
 
     def _search_by_uuid(self, uuid):
         search_text = dump_single_line_query_text({"uuid": uuid})
@@ -555,12 +600,63 @@ class MainWindow(Gtk.ApplicationWindow):
         self.main_stack.set_visible_child(self.main_spinner)
         row = self.base_uri_list_box.search_results_row
         row.search_results = None
-        asyncio.create_task(self._fetch_search_results(search_text, on_show))
+        self.search_state.search_text = search_text
+        asyncio.create_task(self._fetch_search_results(on_show))
 
     def _search_select_and_show(self, search_text):
         _logger.debug(f"Search '{search_text}'...")
         self._search(search_text, on_show=lambda _: self._select_and_show_by_row_index())
 
+    # pagination functionality
+    def _show_page(self, page_index):
+        if not self.search_state.fetching_results:
+            self.search_state.current_page = page_index
+            # self.pagination['page'] = page_number
+            self._disable_pagination_buttons()
+            asyncio.create_task(self._fetch_search_results())
+            # self._update_pagination_buttons(page_number, widget)
+
+    def _update_pagination_buttons(self):
+        # Update labels and visibility of pagination buttons based on current page
+        # self.pagination['page'] = page_number
+        self.curr_page_button.set_label(str(self.search_state.current_page))
+        self.page_advancer_button.set_label(str(self.search_state.current_page - 1))
+        self.next_page_advancer_button.set_label(str(self.search_state.current_page + 1))
+
+        # Hide next_page_advancer_button if current page is the last page or beyond
+        if self.search_state.current_page >= self.search_state.last_page:
+            self.next_page_advancer_button.set_visible(False)
+        else:
+            self.next_page_advancer_button.set_visible(True)
+
+        if self.search_state.current_page <= 1:
+            self.page_advancer_button.set_visible(False)
+        else:
+            self.page_advancer_button.set_visible(True)
+
+    def _disable_pagination_buttons(self):
+        # Disable all pagination buttons (typically while fetching results)
+        self.fetching_results = True
+        self.first_page_button.set_sensitive(False)
+        self.nextoption_page_button.set_sensitive(False)
+        self.last_page_button.set_sensitive(False)
+        self.prev_page_button.set_sensitive(False)
+        self.curr_page_button.set_sensitive(False)
+        self.page_advancer_button.set_sensitive(False)
+        self.next_page_advancer_button.set_sensitive(False)
+
+    def _enable_pagination_buttons(self):
+        # Enable all pagination buttons (typically after fetching results)
+        self.fetching_results = False
+        self.first_page_button.set_sensitive(True)
+        self.nextoption_page_button.set_sensitive(True)
+        self.last_page_button.set_sensitive(True)
+        self.prev_page_button.set_sensitive(True)
+        self.curr_page_button.set_sensitive(True)
+        self.page_advancer_button.set_sensitive(True)
+        self.next_page_advancer_button.set_sensitive(True)
+
+    # other helper functions
     def _get_selected_items(self):
         """Returns (name uuid) tuples of items selected in manifest tree store."""
         selection = self.manifest_tree_view.get_selection()
@@ -657,6 +753,13 @@ class MainWindow(Gtk.ApplicationWindow):
         """Show base uri by uri."""
         uri = value.get_string()
         self._show_base_uri_details_by_uri(uri)
+
+    # pagination actions
+    def do_show_page(self, action, value):
+        """Show base uri by row index"""
+        page_index = value.get_uint32()
+        self._show_page(page_index)
+        # self._show_base_uri_by_row_index(row_index)
 
     # other actions
     def do_get_item(self, action, value):
@@ -981,18 +1084,18 @@ class MainWindow(Gtk.ApplicationWindow):
         if not self.fetching_results:
             page_number = 1
             self.pagination['page'] = page_number
-            self.disable_pagination_buttons()
+            self._disable_pagination_buttons()
             asyncio.create_task(self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
                                                            page_size=int(self.contents_per_page_value), widget=widget))
-            self.update_pagination_buttons(page_number, widget)
+            self._update_pagination_buttons(page_number, widget)
 
     @Gtk.Template.Callback()
     def on_nextoption_page_button_clicked(self, widget):
         # Navigate to the next page if available
         if not self.fetching_results and self.pagination['page'] < self.pagination['last_page']:
             page_number = self.pagination['page'] + 1
-            self.update_pagination_buttons(page_number, widget)
-            self.disable_pagination_buttons()
+            self._update_pagination_buttons(page_number, widget)
+            self._disable_pagination_buttons()
             asyncio.create_task(self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
                                                            page_size=int(self.contents_per_page_value), widget=widget))
 
@@ -1000,8 +1103,8 @@ class MainWindow(Gtk.ApplicationWindow):
     def on_last_page_button_clicked(self, widget):
         # Navigate to the last page
         page_number = self.pagination['last_page']
-        self.update_pagination_buttons(page_number, widget)
-        self.disable_pagination_buttons()
+        self._update_pagination_buttons(page_number, widget)
+        self._disable_pagination_buttons()
         asyncio.create_task(self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
                                                        page_size=int(self.contents_per_page_value), widget=widget))
 
@@ -1010,8 +1113,8 @@ class MainWindow(Gtk.ApplicationWindow):
         # Navigate to the previous page if it exists
         if not self.fetching_results and self.pagination['page'] > 1:
             page_number = self.pagination['page'] - 1
-            self.update_pagination_buttons(page_number, widget)
-            self.disable_pagination_buttons()
+            self._update_pagination_buttons(page_number, widget)
+            self._disable_pagination_buttons()
             asyncio.create_task(self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
                                                            page_size=int(self.contents_per_page_value), widget=widget))
 
@@ -1021,8 +1124,8 @@ class MainWindow(Gtk.ApplicationWindow):
         page_number = self.pagination['page']
         style_context = self.curr_page_button.get_style_context()
         style_context.add_class('suggested-action')
-        self.update_pagination_buttons(page_number, widget)
-        self.disable_pagination_buttons()
+        self._update_pagination_buttons(page_number, widget)
+        self._disable_pagination_buttons()
         asyncio.create_task(self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
                                                        page_size=int(self.contents_per_page_value), widget=widget))
 
@@ -1032,8 +1135,8 @@ class MainWindow(Gtk.ApplicationWindow):
         page_number = self.pagination['page']
         if not self.fetching_results and page_number > 1:
             page_number -= 1
-            self.update_pagination_buttons(page_number, widget)
-            self.disable_pagination_buttons()
+            self._update_pagination_buttons(page_number, widget)
+            self._disable_pagination_buttons()
             asyncio.create_task(self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
                                                            page_size=int(self.contents_per_page_value), widget=widget))
 
@@ -1043,46 +1146,10 @@ class MainWindow(Gtk.ApplicationWindow):
         page_number = self.pagination['page']
         if not self.fetching_results and page_number < self.pagination['last_page']:
             page_number += 1
-            self.update_pagination_buttons(page_number, widget)
-            self.disable_pagination_buttons()
+            self._update_pagination_buttons(page_number, widget)
+            self._disable_pagination_buttons()
             asyncio.create_task(self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
                                                            page_size=int(self.contents_per_page_value), widget=widget))
-
-    def update_pagination_buttons(self, page_number, widget):
-        # Update labels and visibility of pagination buttons based on current page
-        self.pagination['page'] = page_number
-        self.curr_page_button.set_label(str(page_number))
-        self.page_advancer_button.set_label(str(page_number - 1))
-        self.next_page_advancer_button.set_label(str(page_number + 1))
-
-        # Hide next_page_advancer_button if current page is the last page or beyond
-        if page_number >= self.pagination['last_page']:
-            self.next_page_advancer_button.set_visible(False)
-        else:
-            self.next_page_advancer_button.set_visible(True)
-        self.page_advancer_button.set_visible(page_number != 1)
-
-    def disable_pagination_buttons(self):
-        # Disable all pagination buttons (typically while fetching results)
-        self.fetching_results = True
-        self.first_page_button.set_sensitive(False)
-        self.nextoption_page_button.set_sensitive(False)
-        self.last_page_button.set_sensitive(False)
-        self.prev_page_button.set_sensitive(False)
-        self.curr_page_button.set_sensitive(False)
-        self.page_advancer_button.set_sensitive(False)
-        self.next_page_advancer_button.set_sensitive(False)
-
-    def enable_pagination_buttons(self):
-        # Enable all pagination buttons (typically after fetching results)
-        self.fetching_results = False
-        self.first_page_button.set_sensitive(True)
-        self.nextoption_page_button.set_sensitive(True)
-        self.last_page_button.set_sensitive(True)
-        self.prev_page_button.set_sensitive(True)
-        self.curr_page_button.set_sensitive(True)
-        self.page_advancer_button.set_sensitive(True)
-        self.next_page_advancer_button.set_sensitive(True)
 
     def select_and_load_first_uri(self):
         """
@@ -1093,7 +1160,7 @@ class MainWindow(Gtk.ApplicationWindow):
         self.on_base_uri_selected(self.base_uri_list_box, first_row)
 
     # TODO: this should be an action do_copy
-    # if it is possible to hand to strings, e.g. source and destination to an action, then this action should
+    # if it is possible to hand two strings, e.g. source and destination to an action, then this action should
     # go to the main app.
     # @Gtk.Template.Callback(), not in .ui
     def on_copy_clicked(self, widget):
