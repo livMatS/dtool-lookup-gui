@@ -1199,7 +1199,7 @@ class MainWindow(Gtk.ApplicationWindow):
             self.manifest_stack.set_visible_child(self.manifest_view)
         
         async def _get_tags():
-            tags = await DatasetModel.get_tags(uri = dataset.uri)
+            tags = await dataset.get_tags()
             
             # Remove the widgets of previous datasets already present
             for child in self.show_tags_box.get_children():

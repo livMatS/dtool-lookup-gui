@@ -114,6 +114,10 @@ def _info(dataset):
     info['scheme'] = p.scheme
     info['base_uri'] = p.path if p.netloc is None else p.netloc
 
+    info['tags'] = dataset.list_tags()
+    annotation_names = dataset.list_annotation_names()
+    info['annotations'] = {annotation_name: dataset.get_annotation(annotation_name)
+                           for annotation_name in annotation_names}
     return info
 
 
@@ -343,6 +347,8 @@ class DatasetModel:
 
     async def get_readme(self):
         if 'readme_content' in self._dataset_info:
+            logger.debug("%s", dir(self._dataset_info))
+            logger.debug("%s", dict(self._dataset_info))
             logger.debug("README.yml cached.")
             return self._dataset_info['readme_content']
 
@@ -362,9 +368,13 @@ class DatasetModel:
         self._dataset_info['manifest'] = _mangle_lookup_manifest(manifest_dict)
         return self._dataset_info['manifest']
 
-    async def get_tags(uri):
+    async def get_tags(self):
+        if 'tags' in self._dataset_info:
+            return self._dataset_info['tags']
+
         async with ConfigurationBasedLookupClient() as lookup:
-            tags_list = await lookup.get_tags(uri)
+            tags_list = await lookup.get_tags(self.uri)
+        self._dataset_info['tags'] = tags_list
         return tags_list
 
     async def get_item(self, item_uuid):
