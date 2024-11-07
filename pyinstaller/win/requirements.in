@@ -1,0 +1,14 @@
+click-plugins
+dtool-cli
+dtool-config
+dtool-create
+dtool-http
+dtool-info
+dtool-lookup-api
+dtool-s3
+dtool-smb
+dtool-symlink
+dtoolcore
+pyasn1
+pysmb
+yamllint

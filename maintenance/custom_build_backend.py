@@ -26,4 +26,4 @@ def build_wheel(wheel_directory, config_settings=None, metadata_directory=None):
 
 def build_sdist(sdist_directory, config_settings=None):
     glib_compile_schemas(SOURCE_PATH, TARGET_PATH)
-    return _orig.build_wheel(sdist_directory, config_settings=config_settings)
+    return _orig.build_sdist(sdist_directory, config_settings=config_settings)

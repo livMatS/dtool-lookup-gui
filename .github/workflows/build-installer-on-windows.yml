@@ -24,8 +24,10 @@ jobs:
           curl
           git
           zip
+          mingw-w64-x86_64-cmake
           mingw-w64-x86_64-cython
           mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-gobject-introspection
           mingw-w64-x86_64-gtk3
           mingw-w64-x86_64-gtksourceview4
           mingw-w64-x86_64-openssl
@@ -82,7 +84,7 @@ jobs:
         echo "### pacman -Q ###"
         pacman -Q | tee pacman_Q.txt
         echo "### pacman -Q diff to reference configuration ###"
-        (git diff --ignore-space-change --ignore-cr-at-eol --no-index pyinstaller/mingw64_pacman_Q.txt pacman_Q.txt || true) | tee diff_pacman_q.txt
+        (git diff --ignore-space-change --ignore-cr-at-eol --no-index pyinstaller/win/mingw64_pacman_Q.txt pacman_Q.txt || true) | tee diff_pacman_q.txt
 
         # 2022/01/23, although msys2/setup-msys2@v2 setup has been kept as close as possible to
         # a local reference build system, former diverged from latter's pyinstaller behavior
@@ -101,8 +103,8 @@ jobs:
         python --version
         pip --version
         echo "### install pythonic dependencies ###"
-        pip install --upgrade pip
-        pip install -r pyinstaller/mingw64_requirements.txt
+        python -m pip install --upgrade pip
+        pip install -r pyinstaller/win/requirements.txt
         pip install PyInstaller
         echo "PyInstaller version: $(python -m PyInstaller --version)"
 
@@ -130,12 +132,12 @@ jobs:
         echo "### pip freeze --local ###"
         pip freeze --local | tee pip_freeze_local.txt
         echo "### pip freeze --local diff to reference configuration ###"
-        (git diff --ignore-space-change --ignore-cr-at-eol --no-index pyinstaller/mingw64_venv_pip_freeze_local.txt pip_freeze_local.txt || true) | tee diff_pip_freeze_local.txt
+        (git diff --ignore-space-change --ignore-cr-at-eol --no-index pyinstaller/win/mingw64_venv_pip_freeze_local.txt pip_freeze_local.txt || true) | tee diff_pip_freeze_local.txt
 
         echo "### pip freeze ###"
         pip freeze | tee pip_freeze.txt
         echo "### pip freeze diff to reference configuration ###"
-        (git diff --ignore-space-change --ignore-cr-at-eol --no-index pyinstaller/mingw64_venv_pip_freeze.txt pip_freeze.txt || true) | tee diff_pip_freeze.txt
+        (git diff --ignore-space-change --ignore-cr-at-eol --no-index pyinstaller/win/mingw64_venv_pip_freeze.txt pip_freeze.txt || true) | tee diff_pip_freeze.txt
 
     - name: Compile gschemas
       run: |
@@ -147,7 +149,7 @@ jobs:
         source venv/bin/activate
         # only ran into problems when calling PyInstaller or pyinstaller directly,
         # would never find package metadata within the venv, call as module mitigates the issue:
-        python -m PyInstaller -y ./pyinstaller/dtool-lookup-gui-windows.spec 2>&1 | tee pyinstaller.log
+        python -m PyInstaller -y ./pyinstaller/win/dtool-lookup-gui-windows.spec 2>&1 | tee pyinstaller.log
 
     - name: Build installer
       run: |

@@ -6,7 +6,7 @@ on:
 jobs:
   build:
 
-    runs-on: macos-11
+    runs-on: macos-14
       
     steps:
 
@@ -24,7 +24,18 @@ jobs:
 
     - name: Install system dependencies
       run: |
-        brew install python pygobject3 gtk+3 gtksourceview4 gnome-icon-theme create-dmg
+        brew install \
+          python \
+          glib \
+          gobject-introspection \
+          pygobject3 \
+          gtk+3 \
+          gtksourceview4 \
+          adwaita-icon-theme \
+          create-dmg \
+          gfortran \
+          numpy \
+          scipy
 
     - name: Log system package info
       run: |
@@ -37,13 +48,13 @@ jobs:
 
     - name: Install pythonic dependencies
       run: |
-        python3 -m venv --system-site-packages venv
+        python3.13 -m venv --system-site-packages venv
         source venv/bin/activate
 
         pip install --upgrade pip
-        pip install wheel setuptools setuptools_scm
-        pip install -r requirements.txt
-        pip install pyinstaller
+        pip install wheel setuptools_scm
+        pip install -r pyinstaller/macos/requirements.txt
+        pip install pyinstaller pyinstaller-hooks-contrib
 
     - name: Fix setuptools_scm-generated version
       id: fix_version
@@ -70,7 +81,7 @@ jobs:
     - name: Package executable with pyinstaller
       run: |
         source venv/bin/activate
-        pyinstaller -y ./pyinstaller/dtool-lookup-gui-macos.spec 2>&1 | tee pyinstaller.log
+        pyinstaller -y ./pyinstaller/macos/dtool-lookup-gui-macos.spec 2>&1 | tee pyinstaller.log
         ls -lh dist
         mv dist/dtool-lookup-gui.app dtool-lookup-gui.app
 
@@ -90,21 +101,57 @@ jobs:
       run: |
         ls -lhv release/
 
+    # see hditutil issue https://github.com/actions/runner-images/issues/7522
     - name: Create dmg
+      shell: bash {0}
       run: |
-        create-dmg \
-          --volname "dtool-lookup-gui" \
-          --eula "LICENSE.txt" \
-          --volicon "data/icons/dtool_logo.icns" \
-          --window-pos 200 120 \
-          --window-size 600 300 \
-          --icon-size 100 \
-          --icon "dtool-lookup-gui.app" 175 120 \
-          --hide-extension "dtool-lookup-gui.app" \
-          --app-drop-link 425 120 \
-          --hdiutil-verbose \
-          "dtool-lookup-gui-${{ steps.fix_version.outputs.version }}-macos.dmg" \
-          "release/"
+        max_retries=3
+        retry_count=0
+        
+        hdiutil info
+        
+        echo "Killing XProtect if running..."
+        sudo pkill -9 XProtect >/dev/null || true
+        
+        echo "Waiting for XProtect to stop..."
+        while pgrep XProtect; do sleep 3; done
+        
+        sleep 10
+        
+        while (( retry_count < max_retries )); do
+          echo "Attempt $(($retry_count + 1)) to create dmg..."
+          create-dmg \
+            --volname "dtool-lookup-gui" \
+            --eula "LICENSE.txt" \
+            --volicon "data/icons/dtool_logo.icns" \
+            --window-pos 200 120 \
+            --window-size 600 300 \
+            --icon-size 100 \
+            --icon "dtool-lookup-gui.app" 175 120 \
+            --hide-extension "dtool-lookup-gui.app" \
+            --app-drop-link 425 120 \
+            --hdiutil-verbose \
+            "dtool-lookup-gui-${{ steps.fix_version.outputs.version }}-macos.dmg" \
+            "release/"
+        
+          # Check if create-dmg succeeded
+          if [[ $? -eq 0 ]]; then
+              echo "Disk image created successfully."
+              break
+          else
+              echo "Failed to create dmg. Resource might be busy."
+              ((retry_count++))
+              echo "Retrying in 10 seconds... (Attempt $retry_count of $max_retries)"
+              sleep 10
+          fi
+        done
+
+        hdiutil info
+        
+        if (( retry_count == max_retries )); then
+            echo "Failed to create dmg after $max_retries attempts."
+            exit 1
+        fi
 
     - name: Upload build artifact
       uses: actions/upload-artifact@v4

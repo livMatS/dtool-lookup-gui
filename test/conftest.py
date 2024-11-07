@@ -30,12 +30,13 @@ import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('GtkSource', '4')
 from gi.repository import GLib, GObject, Gio, Gtk, GtkSource, GdkPixbuf
+from gi.events import GLibEventLoopPolicy
 
-import gbulb
-gbulb.install(gtk=True)
+asyncio.set_event_loop_policy(GlibEventLoopPolicy())
 
 from dtool_lookup_gui.main import Application
 
+from unittest.mock import patch
 
 logger = logging.getLogger(__name__)
 
@@ -44,12 +45,12 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 
 # dtool_lookup_api Config
 
-DTOOL_LOOKUP_SERVER_URL = "https://localhost:5000/lookup"
-DTOOL_LOOKUP_SERVER_TOKEN = r"eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTcwMTY4OTU5MywianRpIjoiYTdkN2Y5ZWItZGI3MS00YjExLWFhMzktZGQ2YzgzOTJmOWE4IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6InRlc3R1c2VyIiwibmJmIjoxNzAxNjg5NTkzLCJleHAiOjE3MDE2OTMxOTN9.t9SQ00ecZRc-pspz-Du7321xfWIzgTTFKobkNed1CuQYHvtNrc3vdHYbqCWaYCqZpEVF8RlltldT4Lookx6vNgnW4olpiS2KTZ-X2asMhn7SShDtUJuU54CGeViWzYX_V_Pzckoe_cgjFkOutRvnwy_072Whnmc0TwYojwNqUScAIJRu0pzym84JngloXfdI7r25GcRVNtzsGUl7DDfrIz4aSOeVDAVEXhPjgEatKsvNdVZl1DIJsTZpuI7Jh7ZW1WsyjonqHR0J0kIVQn9imQyLyS9_CtmURBQ3kabx6cxhpx5LADrzLutSu24eA4FyECOdzjJ3SPGb9nIVTEDxQg"
-DTOOL_LOOKUP_SERVER_TOKEN_GENERATOR_URL = "https://localhost:5000/token"
-DTOOL_LOOKUP_SERVER_USERNAME = "testuser"
-DTOOL_LOOKUP_SERVER_PASSWORD = "test_password"
-DTOOL_LOOKUP_SERVER_VERIFY_SSL = True
+DSERVER_URL = "https://localhost:5000/lookup"
+DSERVER_TOKEN = r"eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJmcmVzaCI6ZmFsc2UsImlhdCI6MTcwMTY4OTU5MywianRpIjoiYTdkN2Y5ZWItZGI3MS00YjExLWFhMzktZGQ2YzgzOTJmOWE4IiwidHlwZSI6ImFjY2VzcyIsInN1YiI6InRlc3R1c2VyIiwibmJmIjoxNzAxNjg5NTkzLCJleHAiOjE3MDE2OTMxOTN9.t9SQ00ecZRc-pspz-Du7321xfWIzgTTFKobkNed1CuQYHvtNrc3vdHYbqCWaYCqZpEVF8RlltldT4Lookx6vNgnW4olpiS2KTZ-X2asMhn7SShDtUJuU54CGeViWzYX_V_Pzckoe_cgjFkOutRvnwy_072Whnmc0TwYojwNqUScAIJRu0pzym84JngloXfdI7r25GcRVNtzsGUl7DDfrIz4aSOeVDAVEXhPjgEatKsvNdVZl1DIJsTZpuI7Jh7ZW1WsyjonqHR0J0kIVQn9imQyLyS9_CtmURBQ3kabx6cxhpx5LADrzLutSu24eA4FyECOdzjJ3SPGb9nIVTEDxQg"
+DSERVER_TOKEN_GENERATOR_URL = "https://localhost:5000/token"
+DSERVER_USERNAME = "testuser"
+DSERVER_PASSWORD = "test_password"
+DSERVER_VERIFY_SSL = True
 
 AFFIRMATIVE_EXPRESSIONS = ['true', '1', 'y', 'yes', 'on']
 NEGATIVE_EXPRESSIONS = ['false', '0', 'n', 'no', 'off']
@@ -60,13 +61,12 @@ class MockDtoolLookupAPIConfig():
     """Mock dtool configuration without touching the local config file."""
 
     def __init__(self, *args, **kwargs):
-        self._lookup_server_url = DTOOL_LOOKUP_SERVER_URL
-        self._lookup_server_token = DTOOL_LOOKUP_SERVER_URL
-        self._lookup_server_token_generator_url = DTOOL_LOOKUP_SERVER_TOKEN_GENERATOR_URL
-        self._lookup_server_username = DTOOL_LOOKUP_SERVER_USERNAME
-        self._lookup_server_password = DTOOL_LOOKUP_SERVER_PASSWORD
-        self._lookup_server_verify_ssl = DTOOL_LOOKUP_SERVER_VERIFY_SSL
-
+        self._lookup_server_url = DSERVER_URL
+        self._lookup_server_token = DSERVER_URL
+        self._lookup_server_token_generator_url = DSERVER_TOKEN_GENERATOR_URL
+        self._lookup_server_username = DSERVER_USERNAME
+        self._lookup_server_password = DSERVER_PASSWORD
+        self._lookup_server_verify_ssl = DSERVER_VERIFY_SSL
 
     @property
     def lookup_url(self):
@@ -135,15 +135,11 @@ def setup_test_loop(loop):
 
 def check_loop_failures(loop):  # pragma: no cover
     if loop.test_failure is not None:
-        if hasattr(loop.test_failure, 'message') and hasattr(loop.test_failure, 'exception'):
-            pytest.fail("{message}: {exception}".format(**loop.test_failure))
-        else:
-            pytest.fail("{message}".format(**loop.test_failure))
-
+        pytest.fail("%s" % dict(loop.test_failure))
 
 @pytest.fixture(scope="function")
 def glib_policy():
-    from gbulb.glib_events import GLibEventLoopPolicy
+    from gi.events import GLibEventLoopPolicy
 
     logger.debug("Apply GLibEventLoopPolicy")
     return GLibEventLoopPolicy()
@@ -151,7 +147,7 @@ def glib_policy():
 
 @pytest.fixture(scope="function")
 def gtk_policy():
-    from gbulb.gtk import GtkEventLoopPolicy
+    from gi.events import GtkEventLoopPolicy
     logger.debug("Apply GtkEventLoopPolicy")
     return GtkEventLoopPolicy()
 
@@ -185,7 +181,10 @@ def gtk_loop(gtk_policy):
 
 @pytest.fixture(scope="function")
 def app(gtk_loop):
+    from dtool_lookup_gui.views.main_window import MainWindow
+
     app = Application(loop=gtk_loop)
+
     yield app
 
 @pytest.fixture(scope="function")
@@ -195,40 +194,48 @@ def mock_token(scope="function"):
 
 
 @pytest.fixture(scope="function")
-def mock_dataset_list():
+def mock_get_datasets():
     """Provide a mock dataset list"""
-    with open(os.path.join(_HERE, 'data', 'mock_dataset_search_response.json'), 'r') as f:
+    with open(os.path.join(_HERE, 'data', 'mock_get_datasets_response.json'), 'r') as f:
         dataset_list = json.load(f)
 
     yield dataset_list
 
 
 @pytest.fixture(scope="function")
-def mock_manifest():
+def mock_get_manifest():
     """Provide a mock dataset list"""
-    with open(os.path.join(_HERE, 'data', 'mock_manifest_response.json'), 'r') as f:
+    with open(os.path.join(_HERE, 'data', 'mock_get_manifest_response.json'), 'r') as f:
         manifest = json.load(f)
 
     yield manifest
 
 
 @pytest.fixture(scope="function")
-def mock_readme():
+def mock_get_readme():
     """Provide a mock dataset list"""
-    with open(os.path.join(_HERE, 'data', 'mock_readme_response.json'), 'r') as f:
+    with open(os.path.join(_HERE, 'data', 'mock_get_readme_response.json'), 'r') as f:
         readme = json.load(f)
 
     yield readme
 
 
 @pytest.fixture(scope="function")
-def mock_config_info():
+def mock_get_config():
     """Provide a mock server config info"""
-    with open(os.path.join(_HERE, 'data', 'mock_config_info_response.json'), 'r') as f:
+    with open(os.path.join(_HERE, 'data', 'mock_get_config_response.json'), 'r') as f:
         config_info = json.load(f)
 
     yield config_info
 
+
+@pytest.fixture(scope="function")
+def mock_get_versions():
+    """Provide a mock server versions info"""
+    with open(os.path.join(_HERE, 'data', 'mock_get_versions_response.json'), 'r') as f:
+        config_info = json.load(f)
+
+    yield config_info
 
 @pytest.fixture(scope="function")
 def local_dataset_uri(tmp_path):
@@ -267,7 +274,7 @@ def local_dataset_uri(tmp_path):
 
 @pytest.fixture(scope="function")
 def populated_app_with_mock_data(
-        app, mock_dataset_list, mock_manifest, mock_readme, mock_config_info):
+        app, mock_get_datasets, mock_get_manifest, mock_get_readme, mock_get_config):
     """Replaces lookup api calls with mock methods that return fake lists of datasets."""
 
     import dtool_lookup_api.core.config
@@ -277,12 +284,11 @@ def populated_app_with_mock_data(
     with (
             patch("dtool_lookup_api.core.LookupClient.authenticate", return_value=mock_token),
             patch("dtool_lookup_api.core.LookupClient.ConfigurationBasedLookupClient.connect", return_value=None),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.all", return_value=mock_dataset_list),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.search", return_value=mock_dataset_list),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_datasets", return_value=mock_get_datasets),
             patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.graph", return_value=[]),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.manifest", return_value=mock_manifest),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.readme", return_value=mock_readme),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.config", return_value=mock_config_info),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_manifest", return_value=mock_get_manifest),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_readme", return_value=mock_get_readme),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_config", return_value=mock_get_config),
             patch("dtool_lookup_api.core.LookupClient.ConfigurationBasedLookupClient.has_valid_token", return_value=True)
         ):
 
@@ -291,7 +297,7 @@ def populated_app_with_mock_data(
 
 @pytest.fixture(scope="function")
 def populated_app_with_local_dataset_data(
-        app, local_dataset_uri, mock_token, mock_readme, mock_config_info):
+        app, local_dataset_uri, mock_token, mock_get_readme, mock_get_config):
     """Replaces lookup api calls with mock methods that return fake lists of datasets."""
 
     import dtool_lookup_api.core.config
@@ -311,7 +317,6 @@ def populated_app_with_local_dataset_data(
     #    'frozen_at': 1702902057.241831
     #   }
 
-
     dataset_info["uri"] = dataset.uri
     dataset_info["base_uri"] = os.path.dirname(local_dataset_uri)
 
@@ -322,12 +327,11 @@ def populated_app_with_local_dataset_data(
     with (
             patch("dtool_lookup_api.core.LookupClient.authenticate", return_value=mock_token),
             patch("dtool_lookup_api.core.LookupClient.ConfigurationBasedLookupClient.connect", return_value=None),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.all", return_value=dataset_list),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.search", return_value=dataset_list),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_datasets", return_value=dataset_list),
             patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.graph", return_value=[]),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.manifest", return_value=manifest),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.readme", return_value=mock_readme),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.config", return_value=mock_config_info),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_manifest", return_value=manifest),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_readme", return_value=mock_get_readme),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_config", return_value=mock_get_config),
             patch("dtool_lookup_api.core.LookupClient.ConfigurationBasedLookupClient.has_valid_token", return_value=True)
         ):
 

@@ -63,7 +63,7 @@ class DependencyGraph:
             logger.warning("Dependency keys not valid. Ignored.")
             dependency_keys = None
 
-        datasets = await lookup.graph(root_uuid, dependency_keys)
+        datasets = await lookup.get_graph_by_uuid(uuid=root_uuid, dependency_keys=dependency_keys)
         logger.debug("Server response on querying dependency graph for UUID = {}.".format(root_uuid))
         _log_nested(logger.debug, datasets)
 

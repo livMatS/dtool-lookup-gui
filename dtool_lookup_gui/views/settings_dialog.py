@@ -34,7 +34,6 @@ import dtoolcore
 from gi.repository import Gio, GLib, Gtk
 
 from dtool_lookup_api.core.config import Config
-from dtool_lookup_api.core.LookupClient import authenticate
 
 from ..models.settings import settings
 from .authentication_dialog import AuthenticationDialog

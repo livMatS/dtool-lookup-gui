@@ -30,23 +30,23 @@ import glob
 import json
 import logging
 import os
+import ssl
 import sys
 
 import dtoolcore
 import dtool_lookup_api.core.config
 
-from dtool_lookup_api.core.LookupClient import authenticate
+from dtool_lookup_api.core.LookupClient import ConfigurationBasedLookupClient
 
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('GtkSource', '4')
 from gi.repository import GLib, GObject, Gio, Gtk, GtkSource, GdkPixbuf
+from gi.events import GLibEventLoopPolicy
 
-import gbulb
-gbulb.install(gtk=True)
+asyncio.set_event_loop_policy(GLibEventLoopPolicy())
 
 from .models.settings import settings
-
 
 from .views.main_window import MainWindow
 from .views.login_window import LoginWindow
@@ -88,6 +88,10 @@ class Application(Gtk.Application):
         self.loop = loop
         self.args = None
 
+    def on_window_delete(self, window, event):
+        self.quit()
+        return False
+
     def do_activate(self):
         logger.debug("do_activate")
 
@@ -114,7 +118,7 @@ class Application(Gtk.Application):
                 logger.debug("{}", icon_file_list)
             else:
                 logger.warning("Could not load app icons.")
-            win.connect('destroy', lambda _: self.loop.stop())
+            win.connect("delete-event", self.on_window_delete)
             self.loop.call_soon(win.refresh)  # Populate widgets after event loop starts
 
         logger.debug("Present main window.")
@@ -323,9 +327,11 @@ class Application(Gtk.Application):
         # Unpack the username, password, and auth_url from the tuple variant
         username, password, auth_url = value.unpack()
 
+        logger.debug("look for certificates in %s", ssl.get_default_verify_paths())
         async def retrieve_token(auth_url, username, password):
             try:
-                token = await authenticate(auth_url, username, password)
+                async with ConfigurationBasedLookupClient(auth_url=auth_url, username=username, password=password) as lookup_client:
+                    token = await lookup_client.authenticate(auth_url, username, password)
             except Exception as e:
                 logger.error(str(e))
                 return
@@ -344,7 +350,7 @@ def run_gui():
 
     loop = asyncio.get_event_loop()
     app = Application(loop=loop)
+
     logger.debug("do_startup")
-    # see https://github.com/beeware/gbulb#gapplicationgtkapplication-event-loop
-    loop.run_forever(application=app, argv=sys.argv)
+    app.run(sys.argv)
 

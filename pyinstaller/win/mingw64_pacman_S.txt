@@ -1,10 +1,14 @@
 base-devel
 curl
 git
+zip
+mingw-w64-x86_64-cmake
 mingw-w64-x86_64-cython
 mingw-w64-x86_64-gcc
+mingw-w64-x86_64-gobject-introspection
 mingw-w64-x86_64-gtk3
 mingw-w64-x86_64-gtksourceview4
+mingw-w64-x86_64-openssl
 mingw-w64-x86_64-pkg-config
 mingw-w64-x86_64-python-aiohttp
 mingw-w64-x86_64-python-asgiref
@@ -18,6 +22,7 @@ mingw-w64-x86_64-python-jinja
 mingw-w64-x86_64-python-jsonschema
 mingw-w64-x86_64-python-markupsafe
 mingw-w64-x86_64-python-numpy
+mingw-w64-x86_64-python-pip
 mingw-w64-x86_64-python-pip-tools
 mingw-w64-x86_64-python-pycparser
 mingw-w64-x86_64-python-pyjwt
