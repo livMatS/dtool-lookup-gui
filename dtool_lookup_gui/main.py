@@ -115,7 +115,7 @@ class Application(Gtk.Application):
                 icon_list = [GdkPixbuf.Pixbuf.new_from_file(icon_file) for icon_file in icon_file_list]
                 win.set_icon_list(icon_list)
                 logger.debug("Loaded %d icons from:", len(icon_file_list))
-                logger.debug("{}", icon_file_list)
+                logger.debug("%s", icon_file_list)
             else:
                 logger.warning("Could not load app icons.")
             win.connect("delete-event", self.on_window_delete)
@@ -331,7 +331,7 @@ class Application(Gtk.Application):
         async def retrieve_token(auth_url, username, password):
             try:
                 async with ConfigurationBasedLookupClient(auth_url=auth_url, username=username, password=password) as lookup_client:
-                    token = await lookup_client.authenticate(auth_url, username, password)
+                    token = await lookup_client.authenticate()
             except Exception as e:
                 logger.error(str(e))
                 return
