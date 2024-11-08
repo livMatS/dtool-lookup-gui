@@ -13,7 +13,7 @@ authors = [
 description = "Graphical user interface for dtool"
 readme = "README.rst"
 requires-python = ">=3.9"
-keywords = ["research data management", "dtool"]
+keywords = ["research data management", "rdm", "dtool"]
 license = {file = "LICENSE.md"}
 classifiers = [
     "Programming Language :: Python :: 3",
@@ -36,7 +36,8 @@ dependencies = [
     'scipy>=1.5',
     'numpy',
     'jwt',
-    'yamllint'
+    'yamllint',
+    'ruamel.yaml'
 ]
 
 [project.optional-dependencies]
@@ -51,6 +52,9 @@ test = [
 documentation = "https://dtool-lookup-gui.readthedocs.io"
 repository = "https://github.com/livMatS/dtool-lookup-gui"
 changelog = "https://dtool-lookup-gui.readthedocs.io/en/latest/changelog.html"
+
+[project.scripts]
+dtool-gui = "dtool_lookup_gui.main:run_gui"
 
 [tool.setuptools.packages.find]
 where = ["."]
