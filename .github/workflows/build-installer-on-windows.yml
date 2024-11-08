@@ -95,6 +95,17 @@ jobs:
         echo "### libcrypto and libssl ###"
         pacman -Ql mingw-w64-x86_64-openssl | grep 'lib[^/]*dll$' | awk '{print $2}' |  cygpath -wa --file - | tee openssl_dlls.txt
 
+    - name: Create local venv
+      run: |
+        # recursive copy_metadata needed local reinstall of
+        #    $ pip install --ignore-installed six
+        # in minsys2/mingw64, would otherwise fail with
+        #    RuntimeError: No metadata path found for distribution 'six'.
+        # in pyinstaller/hooks/hook-dtoolcore.py
+        python -m venv --system-site-packages venv
+        source venv/bin/activate
+        pip install --ignore-installed six
+
     # strategy: only install remaining pythonic dependencies via pip
     - name: Install remaining pythonic dependencies
       run: |
