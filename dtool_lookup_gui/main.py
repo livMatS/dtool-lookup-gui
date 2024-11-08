@@ -39,8 +39,8 @@ import dtool_lookup_api.core.config
 from dtool_lookup_api.core.LookupClient import ConfigurationBasedLookupClient
 
 import gi
-gi.require_version('Gtk', '3.0')
-gi.require_version('GtkSource', '4')
+gi.require_version('Gtk', '4.0')
+gi.require_version('GtkSource', '5')
 from gi.repository import GLib, GObject, Gio, Gtk, GtkSource, GdkPixbuf
 from gi.events import GLibEventLoopPolicy
 

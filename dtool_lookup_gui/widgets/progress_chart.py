@@ -34,8 +34,8 @@ _log = logging.getLogger(__name__)
 class DtoolProgressChart(Gtk.DrawingArea):
     __gtype_name__ = 'DtoolProgressChart'
 
-    _background_color = Gdk.color_parse('lightgray')
-    _pie_color = Gdk.color_parse('gray')
+    _background_color = Gdk.RGBA('lightgray')
+    _pie_color = Gdk.RGBA('gray')
 
     def __init__(self, *args, **kwargs):
         self._fraction = kwargs.pop('fraction', 0)

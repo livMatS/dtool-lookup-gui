@@ -27,7 +27,7 @@ import logging
 import os
 import gi
 
-gi.require_version('Gtk', '3.0')
+gi.require_version('Gtk', '4.0')
 from gi.repository import Gtk
 from dtool_lookup_api.asynchronous import get_versions
 from ..utils.logging import _log_nested

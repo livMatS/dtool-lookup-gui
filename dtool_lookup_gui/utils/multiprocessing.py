@@ -45,7 +45,7 @@ def process_initializer():
     # when launching process pool. Would forking / spawning global process pool
     # before Gtk initialization be another option?
     import gi
-    gi.require_version('Gtk', '3.0')
+    gi.require_version('Gtk', '4.0')
 
 
 # inspired by
