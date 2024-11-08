@@ -109,7 +109,7 @@ class Application(Gtk.Application):
             logger.debug("Build GUI.")
 
             win = MainWindow(application=self)
-            glob_pattern = os.path.join(os.path.dirname(__file__), os.pardir, 'data','icons','*','dtool_logo.xpm')
+            glob_pattern = os.path.join(os.path.dirname(__file__), os.pardir, 'data','icons','*','dtool_logo.png')
             icon_file_list = glob.glob(glob_pattern)
             if len(icon_file_list) > 0:
                 icon_list = [GdkPixbuf.Pixbuf.new_from_file(icon_file) for icon_file in icon_file_list]
