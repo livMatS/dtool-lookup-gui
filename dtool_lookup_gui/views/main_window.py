@@ -178,6 +178,7 @@ class MainWindow(Gtk.ApplicationWindow):
     main_statusbar = Gtk.Template.Child()
     contents_per_page_combo_box = Gtk.Template.Child()
     sort_field_combo_box = Gtk.Template.Child()
+    sort_order_switch = Gtk.Template.Child()
 
     linting_errors_button = Gtk.Template.Child()
 
@@ -1262,9 +1263,22 @@ class MainWindow(Gtk.ApplicationWindow):
         self.main_stack.set_visible_child(self.main_spinner)
         self.create_dataset_button.set_sensitive(not isinstance(row, DtoolSearchResultsRow) and
                                                  row.base_uri.editable)
+        self._set_lookup_gui_widgets_state(isinstance(row, DtoolSearchResultsRow))
+
         if row.task is None:
             _logger.debug("Spawn select_base_uri task.")
             row.task = asyncio.create_task(_select_base_uri())
+
+    def _set_lookup_gui_widgets_state(self, state=False):
+        self.search_entry.set_sensitive(state)
+        self.contents_per_page_combo_box.set_sensitive(state)
+        self.sort_field_combo_box.set_sensitive(state)
+        self.sort_order_switch.set_sensitive(state)
+        if state is True:
+            self._enable_pagination_buttons()
+        else:
+            self._disable_pagination_buttons()
+
 
     def _select_and_load_first_uri(self):
         """
