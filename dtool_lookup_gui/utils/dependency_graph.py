@@ -26,9 +26,11 @@
 import json
 import logging
 
+from aiohttp.client_exceptions import ContentTypeError
+
 from dtool_lookup_gui import is_uuid
 from dtool_lookup_gui.models.simple_graph import SimpleGraph
-
+from dtool_lookup_gui.models.search_state import SearchState
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +42,8 @@ def _log_nested(log_func, dct):
 
 class DependencyGraph:
     def __init__(self):
+        self._search_state = SearchState()
+        self._reset_graph()
         self._reset_graph()
 
     @property
@@ -63,7 +67,33 @@ class DependencyGraph:
             logger.warning("Dependency keys not valid. Ignored.")
             dependency_keys = None
 
-        datasets = await lookup.get_graph_by_uuid(uuid=root_uuid, dependency_keys=dependency_keys)
+        pagination = {}
+        try:
+            datasets = await lookup.get_graph_by_uuid(uuid=root_uuid,
+                                                      dependency_keys=dependency_keys,
+                                                      page_size=self._search_state.page_size,
+                                                      pagination=pagination)
+        except ContentTypeError as exc:
+            logger.error("%s", exc)
+            return
+
+        logger.debug("Got first batch of dependency graph datasets with pagination information '%s'.", pagination)
+
+        self._search_state.ingest_pagination_information(pagination=pagination)
+
+        for page in range(self._search_state.first_page+1, self._search_state.last_page+1):
+            try:
+                more_datasets = await lookup.get_graph_by_uuid(uuid=root_uuid,
+                                                               dependency_keys=dependency_keys,
+                                                               page_number=page, page_size=self._search_state.page_size,
+                                                               pagination=pagination)
+            except ContentTypeError as exc:
+                logger.error("%s", exc)
+                return
+            logger.debug("Got batch #%s of dependency graph datasets with pagination information '%s'.", page, pagination)
+            if len(more_datasets) > 0:
+                datasets.extend(more_datasets)
+
         logger.debug("Server response on querying dependency graph for UUID = {}.".format(root_uuid))
         _log_nested(logger.debug, datasets)
 
@@ -104,8 +134,6 @@ class DependencyGraph:
                                                           dataset['uuid'],
                                                           dataset['name']))
         logger.debug(f"Done building dependency graph for root '{root_uuid}'.")
-
-
 
     @property
     def missing_uuids(self):
