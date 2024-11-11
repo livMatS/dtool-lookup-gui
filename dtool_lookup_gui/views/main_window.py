@@ -1405,13 +1405,13 @@ class MainWindow(Gtk.ApplicationWindow):
         self.copy_button.get_popover().update(destinations, self.on_copy_clicked)
 
     async def _compute_dependencies(self, dataset):
-        _logger.debug("Compute dependencies for dataset '{dataset.uuid}'.")
+        _logger.debug("Compute dependencies for dataset '%s'.", dataset.uuid)
         self.dependency_stack.set_visible_child(self.dependency_spinner)
 
         # Compute dependency graph
         dependency_graph = DependencyGraph()
         async with ConfigurationBasedLookupClient() as lookup:
-            _logger.debug("Wait for depenedency graph for '{dataset.uuid}' queried from lookup server.")
+            _logger.debug("Wait for depenedency graph for '%s' queried from lookup server.", dataset.uuid)
             await dependency_graph.trace_dependencies(lookup, dataset.uuid, dependency_keys=settings.dependency_keys)
 
         # Show message if uuids are missing
