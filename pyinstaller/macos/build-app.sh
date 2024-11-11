@@ -24,5 +24,3 @@ cd dtool_lookup_gui && glib-compile-schemas . && cd ..
 pyinstaller -y ./pyinstaller/macos/dtool-lookup-gui-macos.spec 2>&1 | tee pyinstaller.log
 
 mv dist/dtool-lookup-gui.app dtool-lookup-gui.app
-
-bash -c "tar -cvf dtool-lookup-gui-macos.tar $(cat pyinstaller/MANIFEST.macos | xargs)"
