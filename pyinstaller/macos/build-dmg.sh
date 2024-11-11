@@ -2,8 +2,7 @@
 
 mkdir -p release
 
-bash maintenance/copy_files_into_folders.sh \
-    pyinstaller/MANIFEST.macos-release release
+cp -r dtool-lookup-gui.app release/ 
 
 create-dmg \
             --volname "dtool-lookup-gui" \
