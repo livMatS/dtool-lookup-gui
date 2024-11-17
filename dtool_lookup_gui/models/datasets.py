@@ -377,6 +377,15 @@ class DatasetModel:
         self._dataset_info['tags'] = tags_list
         return tags_list
 
+    async def get_annotations(self):
+        if 'annotations' in self._dataset_info:
+            return self._dataset_info['annotations']
+
+        async with ConfigurationBasedLookupClient() as lookup:
+            annotations_dict = await lookup.get_annotations(self.uri)
+        self._dataset_info['annotations'] = annotations_dict
+        return annotations_dict
+
     async def get_item(self, item_uuid):
         """Get item from dataset by item UUID"""
         if not self.is_frozen:

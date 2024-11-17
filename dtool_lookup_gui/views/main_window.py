@@ -178,6 +178,7 @@ class MainWindow(Gtk.ApplicationWindow):
     contents_per_page = Gtk.Template.Child()
     sort_field_combo_box = Gtk.Template.Child()
     show_tags_box = Gtk.Template.Child()
+    annotations_box = Gtk.Template.Child()
 
     linting_errors_button = Gtk.Template.Child()
 
@@ -1199,8 +1200,7 @@ class MainWindow(Gtk.ApplicationWindow):
             self.manifest_stack.set_visible_child(self.manifest_view)
         
         async def _get_tags():
-            tags = await dataset.get_tags()
-            
+            tags = await dataset.get_tags()            
             # Remove the widgets of previous datasets already present
             for child in self.show_tags_box.get_children():
                 self.show_tags_box.remove(child)
@@ -1224,6 +1224,72 @@ class MainWindow(Gtk.ApplicationWindow):
                 self.show_tags_box.pack_start(box, False, False, 0)
             
             self.show_all()
+        
+        async def _get_annotations():
+            annotations = await dataset.get_annotations()
+            for child in self.annotations_box.get_children():
+                self.annotations_box.remove(child)
+            async def create_annotation_row(key="", value="", is_new=False):
+                """Creates a single row of annotation with text boxes and a button."""
+                box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        
+                # Text entry for the key
+                key_entry = Gtk.Entry()
+                key_entry.set_text(key)
+                # key_entry.set_width_chars(10)
+                key_entry.set_max_width_chars(10)
+                key_entry.set_hexpand(False)
+                box.pack_start(key_entry, expand=False, fill=False, padding=5)
+                
+                # Text entry for the value
+                value_entry = Gtk.Entry()
+                value_entry.set_text(value)
+                # value_entry.set_width_chars(10)
+                value_entry.set_max_width_chars(10)
+                value_entry.set_hexpand(False)
+                box.pack_start(value_entry, expand=False, fill=False, padding=5)
+                
+                # Button for delete/save functionality
+                button = Gtk.Button(label="-" if not is_new else "+")
+
+                async def on_button_clicked(button):
+                    current_label = button.get_label()
+                    if current_label == "-":
+                        # Delete this annotation
+                        self.annotations_box.remove(box)
+                        # also add here the function to delete the dataset
+                    elif current_label == "+":
+                        # Save new/updated annotation
+                        new_key = key_entry.get_text()
+                        new_value = value_entry.get_text()
+                        if new_key and new_value:
+                            # Add to dataset or update the dataset
+                            # await dataset.update_annotation(new_key, new_value) # update annotation function
+                            button.set_label("-")
+                
+                # Update button label on text change
+                def on_text_changed(entry):
+                    if button.get_label() == "-":
+                        button.set_label("+")
+                
+                key_entry.connect("changed", on_text_changed)
+                value_entry.connect("changed", on_text_changed)
+                button.connect("clicked", lambda btn: asyncio.ensure_future(on_button_clicked(btn)))
+                
+                box.pack_start(button, expand=False, fill=False, padding=0)
+                return box
+             # Add rows for each annotation
+            for key, value in annotations.items():
+                row = await create_annotation_row(key, value)
+                self.annotations_box.pack_start(row, expand=False, fill=False, padding=5)
+            
+            # Always show one empty text boxes for new annotations
+            for _ in range(1):
+                new_row = await create_annotation_row(is_new=True)
+                self.annotations_box.pack_start(new_row, expand=False, fill=False, padding=5)
+    
+            # Re-render the UI
+            self.annotations_box.show_all()
 
         _logger.debug("Get readme.")
         asyncio.create_task(_get_readme())
@@ -1231,6 +1297,8 @@ class MainWindow(Gtk.ApplicationWindow):
         asyncio.create_task(_get_manifest())
         _logger.debug("Get tags.")
         asyncio.create_task(_get_tags())
+        _logger.debug("Get annotations.")
+        asyncio.create_task(_get_annotations())
 
         if dataset.type == 'lookup':
             self.dependency_stack.show()
