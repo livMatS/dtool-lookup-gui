@@ -39,8 +39,6 @@ from dtool_info.utils import date_fmt, sizeof_fmt
 from dtool_info.inventory import _dataset_info
 from dtool_lookup_api.core.LookupClient import ConfigurationBasedLookupClient
 
-
-
 from ..utils.logging import _log_nested
 from ..utils.multiprocessing import StatusReportingChildProcessBuilder, process_initializer
 from ..utils.progressbar import ProgressBar
@@ -276,22 +274,30 @@ class DatasetModel:
             raise ValueError('Please provide either `uri` or `dateset_info`.')
 
     @classmethod
-    async def get_datasets(cls, keyword, page_number, page_size,sort_fields,sort_order, pagination={} ,sorting={}):
+    async def get_datasets(cls, free_text=None, page_number=None, page_size=None,
+                           sort_fields=None, sort_order=None, pagination={} , sorting={}):
         async with ConfigurationBasedLookupClient() as lookup:
-            datasets = await lookup.get_datasets(keyword, page_number=page_number, page_size=page_size,sort_fields=sort_fields,sort_order=sort_order, pagination=pagination,sorting=sorting)
+            datasets = await lookup.get_datasets(
+                free_text=free_text, page_number=page_number, page_size=page_size,
+                sort_fields=sort_fields, sort_order=sort_order,
+                pagination=pagination, sorting=sorting)
         return [await cls.from_lookup(lookup_dict) for lookup_dict in datasets]
 
     @classmethod
-    async def query(cls, query_text, *args, **kwargs):
+    async def get_datasets_by_mongo_query(cls, query, *args, **kwargs):
         async with ConfigurationBasedLookupClient() as lookup:
-            datasets = await lookup.query(query_text, *args, **kwargs)
+            datasets = await lookup.get_datasets_by_mongo_query(query=query, *args, **kwargs)
         return [await cls.from_lookup(lookup_dict) for lookup_dict in datasets]
 
     @classmethod
-    async def query_all(cls,sort_fields,sort_order, page_number=1, page_size=10, pagination={},sorting={}):
+    async def query_all(cls, sort_fields=None, sort_order=None, page_number=None,
+                        page_size=None, pagination={}, sorting={}):
         """Query all datasets from the lookup server."""
         async with ConfigurationBasedLookupClient() as lookup:
-            datasets = await lookup.get_datasets(page_number=page_number, page_size=page_size,sort_fields=sort_fields,sort_order=sort_order, pagination=pagination,sorting=sorting)
+            datasets = await lookup.get_datasets(
+                page_number=page_number, page_size=page_size,
+                sort_fields=sort_fields, sort_order=sort_order,
+                pagination=pagination,sorting=sorting)
         return [await cls.from_lookup(lookup_dict) for lookup_dict in datasets]
 
     @classmethod

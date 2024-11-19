@@ -30,9 +30,15 @@ If the binaries won't run out-of-the-box on your system, continue below.
 OS-specific notes
 -----------------
 
+Windows
+^^^^^^^
+
+The Windows executable comes in two variants, as a single portable file and an installer.
+
 macOS
 ^^^^^
 
+The app bundle requires MacOS 14.7 at least.
 After downloading the `dmg` Apple Disk Image of the `latest release`_
 and copying `dtool-lookup-gui` over to your `Applications` folder,
 *macOS* will likely complain about `dtool-lookup-gui` being damaged
@@ -78,6 +84,7 @@ If you are using Wayland, launch the app with environment variable
 .. code:: bash
 
     GDK_BACKEND=x11 ./dtool_lookup_gui
+
 
 Use
 ---

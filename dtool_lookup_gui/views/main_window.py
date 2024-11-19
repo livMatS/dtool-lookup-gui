@@ -52,6 +52,7 @@ dtool_lookup_api.core.config.Config.interactive = False
 from ..models.base_uris import all, LocalBaseURIModel
 from ..models.datasets import DatasetModel
 from ..models.settings import settings
+from ..models.search_state import SearchState
 from ..utils.copy_manager import CopyManager
 from ..utils.date import date_to_string
 from ..utils.dependency_graph import DependencyGraph
@@ -167,16 +168,18 @@ class MainWindow(Gtk.ApplicationWindow):
     error_label = Gtk.Template.Child()
 
     first_page_button = Gtk.Template.Child()
-    prev_page_button = Gtk.Template.Child()
-    curr_page_button = Gtk.Template.Child()
-    next_page_advancer_button = Gtk.Template.Child()
-    page_advancer_button = Gtk.Template.Child()
-    nextoption_page_button = Gtk.Template.Child()
+    decrease_page_button = Gtk.Template.Child()
+    previous_page_button = Gtk.Template.Child()
+    current_page_button = Gtk.Template.Child()
+    next_page_button = Gtk.Template.Child()
+    increase_page_button = Gtk.Template.Child()
     last_page_button = Gtk.Template.Child()
 
     main_statusbar = Gtk.Template.Child()
-    contents_per_page = Gtk.Template.Child()
+    contents_per_page_combo_box = Gtk.Template.Child()
     sort_field_combo_box = Gtk.Template.Child()
+    sort_order_switch = Gtk.Template.Child()
+
     show_tags_box = Gtk.Template.Child()
     annotations_box = Gtk.Template.Child()
     add_tags_button = Gtk.Template.Child()
@@ -185,8 +188,9 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
-        self.sort_order = 1 # default ascending sort order
+
+        # Initialize pagination and sort parameters
+        self.search_state = SearchState()
 
         self.application = self.get_application()
 
@@ -199,9 +203,6 @@ class MainWindow(Gtk.ApplicationWindow):
         self.readme_buffer.set_highlight_syntax(True)
         self.readme_buffer.set_highlight_matching_brackets(True)
         self.readme_source_view.set_editable(True)
-
-
-        self.readme_buffer.connect("changed", self.on_readme_buffer_changed)
 
         self.error_bar.set_revealed(False)
         self.progress_revealer.set_reveal_child(False)
@@ -223,7 +224,76 @@ class MainWindow(Gtk.ApplicationWindow):
         self.server_versions_dialog = ServerVersionsDialog(application=self.application)
         self.error_linting_dialog = LintingErrorsDialog(application=self.application)
 
+        # signal handlers
+        self.readme_buffer.connect("changed", self.on_readme_buffer_changed)
+        self.contents_per_page_combo_box.connect("changed", self.on_contents_per_page_combo_box_changed)
+        self.sort_field_combo_box.connect("changed", self.on_sort_field_combo_box_changed)
+
+        # populate sort field combo box
+
+        # Create a ListStore to hold the data
+        list_store = Gtk.ListStore(str, str)
+
+        # Populate the ListStore with the labels from your dictionary
+        for key, value in self.search_state.sort_field_label_dict.items():
+            list_store.append([key, value])
+
+        # Set the model for the combo box
+        self.sort_field_combo_box.set_model(list_store)
+
+        # Add a CellRendererText to display the text
+        renderer_text = Gtk.CellRendererText()
+        self.sort_field_combo_box.pack_start(renderer_text, True)
+        self.sort_field_combo_box.add_attribute(renderer_text, "text", 1)
+
+        # Set the active item (optional)
+        self.sort_field_combo_box.set_active(0)
+
+        # populate contents per page combo box
+
+        # Create a ListStore to hold the data
+        list_store = Gtk.ListStore(int, str)
+
+        # Populate the ListStore with the labels from your dictionary
+        for key in self.search_state.page_size_choices:
+            list_store.append([key, str(key)])
+
+        # Set the model for the combo box
+        self.contents_per_page_combo_box.set_model(list_store)
+
+        # Add a CellRendererText to display the text
+        renderer_text = Gtk.CellRendererText()
+        self.contents_per_page_combo_box.pack_start(renderer_text, True)
+        self.contents_per_page_combo_box.add_attribute(renderer_text, "text", 1)
+
+        # Set the active item (optional)
+        self.contents_per_page_combo_box.set_active(1)
+
         # window-scoped actions
+
+        # select base uri row by row index
+        row_index_variant = GLib.Variant.new_uint32(0)
+        select_base_uri_action = Gio.SimpleAction.new("select-base-uri", row_index_variant.get_type())
+        select_base_uri_action.connect("activate", self.do_select_base_uri_row_by_row_index)
+        self.add_action(select_base_uri_action)
+
+        # select base uri row by uri
+        uri_variant = GLib.Variant.new_string('dummy')
+        select_base_uri_by_uri_action = Gio.SimpleAction.new("select-base-uri-by-uri", uri_variant.get_type())
+        select_base_uri_by_uri_action.connect("activate", self.do_select_base_uri_row_by_uri)
+        self.add_action(select_base_uri_by_uri_action)
+
+        # show base uri row by row index
+        row_index_variant = GLib.Variant.new_uint32(0)
+        show_base_uri_action = Gio.SimpleAction.new("show-base-uri", row_index_variant.get_type())
+        show_base_uri_action.connect("activate", self.do_show_base_uri_row_by_row_index)
+        self.add_action(show_base_uri_action)
+
+        # show base uri row by uri
+        uri_variant = GLib.Variant.new_string('dummy')
+        show_base_uri_by_uri_action = Gio.SimpleAction.new("show-base-uri-by-uri", uri_variant.get_type())
+        show_base_uri_by_uri_action.connect("activate", self.do_show_base_uri_row_by_uri)
+        self.add_action(show_base_uri_by_uri_action)
 
         # search action
         search_text_variant = GLib.Variant.new_string("dummy")
@@ -273,6 +343,32 @@ class MainWindow(Gtk.ApplicationWindow):
         search_select_show_action.connect("activate", self.do_search_select_and_show)
         self.add_action(search_select_show_action)
 
+        # pagination actions
+        page_index_variant = GLib.Variant.new_uint32(0)
+        show_page_action = Gio.SimpleAction.new("show-page", page_index_variant.get_type())
+        show_page_action.connect("activate", self.do_show_page)
+        self.add_action(show_page_action)
+
+        show_current_page_action = Gio.SimpleAction.new("show-current-page")
+        show_current_page_action.connect("activate", self.do_show_current_page)
+        self.add_action(show_current_page_action)
+
+        show_first_page_action = Gio.SimpleAction.new("show-first-page")
+        show_first_page_action.connect("activate", self.do_show_first_page)
+        self.add_action(show_first_page_action)
+
+        show_last_page_action = Gio.SimpleAction.new("show-last-page")
+        show_last_page_action.connect("activate", self.do_show_last_page)
+        self.add_action(show_last_page_action)
+
+        show_next_page_action = Gio.SimpleAction.new("show-next-page")
+        show_next_page_action.connect("activate", self.do_show_next_page)
+        self.add_action(show_next_page_action)
+
+        show_previous_page_action = Gio.SimpleAction.new("show-previous-page")
+        show_previous_page_action.connect("activate", self.do_show_previous_page)
+        self.add_action(show_previous_page_action)
+
         # get item
         dest_file_variant = GLib.Variant.new_string("dummy")
         get_item_action = Gio.SimpleAction.new("get-item", dest_file_variant.get_type())
@@ -290,311 +386,14 @@ class MainWindow(Gtk.ApplicationWindow):
 
         _logger.debug(f"Constructed main window for app '{self.application.get_application_id()}'")
 
-        # Initialize pagination parameters, hide page advancer button by default, set default items per page, and highlight the current page button.
-        self.pagination = {}
-        self.page_advancer_button.set_visible(False)
-        self.contents_per_page_value = 10
-        
-        style_context = self.curr_page_button.get_style_context()
+        self.decrease_page_button.set_visible(False)
+
+        style_context = self.current_page_button.get_style_context()
         style_context.add_class('suggested-action')
 
         # Initialize linting_problems cache and make the linting_errors_button non-clickable (greyed out)
         self.linting_problems = None
         self.linting_errors_button.set_sensitive(False)
-
-    # utility methods
-    def refresh(self):
-        """Refresh view."""
-
-        dataset_row = self.dataset_list_box.get_selected_row()
-        dataset_uri = None
-        if dataset_row is not None:
-            dataset_uri = dataset_row.dataset.uri
-            _logger.debug(f"Keep '{dataset_uri}' for dataset refresh.")
-
-        async def _refresh():
-            # first, refresh base uri list and its selection
-            await self._refresh_base_uri_list_box()
-            self.select_and_load_first_uri()
-
-            _logger.debug(f"Done refreshing base URIs.")
-            # on_base_uri_selected(self, list_box, row) called by selection
-            # above already
-
-            # TODO: following restration of selected dataset needs to happen
-            # after base URI has been loaded, but on_base_uri_selected
-            # spawns another task, hence above "await" won't wait for the
-            # process to complete. Need a signal insted.
-            # if dataset_uri is not None:
-            #    _logger.debug(f"Select and show '{dataset_uri}'.")
-            #    self._select_and_show_by_uri(dataset_uri)
-
-        asyncio.create_task(_refresh())
-
-    async def _refresh_base_uri_list_box(self):
-        # bookkeeping of current state
-        base_uri_row = self.base_uri_list_box.get_selected_row()
-        base_uri = None
-
-        if isinstance(base_uri_row, DtoolBaseURIRow):
-            base_uri = str(base_uri_row.base_uri)
-        elif isinstance(base_uri_row, DtoolSearchResultsRow):
-            base_uri = LOOKUP_BASE_URI
-
-        # first, refresh list box
-        await self.base_uri_list_box.refresh()
-        # second, refresh base uri list selection
-        if base_uri is not None:
-            _logger.debug(f"Reselect base URI '{base_uri}")
-            self._select_base_uri_row_by_uri(base_uri)
-
-    # removed these utility functions from inner scope of on_search_activate
-    # in order to decouple actual signal handler and functionality
-    def _update_search_summary(self, datasets):
-        row = self.base_uri_list_box.search_results_row
-        total_size = sum([0 if dataset.size_int is None else dataset.size_int for dataset in datasets])
-        total_value = self.pagination['total']
-        row.info_label.set_text(f'{total_value} datasets, {sizeof_fmt(total_size).strip()}')
-
-    def _update_main_statusbar(self):
-        total_number = self.pagination['total']
-        current_page = self.pagination['page']
-        last_page = self.pagination['last_page']
-        self.main_statusbar.push(0,
-                                 f"Total Number of Datasets: {total_number}, Current Page: {current_page} of {last_page}")
-
-    def contents_per_page_changed(self, widget):
-        self.contents_per_page_value = widget.get_active_text()
-        self.on_first_page_button_clicked(self.first_page_button)  # Directly call the method
-    
-    def on_sort_field_combo_box_changed(self, widget):
-        transformed_fields = {
-            "Uri": "uri",
-            "Name": "name",
-            "Base Uri": "base_uri",
-            "Created At": "created_at",
-            "Frozen At": "frozen_at",
-            "Uuid": "uuid",
-            "Creator Username": "creator_username",
-        }
-        
-        selected_text = widget.get_active_text()
-
-        transformed_text = transformed_fields.get(selected_text)
-
-        sort_order = self.sort_order
-
-        asyncio.create_task(self._fetch_search_results(keyword=None, sort_fields=[transformed_text], sort_order=[sort_order]))
-
-    @Gtk.Template.Callback()
-    def on_sort_order_switch_state_set(self, widget,state):
-        # Toggle sort order based on the switch state
-        if state:
-            self.sort_order = -1  # Switch is on, use ascending order
-        else:
-            self.sort_order = 1  # Switch is off, use descending order
-                
-        self.on_sort_field_combo_box_changed(self.sort_field_combo_box)
-
-        
-
-    async def _fetch_search_results(self, keyword, on_show=None, page_number=1, page_size=10,sort_fields=["uri"],sort_order=[1] , widget=None):
-        # Here sort order 1 implies ascending 
-        row = self.base_uri_list_box.search_results_row
-        row.start_spinner()
-        self.main_spinner.start()
-
-        self.pagination = {}  # Add pagination dictionary
-        self.sorting = {} # Add sorting dictionary
-        try:
-            if keyword:
-                if is_valid_query(keyword):
-                    _logger.debug("Valid query specified.")
-                    datasets = await DatasetModel.query(
-                        keyword,
-                        page_number=page_number,
-                        page_size=page_size,
-                        sort_fields=sort_fields,
-                        sort_order=sort_order,
-                        pagination=self.pagination,
-                        sorting=self.sorting
-
-                    )
-                else:
-                    _logger.debug("Specified search text is not a valid query, just perform free text search.")
-                    datasets = await DatasetModel.get_datasets(
-                        keyword,
-                        page_number=page_number,
-                        page_size=page_size,
-                        sort_fields=sort_fields,
-                        sort_order=sort_order,
-                        pagination=self.pagination,
-                        sorting=self.sorting
-                    )
-            else:
-                _logger.debug("No keyword specified, list all datasets.")
-                datasets = await DatasetModel.query_all(
-                    page_number=page_number,
-                    page_size=page_size,
-                    sort_fields=sort_fields,
-                    sort_order=sort_order,
-                    pagination=self.pagination,
-                    sorting=self.sorting
-                )
-
-            if self.pagination == {}:  # server did not provide pagination information
-                self.pagination = {
-                    'total': len(datasets),
-                    'page': 1,
-                    'last_page': 1
-                }
-
-            if len(datasets) > self._max_nb_datasets:
-                _logger.warning(
-                    f"{len(datasets)} search results exceed allowed displayed maximum of {self._max_nb_datasets}. "
-                    f"Only the first {self._max_nb_datasets} results are shown. Narrow down your search."
-                )
-                datasets = datasets[:self._max_nb_datasets]  # Limit number of datasets that are shown
-
-            row.search_results = datasets  # Cache datasets
-            self._update_search_summary(datasets)
-            self._update_main_statusbar()
-            self.contents_per_page.connect("changed", self.contents_per_page_changed)
-            self.sort_field_combo_box.connect("changed", self.on_sort_field_combo_box_changed)
-            if self.base_uri_list_box.get_selected_row() == row:
-                # Only update if the row is still selected
-                self.dataset_list_box.fill(datasets, on_show=on_show)
-        except RuntimeError as e:
-            # TODO: There should probably be a more explicit test on authentication failure.
-            self.show_error(e)
-
-            async def retry():
-                await asyncio.sleep(0.5)  # TODO: This is a dirty workaround for not having the login window pop up twice
-                await self._fetch_search_results(keyword, on_show, page_number, page_size, widget)
-
-            # What happens is that the LoginWindow evokes the renew-token action via Gtk framework.
-            # This happens asynchronously as well. This means _fetch_search_results called again
-            # within the retry() function would open another LoginWindow here as the token renewal does
-            # not happen "quick" enough. Hence there is the asybcio.sleep(1).
-            LoginWindow(application=self.application, follow_up_action=lambda: asyncio.create_task(retry())).show()
-
-        except Exception as e:
-            self.show_error(e)
-
-        self.base_uri_list_box.select_search_results_row()
-        self.main_stack.set_visible_child(self.main_paned)
-        row.stop_spinner()
-        self.main_spinner.stop()
-        # If a widget was passed in, re-enable it
-        self.enable_pagination_buttons()
-
-
-    def _search_by_uuid(self, uuid):
-        search_text = dump_single_line_query_text({"uuid": uuid})
-        self._search_by_search_text(search_text)
-
-    def _search_by_search_text(self, search_text):
-        self.activate_action('search-select-show', GLib.Variant.new_string(search_text))
-
-    # utility methods - dataset selection
-    def _select_dataset_row_by_row_index(self, index):
-        """Select dataset row in dataset list box by index."""
-        row = self.dataset_list_box.get_row_at_index(index)
-        if row is not None:
-            _logger.debug(f"Dataset row {index} selected.")
-            self.dataset_list_box.select_row(row)
-        else:
-            _logger.info(f"No dataset row with index {index} available for selection.")
-
-    def _select_dataset_row_by_uri(self, uri):
-        """Select dataset row in dataset list box by uri."""
-        index = self.dataset_list_box.get_row_index_from_uri(uri)
-        self._select_dataset_row_by_row_index(index)
-
-    def _show_dataset_details(self, dataset):
-        asyncio.create_task(self._update_dataset_view(dataset))
-        self.dataset_stack.set_visible_child(self.dataset_box)
-
-    def _build_dependency_graph(self, dataset):
-        asyncio.create_task(self._compute_dependencies(dataset))
-
-    def _show_dataset_details_by_row_index(self, index):
-        row = self.dataset_list_box.get_row_at_index(index)
-        if row is not None:
-            _logger.debug(f"{row.dataset.name} shown.")
-            self._show_dataset_details(row.dataset)
-        else:
-            _logger.info(f"No dataset row with index {index} available for selection.")
-
-    def _build_dependency_graph_by_row_index(self, index):
-        """Build dependency graph by row index."""
-        row = self.dataset_list_box.get_row_at_index(index)
-        if row is not None:
-            _logger.debug(f"{row.dataset.name} shown.")
-            self._build_dependency_graph(row.dataset)
-        else:
-            _logger.info(f"No dataset row with index {index} available for selection.")
-
-    def _show_dataset_details_by_uri(self, uri):
-        """Select dataset row in dataset list box by uri."""
-        index = self.dataset_list_box.get_row_index_from_uri(uri)
-        self._show_dataset_details_by_row_index(index)
-
-    def _build_dependency_graph_by_uri(self, uri):
-        """Build dependency graph by uri."""
-        index = self.dataset_list_box.get_row_index_from_uri(uri)
-        self._build_dependency_graph_by_row_index(index)
-
-    def _select_and_show_by_row_index(self, index=0):
-        self._select_dataset_row_by_row_index(index)
-        self._show_dataset_details_by_row_index(index)
-
-    def _select_and_show_by_uri(self, uri):
-        self._select_dataset_row_by_uri(uri)
-        self._show_dataset_details_by_uri(uri)
-
-    def _search(self, search_text, on_show=None):
-        _logger.debug(f"Evoke search with search text {search_text}.")
-        self.main_stack.set_visible_child(self.main_spinner)
-        row = self.base_uri_list_box.search_results_row
-        row.search_results = None
-        asyncio.create_task(self._fetch_search_results(search_text, on_show))
-
-    def _search_select_and_show(self, search_text):
-        _logger.debug(f"Search '{search_text}'...")
-        self._search(search_text, on_show=lambda _: self._select_and_show_by_row_index())
-
-    def _get_selected_items(self):
-        """Returns (name uuid) tuples of items selected in manifest tree store."""
-        selection = self.manifest_tree_view.get_selection()
-        model, paths = selection.get_selected_rows()
-
-        items = []
-        for path in paths:
-            column_iter = model.get_iter(path)
-            item_name = model.get_value(column_iter, 0)
-            item_uuid = model.get_value(column_iter, 3)
-            items.append((item_name, item_uuid))
-
-        return items
-
-    # utility methods - base uri selection
-    def _select_base_uri_row_by_row_index(self, index):
-        """Select base uri row in base uri list box by index."""
-        row = self.base_uri_list_box.get_row_at_index(index)
-        if row is not None:
-            _logger.debug(f"Base URI row {index} selected.")
-            self.base_uri_list_box.select_row(row)
-        else:
-            _logger.info(f"No base URI row with index {index} available for selection.")
-
-    def _select_base_uri_row_by_uri(self, uri):
-        """Select base uri row in dataset list box by uri."""
-        index = self.base_uri_list_box.get_row_index_from_uri(uri)
-        self._select_base_uri_row_by_row_index(index)
-
-    def on_readme_buffer_changed(self, buffer):
-        self.save_metadata_button.set_sensitive(True)
 
     # actions
 
@@ -651,19 +450,51 @@ class MainWindow(Gtk.ApplicationWindow):
         uri = value.get_string()
         self._select_base_uri_row_by_uri(uri)
 
-    def do_show_base_uri_by_row_index(self, action, value):
+    def do_show_base_uri_row_by_row_index(self, action, value):
         """Show base uri by row index"""
         row_index = value.get_uint32()
-        self._show_base_uri_by_row_index(row_index)
+        self._show_base_uri_row_by_row_index(row_index)
 
-    def do_show_baser_uri_by_uri(self, action, value):
-        """Show base uri by uri."""
+    def do_show_base_uri_row_by_uri(self, action, value):
+        """Show base uri by uri"""
         uri = value.get_string()
-        self._show_base_uri_details_by_uri(uri)
+        self._show_base_uri_row_by_row_index(uri)
+
+    # pagination actions
+    def do_show_page(self, action, value):
+        """Show page of specific index"""
+        page_index = value.get_uint32()
+        self._show_page(page_index)
+
+    def do_show_current_page(self, action, value):
+        """Show current page"""
+        page_index = self.search_state.current_page
+        self._show_page(page_index)
+
+    def do_show_first_page(self, action, value):
+        """Show first page"""
+        page_index = self.search_state.first_page
+        self._show_page(page_index)
+
+    def do_show_last_page(self, action, value):
+        """Show last page"""
+        page_index = self.search_state.last_page
+        self._show_page(page_index)
+
+    def do_show_next_page(self, action, value):
+        """Show next page"""
+        page_index = self.search_state.next_page
+        self._show_page(page_index)
+
+    def do_show_previous_page(self, action, value):
+        """Show previous page"""
+        page_index = self.search_state.previous_page
+        self._show_page(page_index)
 
     # other actions
     def do_get_item(self, action, value):
-        """Copy currently selected manifest item in currently selected dataset to specified destination."""
+        """"Copy currently selected manifest item in currently selected dataset to specified destination."""
+
         dest_file = value.get_string()
 
         dataset = self.dataset_list_box.get_selected_row().dataset
@@ -689,84 +520,49 @@ class MainWindow(Gtk.ApplicationWindow):
         self.refresh()
 
     # signal handlers
+
     @Gtk.Template.Callback()
     def on_settings_clicked(self, widget):
+        """Setting menu item clicked."""
         self.settings_dialog.show()
 
     @Gtk.Template.Callback()
     def version_button_clicked(self, widget):
+        """Server versions menu item clicked."""
         self.server_versions_dialog.show()
 
     @Gtk.Template.Callback()
     def config_button_clicked(self, widget):
+        """Server config menu item clicked."""
         self.config_details.show()
 
     @Gtk.Template.Callback()
     def on_logging_clicked(self, widget):
+        """Log window menu item clicked."""
         self.log_window.show()
 
     @Gtk.Template.Callback()
     def on_about_clicked(self, widget):
+        """About dialog menu item clicked"""
         self.about_dialog.show()
 
     @Gtk.Template.Callback()
     def on_base_uri_selected(self, list_box, row):
-        if row is None:
-            # this callback apparently gets evoked with row=None when an entry is deleted / unselected (?) from the base URI list
-            return
-
-        def update_base_uri_summary(datasets):
-            total_size = sum([0 if dataset.size_int is None else dataset.size_int for dataset in datasets])
-            row.info_label.set_text(f'{len(datasets)} datasets, {sizeof_fmt(total_size).strip()}')
-
-        async def _select_base_uri():
-            row.start_spinner()
-
-            if isinstance(row, DtoolBaseURIRow):
-                try:
-                    _logger.debug(f"Selected base URI {row.base_uri}.")
-                    datasets = await row.base_uri.all_datasets()
-                    _logger.debug(f"Found {len(datasets)} datasets.")
-                    update_base_uri_summary(datasets)
-                    if self.base_uri_list_box.get_selected_row() == row:
-                        # Only update if the row is still selected
-                        self.dataset_list_box.fill(datasets)
-                except Exception as e:
-                    self.show_error(e)
-                self.main_stack.set_visible_child(self.main_paned)
-            elif isinstance(row, DtoolSearchResultsRow):
-                _logger.debug("Selected search results.")
-                # This is the search result
-                if row.search_results is not None:
-                    _logger.debug(f"Fill dataset list with {len(row.search_results)} search results.")
-                    self.dataset_list_box.fill(row.search_results)
-                    self.main_stack.set_visible_child(self.main_paned)
-                else:
-                    _logger.debug("No search results cached (likely first activation after app startup).")
-                    _logger.debug("Mock emit search_entry activate signal once.")
-                    self.main_stack.set_visible_child(self.main_label)
-                    self.search_entry.emit("activate")
-            else:
-                raise TypeError(f"Handling of {type(row)} not implemented.")
-
-            row.stop_spinner()
-            row.task = None
-
-        self.main_stack.set_visible_child(self.main_spinner)
-        self.create_dataset_button.set_sensitive(not isinstance(row, DtoolSearchResultsRow) and
-                                                 row.base_uri.editable)
-        if row.task is None:
-            _logger.debug("Spawn select_base_uri task.")
-            row.task = asyncio.create_task(_select_base_uri())
+        """Entry on base URI list clicked."""
+        if row is not None:
+            row_index = row.get_index()
+            _logger.debug(f"Selected base uri row {row_index}.")
+            self.activate_action('show-base-uri', GLib.Variant.new_uint32(row_index))
 
     @Gtk.Template.Callback()
     def on_search_activate(self, widget):
         """Search activated (usually by hitting Enter after typing in the search entry)."""
         search_text = self.search_entry.get_text()
-        self._search_by_search_text(search_text)
+        self.activate_action('search-select-show', GLib.Variant.new_string(search_text))
 
     @Gtk.Template.Callback()
     def on_search_drop_down_clicked(self, widget):
+        """Drop down button next to search field clicked for opening larger popover."""
         if self.search_popover.get_visible():
             _logger.debug(
                 f"Search entry drop down icon pressed, hide popover.")
@@ -777,6 +573,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def on_dataset_selected(self, list_box, row):
+        """Entry on dataset list clicked."""
         if row is not None:
             row_index = row.get_index()
             _logger.debug(f"Selected row {row_index}.")
@@ -784,6 +581,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def on_open_local_directory_clicked(self, widget):
+        """Open directory button as local base URI clicked."""
         # File chooser dialog (select directory)
         dialog = Gtk.FileChooserDialog(
             title="Open local directory",
@@ -834,10 +632,12 @@ class MainWindow(Gtk.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def on_create_dataset_clicked(self, widget):
+        """Dataset creation button clicked."""
         DatasetNameDialog(on_confirmation=self._create_dataset).show()
 
     @Gtk.Template.Callback()
     def on_refresh_clicked(self, widget):
+        """Refresh button clicked."""
         self.get_action_group("win").activate_action('refresh-view', None)
 
     @Gtk.Template.Callback()
@@ -847,6 +647,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def on_add_items_clicked(self, widget):
+        """Add items to dataset button clicked."""
         dialog = Gtk.FileChooserDialog(
             title="Add items", parent=self,
             action=Gtk.FileChooserAction.OPEN
@@ -891,6 +692,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def on_save_metadata_button_clicked(self, widget):
+        """Save button on edited metadata clicked."""
         # Get the YAML content from the source view
         text_buffer = self.readme_source_view.get_buffer()
         start_iter, end_iter = text_buffer.get_bounds()
@@ -926,6 +728,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def on_linting_errors_button_clicked(self, widget):
+        """Linting errors clicked, show extended log."""
         # Check if the problems attribute exists
         if hasattr(self, 'linting_problems') and self.linting_problems:
             # Join the linting error messages into a single string
@@ -941,6 +744,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def on_freeze_clicked(self, widget):
+        """Freeze dataset button clicked."""
         row = self.dataset_list_box.get_selected_row()
         dialog = Gtk.MessageDialog(self, Gtk.DialogFlags.MODAL, Gtk.MessageType.QUESTION, Gtk.ButtonsType.OK_CANCEL,
                                    f'You are about to freeze dataset "{row.dataset.name}". Items can no longer be '
@@ -962,6 +766,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def on_error_bar_close(self, widget):
+        """Close error bar button clicked."""
         _logger.debug("Hide error bar.")
         self.error_bar.set_revealed(False)
 
@@ -976,130 +781,91 @@ class MainWindow(Gtk.ApplicationWindow):
     #     sort_field = widget.get_active_text()
     #     _logger.debug("sort field changed to %s", sort_field)
 
+    @Gtk.Template.Callback()
+    def on_sort_order_switch_state_set(self, widget, state):
+        """Sort order ascending&/descending switch toggled."""
+        # Toggle sort order based on the switch state
+        if state:
+            sort_order = -1  # Switch is on, use ascending order
+        else:
+            sort_order = 1  # Switch is off, use descending order
+
+        self.search_state.sort_order = [sort_order]
+        self.activate_action('show-current-page')
+        # self.on_sort_field_combo_box_changed(self.sort_field_combo_box)
+
+    @Gtk.Template.Callback()
+    def on_contents_per_page_combo_box_changed(self, widget):
+        """Contents per page combo box entry changed."""
+        # Get the active iter and retrieve the key from the first column
+        model = widget.get_model()
+        active_iter = widget.get_active_iter()
+        if active_iter is not None:
+            selected_key = model[active_iter][0]  # This is the key
+
+        self.search_state.page_size = selected_key
+        self.activate_action('show-first-page')
+
+    @Gtk.Template.Callback()
+    def on_sort_field_combo_box_changed(self, widget):
+        """Sort field combo box entry changed."""
+        # Get the active iter and retrieve the key from the first column
+        model = widget.get_model()
+        active_iter = widget.get_active_iter()
+        if active_iter is not None:
+            selected_key = model[active_iter][0]  # This is the key
+
+        self.search_state.sort_fields = [selected_key]
+        self.activate_action('show-current-page')
+
     # pagination signal handlers
 
     @Gtk.Template.Callback()
     def on_first_page_button_clicked(self, widget):
-        # Navigate to the first page if results are not currently being fetched
-        if not self.fetching_results:
-            page_number = 1
-            self.pagination['page'] = page_number
-            self.disable_pagination_buttons()
-            asyncio.create_task(self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
-                                                           page_size=int(self.contents_per_page_value), widget=widget))
-            self.update_pagination_buttons(page_number, widget)
+        """Navigate to the first page"""
+        self.activate_action('show-first-page')
 
     @Gtk.Template.Callback()
-    def on_nextoption_page_button_clicked(self, widget):
+    def on_decrease_page_button_clicked(self, widget):
+        """Navigate to the previous page if it exists"""
+        self.activate_action('show-previous-page')
+
+    @Gtk.Template.Callback()
+    def on_previous_page_button_clicked(self, widget):
+        """Navigate to the previous page if it exists"""
+        self.activate_action('show-previous-page')
+
+    @Gtk.Template.Callback()
+    def on_current_page_button_clicked(self, widget):
+        """Highlight the current page button and fetch its results"""
+        style_context = self.current_page_button.get_style_context()
+        style_context.add_class('suggested-action')
+        self.activate_action('show-current-page')
+
+    @Gtk.Template.Callback()
+    def on_next_page_button_clicked(self, widget):
         # Navigate to the next page if available
-        if not self.fetching_results and self.pagination['page'] < self.pagination['last_page']:
-            page_number = self.pagination['page'] + 1
-            self.update_pagination_buttons(page_number, widget)
-            self.disable_pagination_buttons()
-            asyncio.create_task(self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
-                                                           page_size=int(self.contents_per_page_value), widget=widget))
+        self.activate_action('show-next-page')
+
+    @Gtk.Template.Callback()
+    def on_increase_page_button_clicked(self, widget):
+        """Navigate to the next page uif it exists"""
+        self.activate_action('show-next-page')
 
     @Gtk.Template.Callback()
     def on_last_page_button_clicked(self, widget):
-        # Navigate to the last page
-        page_number = self.pagination['last_page']
-        self.update_pagination_buttons(page_number, widget)
-        self.disable_pagination_buttons()
-        asyncio.create_task(self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
-                                                       page_size=int(self.contents_per_page_value), widget=widget))
+        """Navigate to the last page"""
+        self.activate_action('show-last-page')
 
-    @Gtk.Template.Callback()
-    def on_prev_page_button_clicked(self, widget):
-        # Navigate to the previous page if it exists
-        if not self.fetching_results and self.pagination['page'] > 1:
-            page_number = self.pagination['page'] - 1
-            self.update_pagination_buttons(page_number, widget)
-            self.disable_pagination_buttons()
-            asyncio.create_task(self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
-                                                           page_size=int(self.contents_per_page_value), widget=widget))
-
-    @Gtk.Template.Callback()
-    def curr_page_button_clicked(self, widget):
-        # Highlight the current page button and fetch its results
-        page_number = self.pagination['page']
-        style_context = self.curr_page_button.get_style_context()
-        style_context.add_class('suggested-action')
-        self.update_pagination_buttons(page_number, widget)
-        self.disable_pagination_buttons()
-        asyncio.create_task(self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
-                                                       page_size=int(self.contents_per_page_value), widget=widget))
-
-    @Gtk.Template.Callback()
-    def page_advancer_button_clicked(self, widget):
-        # Navigate to the previous page using the advancer button
-        page_number = self.pagination['page']
-        if not self.fetching_results and page_number > 1:
-            page_number -= 1
-            self.update_pagination_buttons(page_number, widget)
-            self.disable_pagination_buttons()
-            asyncio.create_task(self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
-                                                           page_size=int(self.contents_per_page_value), widget=widget))
-
-    @Gtk.Template.Callback()
-    def next_page_advancer_button_clicked(self, widget):
-        # Navigate to the next page using the advancer button
-        page_number = self.pagination['page']
-        if not self.fetching_results and page_number < self.pagination['last_page']:
-            page_number += 1
-            self.update_pagination_buttons(page_number, widget)
-            self.disable_pagination_buttons()
-            asyncio.create_task(self._fetch_search_results(keyword=None, on_show=None, page_number=page_number,
-                                                           page_size=int(self.contents_per_page_value), widget=widget))
-
-    def update_pagination_buttons(self, page_number, widget):
-        # Update labels and visibility of pagination buttons based on current page
-        self.pagination['page'] = page_number
-        self.curr_page_button.set_label(str(page_number))
-        self.page_advancer_button.set_label(str(page_number - 1))
-        self.next_page_advancer_button.set_label(str(page_number + 1))
-
-        # Hide next_page_advancer_button if current page is the last page or beyond
-        if page_number >= self.pagination['last_page']:
-            self.next_page_advancer_button.set_visible(False)
-        else:
-            self.next_page_advancer_button.set_visible(True)
-        self.page_advancer_button.set_visible(page_number != 1)
-
-    def disable_pagination_buttons(self):
-        # Disable all pagination buttons (typically while fetching results)
-        self.fetching_results = True
-        self.first_page_button.set_sensitive(False)
-        self.nextoption_page_button.set_sensitive(False)
-        self.last_page_button.set_sensitive(False)
-        self.prev_page_button.set_sensitive(False)
-        self.curr_page_button.set_sensitive(False)
-        self.page_advancer_button.set_sensitive(False)
-        self.next_page_advancer_button.set_sensitive(False)
-
-    def enable_pagination_buttons(self):
-        # Enable all pagination buttons (typically after fetching results)
-        self.fetching_results = False
-        self.first_page_button.set_sensitive(True)
-        self.nextoption_page_button.set_sensitive(True)
-        self.last_page_button.set_sensitive(True)
-        self.prev_page_button.set_sensitive(True)
-        self.curr_page_button.set_sensitive(True)
-        self.page_advancer_button.set_sensitive(True)
-        self.next_page_advancer_button.set_sensitive(True)
-
-    def select_and_load_first_uri(self):
-        """
-        This function automatically reloads the data and selects the first URI.
-        """
-        first_row = self.base_uri_list_box.get_children()[0]
-        self.base_uri_list_box.select_row(first_row)
-        self.on_base_uri_selected(self.base_uri_list_box, first_row)
+    def on_readme_buffer_changed(self, buffer):
+        self.save_metadata_button.set_sensitive(True)
 
     # TODO: this should be an action do_copy
-    # if it is possible to hand to strings, e.g. source and destination to an action, then this action should
+    # if it is possible to hand two strings, e.g. source and destination to an action, then this action should
     # go to the main app.
     # @Gtk.Template.Callback(), not in .ui
     def on_copy_clicked(self, widget):
+        """Dataset copy button clicked."""
         async def _copy():
             try:
                 await self._copy_manager.copy(self.dataset_list_box.get_selected_row().dataset, widget.destination)
@@ -1107,6 +873,424 @@ class MainWindow(Gtk.ApplicationWindow):
                 self.show_error(e)
 
         asyncio.create_task(_copy())
+
+    # public methods
+
+    def refresh(self):
+        """Refresh view."""
+
+        dataset_row = self.dataset_list_box.get_selected_row()
+        dataset_uri = None
+        if dataset_row is not None:
+            dataset_uri = dataset_row.dataset.uri
+            _logger.debug(f"Keep '{dataset_uri}' for dataset refresh.")
+
+        async def _refresh():
+            # first, refresh base uri list and its selection
+            await self._refresh_base_uri_list_box()
+            self._select_and_load_first_uri()
+
+            _logger.debug(f"Done refreshing base URIs.")
+            # on_base_uri_selected(self, list_box, row) called by selection
+            # above already
+
+            # TODO: following restoration of selected dataset needs to happen
+            # after base URI has been loaded, but on_base_uri_selected
+            # spawns another task, hence above "await" won't wait for the
+            # process to complete. Need a signal instead.
+            # if dataset_uri is not None:
+            #    _logger.debug(f"Select and show '{dataset_uri}'.")
+            #    self._select_and_show_by_uri(dataset_uri)
+
+        asyncio.create_task(_refresh())
+
+    def show_error(self, exception):
+        _logger.error(traceback.format_exc())
+
+    # private methods
+
+    async def _refresh_base_uri_list_box(self):
+        # book keeping of current state
+        base_uri_row = self.base_uri_list_box.get_selected_row()
+        base_uri = None
+
+        if isinstance(base_uri_row, DtoolBaseURIRow):
+            base_uri = str(base_uri_row.base_uri)
+        elif isinstance(base_uri_row, DtoolSearchResultsRow):
+            base_uri = LOOKUP_BASE_URI
+
+        # first, refresh list box
+        await self.base_uri_list_box.refresh()
+        # second, refresh base uri list selection
+        if base_uri is not None:
+            _logger.debug(f"Reselect base URI '{base_uri}")
+            self._select_base_uri_row_by_uri(base_uri)
+
+    # removed these utility functions from inner scope of on_search_activate
+    # in order to decouple actual signal handler and functionality
+    def _update_search_summary(self, datasets):
+        row = self.base_uri_list_box.search_results_row
+        total_value = self.search_state.total_number_of_entries
+        row.info_label.set_text(f'{total_value} datasets')
+
+    def _update_main_statusbar(self, datasets):
+        total_number = self.search_state.total_number_of_entries
+        current_page = self.search_state.current_page
+        last_page = self.search_state.last_page
+        page_size = self.search_state.page_size
+        total_size = sum([0 if dataset.size_int is None else dataset.size_int for dataset in datasets])
+        self.main_statusbar.push(0,
+                                 f"{total_number} datasets in total at {page_size} per page, "
+                                 f"{sizeof_fmt(total_size).strip()} total size of {len(datasets)} datasets on current page, "
+                                 f"on page {current_page} of {last_page}")
+
+    async def _fetch_search_results(self, on_show=None):
+        """Retrieve search results from lookup server."""
+
+        self._disable_pagination_buttons()
+
+        # Here sort order 1 implies ascending
+        row = self.base_uri_list_box.search_results_row
+        row.start_spinner()
+        self.main_spinner.start()
+
+        pagination = {}
+        sorting = {}
+        try:
+            if self.search_state.search_text:
+                if is_valid_query(self.search_state.search_text):
+                    _logger.debug("Valid query specified.")
+                    datasets = await DatasetModel.get_datasets_by_mongo_query(
+                        query=self.search_state.search_text,
+                        page_number=self.search_state.current_page,
+                        page_size=self.search_state.page_size,
+                        sort_fields=self.search_state.sort_fields,
+                        sort_order=self.search_state.sort_order,
+                        pagination=pagination,
+                        sorting=sorting
+
+                    )
+                else:
+                    _logger.debug("Specified search text is not a valid query, just perform free text search.")
+                    datasets = await DatasetModel.get_datasets(
+                        free_text=self.search_state.search_text,
+                        page_number=self.search_state.current_page,
+                        page_size=self.search_state.page_size,
+                        sort_fields=self.search_state.sort_fields,
+                        sort_order=self.search_state.sort_order,
+                        pagination=pagination,
+                        sorting=sorting
+                    )
+            else:
+                _logger.debug("No keyword specified, list all datasets.")
+                datasets = await DatasetModel.get_datasets(
+                    page_number=self.search_state.current_page,
+                    page_size=self.search_state.page_size,
+                    sort_fields=self.search_state.sort_fields,
+                    sort_order=self.search_state.sort_order,
+                    pagination=pagination,
+                    sorting=sorting
+                )
+
+            self.search_state.ingest_pagination_information(pagination)
+            self.search_state.ingest_sorting_information(sorting)
+
+            if len(datasets) > self._max_nb_datasets:
+                _logger.warning(
+                    f"{len(datasets)} search results exceed allowed displayed maximum of {self._max_nb_datasets}. "
+                    f"Only the first {self._max_nb_datasets} results are shown. Narrow down your search."
+                )
+                datasets = datasets[:self._max_nb_datasets]  # Limit number of datasets that are shown
+
+            row.search_results = datasets  # Cache datasets
+
+            self._update_search_summary(datasets)
+            self._update_main_statusbar(datasets)
+
+            if self.base_uri_list_box.get_selected_row() == row:
+                # Only update if the row is still selected
+                self.dataset_list_box.fill(datasets, on_show=on_show)
+        except RuntimeError as e:
+            # TODO: There should probably be a more explicit test on authentication failure.
+            self.show_error(e)
+
+            async def retry():
+                await asyncio.sleep(
+                    0.5)  # TODO: This is a dirty workaround for not having the login window pop up twice
+                await self._fetch_search_results(on_show=on_show)
+
+            # What happens is that the LoginWindow evokes the renew-token action via Gtk framework.
+            # This happens asynchronously as well. This means _fetch_search_results called again
+            # within the retry() function would open another LoginWindow here as the token renewal does
+            # not happen "quick" enough. Hence there is the asyncio.sleep(1).
+            LoginWindow(application=self.application, follow_up_action=lambda: asyncio.create_task(retry())).show()
+
+        except Exception as e:
+            self.show_error(e)
+
+        self.base_uri_list_box.select_search_results_row()
+        self.main_stack.set_visible_child(self.main_paned)
+        row.stop_spinner()
+        self.main_spinner.stop()
+
+        self._enable_pagination_buttons()
+        self._update_pagination_buttons()
+
+    def _search_by_uuid(self, uuid):
+        search_text = dump_single_line_query_text({"uuid": uuid})
+        self._search_by_search_text(search_text)
+
+    def _search_by_search_text(self, search_text):
+        self.activate_action('search-select-show', GLib.Variant.new_string(search_text))
+
+    # utility methods - dataset selection
+    def _select_dataset_row_by_row_index(self, index):
+        """Select dataset row in dataset list box by index."""
+        row = self.dataset_list_box.get_row_at_index(index)
+        if row is not None:
+            _logger.debug(f"Dataset row {index} selected.")
+            self.dataset_list_box.select_row(row)
+        else:
+            _logger.info(f"No dataset row with index {index} available for selection.")
+
+    def _select_dataset_row_by_uri(self, uri):
+        """Select dataset row in dataset list box by uri."""
+        index = self.dataset_list_box.get_row_index_from_uri(uri)
+        self._select_dataset_row_by_row_index(index)
+
+    def _show_dataset_details(self, dataset):
+        """Kick off asynchronous task to show dataset details."""
+        asyncio.create_task(self._update_dataset_view(dataset))
+        self.dataset_stack.set_visible_child(self.dataset_box)
+
+    def _build_dependency_graph(self, dataset):
+        """Kick off asynchronous task to build dependency graph."""
+        asyncio.create_task(self._compute_dependencies(dataset))
+
+    def _show_dataset_details_by_row_index(self, index):
+        """Show dataset details by row index."""
+        row = self.dataset_list_box.get_row_at_index(index)
+        if row is not None:
+            _logger.debug(f"{row.dataset.name} shown.")
+            self._show_dataset_details(row.dataset)
+        else:
+            _logger.info(f"No dataset row with index {index} available for selection.")
+
+    def _build_dependency_graph_by_row_index(self, index):
+        """Build dependency graph by row index."""
+        row = self.dataset_list_box.get_row_at_index(index)
+        if row is not None:
+            _logger.debug(f"{row.dataset.name} shown.")
+            self._build_dependency_graph(row.dataset)
+        else:
+            _logger.info(f"No dataset row with index {index} available for selection.")
+
+    def _show_dataset_details_by_uri(self, uri):
+        """Select dataset row in dataset list box by uri."""
+        index = self.dataset_list_box.get_row_index_from_uri(uri)
+        self._show_dataset_details_by_row_index(index)
+
+    def _build_dependency_graph_by_uri(self, uri):
+        """Build dependency graph by uri."""
+        index = self.dataset_list_box.get_row_index_from_uri(uri)
+        self._build_dependency_graph_by_row_index(index)
+
+    def _select_and_show_by_row_index(self, index=0):
+        """Select dataset entry by row index and show details."""
+        self._select_dataset_row_by_row_index(index)
+        self._show_dataset_details_by_row_index(index)
+
+    def _select_and_show_by_uri(self, uri):
+        """Select dataset entry by URI and show details."""
+        self._select_dataset_row_by_uri(uri)
+        self._show_dataset_details_by_uri(uri)
+
+    def _search(self, search_text, on_show=None):
+        """Get datasets by text search."""
+        self.search_state.search_text = search_text
+        self.search_state.reset_pagination()
+        # self.search_state.current_page = 1
+        self._refresh_datasets(on_show=on_show)
+
+    def _refresh_datasets(self, on_show=None):
+        """Reset dataset list, show spinner, and kick off async task for retrieving dataset entries."""
+        self.main_stack.set_visible_child(self.main_spinner)
+        row = self.base_uri_list_box.search_results_row
+        row.search_results = None
+        asyncio.create_task(self._fetch_search_results(on_show=on_show))
+
+    def _search_select_and_show(self, search_text):
+        """Get datasets by text search, select first row and show dataset details."""
+        _logger.debug(f"Search '{search_text}'...")
+        self._search(search_text, on_show=lambda _: self._select_and_show_by_row_index())
+
+    # pagination functionality
+    def _show_page(self, page_index):
+        """Get datasets by page, select first row and show dataset details."""
+        if not self.search_state.fetching_results:
+            self.search_state.current_page = page_index
+            # self._disable_pagination_buttons()
+            self._refresh_datasets(on_show=lambda _: self._select_and_show_by_row_index())
+            # asyncio.create_task(self._fetch_search_results())
+            # self._update_pagination_buttons(page_number, widget)
+
+    def _update_pagination_buttons(self):
+        """Update pagination buttons to match current search state."""
+
+        self.current_page_button.set_label(str(self.search_state.current_page))
+        self.next_page_button.set_label(str(self.search_state.next_page))
+        self.previous_page_button.set_label(str(self.search_state.previous_page))
+
+        if self.search_state.current_page >= self.search_state.last_page:
+            self.next_page_button.set_visible(False)
+        else:
+            self.next_page_button.set_visible(True)
+
+        if self.search_state.current_page <= self.search_state.first_page:
+            self.previous_page_button.set_visible(False)
+        else:
+            self.previous_page_button.set_visible(True)
+
+    def _disable_pagination_buttons(self):
+        """Disable all pagination buttons (typically while fetching results)"""
+        self.fetching_results = True
+        self.first_page_button.set_sensitive(False)
+        self.next_page_button.set_sensitive(False)
+        self.last_page_button.set_sensitive(False)
+        self.previous_page_button.set_sensitive(False)
+        self.current_page_button.set_sensitive(False)
+        self.decrease_page_button.set_sensitive(False)
+        self.increase_page_button.set_sensitive(False)
+
+    def _enable_pagination_buttons(self):
+        """Enable all pagination buttons (typically after fetching results)"""
+        self.fetching_results = False
+        self.first_page_button.set_sensitive(True)
+        self.next_page_button.set_sensitive(True)
+        self.last_page_button.set_sensitive(True)
+        self.previous_page_button.set_sensitive(True)
+        self.current_page_button.set_sensitive(True)
+        self.decrease_page_button.set_sensitive(True)
+        self.increase_page_button.set_sensitive(True)
+
+    # other helper functions
+    def _get_selected_items(self):
+        """Returns (name uuid) tuples of items selected in manifest tree store."""
+        selection = self.manifest_tree_view.get_selection()
+        model, paths = selection.get_selected_rows()
+
+        items = []
+        for path in paths:
+            column_iter = model.get_iter(path)
+            item_name = model.get_value(column_iter, 0)
+            item_uuid = model.get_value(column_iter, 3)
+            items.append((item_name, item_uuid))
+
+        return items
+
+    # utility methods - base uri selection
+    def _select_base_uri_row_by_row_index(self, index):
+        """Select base uri row in base uri list box by index."""
+        row = self.base_uri_list_box.get_row_at_index(index)
+        if row is not None:
+            _logger.debug(f"Base URI row {index} selected.")
+            self.base_uri_list_box.select_row(row)
+        else:
+            _logger.info(f"No base URI row with index {index} available for selection.")
+
+    def _select_base_uri_row_by_uri(self, uri):
+        """Select base uri row in dataset list box by uri."""
+        index = self.base_uri_list_box.get_row_index_from_uri(uri)
+        self._select_base_uri_row_by_row_index(index)
+
+    def _show_base_uri_row_by_row_index(self, index):
+        """Select base uri row in dataset list box by uri."""
+        row = self.base_uri_list_box.get_row_at_index(index)
+        if row is not None:
+            _logger.debug(f"Base URI row {index} selected.")
+            self.base_uri_list_box.select_row(row)
+            self._show_base_uri(row, on_show=lambda _: self._select_and_show_by_row_index())
+        else:
+            _logger.info(f"No base URI row with index {index} available for selection.")
+
+    def _show_base_uri_row_by_uri(self, uri):
+        """Select base uri row in dataset list box by uri."""
+        self._select_base_uri_row_by_uri(uri)
+
+        # index = self.base_uri_list_box.get_row_index_from_uri(uri)
+        # self._select_base_uri_row_by_row_index(index)
+
+    def _show_base_uri(self, row, on_show=None):
+        """Show datasets in selected base URI."""
+        if row is None:
+            # this callback apparently gets evoked with row=None when an entry is deleted / unselected (?) from the base URI list
+            return
+
+        def update_base_uri_summary(datasets):
+            total_size = sum([0 if dataset.size_int is None else dataset.size_int for dataset in datasets])
+            row.info_label.set_text(f'{len(datasets)} datasets, {sizeof_fmt(total_size).strip()}')
+
+        async def _select_base_uri():
+            row.start_spinner()
+
+            if isinstance(row, DtoolBaseURIRow):
+                try:
+                    _logger.debug(f"Selected base URI {row.base_uri}.")
+                    datasets = await row.base_uri.all_datasets()
+                    _logger.debug(f"Found {len(datasets)} datasets.")
+                    update_base_uri_summary(datasets)
+                    if self.base_uri_list_box.get_selected_row() == row:
+                       # Only update if the row is still selected
+                       self.dataset_list_box.fill(datasets, on_show=on_show)
+                except Exception as e:
+                    self.show_error(e)
+                self.main_stack.set_visible_child(self.main_paned)
+            elif isinstance(row, DtoolSearchResultsRow):
+                _logger.debug("Selected search results.")
+                # This is the search result
+                if row.search_results is not None:
+                    _logger.debug(f"Fill dataset list with {len(row.search_results)} search results.")
+                    self.dataset_list_box.fill(row.search_results, on_show=on_show)
+                    self.main_stack.set_visible_child(self.main_paned)
+                else:
+                    _logger.debug("No search results cached (likely first activation after app startup).")
+                    # _logger.debug("Mock emit search_entry activate signal once.")
+                    self.main_stack.set_visible_child(self.main_label)
+                    # self.search_entry.emit("activate")
+                    await self._fetch_search_results(on_show=on_show)
+            else:
+                raise TypeError(f"Handling of {type(row)} not implemented.")
+
+            row.stop_spinner()
+            row.task = None
+
+        self.main_stack.set_visible_child(self.main_spinner)
+        self.create_dataset_button.set_sensitive(not isinstance(row, DtoolSearchResultsRow) and
+                                                 row.base_uri.editable)
+        self._set_lookup_gui_widgets_state(isinstance(row, DtoolSearchResultsRow))
+
+        if row.task is None:
+            _logger.debug("Spawn select_base_uri task.")
+            row.task = asyncio.create_task(_select_base_uri())
+
+    def _set_lookup_gui_widgets_state(self, state=False):
+        self.search_entry.set_sensitive(state)
+        self.contents_per_page_combo_box.set_sensitive(state)
+        self.sort_field_combo_box.set_sensitive(state)
+        self.sort_order_switch.set_sensitive(state)
+        if state is True:
+            self._enable_pagination_buttons()
+        else:
+            self._disable_pagination_buttons()
+
+
+    def _select_and_load_first_uri(self):
+        """
+        This function automatically reloads the data and selects the first URI.
+        """
+        first_row = self.base_uri_list_box.get_children()[0]
+        self.base_uri_list_box.select_row(first_row)
+        self.on_base_uri_selected(self.base_uri_list_box, first_row)
 
     def _show_get_item_dialog(self, item_name, item_uuid):
         default_dir = settings.item_download_directory
@@ -1305,7 +1489,8 @@ class MainWindow(Gtk.ApplicationWindow):
         if dataset.type == 'lookup':
             self.dependency_stack.show()
             _logger.debug("Selected dataset is lookup result.")
-            self.get_action_group("win").activate_action('build-dependency-graph-by-uri', GLib.Variant.new_string(dataset.uri))
+            self.get_action_group("win").activate_action('build-dependency-graph-by-uri',
+                                                         GLib.Variant.new_string(dataset.uri))
         else:
             _logger.debug("Selected dataset is accessed directly.")
             self.dependency_stack.hide()
@@ -1320,13 +1505,13 @@ class MainWindow(Gtk.ApplicationWindow):
         self.copy_button.get_popover().update(destinations, self.on_copy_clicked)
 
     async def _compute_dependencies(self, dataset):
-        _logger.debug("Compute dependencies for dataset '{dataset.uuid}'.")
+        _logger.debug("Compute dependencies for dataset '%s'.", dataset.uuid)
         self.dependency_stack.set_visible_child(self.dependency_spinner)
 
         # Compute dependency graph
         dependency_graph = DependencyGraph()
         async with ConfigurationBasedLookupClient() as lookup:
-            _logger.debug("Wait for depenedency graph for '{dataset.uuid}' queried from lookup server.")
+            _logger.debug("Wait for depenedency graph for '%s' queried from lookup server.", dataset.uuid)
             await dependency_graph.trace_dependencies(lookup, dataset.uuid, dependency_keys=settings.dependency_keys)
 
         # Show message if uuids are missing
@@ -1337,6 +1522,3 @@ class MainWindow(Gtk.ApplicationWindow):
 
         self.dependency_graph_widget.graph = dependency_graph.graph
         self.dependency_stack.set_visible_child(self.dependency_view)
-
-    def show_error(self, exception):
-        _logger.error(traceback.format_exc())

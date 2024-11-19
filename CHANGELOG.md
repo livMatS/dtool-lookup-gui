@@ -1,6 +1,13 @@
 Change log for dtool-lookup-gui
 ===============================
 
+unpublished
+-----------
+
+- Login window
+- Pagination
+- Sorting
+
 0.6.2 (02Nov22)
 ---------------
 
