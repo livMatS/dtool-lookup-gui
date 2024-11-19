@@ -345,6 +345,12 @@ class DatasetModel:
         self.readme_content = text
         return _load_dataset(str(self)).put_readme(text)
 
+    def put_tag(self, tag):
+        return _load_dataset(str(self)).put_tag(tag)
+
+    def put_annotation(self, annotation_name, annotation):
+        return _load_dataset(str(self)).put_annotation(annotation_name, annotation)
+
     async def get_readme(self):
         if 'readme_content' in self._dataset_info:
             logger.debug("%s", dir(self._dataset_info))

@@ -995,7 +995,7 @@
                                                     <property name="orientation">vertical</property>
                                                     <property name="column-spacing">10</property>
                                                     <child>
-                                                      <object class="GtkEntry">
+                                                      <object class="GtkEntry" id="enter_tags_text_box">
                                                         <property name="visible">True</property>
                                                         <property name="can-focus">True</property>
                                                       </object>

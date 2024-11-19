@@ -179,6 +179,7 @@ class MainWindow(Gtk.ApplicationWindow):
     sort_field_combo_box = Gtk.Template.Child()
     show_tags_box = Gtk.Template.Child()
     annotations_box = Gtk.Template.Child()
+    add_tags_button = Gtk.Template.Child()
 
     linting_errors_button = Gtk.Template.Child()
 
@@ -1255,7 +1256,7 @@ class MainWindow(Gtk.ApplicationWindow):
                 async def on_button_clicked(button):
                     current_label = button.get_label()
                     if current_label == "-":
-                        # Delete this annotation
+                        # Delete annotation
                         self.annotations_box.remove(box)
                         # also add here the function to delete the dataset
                     elif current_label == "+":
@@ -1264,6 +1265,7 @@ class MainWindow(Gtk.ApplicationWindow):
                         new_value = value_entry.get_text()
                         if new_key and new_value:
                             # Add to dataset or update the dataset
+                            dataset.put_annotation(annotation_name=new_key,annotation=new_value)
                             # await dataset.update_annotation(new_key, new_value) # update annotation function
                             button.set_label("-")
                 
