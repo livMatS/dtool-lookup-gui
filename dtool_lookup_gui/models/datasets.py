@@ -357,6 +357,14 @@ class DatasetModel:
     def put_annotation(self, annotation_name, annotation):
         return _load_dataset(str(self)).put_annotation(annotation_name, annotation)
 
+    def delete_tag(self,tag):
+        return _load_dataset(str(self)).delete_tag(tag)
+
+    # delete annotation is not implemented in dtoolcore
+    # def delete_annotation(self,annotation_name , annotation):
+    #     print("delete_annotation",annotation_name,annotation)
+    #     return _load_dataset(str(self)).delete_annotaion(annotation_name,annotation)
+
     async def get_readme(self):
         if 'readme_content' in self._dataset_info:
             logger.debug("%s", dir(self._dataset_info))

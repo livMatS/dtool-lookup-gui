@@ -315,37 +315,37 @@
                                 <child>
                                   <object class="GtkLabel">
                                     <property name="visible">True</property>
-                                    <property name="can_focus">False</property>
+                                    <property name="can-focus">False</property>
                                     <property name="halign">end</property>
                                     <property name="hexpand">True</property>
                                     <property name="label">Entries per page:</property>
                                     <property name="xalign">0</property>
                                   </object>
                                   <packing>
-                                    <property name="left_attach">0</property>
-                                    <property name="top_attach">0</property>
+                                    <property name="left-attach">0</property>
+                                    <property name="top-attach">0</property>
                                   </packing>
                                 </child>
                                 <child>
                                   <object class="GtkComboBox" id="sort_field_combo_box">
                                     <property name="visible">True</property>
-                                    <property name="can_focus">False</property>
+                                    <property name="can-focus">False</property>
                                     <signal name="changed" handler="on_sort_field_combo_box_changed" swapped="no"/>
                                   </object>
                                   <packing>
-                                    <property name="left_attach">3</property>
-                                    <property name="top_attach">0</property>
+                                    <property name="left-attach">3</property>
+                                    <property name="top-attach">0</property>
                                   </packing>
                                 </child>
                                 <child>
                                   <object class="GtkComboBox" id="contents_per_page_combo_box">
                                     <property name="visible">True</property>
-                                    <property name="can_focus">False</property>
+                                    <property name="can-focus">False</property>
                                     <signal name="changed" handler="on_contents_per_page_combo_box_changed" swapped="no"/>
                                   </object>
                                   <packing>
-                                    <property name="left_attach">1</property>
-                                    <property name="top_attach">0</property>
+                                    <property name="left-attach">1</property>
+                                    <property name="top-attach">0</property>
                                   </packing>
                                 </child>
                                 <child>
@@ -963,50 +963,13 @@
                                               <object class="GtkGrid" id="tags_grid">
                                                 <property name="visible">True</property>
                                                 <property name="can-focus">False</property>
-                                                <property name="orientation">vertical</property>
                                                 <property name="column-spacing">15</property>
-                                                <child>
-                                                  <!-- n-columns=2 n-rows=1 -->
-                                                  <object class="GtkGrid" id="add_tags_box">
-                                                    <property name="visible">True</property>
-                                                    <property name="can-focus">False</property>
-                                                    <property name="orientation">vertical</property>
-                                                    <property name="column-spacing">10</property>
-                                                    <child>
-                                                      <object class="GtkEntry">
-                                                        <property name="visible">True</property>
-                                                        <property name="can-focus">True</property>
-                                                      </object>
-                                                      <packing>
-                                                        <property name="left-attach">0</property>
-                                                        <property name="top-attach">0</property>
-                                                      </packing>
-                                                    </child>
-                                                    <child>
-                                                      <object class="GtkButton" id="add_tags_button">
-                                                        <property name="label" translatable="yes">+</property>
-                                                        <property name="visible">True</property>
-                                                        <property name="can-focus">True</property>
-                                                        <property name="receives-default">True</property>
-                                                      </object>
-                                                      <packing>
-                                                        <property name="left-attach">1</property>
-                                                        <property name="top-attach">0</property>
-                                                      </packing>
-                                                    </child>
-                                                  </object>
-                                                  <packing>
-                                                    <property name="left-attach">2</property>
-                                                    <property name="top-attach">1</property>
-                                                  </packing>
-                                                </child>
                                                 <child>
                                                   <object class="GtkBox" id="show_tags_box">
                                                     <property name="visible">True</property>
                                                     <property name="can-focus">False</property>
                                                     <property name="halign">start</property>
                                                     <property name="valign">center</property>
-                                                    <property name="orientation">vertical</property>
                                                     <property name="spacing">5</property>
                                                     <property name="baseline-position">top</property>
                                                     <child>
@@ -1023,6 +986,9 @@
                                                     <property name="left-attach">1</property>
                                                     <property name="top-attach">1</property>
                                                   </packing>
+                                                </child>
+                                                <child>
+                                                  <placeholder/>
                                                 </child>
                                                 <child>
                                                   <placeholder/>
