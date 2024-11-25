@@ -1419,10 +1419,8 @@ class MainWindow(Gtk.ApplicationWindow):
 
             # Loop through the tags to create and display each tag with a remove button
             for tag in tags:
-                # Create a horizontal box for each tag
                 box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
 
-                # Label for the tag
                 label = Gtk.Label(label=tag)
 
                 # Remove button for the tag
@@ -1436,7 +1434,7 @@ class MainWindow(Gtk.ApplicationWindow):
                 # Adding the box to the show_tags_box
                 self.show_tags_box.pack_start(box, False, False, 0)
 
-            # Add the empty text box and "+" button for adding new tags
+            # Adding the empty text box and "+" button for adding new tags
             add_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
 
             # Text box for entering new tags
@@ -1455,7 +1453,6 @@ class MainWindow(Gtk.ApplicationWindow):
             # Adding the add_box to the show_tags_box
             self.show_tags_box.pack_start(add_box, False, False, 0)
 
-            # Show all updated elements
             self.show_all()
         
         async def _get_annotations():
