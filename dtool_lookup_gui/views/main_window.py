@@ -1411,7 +1411,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         async def _get_tags():
             tags = await dataset.get_tags()
-            print("tags",tags)
+            # print("tags",tags)
 
             # Remove the widgets of previous datasets already present
             for child in self.show_tags_box.get_children():
