@@ -352,18 +352,28 @@ class DatasetModel:
         return _load_dataset(str(self)).put_readme(text)
 
     def put_tag(self, tag):
-        return _load_dataset(str(self)).put_tag(tag)
+        _load_dataset(str(self)).put_tag(tag)
+        if 'tags' not in self._dataset_info:
+            self._dataset_info['tags'] = []
+        self._dataset_info['tags'].append(tag)
 
     def put_annotation(self, annotation_name, annotation):
-        return _load_dataset(str(self)).put_annotation(annotation_name, annotation)
+        _load_dataset(str(self)).put_annotation(annotation_name, annotation)
+        if 'annotations' not in self._dataset_info:
+            self._dataset_info['annotations'] = {}
+        self._dataset_info['annotations'].update({annotation_name : annotation})
 
     def delete_tag(self,tag):
-        return _load_dataset(str(self)).delete_tag(tag)
+        _load_dataset(str(self)).delete_tag(tag)
+        if 'tags' in self._dataset_info:
+            self._dataset_info['tags'].remove(tag)
 
     # delete annotation is not implemented in dtoolcore
     # def delete_annotation(self,annotation_name , annotation):
     #     print("delete_annotation",annotation_name,annotation)
-    #     return _load_dataset(str(self)).delete_annotaion(annotation_name,annotation)
+    #     _load_dataset(str(self)).delete_annotation(annotation_name, annotation)
+    #     if 'annotations' in self._dataset_info:
+    #         self._dataset_info['annotations'].remove(annotation_name)
 
     async def get_readme(self):
         if 'readme_content' in self._dataset_info:
