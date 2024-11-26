@@ -1385,14 +1385,16 @@ class MainWindow(Gtk.ApplicationWindow):
             _fill_manifest_tree_store(self.manifest_tree_store, await dataset.get_manifest())
             self.manifest_stack.set_visible_child(self.manifest_view)
 
-        def on_remove_tag(self,button, tag):
+        def on_remove_tag(self, button, tag):
             dataset.delete_tag(tag)
-            asyncio.create_task(_get_tags())
+            asyncio.create_task(self._update_dataset_view(dataset))
+            # asyncio.create_task(_get_tags())
 
         def on_add_tag(self,button, entry):
             tag = entry.get_text()
             dataset.put_tag(tag)
-            asyncio.create_task(_get_tags())
+            asyncio.create_task(self._update_dataset_view(dataset))
+            # asyncio.create_task(_get_tags())
 
         # def on_remove_tag(self, button, tag):
         #     asyncio.create_task(_remove_tag_async(self,button, tag))
@@ -1505,6 +1507,7 @@ class MainWindow(Gtk.ApplicationWindow):
                             dataset.put_annotation(annotation_name=new_key, annotation=new_value)
                             # button.set_label("-")  # Change to delete after saving
                             button.set_label("-")  # Change to "-" after saving
+                            asyncio.create_task(self._update_dataset_view(dataset))
 
                 # Update button label on text change
                 def on_text_changed(entry):
