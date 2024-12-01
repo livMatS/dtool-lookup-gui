@@ -78,7 +78,9 @@ except ImportError:
 # adapted from https://python-gtk-3-tutorial.readthedocs.io/en/latest/popover.html#menu-popover
 class Application(Gtk.Application):
     __gsignals__ = {
-        'dtool-config-changed': (GObject.SIGNAL_RUN_FIRST, None, ())
+        'dtool-config-changed': (GObject.SignalFlags.RUN_FIRST, None, ()),
+        'startup-done': (GObject.SignalFlags.RUN_FIRST, None, ()),
+        'activation-done': (GObject.SignalFlags.RUN_FIRST, None, ())
     }
 
     def __init__(self, *args, loop=None, **kwargs):
@@ -88,9 +90,18 @@ class Application(Gtk.Application):
         self.loop = loop
         self.args = None
 
+    async def shutdown(self):
+        # Perform any cleanup tasks here
+        for window in self.get_windows():
+            window.close()
+        self.quit()
+
     def on_window_delete(self, window, event):
         self.quit()
         return False
+
+    def on_startup_done(self, window, event):
+        logger.debug("Received startup-done signal in on_startup_done signal handler.")
 
     def do_activate(self):
         logger.debug("do_activate")
@@ -123,6 +134,7 @@ class Application(Gtk.Application):
 
         logger.debug("Present main window.")
         win.present()
+        self.emit('activation-done')
 
     # adapted from http://fedorarules.blogspot.com/2013/09/how-to-handle-command-line-options-in.html
     # and https://python-gtk-3-tutorial.readthedocs.io/en/latest/application.html#example
@@ -194,6 +206,9 @@ class Application(Gtk.Application):
 
         string_variant = GLib.Variant.new_string("dummy")
 
+        # connect signals and signal handlers
+        self.connect('startup-done', self.on_startup_done)
+
         # toggle-logging
         toggle_logging_variant = GLib.Variant.new_boolean(True)
         toggle_logging_action = Gio.SimpleAction.new_stateful(
@@ -239,6 +254,8 @@ class Application(Gtk.Application):
         self.add_action(renew_token_action)
 
         Gtk.Application.do_startup(self)
+
+        self.emit('startup-done')
 
     # custom application-scoped actions
     def do_toggle_logging(self, action, value):
@@ -343,6 +360,25 @@ class Application(Gtk.Application):
             auth_url,
             username,
             password))
+
+    async def wait_for_activation(self):
+        ready_event = asyncio.Event()
+
+        def on_ready(*args):
+            ready_event.set()
+
+        self.connect('activation-done', on_ready)
+        await ready_event.wait()
+
+    async def wait_for_startup(self):
+        ready_event = asyncio.Event()
+
+        def on_ready(*args):
+            ready_event.set()
+
+        self.connect('startup-done', on_ready)
+        logger.debug("Waiting for startup-done signal.")
+        await ready_event.wait()
 
 
 def run_gui():

@@ -31,7 +31,6 @@ import pytest
 import dtoolcore
 
 from dtool_lookup_gui.models.settings import settings as app_settings
-from dtool_lookup_api.core.LookupClient import authenticate
 
 
 @pytest.mark.asyncio
