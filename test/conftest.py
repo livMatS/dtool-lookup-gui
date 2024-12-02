@@ -27,11 +27,10 @@ import logging
 import os
 import pytest
 import pytest_asyncio
+import uuid
 
 import threading
 import warnings
-
-from pytest_asyncio import is_async_test
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -41,19 +40,10 @@ from gi.repository import GLib, GObject, Gio, Gtk, GtkSource, GdkPixbuf
 from gi.events import GLibEventLoopPolicy, GLibEventLoop
 
 
-
-# def pytest_collection_modifyitems(items):
-#     pytest_asyncio_tests = (item for item in items if is_async_test(item))
-#     session_scope_marker = pytest.mark.asyncio(loop_scope="session")
-#     for async_test in pytest_asyncio_tests:
-#         async_test.add_marker(session_scope_marker, append=False)
-
 @pytest.fixture(autouse=True)
 def configure_logging():
     logging.basicConfig(level=logging.DEBUG)
 
-
-# asyncio.set_event_loop_policy(GLibEventLoopPolicy())
 
 from dtool_lookup_gui.main import Application
 
@@ -80,14 +70,8 @@ NEGATIVE_EXPRESSIONS = ['false', '0', 'n', 'no', 'off']
 
 logger = logging.getLogger(__name__)
 
+
 class CustomGLibEventLoopPolicy(GLibEventLoopPolicy):
-    # def new_event_loop(self):
-    #     # loop = asyncio.new_event_loop()
-    #     # GLibEventLoop(GLib.MainContext())
-    #
-    #     # GLib.MainContext.default().push_thread_default()
-    #     loop = super().new_event_loop()
-    #     return loop
     def set_event_loop(self, loop):
         """Set the event loop for the current context (python thread) to loop.
 
@@ -181,8 +165,6 @@ class MockDtoolLookupAPIConfig():
     def verify_ssl(self, value):
         self._lookup_server_verify_ssl = value
 
-# Config = DtoolLookupAPIConfig()
-
 # ==========================================================================
 # fixtures from https://github.com/beeware/gbulb/blob/main/tests/conftest.py
 # ==========================================================================
@@ -201,97 +183,55 @@ def check_loop_failures(loop):  # pragma: no cover
         pytest.fail("%s" % dict(loop.test_failure))
 
 
-# @pytest.fixture(scope="session")
-# def event_loop():
-#     loop = asyncio.get_event_loop_policy().get_event_loop()
-#     yield loop
-#     # loop.close()
-
-# @pytest_asyncio.fixture(loop_scope="session", scope="session")
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def event_loop_policy():
-    # import asyncio
-    # from gi.events import GLibEventLoopPolicy
     policy = CustomGLibEventLoopPolicy()
+    # policy = GLibEventLoopPolicy()
     logger.debug("Set asyncio event loop policy to %s.", policy)
     asyncio.set_event_loop_policy(policy)
     yield
-    # logger.debug("Unset asyncio event loop policy.")
-    # asyncio.set_event_loop_policy(None)
-
-# @pytest_asyncio.fixture(loop_scope="session", scope="session")
-# async def current_loop():
-#     # import asyncio
-#     logger.debug("Get current loop.")
-#     return asyncio.get_event_loop()
-#     # return asyncio.get_running_loop()
+    asyncio.set_event_loop_policy(None)
 
 
-
-# async def wait_for_window(app, timeout=5):
-#     async def wait():
-#         start_time = asyncio.get_event_loop().time()
-#         while app.window is None:
-#             # print("Waiting for window.")
-#             if asyncio.get_event_loop().time() - start_time > timeout:
-#                 raise TimeoutError("Window did not appear within the timeout period")
-#             await asyncio.sleep(0.1)
-#     await asyncio.get_event_loop().run_in_executor(None, lambda: GLib.idle_add(lambda: asyncio.ensure_future(wait())))
-
-
-# @pytest.fixture(scope="function")
 @pytest_asyncio.fixture(loop_scope="function", scope="function")
 async def app():
     logger.debug("Register GtkSource.View.")
     GObject.type_register(GtkSource.View)
 
     event_loop = asyncio.get_running_loop()
+    event_loop.set_debug(True)
 
-    logger.debug("Create app with %s.", event_loop)
-    app = Application(loop=event_loop)
+    application_id = f"de.uni-freiburg.dtool-lookup-gui.test.{uuid.uuid4()}"
+    logger.debug("Create app %s within %s.", application_id, event_loop)
+    app = Application(loop=event_loop, application_id=application_id,
+                      flags=(Gio.ApplicationFlags.NON_UNIQUE | Gio.ApplicationFlags.HANDLES_COMMAND_LINE))
 
-    # def run_app():
-    #     app.run()
-    #     return False
-    #
-    # # Run the application in the GLib main loop
-    # logger.debug("Run app with in event loop.")
-    # GLib.idle_add(run_app)
+    # register the application
+    logger.debug("Register Gtk application.")
+    app.register()
+    logger.debug("Called app.register().")
 
-    # def run_app():
-    #     GLib.idle_add(app.run, [])
-    #
-    # # Start the application in a separate thread
-    # logger.debug("Start app in separate thread.")
-    # thread = threading.Thread(target=run_app)
-    # thread.start()
-
-    # app.do_startup()
-    # app.activate()
-
-    # logger.debug("Wait for app to finish startup.")
-    # await app.wait_for_startup()
-
-    # await app.startup()
-    # app.activate()
-    # await wait_for_window(app)
-
+    await app.wait_for_startup()
     logger.debug("App finished startup.")
 
+    app.activate()
+    logger.debug("Called app.activate().")
+
+    await app.wait_for_activation()
+    logger.debug("App finished activation.")
+    # event_loop.run_forever()
+
     yield app
-    # await app.shutdown()
-    # app.quit()
-
     logger.debug("Test finished.")
-    def quit_app():
-        app.quit()
-        return False
 
-    logger.debug("Quit app.")
-    GLib.idle_add(quit_app)
+    logger.debug("Wait for 3 seconds.")
+    await asyncio.sleep(3)
+
+    logger.debug("Shutdown.")
+    await app.shutdown()
 
     logger.debug("Wait for app to finish shutdown.")
-    await app.shutdown()
+    await app.wait_for_shutdown()
 
 
 @pytest.fixture(scope="function")
