@@ -65,3 +65,4 @@ write_to = "dtool_lookup_gui/version.py"
 
 [tool.pytest.ini_options]
 asyncio_default_fixture_loop_scope = "function"
+addopts = "--cov=dtool_lookup_gui --cov-report html"
