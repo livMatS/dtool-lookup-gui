@@ -7,7 +7,10 @@ dtool-lookup-gui
     :alt: dtool-lookup-gui icon
 .. image:: https://img.shields.io/github/actions/workflow/status/livMatS/dtool-lookup-gui/build-and-publish.yml?branch=master
     :target: https://github.com/livMatS/dtool-lookup-gui/actions/workflows/build-and-publish.yml
-    :alt: GitHub Workflow Status
+    :alt: GitHub Build Workflow Status
+.. image:: https://img.shields.io/github/actions/workflow/status/livMatS/dtool-lookup-gui/test.yml?branch=master&label=tests
+    :alt: GitHub Tests Workflow Status
+    :target: https://github.com/livMatS/dtool-lookup-gui/actions/workflows/test.yml
 .. image:: https://img.shields.io/github/v/release/livMatS/dtool-lookup-gui
     :target: https://github.com/livMatS/dtool-lookup-gui/releases/latest
     :alt: GitHub release (latest by date)
