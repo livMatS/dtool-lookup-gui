@@ -5,8 +5,10 @@ unpublished
 -----------
 
 - Login window
-- Pagination
-- Sorting
+- Pagination for dserver lookup results
+- Sorting for dserver lookup results
+- Add/delete tags in GUI
+- Add annotations in GUI (key - value pairs)
 
 0.6.2 (02Nov22)
 ---------------

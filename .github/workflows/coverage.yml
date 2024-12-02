@@ -58,7 +58,7 @@ jobs:
         # run in virtual X server, see https://github.com/pygobject/pygobject-travis-ci-docker-examples
       - name: Test with pytest
         run: |
-            xvfb-run pytest --log-cli-level=DEBUG
+            xvfb-run pytest -n $(python maintenance/collect_number_of_tests.py) --log-cli-level=DEBUG
 
       - name: setup pages
         uses: actions/configure-pages@v5

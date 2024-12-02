@@ -180,6 +180,11 @@ class MainWindow(Gtk.ApplicationWindow):
     sort_field_combo_box = Gtk.Template.Child()
     sort_order_switch = Gtk.Template.Child()
 
+    show_tags_box = Gtk.Template.Child()
+    annotations_box = Gtk.Template.Child()
+    # add_tags_button = Gtk.Template.Child()
+    # enter_tags_entry = Gtk.Template.Child()
+
     linting_errors_button = Gtk.Template.Child()
 
     def __init__(self, *args, **kwargs):
@@ -852,7 +857,7 @@ class MainWindow(Gtk.ApplicationWindow):
     def on_last_page_button_clicked(self, widget):
         """Navigate to the last page"""
         self.activate_action('show-last-page')
-
+        
     def on_readme_buffer_changed(self, buffer):
         self.save_metadata_button.set_sensitive(True)
 
@@ -1351,7 +1356,6 @@ class MainWindow(Gtk.ApplicationWindow):
         self.created_by_label.set_text(dataset.creator)
         self.frozen_at_label.set_text(dataset.date)
         self.size_label.set_text(dataset.size_str.strip())
-
         # This binary distinction will allow manipulation of all datasets via
         # the according StorageBroker, as long as latter implements the
         # desired functionality
@@ -1381,10 +1385,167 @@ class MainWindow(Gtk.ApplicationWindow):
             _fill_manifest_tree_store(self.manifest_tree_store, await dataset.get_manifest())
             self.manifest_stack.set_visible_child(self.manifest_view)
 
+        def on_remove_tag(self, button, tag):
+            dataset.delete_tag(tag)
+            asyncio.create_task(self._update_dataset_view(dataset))
+            # asyncio.create_task(_get_tags())
+
+        def on_add_tag(self,button, entry):
+            tag = entry.get_text()
+            dataset.put_tag(tag)
+            asyncio.create_task(self._update_dataset_view(dataset))
+            # asyncio.create_task(_get_tags())
+
+        # def on_remove_tag(self, button, tag):
+        #     asyncio.create_task(_remove_tag_async(self,button, tag))
+
+        # async def _remove_tag_async(self, button, tag):
+        #     dataset.delete_tag(tag)
+        #     await self._show_dataset_details(dataset)
+
+        # def on_add_tag(self, button, entry):
+        #     asyncio.create_task(_add_tag_async(self,button, entry))
+
+        # async def _add_tag_async(self, button, entry):
+        #     tag = entry.get_text()
+        #     dataset.put_tag(tag)
+        #     await self._show_dataset_details(dataset)
+
+        async def _get_tags():
+            tags = await dataset.get_tags()
+            # print("tags",tags)
+
+            # Remove the widgets of previous datasets already present
+            for child in self.show_tags_box.get_children():
+                self.show_tags_box.remove(child)
+
+            # Loop through the tags to create and display each tag with a remove button
+            for tag in tags:
+                box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+
+                label = Gtk.Label(label=tag)
+
+                # Remove button for the tag
+                button = Gtk.Button(label="-")
+                button.connect("clicked",lambda button, tag = tag : on_remove_tag(self,button,tag))
+
+                # Adding the label and button to the box
+                box.pack_start(label, False, False, 0)
+                box.pack_start(button, False, False, 0)
+
+                # Adding the box to the show_tags_box
+                self.show_tags_box.pack_start(box, False, False, 0)
+
+            # Adding the empty text box and "+" button for adding new tags
+            add_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+
+            # Text box for entering new tags
+            entry = Gtk.Entry()
+            entry.set_placeholder_text("Enter new tag")
+            entry.set_margin_start(10)
+
+            # "+" button for adding the new tag
+            add_button = Gtk.Button(label="+")
+            add_button.connect("clicked", lambda button: on_add_tag(self , button, entry))
+
+            # Adding the entry and "+" button to the add_box
+            add_box.pack_start(entry, True, True, 0)
+            add_box.pack_start(add_button, False, False, 0)
+
+            # Adding the add_box to the show_tags_box
+            self.show_tags_box.pack_start(add_box, False, False, 0)
+
+            self.show_all()
+        
+        async def _get_annotations():
+            annotations = await dataset.get_annotations()
+            for child in self.annotations_box.get_children():
+                self.annotations_box.remove(child)
+
+            async def create_annotation_row(key="", value="", is_new=False):
+                """Creates a single row of annotation with text boxes and a button."""
+                box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+
+                # Key: Display label if not new, text entry if new
+                if is_new:
+                    key_widget = Gtk.Entry()
+                    key_widget.set_text(key)
+                    key_widget.set_max_width_chars(10)
+                    key_widget.set_hexpand(False)
+                    key_widget.set_placeholder_text("Enter new Key")
+                else:
+                    key_widget = Gtk.Label(label=key)
+                    key_widget.set_max_width_chars(10)
+                    key_widget.set_hexpand(False)
+                
+                box.pack_start(key_widget, expand=False, fill=False, padding=5)
+
+                # Value: Display text entry for both new and existing annotations
+                value_entry = Gtk.Entry()
+                value_entry.set_text(value)
+                value_entry.set_max_width_chars(10)
+                value_entry.set_hexpand(False)
+                value_entry.set_placeholder_text("Enter new Value")
+                box.pack_start(value_entry, expand=False, fill=False, padding=5)
+
+                # Button for delete/save functionality
+                button = Gtk.Button(label="-" if not is_new else "+")
+                
+                async def on_button_clicked(button):
+                    current_label = button.get_label()
+                    if current_label == "-":
+                        # Delete annotation
+                        self.annotations_box.remove(box)
+                        # Function to delete the annotation from the dataset
+                        # dataset.delete_annotation(key)
+                    elif current_label == "+":
+                        # Save new/updated annotation
+                        new_key = key_widget.get_text() if is_new else key
+                        new_value = value_entry.get_text()
+                        if new_key and new_value:
+                            # Add or update annotation in dataset
+                            dataset.put_annotation(annotation_name=new_key, annotation=new_value)
+                            # button.set_label("-")  # Change to delete after saving
+                            button.set_label("-")  # Change to "-" after saving
+                            asyncio.create_task(self._update_dataset_view(dataset))
+
+                # Update button label on text change
+                def on_text_changed(entry):
+                    if button.get_label() == "-":
+                        button.set_label("+")
+                
+                value_entry.connect("changed", on_text_changed)
+                if is_new:
+                    key_widget.connect("changed", on_text_changed)  # Only for the new key entry
+                button.connect("clicked", lambda btn: asyncio.ensure_future(on_button_clicked(btn)))
+
+                # Add the button to the row
+                box.pack_start(button, expand=False, fill=False, padding=0)
+
+                return box
+
+            # Add rows for each annotation
+            for key, value in annotations.items():
+                row = await create_annotation_row(key, value)
+                self.annotations_box.pack_start(row, expand=False, fill=False, padding=5)
+
+            # Always show one empty text boxes for new annotations
+            for _ in range(1):
+                new_row = await create_annotation_row(is_new=True)
+                self.annotations_box.pack_start(new_row, expand=False, fill=False, padding=5)
+
+            # Re-render the UI
+            self.annotations_box.show_all()
+
+
         _logger.debug("Get readme.")
         asyncio.create_task(_get_readme())
         _logger.debug("Get manifest.")
         asyncio.create_task(_get_manifest())
+        _logger.debug("Get tags.")
+        asyncio.create_task(_get_tags())
+        _logger.debug("Get annotations.")
+        asyncio.create_task(_get_annotations())
 
         if dataset.type == 'lookup':
             self.dependency_stack.show()
