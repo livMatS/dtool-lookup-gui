@@ -44,8 +44,6 @@ gi.require_version('GtkSource', '4')
 from gi.repository import GLib, GObject, Gio, Gtk, GtkSource, GdkPixbuf
 from gi.events import GLibEventLoopPolicy
 
-asyncio.set_event_loop_policy(GLibEventLoopPolicy())
-
 from .models.settings import settings
 
 from .views.main_window import MainWindow
@@ -65,12 +63,13 @@ logger = logging.getLogger(__name__)
 
 from . import __version__
 
-appid = f'de.uni-freiburg.dtool-lookup-gui.{__version__}'
+# APP_ID = f'de.uni-freiburg.dtool-lookup-gui.{__version__}'
+APP_ID = 'de.uni-freiburg.dtool-lookup-gui'
 
 # Windows taskbar icons fix
 try:
     from ctypes import windll  # Only exists on Windows.
-    windll.shell32.SetCurrentProcessExplicitAppUserModelID(appid)
+    windll.shell32.SetCurrentProcessExplicitAppUserModelID(APP_ID)
 except ImportError:
     pass
 
@@ -83,25 +82,42 @@ class Application(Gtk.Application):
         'activation-done': (GObject.SignalFlags.RUN_FIRST, None, ())
     }
 
-    def __init__(self, *args, loop=None, **kwargs):
+    def __init__(self, *args, loop=None,
+                 application_id=APP_ID,
+                 flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE, **kwargs):
+        print("Launch with application_id %s" % application_id)
         super().__init__(*args,
-                         application_id='de.uni-freiburg.dtool-lookup-gui',
-                         flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE, **kwargs)
+                         application_id=application_id,
+                         flags=flags, **kwargs)
         self.loop = loop
         self.args = None
+
+        self._startup_done = asyncio.Event()
+        self._activation_done = asyncio.Event()
+        self._shutdown_done = asyncio.Event()
 
     async def shutdown(self):
         # Perform any cleanup tasks here
         for window in self.get_windows():
             window.close()
         self.quit()
+        self._shutdown_done.set()
 
-    def on_window_delete(self, window, event):
+    def on_window_destroy(self, window):
         self.quit()
-        return False
+        # return False
 
-    def on_startup_done(self, window, event):
+    def on_startup_done(self, app):
         logger.debug("Received startup-done signal in on_startup_done signal handler.")
+        self._startup_done.set()
+
+    def on_activation_done(self, app):
+        logger.debug("Received activation-done signal in on_activation_done signal handler.")
+        self._activation_done.set()
+
+    def on_shutdown(self, app):
+        logger.debug("Received shutdown signal in on_shutdown signal handler.")
+        self._shutdown_done.set()
 
     def do_activate(self):
         logger.debug("do_activate")
@@ -129,7 +145,7 @@ class Application(Gtk.Application):
                 logger.debug("%s", icon_file_list)
             else:
                 logger.warning("Could not load app icons.")
-            win.connect("delete-event", self.on_window_delete)
+            win.connect("destroy", self.on_window_destroy)
             self.loop.call_soon(win.refresh)  # Populate widgets after event loop starts
 
         logger.debug("Present main window.")
@@ -208,6 +224,8 @@ class Application(Gtk.Application):
 
         # connect signals and signal handlers
         self.connect('startup-done', self.on_startup_done)
+        self.connect('activation-done', self.on_activation_done)
+        self.connect('shutdown', self.on_shutdown)
 
         # toggle-logging
         toggle_logging_variant = GLib.Variant.new_boolean(True)
@@ -362,27 +380,22 @@ class Application(Gtk.Application):
             password))
 
     async def wait_for_activation(self):
-        ready_event = asyncio.Event()
-
-        def on_ready(*args):
-            ready_event.set()
-
-        self.connect('activation-done', on_ready)
-        await ready_event.wait()
+        logger.debug("Waiting for activation-done signal.")
+        await self._activation_done.wait()
 
     async def wait_for_startup(self):
-        ready_event = asyncio.Event()
-
-        def on_ready(*args):
-            ready_event.set()
-
-        self.connect('startup-done', on_ready)
         logger.debug("Waiting for startup-done signal.")
-        await ready_event.wait()
+        await self._startup_done.wait()
+
+    async def wait_for_shutdown(self):
+        logger.debug("Waiting for shutdown signal.")
+        await self._shutdown_done.wait()
 
 
 def run_gui():
     GObject.type_register(GtkSource.View)
+
+    asyncio.set_event_loop_policy(GLibEventLoopPolicy())
 
     loop = asyncio.get_event_loop()
     app = Application(loop=loop)

@@ -201,12 +201,14 @@ async def app():
     event_loop = asyncio.get_running_loop()
     event_loop.set_debug(True)
 
-    application_id = f"de.uni-freiburg.dtool-lookup-gui.test.{uuid.uuid4()}"
-    logger.debug("Create app %s within %s.", application_id, event_loop)
-    app = Application(loop=event_loop, application_id=application_id,
+    # application_id = f"de.uni-freiburg.dtool-lookup-gui.test.{uuid.uuid4()}"
+    # logger.debug("Create app %s within %s.", application_id, event_loop)
+    # app = Application(loop=event_loop, application_id=application_id,
+    #                   flags=(Gio.ApplicationFlags.NON_UNIQUE | Gio.ApplicationFlags.HANDLES_COMMAND_LINE))
+    logger.debug("Create app within %s.", event_loop)
+    app = Application(loop=event_loop,
                       flags=(Gio.ApplicationFlags.NON_UNIQUE | Gio.ApplicationFlags.HANDLES_COMMAND_LINE))
 
-    # register the application
     logger.debug("Register Gtk application.")
     app.register()
     logger.debug("Called app.register().")
@@ -219,7 +221,6 @@ async def app():
 
     await app.wait_for_activation()
     logger.debug("App finished activation.")
-    # event_loop.run_forever()
 
     yield app
     logger.debug("Test finished.")
