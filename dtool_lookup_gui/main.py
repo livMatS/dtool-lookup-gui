@@ -78,6 +78,7 @@ except ImportError:
 class Application(Gtk.Application):
     __gsignals__ = {
         'dtool-config-changed': (GObject.SignalFlags.RUN_FIRST, None, ()),
+        'token-renewed': (GObject.SignalFlags.RUN_FIRST, None, ()),
         'startup-done': (GObject.SignalFlags.RUN_FIRST, None, ()),
         'activation-done': (GObject.SignalFlags.RUN_FIRST, None, ())
     }
@@ -275,6 +276,7 @@ class Application(Gtk.Application):
 
         self.emit('startup-done')
 
+
     # custom application-scoped actions
     def do_toggle_logging(self, action, value):
         action.set_state(value)
@@ -363,21 +365,25 @@ class Application(Gtk.Application):
         username, password, auth_url = value.unpack()
 
         logger.debug("look for certificates in %s", ssl.get_default_verify_paths())
+
         async def retrieve_token(auth_url, username, password):
             try:
-                async with ConfigurationBasedLookupClient(auth_url=auth_url, username=username, password=password) as lookup_client:
+                async with ConfigurationBasedLookupClient(
+                        auth_url=auth_url, username=username, password=password) as lookup_client:
                     token = await lookup_client.authenticate()
             except Exception as e:
                 logger.error(str(e))
                 return
 
             dtool_lookup_api.core.config.Config.token = token
+            self.emit("token-renewed")
             self.emit('dtool-config-changed')
 
         asyncio.create_task(retrieve_token(
             auth_url,
             username,
             password))
+
 
     async def wait_for_activation(self):
         logger.debug("Waiting for activation-done signal.")
