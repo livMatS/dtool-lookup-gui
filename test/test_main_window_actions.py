@@ -89,10 +89,10 @@ async def test_do_search_direct_call(populated_app_with_mock_data):
 
 
 @pytest.mark.asyncio
-async def test_do_search_action_trigger(app):
+async def test_do_search_action_trigger(running_app):
     """Test if 'search' action triggers do_search method."""
 
-    windows = app.get_windows()
+    windows = running_app.get_windows()
     main_window = [w for w in windows if isinstance(w, MainWindow)][0]
 
     # Setup necessary mocks for the action trigger
@@ -169,10 +169,10 @@ async def test_do_select_dataset_row_by_row_index_direct_call(populated_app_with
 
 
 @pytest.mark.asyncio
-async def test_do_select_dataset_row_by_row_index_action_trigger(app):
+async def test_do_select_dataset_row_by_row_index_action_trigger(running_app):
     """Test if 'select-dataset' action triggers do_select_dataset_row_by_row_index method."""
 
-    windows = app.get_windows()
+    windows = running_app.get_windows()
     main_window = [w for w in windows if isinstance(w, MainWindow)][0]
 
     # Mock dependencies
@@ -250,10 +250,10 @@ async def test_do_show_dataset_details_by_uri_direct_call(populated_app_with_moc
 
 
 @pytest.mark.asyncio
-async def test_do_show_dataset_details_by_uri_action_trigger(app):
+async def test_do_show_dataset_details_by_uri_action_trigger(running_app):
     """Test if 'show-dataset-by-uri' action triggers do_show_dataset_details_by_uri method."""
 
-    windows = app.get_windows()
+    windows = running_app.get_windows()
     main_window = [w for w in windows if isinstance(w, MainWindow)][0]
 
     # Mock dependencies
@@ -339,10 +339,10 @@ async def test_do_show_dataset_details_by_row_index_direct_call(populated_app_wi
 
 
 @pytest.mark.asyncio
-async def test_do_show_dataset_details_by_row_index_action_trigger(app):
+async def test_do_show_dataset_details_by_row_index_action_trigger(running_app):
     """Test if 'show-dataset' action triggers do_show_dataset_details_by_row_index method."""
 
-    windows = app.get_windows()
+    windows = running_app.get_windows()
     main_window = [w for w in windows if isinstance(w, MainWindow)][0]
 
     # Mock dependencies
@@ -417,10 +417,10 @@ async def test_do_search_select_and_show_direct_call(populated_app_with_mock_dat
 
 
 @pytest.mark.asyncio
-async def test_do_search_select_and_show_action_trigger(app):
+async def test_do_search_select_and_show_action_trigger(running_app):
     """Test if 'search-select-show' action triggers do_search_select_and_show method."""
 
-    windows = app.get_windows()
+    windows = running_app.get_windows()
     main_window = [w for w in windows if isinstance(w, MainWindow)][0]
 
     # Mock dependencies
@@ -539,10 +539,10 @@ async def test_do_get_item_direct_call(populated_app_with_local_dataset_data, lo
     # Optional: Assert File Permissions
 
 @pytest.mark.asyncio
-async def test_do_get_item_action_trigger(app):
+async def test_do_get_item_action_trigger(running_app):
     """Test if 'get-item' action triggers do_get_item method."""
 
-    windows = app.get_windows()
+    windows = running_app.get_windows()
     main_window = [w for w in windows if isinstance(w, MainWindow)][0]
 
     # Mock dependencies
@@ -575,10 +575,10 @@ async def test_do_get_item_action_trigger(app):
 
 
 @pytest.mark.asyncio
-async def test_do_refresh_view_direct_call(app):
+async def test_do_refresh_view_direct_call(running_app):
     """Test the direct call of the do_refresh_view method."""
 
-    windows = app.get_windows()
+    windows = running_app.get_windows()
     main_window = [w for w in windows if isinstance(w, MainWindow)][0]
 
     # Directly call the do_refresh_view method
@@ -586,10 +586,10 @@ async def test_do_refresh_view_direct_call(app):
 
 
 @pytest.mark.asyncio
-async def test_refresh_method_triggered_by_action(app):
+async def test_refresh_method_triggered_by_action(running_app):
     """Test if the 'refresh-view' action triggers the refresh method."""
 
-    windows = app.get_windows()
+    windows = running_app.get_windows()
     main_window = [w for w in windows if isinstance(w, MainWindow)][0]
 
     # Patch the main window's refresh method
@@ -602,10 +602,10 @@ async def test_refresh_method_triggered_by_action(app):
 
 
 @pytest.mark.asyncio
-async def test_do_get_item_direct_call_fails_due_to_no_selected_item(app):
+async def test_do_get_item_direct_call_fails_due_to_no_selected_item(running_app):
     """Test that the do_get_item method for copying a selected item fails when not item is selected."""
 
-    windows = app.get_windows()
+    windows = running_app.get_windows()
     main_window = [w for w in windows if isinstance(w, MainWindow)][0]
 
     mock_variant = GLib.Variant.new_string("dummy_path")

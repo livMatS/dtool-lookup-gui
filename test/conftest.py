@@ -40,16 +40,11 @@ from gi.repository import GLib, GObject, Gio, Gtk, GtkSource, GdkPixbuf
 from gi.events import GLibEventLoopPolicy, GLibEventLoop
 
 
-@pytest.fixture(autouse=True)
-def configure_logging():
-    logging.basicConfig(level=logging.DEBUG)
-
-
 from dtool_lookup_gui.main import Application
 
 from unittest.mock import patch
 
-logging.basicConfig(level=logging.DEBUG)
+# logging.basicConfig(level=logging.DEBUG)
 
 logger = logging.getLogger(__name__)
 
@@ -165,75 +160,6 @@ class MockDtoolLookupAPIConfig():
     def verify_ssl(self, value):
         self._lookup_server_verify_ssl = value
 
-# ==========================================================================
-# fixtures from https://github.com/beeware/gbulb/blob/main/tests/conftest.py
-# ==========================================================================
-
-def fail_test(loop, context):  # pragma: no cover
-    loop.test_failure = context
-
-
-def setup_test_loop(loop):
-    loop.set_exception_handler(fail_test)
-    loop.test_failure = None
-
-
-def check_loop_failures(loop):  # pragma: no cover
-    if loop.test_failure is not None:
-        pytest.fail("%s" % dict(loop.test_failure))
-
-
-@pytest.fixture(scope="function")
-def event_loop_policy():
-    policy = CustomGLibEventLoopPolicy()
-    # policy = GLibEventLoopPolicy()
-    logger.debug("Set asyncio event loop policy to %s.", policy)
-    asyncio.set_event_loop_policy(policy)
-    yield
-    asyncio.set_event_loop_policy(None)
-
-
-@pytest_asyncio.fixture(loop_scope="function", scope="function")
-async def app():
-    logger.debug("Register GtkSource.View.")
-    GObject.type_register(GtkSource.View)
-
-    event_loop = asyncio.get_running_loop()
-    event_loop.set_debug(True)
-
-    # application_id = f"de.uni-freiburg.dtool-lookup-gui.test.{uuid.uuid4()}"
-    # logger.debug("Create app %s within %s.", application_id, event_loop)
-    # app = Application(loop=event_loop, application_id=application_id,
-    #                   flags=(Gio.ApplicationFlags.NON_UNIQUE | Gio.ApplicationFlags.HANDLES_COMMAND_LINE))
-    logger.debug("Create app within %s.", event_loop)
-    app = Application(loop=event_loop,
-                      flags=(Gio.ApplicationFlags.NON_UNIQUE | Gio.ApplicationFlags.HANDLES_COMMAND_LINE))
-
-    logger.debug("Register Gtk application.")
-    app.register()
-    logger.debug("Called app.register().")
-
-    await app.wait_for_startup()
-    logger.debug("App finished startup.")
-
-    app.activate()
-    logger.debug("Called app.activate().")
-
-    await app.wait_for_activation()
-    logger.debug("App finished activation.")
-
-    yield app
-    logger.debug("Test finished.")
-
-    logger.debug("Wait for 3 seconds.")
-    await asyncio.sleep(3)
-
-    logger.debug("Shutdown.")
-    await app.shutdown()
-
-    logger.debug("Wait for app to finish shutdown.")
-    await app.wait_for_shutdown()
-
 
 @pytest.fixture(scope="function")
 def mock_token(scope="function"):
@@ -252,7 +178,7 @@ def mock_get_datasets():
 
 @pytest.fixture(scope="function")
 def mock_get_manifest():
-    """Provide a mock dataset list"""
+    """Provide a mock manifest"""
     with open(os.path.join(_HERE, 'data', 'mock_get_manifest_response.json'), 'r') as f:
         manifest = json.load(f)
 
@@ -261,11 +187,23 @@ def mock_get_manifest():
 
 @pytest.fixture(scope="function")
 def mock_get_readme():
-    """Provide a mock dataset list"""
+    """Provide mock readme content"""
     with open(os.path.join(_HERE, 'data', 'mock_get_readme_response.json'), 'r') as f:
         readme = json.load(f)
 
     yield readme
+
+
+@pytest.fixture(scope="function")
+def mock_get_tags():
+    """Provide mock tags"""
+    yield ["tag1", "tag2"]
+
+
+@pytest.fixture(scope="function")
+def mock_get_annotations():
+    """Provide mock annotations"""
+    yield {"annotation1": "value1", "annotation2": "value2"}
 
 
 @pytest.fixture(scope="function")
@@ -284,6 +222,9 @@ def mock_get_versions():
         config_info = json.load(f)
 
     yield config_info
+
+
+
 
 @pytest.fixture(scope="function")
 def local_dataset_uri(tmp_path):
@@ -321,8 +262,61 @@ def local_dataset_uri(tmp_path):
     yield dest_uri
 
 @pytest.fixture(scope="function")
-def populated_app_with_mock_data(
-        app, mock_get_datasets, mock_get_manifest, mock_get_readme, mock_get_config):
+def event_loop_policy():
+    policy = CustomGLibEventLoopPolicy()
+    logger.debug("Set asyncio event loop policy to %s.", policy)
+    asyncio.set_event_loop_policy(policy)
+    yield
+    asyncio.set_event_loop_policy(None)
+
+
+@pytest_asyncio.fixture(loop_scope="function", scope="function")
+async def app():
+    logger.debug("Register GtkSource.View.")
+    GObject.type_register(GtkSource.View)
+
+    event_loop = asyncio.get_running_loop()
+    event_loop.set_debug(True)
+
+    logger.debug("Create app within %s.", event_loop)
+    app = Application(loop=event_loop,
+                      flags=(Gio.ApplicationFlags.NON_UNIQUE | Gio.ApplicationFlags.HANDLES_COMMAND_LINE))
+
+    yield app
+
+
+@pytest_asyncio.fixture(loop_scope="function", scope="function")
+async def running_app(app):
+    logger.debug("Register Gtk application.")
+    app.register()
+    logger.debug("Called app.register().")
+
+    await app.wait_for_startup()
+    logger.debug("App finished startup.")
+
+    app.activate()
+    logger.debug("Called app.activate().")
+
+    await app.wait_for_activation()
+    logger.debug("App finished activation.")
+
+    yield app
+    logger.debug("Test finished.")
+
+    logger.debug("Wait for 3 seconds.")
+    await asyncio.sleep(3)
+
+    logger.debug("Shutdown.")
+    await app.shutdown()
+
+    logger.debug("Wait for app to finish shutdown.")
+    await app.wait_for_shutdown()
+
+
+@pytest_asyncio.fixture(loop_scope="function", scope="function")
+async def populated_app_with_mock_data(
+        app, mock_get_datasets,
+        mock_get_manifest, mock_get_readme, mock_get_tags, mock_get_annotations, mock_get_config):
     """Replaces lookup api calls with mock methods that return fake lists of datasets."""
 
     import dtool_lookup_api.core.config
@@ -330,22 +324,57 @@ def populated_app_with_mock_data(
 
     # TODO: figure out whether mocked methods work as they should
     with (
-            patch("dtool_lookup_api.core.LookupClient.CredentialsBasedLookupClient.authenticate", return_value=mock_token),
-            patch("dtool_lookup_api.core.LookupClient.ConfigurationBasedLookupClient.connect", return_value=None),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_datasets", return_value=mock_get_datasets),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.graph", return_value=[]),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_manifest", return_value=mock_get_manifest),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_readme", return_value=mock_get_readme),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_config", return_value=mock_get_config),
-            patch("dtool_lookup_api.core.LookupClient.ConfigurationBasedLookupClient.has_valid_token", return_value=True)
+            patch("dtool_lookup_api.core.LookupClient.CredentialsBasedLookupClient.authenticate",
+                  eturn_value=mock_token),
+            patch("dtool_lookup_api.core.LookupClient.ConfigurationBasedLookupClient.connect",
+                  return_value=None),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_datasets",
+                  return_value=mock_get_datasets),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_graph_by_uuid",
+                  return_value=[]),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_manifest",
+                  return_value=mock_get_manifest),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_readme",
+                  return_value=mock_get_readme),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_tags",
+                  return_value=mock_get_tags),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_annotations",
+                  return_value=mock_get_annotations),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_config",
+                  return_value=mock_get_config),
+            patch("dtool_lookup_api.core.LookupClient.ConfigurationBasedLookupClient.has_valid_token",
+                  return_value=True)
         ):
+        logger.debug("Register Gtk application.")
+        app.register()
+        logger.debug("Called app.register().")
+
+        await app.wait_for_startup()
+        logger.debug("App finished startup.")
+
+        app.activate()
+        logger.debug("Called app.activate().")
+
+        await app.wait_for_activation()
+        logger.debug("App finished activation.")
 
         yield app
+        logger.debug("Test finished.")
+
+        logger.debug("Wait for 3 seconds.")
+        await asyncio.sleep(3)
+
+        logger.debug("Shutdown.")
+        await app.shutdown()
+
+        logger.debug("Wait for app to finish shutdown.")
+        await app.wait_for_shutdown()
 
 
-@pytest.fixture(scope="function")
-def populated_app_with_local_dataset_data(
-        app, local_dataset_uri, mock_token, mock_get_readme, mock_get_config):
+@pytest_asyncio.fixture(loop_scope="function", scope="function")
+async def populated_app_with_local_dataset_data(
+        app, local_dataset_uri,
+        mock_token, mock_get_readme, mock_get_tags, mock_get_annotations, mock_get_config):
     """Replaces lookup api calls with mock methods that return fake lists of datasets."""
 
     import dtool_lookup_api.core.config
@@ -373,14 +402,48 @@ def populated_app_with_local_dataset_data(
     manifest = dataset.generate_manifest()
 
     with (
-            patch("dtool_lookup_api.core.LookupClient.CredentialsBasedLookupClient.authenticate", return_value=mock_token),
-            patch("dtool_lookup_api.core.LookupClient.ConfigurationBasedLookupClient.connect", return_value=None),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_datasets", return_value=dataset_list),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.graph", return_value=[]),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_manifest", return_value=manifest),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_readme", return_value=mock_get_readme),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_config", return_value=mock_get_config),
-            patch("dtool_lookup_api.core.LookupClient.ConfigurationBasedLookupClient.has_valid_token", return_value=True)
+            patch("dtool_lookup_api.core.LookupClient.CredentialsBasedLookupClient.authenticate",
+                  return_value=mock_token),
+            patch("dtool_lookup_api.core.LookupClient.ConfigurationBasedLookupClient.connect",
+                  return_value=None),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_datasets",
+                  return_value=dataset_list),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_graph_by_uuid",
+                  return_value=[]),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_manifest",
+                  return_value=manifest),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_readme",
+                  return_value=mock_get_readme),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_tags",
+                  return_value=mock_get_tags),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_annotations",
+                  return_value=mock_get_annotations),
+            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_config",
+                  return_value=mock_get_config),
+            patch("dtool_lookup_api.core.LookupClient.ConfigurationBasedLookupClient.has_valid_token",
+                  return_value=True)
         ):
+        logger.debug("Register Gtk application.")
+        app.register()
+        logger.debug("Called app.register().")
+
+        await app.wait_for_startup()
+        logger.debug("App finished startup.")
+
+        app.activate()
+        logger.debug("Called app.activate().")
+
+        await app.wait_for_activation()
+        logger.debug("App finished activation.")
 
         yield app
+        logger.debug("Test finished.")
+
+        logger.debug("Wait for 3 seconds.")
+        await asyncio.sleep(3)
+
+        logger.debug("Shutdown.")
+        await app.shutdown()
+
+        logger.debug("Wait for app to finish shutdown.")
+        await app.wait_for_shutdown()

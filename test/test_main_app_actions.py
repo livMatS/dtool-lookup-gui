@@ -34,8 +34,8 @@ from dtool_lookup_gui.models.settings import settings as app_settings
 
 
 @pytest.mark.asyncio
-async def test_app_id(app):
-    assert app.get_application_id() == 'de.uni-freiburg.dtool-lookup-gui'
+async def test_app_id(running_app):
+    assert running_app.get_application_id() == 'de.uni-freiburg.dtool-lookup-gui'
 
 
 @pytest.fixture
@@ -45,7 +45,7 @@ def settings():
 
 
 @pytest.mark.asyncio
-async def test_do_toggle_logging(app):
+async def test_do_toggle_logging(running_app):
     """Test do_toggle_logging action."""
 
     with patch('logging.disable') as mock_logging_disable:
@@ -57,7 +57,7 @@ async def test_do_toggle_logging(app):
         action = MagicMock()
 
         # Perform the toggle logging action for enabling logging
-        app.do_toggle_logging(action, value)
+        running_app.do_toggle_logging(action, value)
 
         # Assert that logging.disable was called with logging.NOTSET
         mock_logging_disable.assert_called_once_with(logging.NOTSET)
@@ -69,7 +69,7 @@ async def test_do_toggle_logging(app):
         value.get_boolean.return_value = False
 
         # Perform the toggle logging action for disabling logging
-        app.do_toggle_logging(action, value)
+        running_app.do_toggle_logging(action, value)
 
         # Assert that logging.disable was called with logging.WARNING
         mock_logging_disable.assert_called_once_with(logging.WARNING)
@@ -77,7 +77,7 @@ async def test_do_toggle_logging(app):
 
 
 @pytest.mark.asyncio
-async def test_do_set_loglevel(app):
+async def test_do_set_loglevel(running_app):
     """Test do_set_loglevel action."""
 
     with patch.object(logging.getLogger(), 'setLevel') as mock_set_level:
@@ -95,7 +95,7 @@ async def test_do_set_loglevel(app):
         action.get_state.return_value = action_state
 
         # Perform the set loglevel action
-        app.do_set_loglevel(action, value)
+        running_app.do_set_loglevel(action, value)
 
         # Assert that the root logger's setLevel was called with the correct level
         mock_set_level.assert_called_once_with(loglevel)
@@ -103,7 +103,7 @@ async def test_do_set_loglevel(app):
 
 
 @pytest.mark.asyncio
-async def test_do_set_logfile(app):
+async def test_do_set_logfile(running_app):
     """Test do_set_logfile action."""
     with patch('logging.FileHandler') as mock_file_handler, \
             patch.object(logging.getLogger(), 'addHandler') as mock_add_handler:
@@ -121,7 +121,7 @@ async def test_do_set_logfile(app):
         action.get_state.return_value = action_state
 
         # Perform the set logfile action
-        app.do_set_logfile(action, value)
+        running_app.do_set_logfile(action, value)
 
         # Assert that logging.FileHandler was called with the correct path
         mock_file_handler.assert_called_once_with(logfile)
@@ -134,15 +134,15 @@ async def test_do_set_logfile(app):
 
 
 @pytest.mark.asyncio
-async def test_do_reset_config(app, settings):
+async def test_do_reset_config(running_app, settings):
     """Test do_reset_config action."""
     with patch('os.remove') as mock_remove, \
-            patch.object(app, 'emit') as mock_emit:  # Patch the emit method
+            patch.object(running_app, 'emit') as mock_emit:  # Patch the emit method
 
         settings.reset = MagicMock()  # Mock the settings reset method
 
         # Perform the reset config action
-        app.activate_action('reset-config')
+        running_app.activate_action('reset-config')
 
         # The 'do_reset_config' action removes and replaces the dtool.json
         # config file.
@@ -162,7 +162,7 @@ async def test_do_reset_config(app, settings):
 
 
 @pytest.mark.asyncio
-async def test_do_import_config(app, settings):
+async def test_do_import_config(running_app, settings):
     """Test do_import_config action."""
     mock_config = {'key1': 'value1', 'key2': 'value2'}
     # Define the mock config file path
@@ -171,13 +171,13 @@ async def test_do_import_config(app, settings):
     with patch('builtins.open', mock_open(read_data=json.dumps(mock_config))) as mock_file, \
             patch('json.load', return_value=mock_config), \
             patch('dtoolcore.utils.write_config_value_to_file') as mock_write_config, \
-            patch.object(app, 'emit') as mock_emit:
+            patch.object(running_app, 'emit') as mock_emit:
         # Create a mock for the GLib.Variant object
         mock_value = mock.Mock()
         mock_value.get_string.return_value = config_file_path
 
         # Perform the import config action
-        app.do_import_config('import-config', mock_value)
+        running_app.do_import_config('import-config', mock_value)
 
         # Assert that the config file is opened correctly with the specified path
         mock_file.assert_any_call(config_file_path, 'r')
@@ -191,7 +191,7 @@ async def test_do_import_config(app, settings):
 
 
 @pytest.mark.asyncio
-async def test_do_export_config(app, settings):
+async def test_do_export_config(running_app, settings):
     """Test do_export_config action."""
     mock_config = {'key1': 'value1', 'key2': 'value2'}
     # Define the mock config file path
@@ -201,13 +201,13 @@ async def test_do_export_config(app, settings):
     mock_file_handle = mock_open()
     with patch('builtins.open', mock_file_handle) as mock_file, \
             patch('dtoolcore.utils._get_config_dict_from_file', return_value=mock_config), \
-            patch.object(app, 'emit') as mock_emit:
+            patch.object(running_app, 'emit') as mock_emit:
         # Create a mock for the GLib.Variant object
         mock_value = mock.Mock()
         mock_value.get_string.return_value = config_file_path
 
         # Perform the export config action
-        app.do_export_config('export-config', mock_value)
+        running_app.do_export_config('export-config', mock_value)
 
         # Assert that the config file is opened correctly with the specified path
         mock_file.assert_called_once_with(config_file_path, 'w')
@@ -219,10 +219,12 @@ async def test_do_export_config(app, settings):
 
 
 @pytest.mark.asyncio
-async def test_do_renew_token(app):
+async def test_do_renew_token(running_app):
     """Test do_renew_token action."""
+    import asyncio
+
     with patch('asyncio.create_task') as mock_create_task, \
-         patch.object(app, 'emit') as mock_emit:  # Patch the emit method
+         patch.object(running_app, 'emit') as mock_emit:  # Patch the emit method
 
         # Mock values for username, password, and auth_url
         username = "testuser"
@@ -234,7 +236,7 @@ async def test_do_renew_token(app):
         value.unpack.return_value = (username, password, auth_url)
 
         # Perform the renew token action
-        app.do_renew_token(None, value)
+        running_app.do_renew_token(None, value)
 
         # Assert that asyncio.create_task was called with the retrieve_token coroutine
         mock_create_task.assert_called_once()
