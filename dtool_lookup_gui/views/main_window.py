@@ -1388,32 +1388,14 @@ class MainWindow(Gtk.ApplicationWindow):
         def on_remove_tag(self, button, tag):
             dataset.delete_tag(tag)
             asyncio.create_task(self._update_dataset_view(dataset))
-            # asyncio.create_task(_get_tags())
 
         def on_add_tag(self,button, entry):
             tag = entry.get_text()
             dataset.put_tag(tag)
             asyncio.create_task(self._update_dataset_view(dataset))
-            # asyncio.create_task(_get_tags())
-
-        # def on_remove_tag(self, button, tag):
-        #     asyncio.create_task(_remove_tag_async(self,button, tag))
-
-        # async def _remove_tag_async(self, button, tag):
-        #     dataset.delete_tag(tag)
-        #     await self._show_dataset_details(dataset)
-
-        # def on_add_tag(self, button, entry):
-        #     asyncio.create_task(_add_tag_async(self,button, entry))
-
-        # async def _add_tag_async(self, button, entry):
-        #     tag = entry.get_text()
-        #     dataset.put_tag(tag)
-        #     await self._show_dataset_details(dataset)
 
         async def _get_tags():
             tags = await dataset.get_tags()
-            # print("tags",tags)
 
             # Remove the widgets of previous datasets already present
             for child in self.show_tags_box.get_children():
