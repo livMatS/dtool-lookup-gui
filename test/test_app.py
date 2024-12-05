@@ -35,6 +35,8 @@ from dtool_lookup_gui.views.main_window import MainWindow
 from dtool_lookup_gui.views.server_versions_dialog import ServerVersionsDialog
 from dtool_lookup_gui.views.error_linting_dialog import LintingErrorsDialog
 
+from dtool_lookup_gui.main import APP_ID
+
 logger = logging.getLogger(__name__)
 
 # Some application properties to test against:
@@ -55,13 +57,13 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.asyncio
-async def test_app_id(app):
-    assert app.get_application_id() == 'de.uni-freiburg.dtool-lookup-gui'
+async def test_app_id(running_app):
+    assert running_app.get_application_id() == APP_ID
 
 
 @pytest.mark.asyncio
-async def test_app_window_types(app):
-    window_types = [type(win) for win in app.get_windows()]
+async def test_app_window_types(running_app):
+    window_types = [type(win) for win in running_app.get_windows()]
     assert set(window_types) == set([AboutDialog,
                                      ConfigDialog,
                                      SettingsDialog,
@@ -72,8 +74,8 @@ async def test_app_window_types(app):
 
 
 @pytest.mark.asyncio
-async def test_app_list_actions(app):
-    assert set(app.list_actions()) == set([
+async def test_app_list_actions(running_app):
+    assert set(running_app.list_actions()) == set([
         'toggle-logging',
         'reset-config',
         'renew-token',

@@ -98,7 +98,7 @@ class DtoolGraphWidget(Gtk.DrawingArea):
         self._graph.set_vertex_properties('state', np.zeros(self._graph.nb_vertices, dtype=bool))
         self._layout = GraphLayout(self._graph)
         if self._timer is None:
-            self._timer = GObject.timeout_add(TIMEOUT, self.on_timeout, self)
+            self._timer = GLib.timeout_add(TIMEOUT, self.on_timeout, self)
 
     def __del__(self):
         if self._timer is not None:

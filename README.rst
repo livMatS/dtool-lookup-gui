@@ -7,7 +7,10 @@ dtool-lookup-gui
     :alt: dtool-lookup-gui icon
 .. image:: https://img.shields.io/github/actions/workflow/status/livMatS/dtool-lookup-gui/build-and-publish.yml?branch=master
     :target: https://github.com/livMatS/dtool-lookup-gui/actions/workflows/build-and-publish.yml
-    :alt: GitHub Workflow Status
+    :alt: GitHub Build Workflow Status
+.. image:: https://img.shields.io/github/actions/workflow/status/livMatS/dtool-lookup-gui/test.yml?branch=master&label=tests
+    :alt: GitHub Tests Workflow Status
+    :target: https://github.com/livMatS/dtool-lookup-gui/actions/workflows/test.yml
 .. image:: https://img.shields.io/github/v/release/livMatS/dtool-lookup-gui
     :target: https://github.com/livMatS/dtool-lookup-gui/releases/latest
     :alt: GitHub release (latest by date)
@@ -71,7 +74,14 @@ subsequently to add this launcher icon to your desktop environment:
 This has been tested on Ubuntu 20.04 and GNOME 3.36.8.
 
 The packaged Linux build will fail to launch out-of-the box under Wayland. 
-If unsure whih display server is in use, check with
+An error like this might arise:
+
+.. code::
+
+   GLib-GIO-ERROR **: 11:26:50.444: Settings schema 'org.gnome.settings-daemon.plugins.xsettings' does not contain a key named 'antialiasing'
+   Trace/breakpoint trap (core dumped)
+
+If unsure which display server is in use, check with
 
 .. code:: bash
 
