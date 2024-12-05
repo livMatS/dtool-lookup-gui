@@ -376,6 +376,19 @@ class MainWindow(Gtk.ApplicationWindow):
         get_item_action.connect("activate", self.do_get_item)
         self.add_action(get_item_action)
 
+        # put tags
+        put_tags_variant = GLib.Variant.new_string('dummy')
+        put_tags_action = Gio.SimpleAction.new("put-tags", put_tags_variant.get_type())
+        put_tags_action.connect("activate", self.do_put_tags)
+        self.add_action(put_tags_action)
+
+        # put annotations
+        # put_annotations_variant = GLib.Variant.new_string('dummy')
+        put_annotations_action = Gio.SimpleAction.new("put-annotations",GLib.VariantType.new("(ss)"))  # Tuple of two strings
+
+        put_annotations_action.connect("activate", self.do_put_annotations)
+        self.add_action(put_annotations_action)
+
         # refresh view
         refresh_view_action = Gio.SimpleAction.new("refresh-view")
         refresh_view_action.connect("activate", self.do_refresh_view)
@@ -491,6 +504,19 @@ class MainWindow(Gtk.ApplicationWindow):
         """Show previous page"""
         page_index = self.search_state.previous_page
         self._show_page(page_index)
+
+    # put tags action
+    def do_put_tags(self, action, value):
+        """Put tags on the selected dataset."""
+        tags = value.get_string()
+        search_text = value.get_string()
+        self._put_tags(tags)
+
+    # put annotations action
+    def do_put_annotations(self, action, value):
+        """Put annotations on the selected dataset."""
+        key, value = parameter.unpack()
+        self._put_annotations(key,value)
 
     # other actions
     def do_get_item(self, action, value):
@@ -1112,6 +1138,22 @@ class MainWindow(Gtk.ApplicationWindow):
         self.search_state.reset_pagination()
         # self.search_state.current_page = 1
         self._refresh_datasets(on_show=on_show)
+    
+    # put tags function for action
+    def _put_tags(self, tags):
+        """Put tags on the selected dataset."""
+        dataset = self.dataset_list_box.get_selected_row().dataset
+        dataset.put_tags(tags)
+        asyncio.create_task(self._update_dataset_view(dataset))
+
+
+    # put annotations function for action
+    def _put_annotations(self, key,value):
+        """Put annotations on the selected dataset."""
+        dataset = self.dataset_list_box.get_selected_row().dataset
+        dataset.put_annotation(annotation_name=key, annotation=value)
+        asyncio.create_task(self._update_dataset_view(dataset))
+
 
     def _refresh_datasets(self, on_show=None):
         """Reset dataset list, show spinner, and kick off async task for retrieving dataset entries."""
