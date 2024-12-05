@@ -378,15 +378,14 @@ class MainWindow(Gtk.ApplicationWindow):
 
         # put tags
         put_tags_variant = GLib.Variant.new_string('dummy')
-        put_tags_action = Gio.SimpleAction.new("put-tags", put_tags_variant.get_type())
-        put_tags_action.connect("activate", self.do_put_tags)
+        put_tags_action = Gio.SimpleAction.new("put-tag", put_tags_variant.get_type())
+        put_tags_action.connect("activate", self.do_put_tag)
         self.add_action(put_tags_action)
 
         # put annotations
-        # put_annotations_variant = GLib.Variant.new_string('dummy')
-        put_annotations_action = Gio.SimpleAction.new("put-annotations",GLib.VariantType.new("(ss)"))  # Tuple of two strings
-
-        put_annotations_action.connect("activate", self.do_put_annotations)
+        put_annotations_variant_type = GLib.VariantType.new("(ss)")  # Tuple of two strings
+        put_annotations_action = Gio.SimpleAction.new("put-annotation", put_annotations_variant_type)
+        put_annotations_action.connect("activate", self.do_put_annotation)
         self.add_action(put_annotations_action)
 
         # refresh view
@@ -506,17 +505,17 @@ class MainWindow(Gtk.ApplicationWindow):
         self._show_page(page_index)
 
     # put tags action
-    def do_put_tags(self, action, value):
+    def do_put_tag(self, action, value):
         """Put tags on the selected dataset."""
-        tags = value.get_string()
-        search_text = value.get_string()
-        self._put_tags(tags)
+        tag = value.get_string()
+        self._put_tag(tag)
 
     # put annotations action
-    def do_put_annotations(self, action, value):
+    def do_put_annotation(self, action, parameter):
         """Put annotations on the selected dataset."""
         key, value = parameter.unpack()
-        self._put_annotations(key,value)
+        _logger.debug("Unpacked %s: %s key-value pair from tuple in do_put_annotation")
+        self._put_annotation(key, value)
 
     # other actions
     def do_get_item(self, action, value):
@@ -724,7 +723,6 @@ class MainWindow(Gtk.ApplicationWindow):
         text_buffer = self.readme_source_view.get_buffer()
         start_iter, end_iter = text_buffer.get_bounds()
         yaml_content = text_buffer.get_text(start_iter, end_iter, True)
-
 
         # Check the state of the linting switch before linting
         if settings.yaml_linting_enabled:
@@ -1140,20 +1138,18 @@ class MainWindow(Gtk.ApplicationWindow):
         self._refresh_datasets(on_show=on_show)
     
     # put tags function for action
-    def _put_tags(self, tags):
+    def _put_tag(self, tags):
         """Put tags on the selected dataset."""
         dataset = self.dataset_list_box.get_selected_row().dataset
-        dataset.put_tags(tags)
+        dataset.put_tag(tags)
         asyncio.create_task(self._update_dataset_view(dataset))
 
-
     # put annotations function for action
-    def _put_annotations(self, key,value):
+    def _put_annotation(self, key, value):
         """Put annotations on the selected dataset."""
         dataset = self.dataset_list_box.get_selected_row().dataset
         dataset.put_annotation(annotation_name=key, annotation=value)
         asyncio.create_task(self._update_dataset_view(dataset))
-
 
     def _refresh_datasets(self, on_show=None):
         """Reset dataset list, show spinner, and kick off async task for retrieving dataset entries."""
@@ -1433,8 +1429,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         def on_add_tag(self,button, entry):
             tag = entry.get_text()
-            dataset.put_tag(tag)
-            asyncio.create_task(self._update_dataset_view(dataset))
+            self.activate_action('put-tag', GLib.Variant.new_string(tag))
 
         async def _get_tags():
             tags = await dataset.get_tags()
@@ -1520,7 +1515,7 @@ class MainWindow(Gtk.ApplicationWindow):
                     if current_label == "-":
                         # Delete annotation
                         self.annotations_box.remove(box)
-                        # Function to delete the annotation from the dataset
+                        # Function to delete the annotation from the dataset not yet implemented
                         # dataset.delete_annotation(key)
                     elif current_label == "+":
                         # Save new/updated annotation
@@ -1528,10 +1523,12 @@ class MainWindow(Gtk.ApplicationWindow):
                         new_value = value_entry.get_text()
                         if new_key and new_value:
                             # Add or update annotation in dataset
-                            dataset.put_annotation(annotation_name=new_key, annotation=new_value)
+                            annotation_tuple = GLib.Variant("(ss)", (new_key, new_value))
+                            self.activate_action('put-annotation', annotation_tuple)
+                            # dataset.put_annotation(annotation_name=new_key, annotation=new_value)
                             # button.set_label("-")  # Change to delete after saving
                             button.set_label("-")  # Change to "-" after saving
-                            asyncio.create_task(self._update_dataset_view(dataset))
+                            # asyncio.create_task(self._update_dataset_view(dataset))
 
                 # Update button label on text change
                 def on_text_changed(entry):
