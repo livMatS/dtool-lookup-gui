@@ -387,6 +387,23 @@ class MainWindow(Gtk.ApplicationWindow):
         put_annotations_action = Gio.SimpleAction.new("put-annotation", put_annotations_variant_type)
         put_annotations_action.connect("activate", self.do_put_annotation)
         self.add_action(put_annotations_action)
+        
+        # add item
+        add_item_variant = GLib.Variant.new_string("dummy")
+        add_item_action = Gio.SimpleAction.new("add-item", add_item_variant.get_type())
+        add_item_action.connect("activate", self.do_add_item)
+        self.add_action(add_item_action)
+
+        # create dataset
+        create_dataset_variant = GLib.Variant.new_string("dummy")
+        create_dataset_action = Gio.SimpleAction.new("create-dataset", create_dataset_variant.get_type())
+        create_dataset_action.connect("activate", self.do_create_dataset)
+        self.add_action(create_dataset_action)
+
+        # freeze dataset
+        freeze_dataset_action = Gio.SimpleAction.new("freeze-dataset")
+        freeze_dataset_action.connect("activate", self.do_freeze_dataset)
+        self.add_action(freeze_dataset_action)
 
         # refresh view
         refresh_view_action = Gio.SimpleAction.new("refresh-view")
@@ -516,6 +533,22 @@ class MainWindow(Gtk.ApplicationWindow):
         key, value = parameter.unpack()
         _logger.debug("Unpacked %s: %s key-value pair from tuple in do_put_annotation")
         self._put_annotation(key, value)
+
+    # add item action
+    def do_add_item(self, action, value):
+        """Add item to the selected dataset."""
+        item = value.get_string()
+        self._add_item(item)
+    
+    # create dataset action
+    def do_create_dataset(self, action, value):
+        """Create a new dataset."""
+        self._create_dataset(value.get_string())
+
+    # freeze dataset action
+    def do_freeze_dataset(self, action, value):
+        """Freeze the selected dataset."""
+        self._freeze_dataset()
 
     # other actions
     def do_get_item(self, action, value):
@@ -659,7 +692,8 @@ class MainWindow(Gtk.ApplicationWindow):
     @Gtk.Template.Callback()
     def on_create_dataset_clicked(self, widget):
         """Dataset creation button clicked."""
-        DatasetNameDialog(on_confirmation=self._create_dataset).show()
+        DatasetNameDialog(on_confirmation=lambda name:self.activate_action('create-dataset', GLib.Variant.new_string(name))
+).show()
 
     @Gtk.Template.Callback()
     def on_refresh_clicked(self, widget):
@@ -697,7 +731,8 @@ class MainWindow(Gtk.ApplicationWindow):
             fpaths = dialog.get_filenames()
             for fpath in fpaths:
                 # uri = urllib.parse.unquote(uri, encoding='utf-8', errors='replace')
-                self._add_item(fpath)
+                # self._add_item(fpath)
+                self.activate_action('add-item', GLib.Variant.new_string(fpath))
         elif response == Gtk.ResponseType.CANCEL:
             pass
         dialog.destroy()
@@ -783,11 +818,12 @@ class MainWindow(Gtk.ApplicationWindow):
         response = dialog.run()
         dialog.destroy()
         if response == Gtk.ResponseType.OK:
-            uri = row.dataset.uri  # URI won't change in freeze process
-            row.freeze()
+            # uri = row.dataset.uri  # URI won't change in freeze process
+            # row.freeze()
+            self.activate_action('freeze-dataset')
             self.dataset_list_box.show_all()
-            self.get_action_group("win").activate_action('select-dataset-by-uri', GLib.Variant.new_string(uri))
-            self.get_action_group("win").activate_action('show-dataset-by-uri', GLib.Variant.new_string(uri))
+            # self.get_action_group("win").activate_action('select-dataset-by-uri', GLib.Variant.new_string(uri))
+            # self.get_action_group("win").activate_action('show-dataset-by-uri', GLib.Variant.new_string(uri))
 
     @Gtk.Template.Callback()
     def on_error_bar_close(self, widget):
@@ -1384,6 +1420,14 @@ class MainWindow(Gtk.ApplicationWindow):
         if base_uri is not None:
             self.dataset_list_box.add_dataset(base_uri.base_uri.create_dataset(name))
             self.dataset_list_box.show_all()
+    
+    def _freeze_dataset(self):
+        row = self.dataset_list_box.get_selected_row()
+        uri = row.dataset.uri
+        row.freeze()
+        self.dataset_list_box.show_all()
+        self.get_action_group("win").activate_action('select-dataset-by-uri', GLib.Variant.new_string(uri))
+        self.get_action_group("win").activate_action('show-dataset-by-uri', GLib.Variant.new_string(uri))
 
     async def _update_dataset_view(self, dataset):
         _logger.debug("In _update_dataset_view.")
