@@ -182,8 +182,6 @@ class MainWindow(Gtk.ApplicationWindow):
 
     show_tags_box = Gtk.Template.Child()
     annotations_box = Gtk.Template.Child()
-    # add_tags_button = Gtk.Template.Child()
-    # enter_tags_entry = Gtk.Template.Child()
 
     linting_errors_button = Gtk.Template.Child()
 
