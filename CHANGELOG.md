@@ -9,6 +9,7 @@ unpublished
 - Sorting for dserver lookup results
 - Add/delete tags in GUI
 - Add annotations in GUI (key - value pairs)
+- Delete annotations in GUI (required changes to dtoolcore)
 
 0.6.2 (02Nov22)
 ---------------
