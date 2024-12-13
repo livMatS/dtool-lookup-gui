@@ -374,18 +374,30 @@ class MainWindow(Gtk.ApplicationWindow):
         get_item_action.connect("activate", self.do_get_item)
         self.add_action(get_item_action)
 
-        # put tags
-        put_tags_variant = GLib.Variant.new_string('dummy')
-        put_tags_action = Gio.SimpleAction.new("put-tag", put_tags_variant.get_type())
-        put_tags_action.connect("activate", self.do_put_tag)
-        self.add_action(put_tags_action)
+        # put tag
+        put_tag_variant = GLib.Variant.new_string('dummy')
+        put_tag_action = Gio.SimpleAction.new("put-tag", put_tag_variant.get_type())
+        put_tag_action.connect("activate", self.do_put_tag)
+        self.add_action(put_tag_action)
 
-        # put annotations
-        put_annotations_variant_type = GLib.VariantType.new("(ss)")  # Tuple of two strings
-        put_annotations_action = Gio.SimpleAction.new("put-annotation", put_annotations_variant_type)
-        put_annotations_action.connect("activate", self.do_put_annotation)
-        self.add_action(put_annotations_action)
-        
+        # put annotation
+        put_annotation_variant_type = GLib.VariantType.new("(ss)")  # Tuple of two strings
+        put_annotation_action = Gio.SimpleAction.new("put-annotation", put_annotation_variant_type)
+        put_annotation_action.connect("activate", self.do_put_annotation)
+        self.add_action(put_annotation_action)
+
+        # delete tag
+        delete_tag_variant = GLib.Variant.new_string('dummy')
+        delete_tag_action = Gio.SimpleAction.new("delete-tag", delete_tag_variant.get_type())
+        delete_tag_action.connect("activate", self.do_delete_tag)
+        self.add_action(delete_tag_action)
+
+        # delete annotation
+        delete_annotation_variant = GLib.Variant.new_string('dummy')
+        delete_annotation_action = Gio.SimpleAction.new("delete-annotation", delete_annotation_variant.get_type())
+        delete_annotation_action.connect("activate", self.do_delete_annotation)
+        self.add_action(delete_annotation_action)
+
         # add item
         add_item_variant = GLib.Variant.new_string("dummy")
         add_item_action = Gio.SimpleAction.new("add-item", add_item_variant.get_type())
@@ -531,6 +543,17 @@ class MainWindow(Gtk.ApplicationWindow):
         key, value = parameter.unpack()
         _logger.debug("Unpacked %s: %s key-value pair from tuple in do_put_annotation")
         self._put_annotation(key, value)
+
+    def do_delete_tag(self, action, value):
+        """Put tags on the selected dataset."""
+        tag = value.get_string()
+        self._delete_tag(tag)
+
+    # put annotations action
+    def do_delete_annotation(self, action, value):
+        """Put annotations on the selected dataset."""
+        value = value.get_string()
+        self._delete_annotation(value)
 
     # add item action
     def do_add_item(self, action, value):
@@ -1185,6 +1208,18 @@ class MainWindow(Gtk.ApplicationWindow):
         dataset.put_annotation(annotation_name=key, annotation=value)
         asyncio.create_task(self._update_dataset_view(dataset))
 
+    def _delete_tag(self, tag):
+        """Put tags on the selected dataset."""
+        dataset = self.dataset_list_box.get_selected_row().dataset
+        dataset.delete_tag(tag)
+        asyncio.create_task(self._update_dataset_view(dataset))
+
+    def _delete_annotation(self, annotation_name):
+        """Put annotations on the selected dataset."""
+        dataset = self.dataset_list_box.get_selected_row().dataset
+        dataset.delete_annotation(annotation_name)
+        asyncio.create_task(self._update_dataset_view(dataset))
+
     def _refresh_datasets(self, on_show=None):
         """Reset dataset list, show spinner, and kick off async task for retrieving dataset entries."""
         self.main_stack.set_visible_child(self.main_spinner)
@@ -1466,10 +1501,9 @@ class MainWindow(Gtk.ApplicationWindow):
             self.manifest_stack.set_visible_child(self.manifest_view)
 
         def on_remove_tag(self, button, tag):
-            dataset.delete_tag(tag)
-            asyncio.create_task(self._update_dataset_view(dataset))
+            self.activate_action('delete-tag', GLib.Variant.new_string(tag))
 
-        def on_add_tag(self,button, entry):
+        def on_add_tag(self, button, entry):
             tag = entry.get_text()
             self.activate_action('put-tag', GLib.Variant.new_string(tag))
 
@@ -1488,7 +1522,8 @@ class MainWindow(Gtk.ApplicationWindow):
 
                 # Remove button for the tag
                 button = Gtk.Button(label="-")
-                button.connect("clicked",lambda button, tag = tag : on_remove_tag(self,button,tag))
+                button.connect("clicked",
+                               lambda button, tag = tag : on_remove_tag(self, button, tag))
 
                 # Adding the label and button to the box
                 box.pack_start(label, False, False, 0)
@@ -1507,7 +1542,8 @@ class MainWindow(Gtk.ApplicationWindow):
 
             # "+" button for adding the new tag
             add_button = Gtk.Button(label="+")
-            add_button.connect("clicked", lambda button: on_add_tag(self , button, entry))
+            add_button.connect("clicked",
+                               lambda button: on_add_tag(self , button, entry))
 
             # Adding the entry and "+" button to the add_box
             add_box.pack_start(entry, True, True, 0)
@@ -1556,9 +1592,10 @@ class MainWindow(Gtk.ApplicationWindow):
                     current_label = button.get_label()
                     if current_label == "-":
                         # Delete annotation
-                        self.annotations_box.remove(box)
+                        # self.annotations_box.remove(box)
                         # Function to delete the annotation from the dataset not yet implemented
                         # dataset.delete_annotation(key)
+                        self.activate_action('delete-annotation', GLib.Variant.new_string(key))
                     elif current_label == "+":
                         # Save new/updated annotation
                         new_key = key_widget.get_text() if is_new else key
@@ -1580,7 +1617,8 @@ class MainWindow(Gtk.ApplicationWindow):
                 value_entry.connect("changed", on_text_changed)
                 if is_new:
                     key_widget.connect("changed", on_text_changed)  # Only for the new key entry
-                button.connect("clicked", lambda btn: asyncio.ensure_future(on_button_clicked(btn)))
+                button.connect("clicked",
+                               lambda btn: asyncio.ensure_future(on_button_clicked(btn)))
 
                 # Add the button to the row
                 box.pack_start(button, expand=False, fill=False, padding=0)
@@ -1599,7 +1637,6 @@ class MainWindow(Gtk.ApplicationWindow):
 
             # Re-render the UI
             self.annotations_box.show_all()
-
 
         _logger.debug("Get readme.")
         asyncio.create_task(_get_readme())
