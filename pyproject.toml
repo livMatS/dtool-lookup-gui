@@ -49,7 +49,7 @@ test = [
 ]
 solidipes = [
     "solidipes"
-}
+]
 
 [project.urls]
 documentation = "https://dtool-lookup-gui.readthedocs.io"
