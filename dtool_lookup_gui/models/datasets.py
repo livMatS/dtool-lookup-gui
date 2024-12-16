@@ -368,12 +368,10 @@ class DatasetModel:
         if 'tags' in self._dataset_info:
             self._dataset_info['tags'].remove(tag)
 
-    # delete annotation is not implemented in dtoolcore
-    # def delete_annotation(self,annotation_name , annotation):
-    #     print("delete_annotation",annotation_name,annotation)
-    #     _load_dataset(str(self)).delete_annotation(annotation_name, annotation)
-    #     if 'annotations' in self._dataset_info:
-    #         self._dataset_info['annotations'].remove(annotation_name)
+    def delete_annotation(self, annotation_name):
+        _load_dataset(str(self)).delete_annotation(annotation_name)
+        if 'annotations' in self._dataset_info and annotation_name in self._dataset_info['annotations']:
+            del self._dataset_info['annotations'][annotation_name]
 
     async def get_readme(self):
         if 'readme_content' in self._dataset_info:
