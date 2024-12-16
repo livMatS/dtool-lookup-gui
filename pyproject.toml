@@ -47,6 +47,9 @@ test = [
     "pytest-flake8",
     "pytest-xdist",
 ]
+solidipes = [
+    "solidipes"
+}
 
 [project.urls]
 documentation = "https://dtool-lookup-gui.readthedocs.io"
