@@ -128,7 +128,7 @@ jobs:
       - build-on-macos
       - build-on-windows
       - build-installer-on-windows
-      - publish-to-pypi
+      - build-python-package
 
     steps:
       - name: Checkout
