@@ -217,10 +217,10 @@ jobs:
         # sigstore-produced signatures and certificates.
         run: >-
           gh release upload
-          '${{ github.ref_name }}' \
-          --repo '${{ github.repository }}' \
-          dist/** \
-          dtool-lookup-gui-${{ steps.fix_version.outputs.version }}-linux.tar.gz \
-          dtool-lookup-gui-${{ steps.fix_version.outputs.version }}-macos.dmg \
-          dtool-lookup-gui-${{ steps.fix_version.outputs.version }}-windows.zip \
+          '${{ github.ref_name }}'
+          --repo '${{ github.repository }}'
+          dist/**
+          dtool-lookup-gui-${{ steps.fix_version.outputs.version }}-linux.tar.gz
+          dtool-lookup-gui-${{ steps.fix_version.outputs.version }}-macos.dmg
+          dtool-lookup-gui-${{ steps.fix_version.outputs.version }}-windows.zip
           dtool-lookup-gui-${{ steps.fix_version.outputs.version }}-windows-installer.exe
