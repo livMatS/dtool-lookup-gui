@@ -1,15 +1,14 @@
 Change log for dtool-lookup-gui
 ===============================
 
-unpublished
------------
+0.7.0 (17Dec24)
+---------------
 
 - Login window
 - Pagination for dserver lookup results
 - Sorting for dserver lookup results
 - Add/delete tags in GUI
-- Add annotations in GUI (key - value pairs)
-- Delete annotations in GUI (required changes to dtoolcore)
+- Add/delete annotations in GUI (key - value pairs)
 
 0.6.2 (02Nov22)
 ---------------
