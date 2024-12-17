@@ -426,8 +426,6 @@ class MainWindow(Gtk.ApplicationWindow):
 
         _logger.debug(f"Constructed main window for app '{self.application.get_application_id()}'")
 
-        self.decrease_page_button.set_visible(False)
-
         style_context = self.current_page_button.get_style_context()
         style_context.add_class('suggested-action')
 
@@ -1029,6 +1027,7 @@ class MainWindow(Gtk.ApplicationWindow):
     async def _fetch_search_results(self, on_show=None):
         """Retrieve search results from lookup server."""
 
+        self.search_state.fetching_results = True
         self._disable_pagination_buttons()
 
         # Here sort order 1 implies ascending
@@ -1115,8 +1114,8 @@ class MainWindow(Gtk.ApplicationWindow):
         row.stop_spinner()
         self.main_spinner.stop()
 
-        self._enable_pagination_buttons()
         self._update_pagination_buttons()
+        self.search_state.fetching_results = False
 
     def _search_by_uuid(self, uuid):
         search_text = dump_single_line_query_text({"uuid": uuid})
@@ -1191,7 +1190,6 @@ class MainWindow(Gtk.ApplicationWindow):
         """Get datasets by text search."""
         self.search_state.search_text = search_text
         self.search_state.reset_pagination()
-        # self.search_state.current_page = 1
         self._refresh_datasets(on_show=on_show)
     
     # put tags function for action
@@ -1237,31 +1235,38 @@ class MainWindow(Gtk.ApplicationWindow):
         """Get datasets by page, select first row and show dataset details."""
         if not self.search_state.fetching_results:
             self.search_state.current_page = page_index
-            # self._disable_pagination_buttons()
             self._refresh_datasets(on_show=lambda _: self._select_and_show_by_row_index())
-            # asyncio.create_task(self._fetch_search_results())
-            # self._update_pagination_buttons(page_number, widget)
 
     def _update_pagination_buttons(self):
         """Update pagination buttons to match current search state."""
 
+        self.current_page_button.set_sensitive(True)
         self.current_page_button.set_label(str(self.search_state.current_page))
-        self.next_page_button.set_label(str(self.search_state.next_page))
-        self.previous_page_button.set_label(str(self.search_state.previous_page))
 
         if self.search_state.current_page >= self.search_state.last_page:
-            self.next_page_button.set_visible(False)
+            self.next_page_button.set_label('')
+            self.next_page_button.set_sensitive(False)
+            self.increase_page_button.set_sensitive(False)
+            self.last_page_button.set_sensitive(False)
         else:
-            self.next_page_button.set_visible(True)
+            self.next_page_button.set_label(str(self.search_state.next_page))
+            self.next_page_button.set_sensitive(True)
+            self.increase_page_button.set_sensitive(True)
+            self.last_page_button.set_sensitive(True)
 
         if self.search_state.current_page <= self.search_state.first_page:
-            self.previous_page_button.set_visible(False)
+            self.previous_page_button.set_label('')
+            self.previous_page_button.set_sensitive(False)
+            self.decrease_page_button.set_sensitive(False)
+            self.first_page_button.set_sensitive(False)
         else:
-            self.previous_page_button.set_visible(True)
+            self.previous_page_button.set_label(str(self.search_state.previous_page))
+            self.previous_page_button.set_sensitive(True)
+            self.decrease_page_button.set_sensitive(True)
+            self.first_page_button.set_sensitive(True)
 
     def _disable_pagination_buttons(self):
         """Disable all pagination buttons (typically while fetching results)"""
-        self.fetching_results = True
         self.first_page_button.set_sensitive(False)
         self.next_page_button.set_sensitive(False)
         self.last_page_button.set_sensitive(False)
@@ -1269,17 +1274,6 @@ class MainWindow(Gtk.ApplicationWindow):
         self.current_page_button.set_sensitive(False)
         self.decrease_page_button.set_sensitive(False)
         self.increase_page_button.set_sensitive(False)
-
-    def _enable_pagination_buttons(self):
-        """Enable all pagination buttons (typically after fetching results)"""
-        self.fetching_results = False
-        self.first_page_button.set_sensitive(True)
-        self.next_page_button.set_sensitive(True)
-        self.last_page_button.set_sensitive(True)
-        self.previous_page_button.set_sensitive(True)
-        self.current_page_button.set_sensitive(True)
-        self.decrease_page_button.set_sensitive(True)
-        self.increase_page_button.set_sensitive(True)
 
     # other helper functions
     def _get_selected_items(self):
@@ -1387,10 +1381,9 @@ class MainWindow(Gtk.ApplicationWindow):
         self.sort_field_combo_box.set_sensitive(state)
         self.sort_order_switch.set_sensitive(state)
         if state is True:
-            self._enable_pagination_buttons()
+            self._update_pagination_buttons()
         else:
             self._disable_pagination_buttons()
-
 
     def _select_and_load_first_uri(self):
         """
