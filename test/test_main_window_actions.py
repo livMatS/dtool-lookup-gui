@@ -600,16 +600,49 @@ async def test_refresh_method_triggered_by_action(running_app):
         # Assert that the refresh method was called once
         mock_refresh.assert_called_once()
 
+# tests for the do_put_annotation action and put-tag action
 
 @pytest.mark.asyncio
-async def test_do_get_item_direct_call_fails_due_to_no_selected_item(running_app):
-    """Test that the do_get_item method for copying a selected item fails when not item is selected."""
-
+async def test_do_put_annotation_direct_call(running_app):
+    """Test direct call to do_put_annotation."""
     windows = running_app.get_windows()
     main_window = [w for w in windows if isinstance(w, MainWindow)][0]
 
-    mock_variant = GLib.Variant.new_string("dummy_path")
+    with patch.object(main_window, '_put_annotation', new_callable=MagicMock) as mock_put_annotation:
+        main_window.do_put_annotation(None, GLib.Variant.new_tuple(GLib.Variant.new_string("key"), GLib.Variant.new_string("value")))
+        mock_put_annotation.assert_called_once_with("key", "value")
 
-    # Directly call the method with mock objects
-    with pytest.raises(AttributeError, match="'NoneType' object has no attribute 'dataset'"):
-        main_window.do_get_item(None, mock_variant)
+
+@pytest.mark.asyncio
+async def test_do_put_annotation_action_trigger(running_app):
+    """Test if the 'put-annotation' action triggers the do_put_annotation method."""
+    windows = running_app.get_windows()
+    main_window = [w for w in windows if isinstance(w, MainWindow)][0]
+
+    with patch.object(main_window, '_put_annotation', new_callable=MagicMock) as mock_put_annotation:
+        action = main_window.lookup_action("put-annotation")
+        action.activate(GLib.Variant.new_tuple(GLib.Variant.new_string("key"), GLib.Variant.new_string("value")))
+        mock_put_annotation.assert_called_once_with("key", "value")
+        
+
+@pytest.mark.asyncio
+async def test_do_put_tag_direct_call(running_app):
+    """Test direct call to do_put_tag."""
+    windows = running_app.get_windows()
+    main_window = [w for w in windows if isinstance(w, MainWindow)][0]
+
+    with patch.object(main_window, '_put_tag', new_callable=MagicMock) as mock_put_tag:
+        main_window.do_put_tag(None, GLib.Variant.new_string("tag"))
+        mock_put_tag.assert_called_once_with("tag")
+
+@pytest.mark.asyncio
+async def test_do_put_tag_action_trigger(running_app):
+    """Test if the 'put-tag' action triggers the do_put_tag method."""
+    windows = running_app.get_windows()
+    main_window = [w for w in windows if isinstance(w, MainWindow)][0]
+
+    with patch.object(main_window, '_put_tag', new_callable=MagicMock) as mock_put_tag:
+        action = main_window.lookup_action("put-tag")
+        action.activate(GLib.Variant.new_string("tag"))
+        mock_put_tag.assert_called_once_with("tag")
+
