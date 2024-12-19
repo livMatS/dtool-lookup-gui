@@ -117,6 +117,7 @@ jobs:
   publish-on-github:
     name: >-
       Make github release
+    if: startsWith(github.ref, 'refs/tags/')  # only publish to github on tag pushes
     runs-on: ubuntu-latest
 
     permissions:
