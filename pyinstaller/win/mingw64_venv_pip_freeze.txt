@@ -82,4 +82,4 @@ typing_extensions==4.12.2
 urllib3==2.2.3
 yamllint==1.35.1
 yarl==1.17.1
-zipp==3.19.2
+zipp==3.21.0
