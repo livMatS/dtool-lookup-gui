@@ -74,7 +74,7 @@ ruamel.yaml.clib==0.2.12
 s3transfer==0.10.3
 scipy==1.14.0
 setuptools-scm==8.1.0
-six==1.16.0
+six==1.17.0
 toml==0.10.2
 tomli==2.0.1
 tqdm==4.66.6
