@@ -126,7 +126,7 @@ ruamel-yaml==0.18.6
     # via dtool-create
 ruamel-yaml-clib==0.2.12
     # via ruamel-yaml
-s3transfer==0.10.3
+s3transfer==0.10.4
     # via boto3
 six==1.16.0
     # via python-dateutil
