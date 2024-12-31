@@ -50,7 +50,7 @@ pefile==2023.2.7
 pip-tools==7.4.1
 pipdeptree==2.23.4
 ply==3.11
-propcache==0.2.0
+propcache==0.2.1
 pyasn1==0.6.1
 pycairo==1.27.0
 pycparser==2.22
