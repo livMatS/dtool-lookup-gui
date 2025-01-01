@@ -57,7 +57,7 @@ pycparser==2.22
 Pygments==2.18.0
 PyGObject==3.50.0
 pyinstaller==6.11.0
-pyinstaller-hooks-contrib==2024.9
+pyinstaller-hooks-contrib==2024.11
 PyJWT==2.10.1
 pyparsing==3.2.0
 pyproject_hooks==1.1.0
