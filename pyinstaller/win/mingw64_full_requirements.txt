@@ -139,7 +139,7 @@ urllib3==2.3.0
     #   requests
 yamllint==1.35.1
     # via -r pyinstaller/mingw64_requirements.in
-yarl==1.17.1
+yarl==1.18.3
     # via aiohttp
 
 # The following packages are considered to be unsafe in a requirements file:
