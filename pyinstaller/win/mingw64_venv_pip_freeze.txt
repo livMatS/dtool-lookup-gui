@@ -13,7 +13,7 @@ certifi==2024.8.30
 cffi==1.17.1
 chardet==5.2.0
 charset-normalizer==3.4.0
-click==8.1.7
+click==8.1.8
 click-plugins==1.1.1
 colorama==0.4.6
 cryptography==42.0.8
