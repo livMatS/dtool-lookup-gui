@@ -108,7 +108,7 @@ pyasn1==0.6.1
     # via
     #   -r pyinstaller/mingw64_requirements.in
     #   pysmb
-pygments==2.18.0
+pygments==2.19.0
     # via dtool-info
 pysmb==1.2.10
     # via
