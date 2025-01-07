@@ -19,7 +19,7 @@ colorama==0.4.6
 cryptography==42.0.8
 Cython==3.0.11
 distlib==0.3.8
-docutils==0.20.1
+docutils==0.21.2
 dtool-cli==0.7.1
 dtool-config==0.4.1
 dtool-create==0.23.4
