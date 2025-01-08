@@ -44,7 +44,7 @@ MarkupSafe==3.0.2
 more-itertools==10.3.0
 multidict==6.1.0
 numpy==2.1.1
-packaging==24.1
+packaging==24.2
 pathspec==0.12.1
 pefile==2023.2.7
 pip-tools==7.4.1

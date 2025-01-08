@@ -98,7 +98,7 @@ multidict==6.1.0
     # via
     #   aiohttp
     #   yarl
-packaging==24.1
+packaging==24.2
     # via dtool-s3
 pathspec==0.12.1
     # via yamllint
