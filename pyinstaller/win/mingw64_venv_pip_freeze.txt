@@ -46,7 +46,7 @@ multidict==6.1.0
 numpy==2.1.1
 packaging==24.1
 pathspec==0.12.1
-pefile==2023.2.7
+pefile==2024.8.26
 pip-tools==7.4.1
 pipdeptree==2.24.0
 ply==3.11
