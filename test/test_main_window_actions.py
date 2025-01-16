@@ -603,7 +603,7 @@ async def test_refresh_method_triggered_by_action(running_app):
 # tests for the do_put_annotation action and put-tag action
 
 @pytest.mark.asyncio
-async def test_do_put_annotation_direct_call(populated_app_with_mock_data):
+async def test_do_put_annotation_direct_call(populated_app_with_local_dataset_data):
     """
     Test the do_put_annotation method for adding an annotation.
     It verifies if the annotation is correctly added to the selected dataset.
@@ -616,7 +616,7 @@ async def test_do_put_annotation_direct_call(populated_app_with_mock_data):
             await asyncio.sleep(0.1)
         return False  # Timeout reached
 
-    windows = populated_app_with_mock_data.get_windows()
+    windows = populated_app_with_local_dataset_data.get_windows()
     main_window = [w for w in windows if isinstance(w, MainWindow)][0]
 
     # Trigger the 'refresh-view' action to load datasets
@@ -665,7 +665,7 @@ async def test_do_put_annotation_action_trigger(running_app):
         
 
 @pytest.mark.asyncio
-async def test_do_put_tag_direct_call(populated_app_with_mock_data):
+async def test_do_put_tag_direct_call(populated_app_with_local_dataset_data):
     """
     Test the do_put_tag method for adding a tag.
     It verifies if the tag is correctly added to the selected dataset.
@@ -678,7 +678,7 @@ async def test_do_put_tag_direct_call(populated_app_with_mock_data):
             await asyncio.sleep(0.1)
         return False  # Timeout reached
 
-    windows = populated_app_with_mock_data.get_windows()
+    windows = populated_app_with_local_dataset_data.get_windows()
     main_window = [w for w in windows if isinstance(w, MainWindow)][0]
 
     # Trigger the 'refresh-view' action to load datasets
