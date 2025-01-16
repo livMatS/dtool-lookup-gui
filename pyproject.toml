@@ -41,6 +41,8 @@ dependencies = [
 
 [project.optional-dependencies]
 test = [
+    "dtool-s3",
+    "dtool-smb",
     "pytest",
     "pytest-cov",
     "pytest-asyncio",
