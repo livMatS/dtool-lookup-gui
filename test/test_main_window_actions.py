@@ -600,16 +600,119 @@ async def test_refresh_method_triggered_by_action(running_app):
         # Assert that the refresh method was called once
         mock_refresh.assert_called_once()
 
+# tests for the do_put_annotation action and put-tag action
 
 @pytest.mark.asyncio
-async def test_do_get_item_direct_call_fails_due_to_no_selected_item(running_app):
-    """Test that the do_get_item method for copying a selected item fails when not item is selected."""
+async def test_do_put_annotation_direct_call(populated_app_with_mock_data):
+    """
+    Test the do_put_annotation method for adding an annotation.
+    It verifies if the annotation is correctly added to the selected dataset.
+    """
+    async def wait_for_datasets_to_load(list_box, timeout=10):
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            if len(list_box.get_children()) > 0:
+                return True  # Datasets are loaded
+            await asyncio.sleep(0.1)
+        return False  # Timeout reached
 
+    windows = populated_app_with_mock_data.get_windows()
+    main_window = [w for w in windows if isinstance(w, MainWindow)][0]
+
+    # Trigger the 'refresh-view' action to load datasets
+    main_window.activate_action('refresh-view')
+
+    # Wait until datasets are loaded
+    datasets_loaded = await wait_for_datasets_to_load(main_window.dataset_list_box)
+    assert datasets_loaded, "Datasets were not loaded in time"
+
+    # Select the first dataset
+    main_window.activate_action('select-dataset', GLib.Variant.new_uint32(0))
+
+    # Define annotation key and value
+    annotation_key = "test_annotation_key"
+    annotation_value = "test_annotation_value"
+    annotation_variant = GLib.Variant.new_tuple(GLib.Variant.new_string(annotation_key), GLib.Variant.new_string(annotation_value))
+
+    # Call the do_put_annotation method
+    main_window.do_put_annotation(None, annotation_variant)
+
+    # Retrieve the selected dataset to verify the annotation
+    selected_row = main_window.dataset_list_box.get_selected_row()
+    assert selected_row is not None, "No dataset is selected"
+    selected_dataset = selected_row.dataset
+
+     # Retrieve all annotations
+    annotations = await selected_dataset.get_annotations()
+
+    # Verify that the new annotation is present
+    assert (annotation_key, annotation_value) in annotations.items(), (
+        f"Expected annotation ({annotation_key}: {annotation_value}) not found in the dataset"
+    )
+
+
+
+@pytest.mark.asyncio
+async def test_do_put_annotation_action_trigger(running_app):
+    """Test if the 'put-annotation' action triggers the do_put_annotation method."""
     windows = running_app.get_windows()
     main_window = [w for w in windows if isinstance(w, MainWindow)][0]
 
-    mock_variant = GLib.Variant.new_string("dummy_path")
+    with patch.object(main_window, '_put_annotation', new_callable=MagicMock) as mock_put_annotation:
+        action = main_window.lookup_action("put-annotation")
+        action.activate(GLib.Variant.new_tuple(GLib.Variant.new_string("key"), GLib.Variant.new_string("value")))
+        mock_put_annotation.assert_called_once_with("key", "value")
+        
 
-    # Directly call the method with mock objects
-    with pytest.raises(AttributeError, match="'NoneType' object has no attribute 'dataset'"):
-        main_window.do_get_item(None, mock_variant)
+@pytest.mark.asyncio
+async def test_do_put_tag_direct_call(populated_app_with_mock_data):
+    """
+    Test the do_put_tag method for adding a tag.
+    It verifies if the tag is correctly added to the selected dataset.
+    """
+    async def wait_for_datasets_to_load(list_box, timeout=10):
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            if len(list_box.get_children()) > 0:
+                return True  # Datasets are loaded
+            await asyncio.sleep(0.1)
+        return False  # Timeout reached
+
+    windows = populated_app_with_mock_data.get_windows()
+    main_window = [w for w in windows if isinstance(w, MainWindow)][0]
+
+    # Trigger the 'refresh-view' action to load datasets
+    main_window.activate_action('refresh-view')
+
+    # Wait until datasets are loaded
+    datasets_loaded = await wait_for_datasets_to_load(main_window.dataset_list_box)
+    assert datasets_loaded, "Datasets were not loaded in time"
+
+    # Select the first dataset
+    main_window.activate_action('select-dataset', GLib.Variant.new_uint32(0))
+
+    # Define the tag
+    tag_value = "test_tag"
+    tag_variant = GLib.Variant.new_string(tag_value)
+
+    # Call the do_put_tag method
+    main_window.do_put_tag(None, tag_variant)
+
+    # Retrieve the selected dataset to verify the tag
+    selected_row = main_window.dataset_list_box.get_selected_row()
+    assert selected_row is not None, "No dataset is selected"
+    selected_dataset = selected_row.dataset
+
+    assert tag_value in await selected_dataset.get_tags(), f"Expected tag '{tag_value}' not found in the dataset"
+
+@pytest.mark.asyncio
+async def test_do_put_tag_action_trigger(running_app):
+    """Test if the 'put-tag' action triggers the do_put_tag method."""
+    windows = running_app.get_windows()
+    main_window = [w for w in windows if isinstance(w, MainWindow)][0]
+
+    with patch.object(main_window, '_put_tag', new_callable=MagicMock) as mock_put_tag:
+        action = main_window.lookup_action("put-tag")
+        action.activate(GLib.Variant.new_string("tag"))
+        mock_put_tag.assert_called_once_with("tag")
+
