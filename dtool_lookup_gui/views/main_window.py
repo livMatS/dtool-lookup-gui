@@ -1562,6 +1562,9 @@ class MainWindow(Gtk.ApplicationWindow):
             async def create_annotation_row(key="", value="", is_new=False):
                 """Creates a single row of annotation with text boxes and a button."""
                 box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+                box1 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+                box2 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+                # box1.set_size_request(200, -1)
 
                 # Key: Display label if not new, text entry if new
                 if is_new:
@@ -1571,11 +1574,14 @@ class MainWindow(Gtk.ApplicationWindow):
                     key_widget.set_hexpand(False)
                     key_widget.set_placeholder_text("Enter new Key")
                 else:
-                    key_widget = Gtk.Label(label=key)
+                    key_widget = Gtk.Entry()  # Gtk.Label(label=key) changed here to Gtk.Entry()
+                    key_widget.set_text(key)
+                    key_widget.set_editable(False)
                     key_widget.set_max_width_chars(10)
                     key_widget.set_hexpand(False)
                 
-                box.pack_start(key_widget, expand=False, fill=False, padding=5)
+                box1.pack_start(key_widget, expand=False, fill=False, padding=5)
+                box.pack_start(box1, expand=False, fill=False, padding=5)
 
                 # Value: Display text entry for both new and existing annotations
                 value_entry = Gtk.Entry()
@@ -1583,7 +1589,8 @@ class MainWindow(Gtk.ApplicationWindow):
                 value_entry.set_max_width_chars(10)
                 value_entry.set_hexpand(False)
                 value_entry.set_placeholder_text("Enter new Value")
-                box.pack_start(value_entry, expand=False, fill=False, padding=5)
+                box2.pack_start(value_entry, expand=False, fill=False, padding=5)
+                box.pack_start(box2, expand=False, fill=False, padding=5)
 
                 # Button for delete/save functionality
                 button = Gtk.Button(label="-" if not is_new else "+")
@@ -1604,10 +1611,10 @@ class MainWindow(Gtk.ApplicationWindow):
                             # Add or update annotation in dataset
                             annotation_tuple = GLib.Variant("(ss)", (new_key, new_value))
                             self.activate_action('put-annotation', annotation_tuple)
-                            # dataset.put_annotation(annotation_name=new_key, annotation=new_value)
-                            # button.set_label("-")  # Change to delete after saving
+                            dataset.put_annotation(annotation_name=new_key, annotation=new_value)
+                            button.set_label("-")  # Change to delete after saving
                             button.set_label("-")  # Change to "-" after saving
-                            # asyncio.create_task(self._update_dataset_view(dataset))
+                            asyncio.create_task(self._update_dataset_view(dataset))
 
                 # Update button label on text change
                 def on_text_changed(entry):
