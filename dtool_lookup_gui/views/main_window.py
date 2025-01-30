@@ -32,6 +32,7 @@ import traceback
 import urllib.parse
 from functools import reduce
 
+import yaml
 from gi.repository import Gio, GLib, Gtk, GtkSource, Gdk
 
 import dtoolcore.utils
@@ -39,6 +40,8 @@ from dtool_info.utils import sizeof_fmt
 
 import dtool_lookup_api.core.config
 from dtool_lookup_api.core.LookupClient import ConfigurationBasedLookupClient
+
+from dtool_lookup_gui import is_uuid
 
 import yamllint
 from yamllint.config import YamlLintConfig
@@ -182,7 +185,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     show_tags_box = Gtk.Template.Child()
     annotations_box = Gtk.Template.Child()
-    dataset_readme = Gtk.Template.Child()
+    readme_tree_view = Gtk.Template.Child()
 
     linting_errors_button = Gtk.Template.Child()
 
@@ -1482,28 +1485,6 @@ class MainWindow(Gtk.ApplicationWindow):
             self.add_items_button.set_sensitive(not dataset.is_frozen)
             self.freeze_button.set_sensitive(not dataset.is_frozen)
             self.copy_button.set_sensitive(dataset.is_frozen)
-        
-
-        ##################################
-
-
-        async def _fetch_readme():
-            # self.builder = Gtk.Builder()
-            # self.builder.add_from_file("dtool_lookup_gui/views/main_window.ui")
-            # self.error_bar.set_revealed(False)
-            # self.readme_stack.set_visible_child(
-            #     self.builder.get_object('readme-spinner'))
-
-            readme_view = self.dataset_readme
-            store = readme_view.get_model()
-            store.clear()
-            self._readme = self.readme_buffer.set_text(await dataset.get_readme()) ## doubt regarding the way the data is sent
-            fill_readme_tree_store(store, self._readme)
-            readme_view.columns_autosize()
-            readme_view.show_all()
-
-            # self.readme_stack.set_visible_child(
-            #     self.builder.get_object('readme-view'))
 
         def fill_readme_tree_store(store, data, parent=None):
             def append_entry(store, entry, value, parent):
@@ -1548,15 +1529,20 @@ class MainWindow(Gtk.ApplicationWindow):
                         append_entry(store, entry, value, parent)
 
         async def _get_readme():
+            readme_content = await dataset.get_readme()
             self.readme_stack.set_visible_child(self.readme_spinner)
-            self.readme_buffer.set_text(await dataset.get_readme())
+            self.readme_buffer.set_text(readme_content)
             self.readme_stack.set_visible_child(self.readme_view)
             self.save_metadata_button.set_sensitive(False)
-            
 
-            ##################
+            readme_dict = yaml.safe_load(readme_content)
 
+            store = self.readme_tree_view.get_model()
+            store.clear()
 
+            fill_readme_tree_store(store, readme_dict)
+            self.readme_tree_view.columns_autosize()
+            self.readme_tree_view.show_all()
 
         async def _get_manifest():
             self.manifest_stack.set_visible_child(self.manifest_spinner)
@@ -1716,8 +1702,8 @@ class MainWindow(Gtk.ApplicationWindow):
         asyncio.create_task(_get_tags())
         _logger.debug("Get annotations.")
         asyncio.create_task(_get_annotations())
-        _logger.debug("Get readme tree view.")
-        asyncio.create_task(_fetch_readme())
+        # _logger.debug("Get readme tree view.")
+        # asyncio.create_task(_fetch_readme())
 
         if dataset.type == 'lookup':
             self.dependency_stack.show()
