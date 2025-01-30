@@ -182,6 +182,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
     show_tags_box = Gtk.Template.Child()
     annotations_box = Gtk.Template.Child()
+    dataset_readme = Gtk.Template.Child()
 
     linting_errors_button = Gtk.Template.Child()
 
@@ -1481,12 +1482,81 @@ class MainWindow(Gtk.ApplicationWindow):
             self.add_items_button.set_sensitive(not dataset.is_frozen)
             self.freeze_button.set_sensitive(not dataset.is_frozen)
             self.copy_button.set_sensitive(dataset.is_frozen)
+        
+
+        ##################################
+
+
+        async def _fetch_readme():
+            # self.builder = Gtk.Builder()
+            # self.builder.add_from_file("dtool_lookup_gui/views/main_window.ui")
+            # self.error_bar.set_revealed(False)
+            # self.readme_stack.set_visible_child(
+            #     self.builder.get_object('readme-spinner'))
+
+            readme_view = self.dataset_readme
+            store = readme_view.get_model()
+            store.clear()
+            self._readme = self.readme_buffer.set_text(await dataset.get_readme()) ## doubt regarding the way the data is sent
+            fill_readme_tree_store(store, self._readme)
+            readme_view.columns_autosize()
+            readme_view.show_all()
+
+            # self.readme_stack.set_visible_child(
+            #     self.builder.get_object('readme-view'))
+
+        def fill_readme_tree_store(store, data, parent=None):
+            def append_entry(store, entry, value, parent):
+                # Check whether the data is a UUID. We then enable a
+                # hyperlink-like navigation between datasets
+                is_u = is_uuid(value)
+                if is_u:
+                    markup = '<span foreground="blue" underline="single">' \
+                            f'{str(value)}</span>'
+                else:
+                    markup = f'<span>{str(value)}</span>'
+                store.append(parent,
+                            [entry, str(value), is_u, markup])
+
+            def fill_readme_tree_store_from_list(store, list_data, parent=None):
+                for i, current_data in enumerate(list_data):
+                    entry = f'{i + 1}'
+                    if type(current_data) is list:
+                        current_parent = store.append(parent,
+                                                    [entry, None, False, None])
+                        fill_readme_tree_store_from_list(store, current_data,
+                                                        parent=current_parent)
+                    elif type(current_data) is dict:
+                        current_parent = store.append(parent,
+                                                    [entry, None, False, None])
+                        fill_readme_tree_store(store, current_data,
+                                            parent=current_parent)
+                    else:
+                        append_entry(store, entry, current_data, parent)
+
+            if data is not None:
+                for entry, value in data.items():
+                    if type(value) is list:
+                        current = store.append(parent,
+                                            [entry, None, False, None])
+                        fill_readme_tree_store_from_list(store, value, parent=current)
+                    elif type(value) is dict:
+                        current = store.append(parent,
+                                            [entry, None, False, None])
+                        fill_readme_tree_store(store, value, parent=current)
+                    else:
+                        append_entry(store, entry, value, parent)
 
         async def _get_readme():
             self.readme_stack.set_visible_child(self.readme_spinner)
             self.readme_buffer.set_text(await dataset.get_readme())
             self.readme_stack.set_visible_child(self.readme_view)
             self.save_metadata_button.set_sensitive(False)
+            
+
+            ##################
+
+
 
         async def _get_manifest():
             self.manifest_stack.set_visible_child(self.manifest_spinner)
@@ -1646,6 +1716,8 @@ class MainWindow(Gtk.ApplicationWindow):
         asyncio.create_task(_get_tags())
         _logger.debug("Get annotations.")
         asyncio.create_task(_get_annotations())
+        _logger.debug("Get readme tree view.")
+        asyncio.create_task(_fetch_readme())
 
         if dataset.type == 'lookup':
             self.dependency_stack.show()
