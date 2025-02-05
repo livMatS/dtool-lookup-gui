@@ -60,7 +60,7 @@ class DefaultFilter(logging.Filter):
     def filter(self, record):
         """Filter out any log messages that match any of the defined exclusion patterns."""
         for regex in DEFAULT_EXCLUDE_REGEX:
-            if regex.search(record.msg) is not None:
+            if isinstance(record.msg, str) and regex.search(record.msg) is not None:
                 return False
 
         return True
