@@ -1,6 +1,13 @@
 Change log for dtool-lookup-gui
 ===============================
 
+0.7.1 (6Feb25)
+---------------
+
+- Introduced tree view of README.yml content
+- Added `dtool-gui` script call
+- Modified URL in about dialogue
+
 0.7.0 (17Dec24)
 ---------------
 
