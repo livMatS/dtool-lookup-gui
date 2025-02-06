@@ -93,7 +93,7 @@ If you are using Wayland, launch the app with environment variable
 
 .. code:: bash
 
-    GDK_BACKEND=x11 ./dtool_lookup_gui
+    GDK_BACKEND=x11 dtool-gui
 
 
 Use
@@ -256,7 +256,7 @@ After installation, run the GUI with:
 
 .. code:: bash
 
-   python -m dtool_lookup_gui
+   dtool-gui
 
 Note that when you run the GUI for the first time, you will need to configure
 the URL of the lookup and the authentication server as well as provide a

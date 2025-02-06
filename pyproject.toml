@@ -55,6 +55,9 @@ documentation = "https://dtool-lookup-gui.readthedocs.io"
 repository = "https://github.com/livMatS/dtool-lookup-gui"
 changelog = "https://dtool-lookup-gui.readthedocs.io/en/latest/changelog.html"
 
+[project.scripts]
+dtool-gui = "dtool_lookup_gui.main:run_gui"
+
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["dtool_lookup_gui*"]
