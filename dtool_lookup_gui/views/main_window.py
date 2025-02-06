@@ -1486,14 +1486,28 @@ class MainWindow(Gtk.ApplicationWindow):
             self.freeze_button.set_sensitive(not dataset.is_frozen)
             self.copy_button.set_sensitive(dataset.is_frozen)
 
+
+        def on_treeview_button_press(self, treeview, event):
+            if event.button == 1:  # Left mouse button
+                path_info = treeview.get_path_at_pos(int(event.x), int(event.y))
+                if path_info is not None:
+                    path, column, _, _ = path_info
+                    model = treeview.get_model()
+                    iter = model.get_iter(path)
+                    is_u = model.get_value(iter, 2)  
+                    if is_u:
+                        value = model.get_value(iter, 1)
+                        query = {"uuid": value}
+                        query_text = dump_single_line_query_text(query) 
+                        self.activate_action('search-select-show', GLib.Variant.new_string(query_text))
+
         def fill_readme_tree_store(store, data, parent=None):
             def append_entry(store, entry, value, parent):
                 # Check whether the data is a UUID. We then enable a
                 # hyperlink-like navigation between datasets
                 is_u = is_uuid(value)
                 if is_u:
-                    markup = '<span foreground="blue" underline="single">' \
-                            f'{str(value)}</span>'
+                    markup = f'<span foreground="blue" underline="single">{str(value)}</span>'
                 else:
                     markup = f'<span>{str(value)}</span>'
                 store.append(parent,
@@ -1542,6 +1556,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
             fill_readme_tree_store(store, readme_dict)
             self.readme_tree_view.columns_autosize()
+            self.readme_tree_view.connect("button-press-event", lambda widget, event:on_treeview_button_press(self = self, event=event,treeview=self.readme_tree_view))
             self.readme_tree_view.show_all()
 
         async def _get_manifest():
