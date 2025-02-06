@@ -74,7 +74,7 @@
             <property name="xpad">5</property>
             <property name="ypad">5</property>
             <property name="label" translatable="yes">Web: &lt;a href="https://github.com/livMatS/dtool-lookup-gui" title="dtool-lookup-gui homepage"&gt;https://github.com/livMatS/dtool-lookup-gui&lt;/a&gt;
-Wiki: &lt;a href="https://github.com/livMatS/RDM-Wiki-public" title="livMatS RDM Wiki"&gt;https://github.com/livMatS/RDM-Wiki-public&lt;/a&gt;</property>
+Docs: &lt;a href="https://dtool-lookup-gui.readthedocs.io" title="dtool-lookup-gui docs"&gt;https://dtool-lookup-gui.readthedocs.io&lt;/a&gt;</property>
             <property name="use-markup">True</property>
           </object>
           <packing>
