@@ -17,7 +17,7 @@ click==8.1.8
 click-plugins==1.1.1
 colorama==0.4.6
 cryptography==44.0.0
-Cython==3.0.11
+Cython==3.0.12
 distlib==0.3.9
 docutils==0.21.2
 dtool-cli==0.7.1
