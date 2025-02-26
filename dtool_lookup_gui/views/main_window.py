@@ -114,6 +114,8 @@ class MainWindow(Gtk.ApplicationWindow):
     create_dataset_button = Gtk.Template.Child()
     menu_button = Gtk.Template.Child()
 
+    burger_menu = Gtk.Template.Child()
+
     search_entry = Gtk.Template.Child()
 
     base_uri_list_box = Gtk.Template.Child()
@@ -715,8 +717,8 @@ class MainWindow(Gtk.ApplicationWindow):
     @Gtk.Template.Callback()
     def on_create_dataset_clicked(self, widget):
         """Dataset creation button clicked."""
-        DatasetNameDialog(on_confirmation=lambda name:self.activate_action('create-dataset', GLib.Variant.new_string(name))
-).show()
+        DatasetNameDialog(on_confirmation=lambda name:self.activate_action(
+            'create-dataset', GLib.Variant.new_string(name))).show()
 
     @Gtk.Template.Callback()
     def on_refresh_clicked(self, widget):
