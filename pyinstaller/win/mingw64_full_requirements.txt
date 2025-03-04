@@ -4,7 +4,7 @@
 #
 #    pip-compile --output-file=pyinstaller/mingw64_full_requirements.txt pyinstaller/mingw64_requirements.in
 #
-aiohappyeyeballs==2.4.6
+aiohappyeyeballs==2.4.8
     # via aiohttp
 aiohttp==3.10.11
     # via dtool-lookup-api
