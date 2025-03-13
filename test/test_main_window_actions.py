@@ -716,3 +716,52 @@ async def test_do_put_tag_action_trigger(running_app):
         action.activate(GLib.Variant.new_string("tag"))
         mock_put_tag.assert_called_once_with("tag")
 
+
+@pytest.mark.asyncio
+async def test_do_select_dataset_row_by_uri_direct_call(populated_app_with_mock_data):
+    """
+    Test the do_select_dataset_row_by_uri method for directly selecting a dataset row by URI.
+    It verifies if the dataset list is correctly populated and the specified dataset row is selected.
+    """
+
+    async def wait_for_datasets_to_load(list_box, timeout=10):
+        start_time = asyncio.get_event_loop().time()
+        while asyncio.get_event_loop().time() - start_time < timeout:
+            if len(list_box.get_children()) > 0:
+                return True
+            await asyncio.sleep(0.1)
+        return False
+
+    windows = populated_app_with_mock_data.get_windows()
+    main_window = [w for w in windows if isinstance(w, MainWindow)][0]
+
+    # Trigger the 'refresh-view' action and wait for datasets to load
+    main_window.activate_action('refresh-view')
+    datasets_loaded = await wait_for_datasets_to_load(main_window.dataset_list_box)
+    assert datasets_loaded, "Datasets were not loaded in time"
+
+    # Define a URI that corresponds to a dataset in the populated dataset list
+    test_uri = "s3://test-bucket/1a1f9fad-8589-413e-9602-5bbd66bfe675"
+
+    # Create a GLib.Variant with the test URI
+    uri_variant = GLib.Variant.new_string(test_uri)
+
+    dummy_action = Gio.SimpleAction.new("select-dataset-by-uri", uri_variant.get_type())
+
+    # Call the do_select_dataset_row_by_uri method with the test URI
+    main_window.do_select_dataset_row_by_uri(dummy_action , uri_variant)
+
+    # Retrieve the dataset that should be selected based on the URI
+    index = main_window.dataset_list_box.get_row_index_from_uri(test_uri)
+    selected_row = main_window.dataset_list_box.get_row_at_index(index)
+    selected_dataset = selected_row.dataset if selected_row is not None else None
+
+    # Assert that the dataset with the given URI is selected
+    assert selected_dataset is not None, "No dataset was selected"
+    assert selected_dataset.uri == test_uri, f"Expected URI {test_uri}, got {selected_dataset.uri}"
+
+    # Await completion of all tasks related to the test
+    pending_tasks = [task for task in asyncio.all_tasks() if task is not asyncio.current_task()]
+    if pending_tasks:
+        await asyncio.gather(*pending_tasks)
+
