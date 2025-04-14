@@ -44,12 +44,13 @@ gi.require_version('GtkSource', '4')
 from gi.repository import GLib, GObject, Gio, Gtk, GtkSource, GdkPixbuf
 from gi.events import GLibEventLoopPolicy
 
-from .models.settings import settings
+from dtool_lookup_gui.plugins import PluginManager
+from dtool_lookup_gui.models.settings import settings
 
-from .views.main_window import MainWindow
-from .views.login_window import LoginWindow
+from dtool_lookup_gui.views.main_window import MainWindow
+from dtool_lookup_gui.views.login_window import LoginWindow
 
-from .utils.logging import _log_nested
+from dtool_lookup_gui.utils.logging import _log_nested
 
 # The following imports are need to register widget types with the GObject type system
 import dtool_lookup_gui.widgets.base_uri_list_box
@@ -92,6 +93,8 @@ class Application(Gtk.Application):
                          flags=flags, **kwargs)
         self.loop = loop
         self.args = None
+
+        self._plugin_manager = PluginManager()
 
         self._startup_done = asyncio.Event()
         self._activation_done = asyncio.Event()
@@ -148,6 +151,9 @@ class Application(Gtk.Application):
                 logger.warning("Could not load app icons.")
             win.connect("destroy", self.on_window_destroy)
             self.loop.call_soon(win.refresh)  # Populate widgets after event loop starts
+
+        logger.warning("Activate SolidipesPlugin.")
+        self._plugin_manager.activate_plugin("SolidipesPlugin", win)
 
         logger.debug("Present main window.")
         win.present()
@@ -271,6 +277,9 @@ class Application(Gtk.Application):
         renew_token_action = Gio.SimpleAction.new("renew-token", GLib.VariantType.new("(sss)"))
         renew_token_action.connect("activate", self.do_renew_token)
         self.add_action(renew_token_action)
+
+        # load plugins
+        self._plugin_manager.load_plugins()
 
         Gtk.Application.do_startup(self)
 
