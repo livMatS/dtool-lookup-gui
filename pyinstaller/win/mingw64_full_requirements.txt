@@ -16,7 +16,7 @@ attrs==25.1.0
     # via aiohttp
 boto3==1.37.0
     # via dtool-s3
-botocore==1.37.8
+botocore==1.39.3
     # via
     #   boto3
     #   s3transfer
