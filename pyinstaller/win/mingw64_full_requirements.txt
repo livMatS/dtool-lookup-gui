@@ -14,7 +14,7 @@ asgiref==3.8.1
     # via dtool-lookup-api
 attrs==25.1.0
     # via aiohttp
-boto3==1.37.0
+boto3==1.40.50
     # via dtool-s3
 botocore==1.37.8
     # via
