@@ -157,13 +157,31 @@ Requirements
 
 This application requires Gtk_ 3 and GtkSourceView_ 4.
 
-On Ubuntu (20.04),
+On Ubuntu 20.04,
 
 .. code:: bash
 
     apt install -y gir1.2-gtksource-4
 
 suffices to to install these dependencies from the standard system package repositories.
+
+On Ubuntu 24.04, 
+
+.. code:: bash
+
+    sudo apt update
+    sudo apt install -y \
+        libcairo2-dev \
+        libgirepository-2.0-dev \
+        libgirepository1.0-dev \
+        gir1.2-gtk-3.0 \
+        pkg-config \
+        python3-dev \
+        build-essential \
+        meson \
+        ninja-build
+
+is needed.
 
 On recent macOS (>= 10.15) use homebrew, 
 
