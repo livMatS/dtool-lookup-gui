@@ -239,7 +239,7 @@
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkButton">
+                      <object class="GtkButton" id="renew_token_button">
                         <property name="label" translatable="yes">Renew token</property>
                         <property name="visible">True</property>
                         <property name="can-focus">True</property>

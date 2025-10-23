@@ -68,6 +68,7 @@ class SettingsDialog(Gtk.Window):
     lookup_url_entry = Gtk.Template.Child()
     token_entry = Gtk.Template.Child()
     authenticator_url_entry = Gtk.Template.Child()
+    renew_token_button = Gtk.Template.Child()
     dependency_keys_entry = Gtk.Template.Child()
     verify_ssl_certificate_switch = Gtk.Template.Child()
     disable_authentication_switch = Gtk.Template.Child()
@@ -142,6 +143,11 @@ class SettingsDialog(Gtk.Window):
         else:
             logger.debug("No lookup server disable authentication configured, set False.")
             self.disable_authentication_switch.set_state(False)
+
+        disabled = self.disable_authentication_switch.get_state()
+        self.authenticator_url_entry.set_sensitive(not disabled)
+        self.renew_token_button.set_sensitive(not disabled)
+        self.token_entry.set_sensitive(not disabled)
 
         # access basic config via default dtool config
         self.dtool_user_full_name_entry.set_text(
@@ -314,3 +320,6 @@ class SettingsDialog(Gtk.Window):
     @Gtk.Template.Callback()
     def on_disable_authentication_switch_state_set(self, widget, state):
         Config.disable_authentication = state
+        self.authenticator_url_entry.set_sensitive(not state)
+        self.renew_token_button.set_sensitive(not state)
+        self.token_entry.set_sensitive(not state)
