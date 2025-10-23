@@ -70,6 +70,7 @@ class SettingsDialog(Gtk.Window):
     authenticator_url_entry = Gtk.Template.Child()
     dependency_keys_entry = Gtk.Template.Child()
     verify_ssl_certificate_switch = Gtk.Template.Child()
+    disable_authentication_switch = Gtk.Template.Child()
     base_uris_list_box = Gtk.Template.Child()
 
     dtool_user_full_name_entry = Gtk.Template.Child()
@@ -135,6 +136,13 @@ class SettingsDialog(Gtk.Window):
             logger.debug("No lookup server verify ssl configured, set True.")
             self.verify_ssl_certificate_switch.set_state(True)
 
+        if Config.disable_authentication is not None:
+            logger.debug(f"Current lookup server disable authentication: {Config.disable_authentication}")
+            self.disable_authentication_switch.set_state(Config.disable_authentication)
+        else:
+            logger.debug("No lookup server disable authentication configured, set False.")
+            self.disable_authentication_switch.set_state(False)
+
         # access basic config via default dtool config
         self.dtool_user_full_name_entry.set_text(
             dtoolcore.utils.get_config_value(_DTOOL_USER_FULL_NAME_KEY, default=""))
@@ -188,6 +196,7 @@ class SettingsDialog(Gtk.Window):
         Config.token = self.token_entry.get_text()
         Config.auth_url = self.authenticator_url_entry.get_text()
         Config.verify_ssl = self.verify_ssl_certificate_switch.get_state()
+        Config.disable_authentication = self.disable_authentication_switch.get_state()
 
         # write back basic config via default dtool api
         dtool_user_full_name = self.dtool_user_full_name_entry.get_text()
@@ -298,9 +307,10 @@ class SettingsDialog(Gtk.Window):
         """Switch yaml linting on and off"""
         settings.yaml_linting_enabled = state
 
+    @Gtk.Template.Callback()
+    def on_verify_ssl_certificate_switch_state_set(self, widget, state):
+        Config.verify_ssl = state
 
-
-
-
-
-
+    @Gtk.Template.Callback()
+    def on_disable_authentication_switch_state_set(self, widget, state):
+        Config.disable_authentication = state
