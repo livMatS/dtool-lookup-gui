@@ -124,7 +124,7 @@ six==1.16.0
     # via python-dateutil
 tqdm==4.66.6
     # via pysmb
-urllib3==2.2.3
+urllib3==2.5.0
     # via
     #   botocore
     #   requests
