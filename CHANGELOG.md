@@ -1,8 +1,8 @@
 Change log for dtool-lookup-gui
 ===============================
 
-unpublished
------------
+0.7.2 (13Nov25)
+---------------
 
 - Introduced switch for deactivating authentication against dserver
 - Fixed save metadata button not working
