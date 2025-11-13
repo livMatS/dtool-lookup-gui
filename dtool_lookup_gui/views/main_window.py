@@ -437,6 +437,27 @@ class MainWindow(Gtk.ApplicationWindow):
         self.linting_problems = None
         self.linting_errors_button.set_sensitive(False)
 
+    def _create_task_with_error_handling(self, coro, task_name="Async task"):
+        """
+        Create an async task with error handling.
+
+        Wraps asyncio.create_task to ensure exceptions are logged properly
+        instead of being silently suppressed.
+        """
+        def _handle_task_result(task):
+            """Callback to handle task completion and errors."""
+            try:
+                # This will raise the exception if the task failed
+                task.result()
+            except asyncio.CancelledError:
+                _logger.debug(f"{task_name} was cancelled")
+            except Exception as e:
+                _logger.error(f"{task_name} failed with exception: {e}", exc_info=True)
+
+        task = asyncio.create_task(coro)
+        task.add_done_callback(_handle_task_result)
+        return task
+
     # actions
 
     # dataset selection actions
@@ -554,8 +575,8 @@ class MainWindow(Gtk.ApplicationWindow):
     # put annotations action
     def do_delete_annotation(self, action, value):
         """Put annotations on the selected dataset."""
-        value = value.get_string()
-        self._delete_annotation(value)
+        annotation_name = value.get_string()
+        self._delete_annotation(annotation_name)
 
     # add item action
     def do_add_item(self, action, value):
@@ -595,7 +616,7 @@ class MainWindow(Gtk.ApplicationWindow):
                 _logger.debug("Try to open '%s' with default application.", dest_file)
                 launch_default_app_for_uri(dest_file)
 
-        asyncio.create_task(_get_item(dataset, item_uuid))
+        self._create_task_with_error_handling(_get_item(dataset, item_uuid), "Get item")
 
     def do_refresh_view(self, action, value):
         """Refresh view by reloading base uri list, """
@@ -710,7 +731,7 @@ class MainWindow(Gtk.ApplicationWindow):
         dialog.destroy()
 
         # Refresh view of base URIs
-        asyncio.create_task(self._refresh_base_uri_list_box())
+        self._create_task_with_error_handling(self._refresh_base_uri_list_box(), "Refresh base URI list")
 
     @Gtk.Template.Callback()
     def on_create_dataset_clicked(self, widget):
@@ -725,7 +746,11 @@ class MainWindow(Gtk.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def on_show_clicked(self, widget):
-        uri = str(self.dataset_list_box.get_selected_row().dataset)
+        row = self.dataset_list_box.get_selected_row()
+        if row is None:
+            logger.warning("No dataset selected")
+            return
+        uri = str(row.dataset)
         launch_default_app_for_uri(uri)
 
     @Gtk.Template.Callback()
@@ -956,7 +981,7 @@ class MainWindow(Gtk.ApplicationWindow):
             except Exception as e:
                 self.show_error(e)
 
-        asyncio.create_task(_copy())
+        self._create_task_with_error_handling(_copy(), "Copy dataset")
 
     # public methods
 
@@ -986,7 +1011,7 @@ class MainWindow(Gtk.ApplicationWindow):
             #    _logger.debug(f"Select and show '{dataset_uri}'.")
             #    self._select_and_show_by_uri(dataset_uri)
 
-        asyncio.create_task(_refresh())
+        self._create_task_with_error_handling(_refresh(), "Refresh after action")
 
     def show_error(self, exception):
         _logger.error(traceback.format_exc())
@@ -1108,7 +1133,7 @@ class MainWindow(Gtk.ApplicationWindow):
             # This happens asynchronously as well. This means _fetch_search_results called again
             # within the retry() function would open another LoginWindow here as the token renewal does
             # not happen "quick" enough. Hence there is the asyncio.sleep(1).
-            LoginWindow(application=self.application, follow_up_action=lambda: asyncio.create_task(retry())).show()
+            LoginWindow(application=self.application, follow_up_action=lambda: self._create_task_with_error_handling(retry(), "Retry after login")).show()
 
         except Exception as e:
             self.show_error(e)
@@ -1145,12 +1170,12 @@ class MainWindow(Gtk.ApplicationWindow):
 
     def _show_dataset_details(self, dataset):
         """Kick off asynchronous task to show dataset details."""
-        asyncio.create_task(self._update_dataset_view(dataset))
+        self._create_task_with_error_handling(self._update_dataset_view(dataset), "Update dataset view")
         self.dataset_stack.set_visible_child(self.dataset_box)
 
     def _build_dependency_graph(self, dataset):
         """Kick off asynchronous task to build dependency graph."""
-        asyncio.create_task(self._compute_dependencies(dataset))
+        self._create_task_with_error_handling(self._compute_dependencies(dataset), "Compute dependencies")
 
     def _show_dataset_details_by_row_index(self, index):
         """Show dataset details by row index."""
@@ -1201,33 +1226,33 @@ class MainWindow(Gtk.ApplicationWindow):
         """Put tags on the selected dataset."""
         dataset = self.dataset_list_box.get_selected_row().dataset
         dataset.put_tag(tags)
-        asyncio.create_task(self._update_dataset_view(dataset))
+        self._create_task_with_error_handling(self._update_dataset_view(dataset), "Update dataset view")
 
     # put annotations function for action
     def _put_annotation(self, key, value):
         """Put annotations on the selected dataset."""
         dataset = self.dataset_list_box.get_selected_row().dataset
         dataset.put_annotation(annotation_name=key, annotation=value)
-        asyncio.create_task(self._update_dataset_view(dataset))
+        self._create_task_with_error_handling(self._update_dataset_view(dataset), "Update dataset view")
 
     def _delete_tag(self, tag):
         """Put tags on the selected dataset."""
         dataset = self.dataset_list_box.get_selected_row().dataset
         dataset.delete_tag(tag)
-        asyncio.create_task(self._update_dataset_view(dataset))
+        self._create_task_with_error_handling(self._update_dataset_view(dataset), "Update dataset view")
 
     def _delete_annotation(self, annotation_name):
         """Put annotations on the selected dataset."""
         dataset = self.dataset_list_box.get_selected_row().dataset
         dataset.delete_annotation(annotation_name)
-        asyncio.create_task(self._update_dataset_view(dataset))
+        self._create_task_with_error_handling(self._update_dataset_view(dataset), "Update dataset view")
 
     def _refresh_datasets(self, on_show=None):
         """Reset dataset list, show spinner, and kick off async task for retrieving dataset entries."""
         self.main_stack.set_visible_child(self.main_spinner)
         row = self.base_uri_list_box.search_results_row
         row.search_results = None
-        asyncio.create_task(self._fetch_search_results(on_show=on_show))
+        self._create_task_with_error_handling(self._fetch_search_results(on_show=on_show), "Fetch search results")
 
     def _search_select_and_show(self, search_text):
         """Get datasets by text search, select first row and show dataset details."""
@@ -1377,7 +1402,7 @@ class MainWindow(Gtk.ApplicationWindow):
 
         if row.task is None:
             _logger.debug("Spawn select_base_uri task.")
-            row.task = asyncio.create_task(_select_base_uri())
+            row.task = self._create_task_with_error_handling(_select_base_uri(), "Select base URI")
 
     def _set_lookup_gui_widgets_state(self, state=False):
         self.search_entry.set_sensitive(state)
@@ -1393,7 +1418,11 @@ class MainWindow(Gtk.ApplicationWindow):
         """
         This function automatically reloads the data and selects the first URI.
         """
-        first_row = self.base_uri_list_box.get_children()[0]
+        children = self.base_uri_list_box.get_children()
+        if not children:
+            logger.warning("No base URIs available")
+            return
+        first_row = children[0]
         self.base_uri_list_box.select_row(first_row)
         self.on_base_uri_selected(self.base_uri_list_box, first_row)
 
@@ -1556,7 +1585,10 @@ class MainWindow(Gtk.ApplicationWindow):
 
             fill_readme_tree_store(store, readme_dict)
             self.readme_tree_view.columns_autosize()
-            self.readme_tree_view.connect("button-press-event", lambda widget, event:on_treeview_button_press(self = self, event=event,treeview=self.readme_tree_view))
+            # Disconnect previous handler to prevent memory leak
+            if hasattr(self, '_readme_tree_view_handler_id') and self._readme_tree_view_handler_id:
+                self.readme_tree_view.disconnect(self._readme_tree_view_handler_id)
+            self._readme_tree_view_handler_id = self.readme_tree_view.connect("button-press-event", lambda widget, event:on_treeview_button_press(self = self, event=event,treeview=self.readme_tree_view))
             self.readme_tree_view.show_all()
 
         async def _get_manifest():
@@ -1677,8 +1709,7 @@ class MainWindow(Gtk.ApplicationWindow):
                             self.activate_action('put-annotation', annotation_tuple)
                             dataset.put_annotation(annotation_name=new_key, annotation=new_value)
                             button.set_label("-")  # Change to delete after saving
-                            button.set_label("-")  # Change to "-" after saving
-                            asyncio.create_task(self._update_dataset_view(dataset))
+                            self._create_task_with_error_handling(self._update_dataset_view(dataset), "Update dataset view")
 
                 # Update button label on text change
                 def on_text_changed(entry):
@@ -1710,13 +1741,13 @@ class MainWindow(Gtk.ApplicationWindow):
             self.annotations_box.show_all()
 
         _logger.debug("Get readme.")
-        asyncio.create_task(_get_readme())
+        self._create_task_with_error_handling(_get_readme(), "Get readme")
         _logger.debug("Get manifest.")
-        asyncio.create_task(_get_manifest())
+        self._create_task_with_error_handling(_get_manifest(), "Get manifest")
         _logger.debug("Get tags.")
-        asyncio.create_task(_get_tags())
+        self._create_task_with_error_handling(_get_tags(), "Get tags")
         _logger.debug("Get annotations.")
-        asyncio.create_task(_get_annotations())
+        self._create_task_with_error_handling(_get_annotations(), "Get annotations")
         # _logger.debug("Get readme tree view.")
         # asyncio.create_task(_fetch_readme())
 

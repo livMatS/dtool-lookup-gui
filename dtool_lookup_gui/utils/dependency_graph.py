@@ -44,7 +44,6 @@ class DependencyGraph:
     def __init__(self):
         self._search_state = SearchState()
         self._reset_graph()
-        self._reset_graph()
 
     @property
     def graph(self):

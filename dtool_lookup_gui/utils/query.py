@@ -49,6 +49,6 @@ def multi_line_sanitize_query_text(text):
 def is_valid_query(text):
     try:
         load_query_text(text)
-    except:
+    except (json.JSONDecodeError, ValueError, TypeError):
         return False
     return True

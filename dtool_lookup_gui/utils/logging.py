@@ -100,7 +100,7 @@ class GtkBufferHandler(logging.Handler):
         self.max_lines = max_lines
 
     @property
-    def max_lines(self, value: int):
+    def max_lines(self):
         return self._max_lines
 
     @max_lines.setter
@@ -225,7 +225,7 @@ class AppendingGtkEntryBufferHandler(GtkEntryBufferHandler):
             if (self._max_lines is not None
                     and len(new_text.splitlines()) > self._max_lines):
                 lines_to_remove = len(new_text.splitlines()) - self._max_lines
-                new_text = "\n".joint(new_text.splitlines()[lines_to_remove:])
+                new_text = "\n".join(new_text.splitlines()[lines_to_remove:])
 
         self._buffer.set_text(new_text)
 

@@ -23,6 +23,7 @@
 # SOFTWARE.
 #
 
+import json
 import logging
 import os
 
@@ -65,7 +66,7 @@ class DtoolSearchPopover(Gtk.Popover):
         search_text = self.search_entry_buffer.get_text()
         try:
             sanitized_search_text = multi_line_sanitize_query_text(search_text)
-        except:
+        except (json.JSONDecodeError, ValueError, TypeError):
             logger.debug("Not a valid query.")
             sanitized_search_text = search_text
         self.search_text_buffer.set_text(sanitized_search_text, -1)
@@ -82,7 +83,7 @@ class DtoolSearchPopover(Gtk.Popover):
         search_text = self.search_text_buffer.get_text(start_iter, end_iter, True)
         try:
             sanitized_search_text = single_line_sanitize_query_text(search_text)
-        except:
+        except (json.JSONDecodeError, ValueError, TypeError):
             logger.debug("Not a valid query.")
             sanitized_search_text = search_text
         self.search_entry_buffer.set_text(sanitized_search_text, -1)
