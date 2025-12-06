@@ -132,7 +132,7 @@ six==1.17.0
     # via python-dateutil
 tqdm==4.67.1
     # via pysmb
-urllib3==2.3.0
+urllib3==2.6.0
     # via
     #   -r pyinstaller/mingw64_requirements.in
     #   botocore
