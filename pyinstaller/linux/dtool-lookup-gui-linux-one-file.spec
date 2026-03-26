@@ -1,5 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 from glob import glob
+import os
 from PyInstaller.utils.hooks import collect_entry_point, copy_metadata
 
 root_dir = os.path.abspath(os.curdir)
@@ -21,7 +22,7 @@ icon_parent_folders = list(glob(icon_parent_folder_glob_pattern))
 icon_glob_patterns = [os.path.join(icon_parent_folder, '*.xpm') for icon_parent_folder in icon_parent_folders]
 
 # relative to repository root
-glob_patterns_to_include =  [
+glob_patterns_to_include = [
     'README.rst', 'LICENSE.md',
     os.path.join('dtool_lookup_gui', 'gschemas.compiled'),
     os.path.join('dtool_lookup_gui', 'views', '*.ui'),
@@ -34,11 +35,57 @@ additional_datas = [
      os.path.join(os.curdir, os.path.dirname(rel_path))) for rel_path in glob_patterns_to_include
 ]
 
+# Explicitly bundle GObject Introspection typelib files.
+# PyInstaller's GI hook attempts to introspect modules at build time via a
+# child process. If the build environment has no display or the GI typelib path
+# is not set, the hook emits "Failed to query GI module X" warnings and skips
+# bundling the typelibs — producing a defunct bundle that crashes with
+# "gi.RepositoryError: Typelib file for namespace 'Gtk' version '3.0' not found".
+#
+# We explicitly collect the required typelibs here as a reliable fallback.
+# The runtime hook (pyi_rth_glib.py) sets GI_TYPELIB_PATH to the bundle's
+# gi_typelibs/ directory so gi.repository can find them at startup.
+REQUIRED_TYPELIBS = [
+    'Gtk-3.0',
+    'GLib-2.0',
+    'GObject-2.0',
+    'Gio-2.0',
+    'Gdk-3.0',
+    'GdkX11-3.0',
+    'GdkPixbuf-2.0',
+    'Pango-1.0',
+    'PangoCairo-1.0',
+    'cairo-1.0',
+    'GtkSource-4',
+    'freetype2-2.0',
+    'HarfBuzz-0.0',
+    'GdkPixdata-2.0',
+    'Graphene-1.0',
+    'xlib-2.0',
+    'xfixes-4.0',
+]
+
+# Search standard typelib locations used by Ubuntu 24.04
+TYPELIB_SEARCH_DIRS = [
+    '/usr/lib/x86_64-linux-gnu/girepository-1.0',
+    '/usr/lib/girepository-1.0',
+    '/usr/lib64/girepository-1.0',
+]
+
+gi_typelib_datas = []
+for typelib_name in REQUIRED_TYPELIBS:
+    filename = f'{typelib_name}.typelib'
+    for search_dir in TYPELIB_SEARCH_DIRS:
+        full_path = os.path.join(search_dir, filename)
+        if os.path.isfile(full_path):
+            gi_typelib_datas.append((full_path, 'gi_typelibs'))
+            break
+
 hooks_path = [os.path.join(root_dir, 'pyinstaller/hooks')]
 
 runtime_hooks = [
-  os.path.join(root_dir, 'pyinstaller/rthooks/pyi_rth_jinja2.py'),
-  os.path.join(root_dir, 'pyinstaller/rthooks/pyi_rth_glib.py')
+    os.path.join(root_dir, 'pyinstaller/rthooks/pyi_rth_jinja2.py'),
+    os.path.join(root_dir, 'pyinstaller/rthooks/pyi_rth_glib.py'),
 ]
 
 a = Analysis(
@@ -49,11 +96,12 @@ a = Analysis(
         *additional_datas,
         *dtool_storage_brokers_datas,
         *dtool_hidden_imports_datas,
+        *gi_typelib_datas,
     ],
     hiddenimports=[
-      *dtool_hidden_imports,
-      *dtool_storage_brokers_hidden_imports,
-      *other_hidden_imports,
+        *dtool_hidden_imports,
+        *dtool_storage_brokers_hidden_imports,
+        *other_hidden_imports,
     ],
     hookspath=[*hooks_path],
     hooksconfig={
