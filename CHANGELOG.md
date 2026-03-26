@@ -10,6 +10,13 @@ Change log for dtool-lookup-gui
 - BUG: fix `collect_number_of_tests.py` propagating error text to stdout,
   which caused `pytest -n "Error..."` to fail with invalid numprocesses value
 - MAINT: fix typo in `build-on-ubuntu` workflow name
+- BUG: fix defunct Linux bundle — explicitly bundle GI typelibs (Gtk-3.0,
+  GLib-2.0, Gio-2.0, Pango-1.0, GtkSource-4, GdkPixbuf-2.0, etc.) in
+  PyInstaller spec and set `GI_TYPELIB_PATH` in runtime hook so the bundled
+  app can find them; previously all GI modules were silently missing
+- CI: fix Ubuntu build workflow — run PyInstaller under xvfb-run so GI hook
+  child processes can initialise GTK; add smoke-test step that verifies
+  the bundle starts without crashing before uploading artifacts
 
 0.7.2 (13Nov25)
 ---------------
