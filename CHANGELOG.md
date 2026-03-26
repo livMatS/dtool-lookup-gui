@@ -1,6 +1,16 @@
 Change log for dtool-lookup-gui
 ===============================
 
+0.7.3 (unreleased)
+-------------------
+
+- CI: fix test workflow — add missing `glib-compile-schemas` step that was
+  causing all test jobs to fail since early 2026 (GLib.Error on settings import)
+- CI: update Python test matrix to 3.10–3.13 (drop EOL 3.9, add 3.13)
+- BUG: fix `collect_number_of_tests.py` propagating error text to stdout,
+  which caused `pytest -n "Error..."` to fail with invalid numprocesses value
+- MAINT: fix typo in `build-on-ubuntu` workflow name
+
 0.7.2 (13Nov25)
 ---------------
 
