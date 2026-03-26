@@ -19,10 +19,6 @@ jobs:
         git fetch --prune --unshallow
         git fetch --depth=1 origin +refs/tags/*:refs/tags/*
 
-    - name: Get version
-      id: get_version
-      uses: battila7/get-version-action@v2
-
     - name: Set up Python 3.12
       uses: actions/setup-python@v5
       with:
@@ -39,21 +35,24 @@ jobs:
           python3-dev \
           gir1.2-gtk-3.0 \
           gir1.2-gtksource-4 \
-          libgtksourceview-4-0
+          libgtksourceview-4-0 \
+          xvfb
 
     - name: Log system package info
       run: |
-        echo "### lab_release -a ###"
+        echo "### lsb_release -a ###"
         lsb_release -a | tee lsb_release_a.txt
         echo "### uname -a ###"
         uname -a | tee uname_a.txt
         echo "### apt list --installed ###"
         apt list --installed | tee apt_list_installed.txt
-        
+        echo "### GI typelib directory ###"
+        ls /usr/lib/x86_64-linux-gnu/girepository-1.0/ | tee typelib_list.txt
+
     - name: Install pythonic dependencies
       run: |
         pip install --upgrade pip
-        pip install wheel setuptools_scm
+        pip install wheel setuptools_scm pyinstaller-hooks-contrib
         pip install -r pyinstaller/linux/requirements.txt
         pip install pyinstaller
 
@@ -74,10 +73,32 @@ jobs:
       working-directory: dtool_lookup_gui
 
     - name: Package executable with pyinstaller
+      # Run under xvfb so PyInstaller's GI hook child processes can initialise
+      # GTK (gi._get_module_info) without "cannot open display" errors.
+      # Also set GI_TYPELIB_PATH and GDK_BACKEND explicitly as belt-and-suspenders.
+      env:
+        GI_TYPELIB_PATH: /usr/lib/x86_64-linux-gnu/girepository-1.0
+        GDK_BACKEND: x11
       run: |
-        pyinstaller -y ./pyinstaller/linux/dtool-lookup-gui-linux-one-file.spec 2>&1 | tee pyinstaller.log
+        xvfb-run --auto-servernum \
+          pyinstaller -y ./pyinstaller/linux/dtool-lookup-gui-linux-one-file.spec 2>&1 | tee pyinstaller.log
         mv dist/dtool-lookup-gui dtool-lookup-gui
         chmod +x dtool-lookup-gui
+
+    - name: Smoke-test bundle (headless)
+      # Verify the bundle starts without immediately crashing.
+      # xvfb-run provides a display; timeout 10s means success if no crash within 10s.
+      run: |
+        xvfb-run --auto-servernum \
+          timeout 10 ./dtool-lookup-gui 2>&1 | head -20 || EXIT=$?
+        # exit 124 = timeout (app was running) = PASS
+        # exit 0   = clean exit               = PASS  
+        # anything else                       = FAIL
+        if [ "${EXIT:-0}" -ne 124 ] && [ "${EXIT:-0}" -ne 0 ]; then
+          echo "FAIL: bundle crashed with exit code ${EXIT:-0}"
+          exit 1
+        fi
+        echo "PASS: bundle ran for 10s without crashing (exit=${EXIT:-0})"
 
     # use tar here, see https://github.com/actions/upload-artifact/issues/38
     - name: Pack build assets
