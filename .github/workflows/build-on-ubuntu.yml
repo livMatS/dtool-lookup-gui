@@ -1,4 +1,4 @@
-name: build-on-ubunu
+name: build-on-ubuntu
 
 on:
   workflow_call:
