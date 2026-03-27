@@ -17,6 +17,11 @@ Change log for dtool-lookup-gui
 - CI: fix Ubuntu build workflow — run PyInstaller under xvfb-run so GI hook
   child processes can initialise GTK; add smoke-test step that verifies
   the bundle starts without crashing before uploading artifacts
+- BUG: fix Linux bundle crashing with `Unrecognized image file format` on PNG;
+  explicitly bundle `libgdk-pixbuf-2.0.so`, `libpng16.so`, `libjpeg.so` and
+  related libraries; also bundle GdkPixbuf loader `.so` files and regenerate
+  `loaders.cache` in CI so the bundled app can decode images without a system
+  GdkPixbuf installation
 - BUG: fix Linux bundle missing `GObject.type_register` and other `gi.overrides`
   Python wrappers; PyInstaller's GI hook skips overrides when module introspection
   fails; explicitly collect all `gi.overrides` submodules as hidden imports

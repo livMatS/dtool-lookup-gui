@@ -133,6 +133,41 @@ if os.path.isdir(_loaders_src):
 else:
     print(f'[spec] WARNING: pixbuf loaders dir not found: {_loaders_src}')
 
+# Explicitly bundle libgdk-pixbuf-2.0 and its PNG/JPEG dependencies.
+# PyInstaller doesn't auto-collect these because gi.repository.GdkPixbuf loads
+# them via GObject introspection at runtime. Without them the bundled app aborts:
+#   Gtk:ERROR: Failed to load image-missing.png: Unrecognized image file format
+import glob as _pixglob
+
+_PIXBUF_LIBS = [
+    'libgdk-pixbuf-2.0.so*',
+    'libpng16.so*',
+    'libjpeg.so*',
+    'libtiff.so*',
+    'libjbig.so*',
+    'libwebp.so*',
+    'libwebpdecoder.so*',
+    'libwebpdemux.so*',
+    'libdeflate.so*',
+    'liblzma.so*',
+    'libzstd.so*',
+    'librsvg-2.so*',
+    'libcroco-0.6.so*',
+    'libxml2.so*',
+]
+_PIXBUF_SEARCH = [
+    '/usr/lib/x86_64-linux-gnu',
+    '/usr/lib64',
+]
+_pixbuf_binaries = []
+for _pat in _PIXBUF_LIBS:
+    for _sdir in _PIXBUF_SEARCH:
+        _matches = _pixglob.glob(os.path.join(_sdir, _pat))
+        for _m in _matches:
+            if os.path.isfile(_m) and not _m.endswith('.a'):
+                _pixbuf_binaries.append((_m, '.'))
+                break
+
 hooks_path = [os.path.join(root_dir, 'pyinstaller/hooks')]
 
 runtime_hooks = [
@@ -143,7 +178,7 @@ runtime_hooks = [
 a = Analysis(
     [os.path.join(root_dir, 'dtool_lookup_gui', 'launcher.py')],
     pathex=[],
-    binaries=[],
+    binaries=[*_pixbuf_binaries],
     datas=[
         *additional_datas,
         *dtool_storage_brokers_datas,
