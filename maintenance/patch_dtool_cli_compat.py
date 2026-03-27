@@ -65,37 +65,56 @@ OLD_VERSION_OPTION = "@click.version_option(message=pretty_version_text())"
 NEW_VERSION_OPTION = "@click.version_option(message=pretty_version_text() if not getattr(__import__('sys'), '_MEIPASS', None) else 'dtool (bundled)')"
 
 
-def main():
-    spec = importlib.util.find_spec("dtool_cli.cli")
-    if spec is None:
-        print("dtool_cli not found, skipping patch", file=sys.stderr)
-        return
-
-    p = pathlib.Path(spec.origin)
+def patch_one(p: pathlib.Path) -> bool:
+    """Patch a single dtool_cli/cli.py file. Returns True if changed."""
     src = p.read_text()
-
     changed = False
 
-    # Patch 1: replace pkg_resources import with importlib.metadata shim
     if OLD_IMPORT in src:
         src = src.replace(OLD_IMPORT, NEW_IMPORT)
         print(f"Patched pkg_resources import in {p}")
         changed = True
-    else:
-        print(f"{p}: pkg_resources import not found - already patched or different version")
 
-    # Patch 2: defer pretty_version_text() so it is not called at import time
-    # (PyInstaller's analysis subprocess has no entry points registered,
-    #  causing __import__ failures that make PyInstaller exclude the module)
     if OLD_VERSION_OPTION in src:
         src = src.replace(OLD_VERSION_OPTION, NEW_VERSION_OPTION)
         print(f"Patched version_option call in {p}")
         changed = True
-    else:
-        print(f"{p}: version_option pattern not found - already patched or different version")
 
     if changed:
         p.write_text(src)
+        # Remove stale .pyc so Python recompiles from patched source
+        pyc_dir = p.parent / "__pycache__"
+        for pyc in pyc_dir.glob(f"{p.stem}.cpython-*.pyc"):
+            pyc.unlink()
+            print(f"Removed {pyc}")
+
+    return changed
+
+
+def main():
+    # Find ALL copies of dtool_cli/cli.py on sys.path and in common toolcache
+    # locations. PyInstaller uses its own subprocess that may pick up a
+    # different (toolcache) copy of the module if multiple installs exist.
+    candidates = set()
+
+    # Primary location via importlib
+    spec = importlib.util.find_spec("dtool_cli.cli")
+    if spec and spec.origin:
+        candidates.add(pathlib.Path(spec.origin))
+
+    # Also search sys.path entries for any additional copies
+    import site
+    for base in sys.path + site.getsitepackages():
+        candidate = pathlib.Path(base) / "dtool_cli" / "cli.py"
+        if candidate.is_file():
+            candidates.add(candidate)
+
+    if not candidates:
+        print("dtool_cli not found anywhere on sys.path, skipping patch", file=sys.stderr)
+        return
+
+    for p in sorted(candidates):
+        patch_one(p)
 
 
 def clear_pyc(module_name):
