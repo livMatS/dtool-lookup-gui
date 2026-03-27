@@ -15,7 +15,7 @@ for module in dtool_hidden_imports:
 
 dtool_storage_brokers_datas, dtool_storage_brokers_hidden_imports = collect_entry_point("dtool.storage_brokers")
 
-other_hidden_imports = ['cairo']
+other_hidden_imports = ['cairo', 'dtool_cli', 'dtool_cli.cli', 'dtool_create', 'click_plugins']
 
 icon_parent_folder_glob_pattern = os.path.join('data', 'icons', '*x*')
 icon_parent_folders = list(glob(icon_parent_folder_glob_pattern))
