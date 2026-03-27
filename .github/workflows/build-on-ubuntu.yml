@@ -2,6 +2,9 @@ name: build-on-ubuntu
 
 on:
   workflow_call:
+  push:
+    branches:
+      - local-test
 
 jobs:
 
@@ -16,8 +19,8 @@ jobs:
 
     - name: Get history and tags for SCM versioning to work
       run: |
-        git fetch --prune --unshallow
-        git fetch --depth=1 origin +refs/tags/*:refs/tags/*
+        git fetch --prune --unshallow || true  # no-op if already a full clone (e.g. act local run)
+        git fetch --depth=1 origin +refs/tags/*:refs/tags/* || true
 
     - name: Set up Python 3.12
       uses: actions/setup-python@v5
@@ -58,38 +61,63 @@ jobs:
 
     - name: Patch dtool-cli for Python 3.12+ (pkg_resources → importlib.metadata)
       # dtool-cli 0.7.1 uses pkg_resources which is not available in Python 3.12+.
-      # Until a fixed release is available on PyPI, patch the installed copy inline.
+      # click-plugins 1.1.1.x accesses ep.module_name (pkg_resources API) on entry points.
+      # We replace pkg_resources.iter_entry_points with a shim whose objects expose
+      # .module_name so click-plugins keeps working.
+      # Until fixed releases are available on PyPI, patch the installed copies inline.
       run: |
         python - << 'EOF'
-        import importlib.util, pathlib, re, sys
-        spec = importlib.util.find_spec("dtool_cli.cli")
-        if spec is None:
-            print("dtool_cli not found, skipping patch", file=sys.stderr)
-            sys.exit(0)
-        p = pathlib.Path(spec.origin)
-        src = p.read_text()
-        if "pkg_resources" not in src:
-            print("dtool_cli already patched or does not use pkg_resources")
-            sys.exit(0)
-        # Replace the pkg_resources import with an importlib.metadata shim
-        old = "from pkg_resources import iter_entry_points"
-        new = (
-            "try:\n"
-            "    from importlib.metadata import entry_points as _eps\n"
-            "    def iter_entry_points(group, name=None):\n"
-            "        eps = _eps(group=group)\n"
-            "        if name is not None:\n"
-            "            eps = [e for e in eps if e.name == name]\n"
-            "        return eps\n"
-            "except ImportError:\n"
-            "    from pkg_resources import iter_entry_points"
+        import importlib.util, pathlib, sys
+
+        def patch_file(module_name, old, new):
+            spec = importlib.util.find_spec(module_name)
+            if spec is None:
+                print(f"{module_name} not found, skipping", file=sys.stderr)
+                return False
+            p = pathlib.Path(spec.origin)
+            src = p.read_text()
+            if old not in src:
+                print(f"Pattern not found in {p}; may be already patched or different version")
+                return False
+            p.write_text(src.replace(old, new))
+            print(f"Patched {p}")
+            return True
+
+        # --- Patch dtool_cli: replace pkg_resources.iter_entry_points with a shim
+        # that returns compat wrappers exposing .module_name for click-plugins.
+        patch_file(
+            "dtool_cli.cli",
+            "from pkg_resources import iter_entry_points",
+            """try:
+    from importlib.metadata import entry_points as _eps
+
+    class _EPCompat:
+        \"\"\"Wrap importlib.metadata EntryPoint to add pkg_resources-style attrs.\"\"\"
+        def __init__(self, ep):
+            self._ep = ep
+            self.name = ep.name
+            self.group = ep.group
+            self.value = ep.value
+            # pkg_resources compat: module_name / attrs used by click-plugins
+            parts = ep.value.split(":")
+            self.module_name = parts[0]
+            self.attrs = parts[1].split(".") if len(parts) > 1 else []
+
+        def load(self):
+            return self._ep.load()
+
+        def __repr__(self):
+            return f"_EPCompat({self._ep!r})"
+
+    def iter_entry_points(group, name=None):
+        eps = _eps(group=group)
+        if name is not None:
+            eps = [e for e in eps if e.name == name]
+        return [_EPCompat(e) for e in eps]
+
+except ImportError:
+    from pkg_resources import iter_entry_points"""
         )
-        if old not in src:
-            print(f"Pattern not found in {p}; skipping", file=sys.stderr)
-            sys.exit(0)
-        patched = src.replace(old, new)
-        p.write_text(patched)
-        print(f"Patched {p}")
         EOF
 
     - name: Fix setuptools_scm-generated version
