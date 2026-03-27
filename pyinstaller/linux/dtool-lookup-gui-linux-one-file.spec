@@ -75,11 +75,16 @@ TYPELIB_SEARCH_DIRS = [
 gi_typelib_datas = []
 for typelib_name in REQUIRED_TYPELIBS:
     filename = f'{typelib_name}.typelib'
+    found = False
     for search_dir in TYPELIB_SEARCH_DIRS:
         full_path = os.path.join(search_dir, filename)
         if os.path.isfile(full_path):
             gi_typelib_datas.append((full_path, 'gi_typelibs'))
+            print(f'[spec] Bundling typelib: {full_path}')
+            found = True
             break
+    if not found:
+        print(f'[spec] WARNING: typelib not found: {filename} (searched {TYPELIB_SEARCH_DIRS})')
 
 hooks_path = [os.path.join(root_dir, 'pyinstaller/hooks')]
 
