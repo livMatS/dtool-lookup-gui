@@ -1,7 +1,7 @@
 # -*- mode: python ; coding: utf-8 -*-
 from glob import glob
 import os
-from PyInstaller.utils.hooks import collect_entry_point, copy_metadata
+from PyInstaller.utils.hooks import collect_entry_point, copy_metadata, collect_submodules
 
 root_dir = os.path.abspath(os.curdir)
 block_cipher = None
@@ -14,6 +14,13 @@ for module in dtool_hidden_imports:
     dtool_hidden_imports_datas.extend(copy_metadata(module, recursive=True))
 
 dtool_storage_brokers_datas, dtool_storage_brokers_hidden_imports = collect_entry_point("dtool.storage_brokers")
+
+# gi.overrides contains pure-Python wrappers that add type_register, GObjectMeta,
+# etc. to gi.repository.GObject (and equivalents for Gtk, Gio, GLib, Gdk, ...).
+# When PyInstaller's GI hook subprocess fails (GIRepository namespace unavailable
+# in the headless build environment), these overrides are not auto-collected.
+# Explicitly collect them so GObject.type_register and similar APIs work at runtime.
+gi_overrides_hidden_imports = collect_submodules('gi.overrides')
 
 other_hidden_imports = ['cairo', 'dtool_cli', 'dtool_cli.cli', 'dtool_create', 'click_plugins']
 
@@ -107,6 +114,7 @@ a = Analysis(
         *dtool_hidden_imports,
         *dtool_storage_brokers_hidden_imports,
         *other_hidden_imports,
+        *gi_overrides_hidden_imports,
     ],
     hookspath=[*hooks_path],
     hooksconfig={
