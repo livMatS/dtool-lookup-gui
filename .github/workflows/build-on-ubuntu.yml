@@ -59,66 +59,11 @@ jobs:
         pip install -r pyinstaller/linux/requirements.txt
         pip install pyinstaller
 
-    - name: Patch dtool-cli for Python 3.12+ (pkg_resources → importlib.metadata)
+    - name: Patch dtool-cli for Python 3.12+ (pkg_resources to importlib.metadata)
       # dtool-cli 0.7.1 uses pkg_resources which is not available in Python 3.12+.
-      # click-plugins 1.1.1.x accesses ep.module_name (pkg_resources API) on entry points.
-      # We replace pkg_resources.iter_entry_points with a shim whose objects expose
-      # .module_name so click-plugins keeps working.
-      # Until fixed releases are available on PyPI, patch the installed copies inline.
-      run: |
-        python - << 'EOF'
-        import importlib.util, pathlib, sys
-
-        def patch_file(module_name, old, new):
-            spec = importlib.util.find_spec(module_name)
-            if spec is None:
-                print(f"{module_name} not found, skipping", file=sys.stderr)
-                return False
-            p = pathlib.Path(spec.origin)
-            src = p.read_text()
-            if old not in src:
-                print(f"Pattern not found in {p}; may be already patched or different version")
-                return False
-            p.write_text(src.replace(old, new))
-            print(f"Patched {p}")
-            return True
-
-        # --- Patch dtool_cli: replace pkg_resources.iter_entry_points with a shim
-        # that returns compat wrappers exposing .module_name for click-plugins.
-        patch_file(
-            "dtool_cli.cli",
-            "from pkg_resources import iter_entry_points",
-            """try:
-    from importlib.metadata import entry_points as _eps
-
-    class _EPCompat:
-        \"\"\"Wrap importlib.metadata EntryPoint to add pkg_resources-style attrs.\"\"\"
-        def __init__(self, ep):
-            self._ep = ep
-            self.name = ep.name
-            self.group = ep.group
-            self.value = ep.value
-            # pkg_resources compat: module_name / attrs used by click-plugins
-            parts = ep.value.split(":")
-            self.module_name = parts[0]
-            self.attrs = parts[1].split(".") if len(parts) > 1 else []
-
-        def load(self):
-            return self._ep.load()
-
-        def __repr__(self):
-            return f"_EPCompat({self._ep!r})"
-
-    def iter_entry_points(group, name=None):
-        eps = _eps(group=group)
-        if name is not None:
-            eps = [e for e in eps if e.name == name]
-        return [_EPCompat(e) for e in eps]
-
-except ImportError:
-    from pkg_resources import iter_entry_points"""
-        )
-        EOF
+      # click-plugins 1.1.1.x accesses ep.module_name (a pkg_resources-only attr).
+      # maintenance/patch_dtool_cli_compat.py replaces the import with a shim.
+      run: python maintenance/patch_dtool_cli_compat.py
 
     - name: Fix setuptools_scm-generated version
       id: fix_version
