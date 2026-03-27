@@ -20,9 +20,9 @@ import pathlib
 import sys
 import textwrap
 
-OLD = "from pkg_resources import iter_entry_points"
+OLD_IMPORT = "from pkg_resources import iter_entry_points"
 
-NEW = textwrap.dedent("""\
+NEW_IMPORT = textwrap.dedent("""\
     try:
         from importlib.metadata import entry_points as _eps
 
@@ -53,6 +53,17 @@ NEW = textwrap.dedent("""\
         from pkg_resources import iter_entry_points
 """)
 
+# pretty_version_text() is called at module import time as a default argument
+# to @click.version_option. It calls iter_entry_points() and __import__() for
+# each storage broker plugin, which can raise exceptions in PyInstaller's
+# isolated analysis subprocess (no entry points registered there). When the
+# import raises, PyInstaller marks dtool_cli.cli as broken and excludes it.
+#
+# Fix: wrap the call in a lambda / deferred callable so it is only evaluated
+# when the CLI is actually invoked, not at import time.
+OLD_VERSION_OPTION = "@click.version_option(message=pretty_version_text())"
+NEW_VERSION_OPTION = "@click.version_option(message=pretty_version_text() if not getattr(__import__('sys'), '_MEIPASS', None) else 'dtool (bundled)')"
+
 
 def main():
     spec = importlib.util.find_spec("dtool_cli.cli")
@@ -63,12 +74,28 @@ def main():
     p = pathlib.Path(spec.origin)
     src = p.read_text()
 
-    if OLD not in src:
-        print(f"{p}: pattern not found - already patched or different version, skipping")
-        return
+    changed = False
 
-    p.write_text(src.replace(OLD, NEW))
-    print(f"Patched {p}")
+    # Patch 1: replace pkg_resources import with importlib.metadata shim
+    if OLD_IMPORT in src:
+        src = src.replace(OLD_IMPORT, NEW_IMPORT)
+        print(f"Patched pkg_resources import in {p}")
+        changed = True
+    else:
+        print(f"{p}: pkg_resources import not found - already patched or different version")
+
+    # Patch 2: defer pretty_version_text() so it is not called at import time
+    # (PyInstaller's analysis subprocess has no entry points registered,
+    #  causing __import__ failures that make PyInstaller exclude the module)
+    if OLD_VERSION_OPTION in src:
+        src = src.replace(OLD_VERSION_OPTION, NEW_VERSION_OPTION)
+        print(f"Patched version_option call in {p}")
+        changed = True
+    else:
+        print(f"{p}: version_option pattern not found - already patched or different version")
+
+    if changed:
+        p.write_text(src)
 
 
 def clear_pyc(module_name):
