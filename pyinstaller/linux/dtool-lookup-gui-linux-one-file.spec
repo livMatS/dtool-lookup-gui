@@ -101,6 +101,55 @@ for typelib_name in REQUIRED_TYPELIBS:
             gi_typelib_datas.append((full_path, 'gi_typelibs'))
             break
 
+# Explicitly bundle GdkPixbuf loaders (PNG, JPEG, etc.) and their cache file.
+# The PyInstaller GdkPixbuf hook normally handles this, but it requires a
+# working GI introspection subprocess (which fails in our headless build env).
+# Without the loaders the bundle aborts with:
+#   GdkPixbuf-ERROR: failed to load pixbuf: Unrecognized image file format
+import subprocess as _sp
+import glob as _glob
+
+_pixbuf_loaders_datas = []
+# Find the loaders directory (Ubuntu: /usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/)
+for _search in [
+    '/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0',
+    '/usr/lib/gdk-pixbuf-2.0',
+    '/usr/lib64/gdk-pixbuf-2.0',
+]:
+    if os.path.isdir(_search):
+        # Collect all .so loaders
+        for _so in _glob.glob(os.path.join(_search, '**', 'loaders', '*.so'), recursive=True):
+            _pixbuf_loaders_datas.append((_so, os.path.join('lib', 'gdk-pixbuf', 'loaders')))
+        # Generate and collect the loaders.cache
+        _cache_file = os.path.join(_search, 'loaders.cache')
+        if not os.path.isfile(_cache_file):
+            # Try to find gdk-pixbuf-query-loaders and generate a cache
+            _ql = None
+            for _qpath in [
+                '/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders',
+                '/usr/bin/gdk-pixbuf-query-loaders',
+                '/usr/lib/gdk-pixbuf-2.0/gdk-pixbuf-query-loaders',
+            ]:
+                if os.path.isfile(_qpath):
+                    _ql = _qpath
+                    break
+            if _ql:
+                _cache_tmp = os.path.join(_search, 'loaders.cache')
+                _sp.run([_ql, '--update-cache'], capture_output=True)
+        if os.path.isfile(_cache_file):
+            # Inject the bundle path prefix that pyi_rth_gdkpixbuf.py expects
+            with open(_cache_file, 'rb') as _f:
+                _cache_data = _f.read()
+            # Replace absolute path prefix with @executable_path/lib so the
+            # runtime hook can rewrite it to sys._MEIPASS/lib
+            _cache_data = _cache_data.replace(_search.encode(), b'@executable_path/lib/gdk-pixbuf')
+            _cache_out = os.path.join(root_dir, 'build', 'loaders.cache')
+            os.makedirs(os.path.dirname(_cache_out), exist_ok=True)
+            with open(_cache_out, 'wb') as _f:
+                _f.write(_cache_data)
+            _pixbuf_loaders_datas.append((_cache_out, os.path.join('lib', 'gdk-pixbuf')))
+        break
+
 hooks_path = [os.path.join(root_dir, 'pyinstaller/hooks')]
 
 runtime_hooks = [
@@ -117,6 +166,7 @@ a = Analysis(
         *dtool_storage_brokers_datas,
         *dtool_hidden_imports_datas,
         *gi_typelib_datas,
+        *_pixbuf_loaders_datas,
     ],
     hiddenimports=[
         *dtool_hidden_imports,
