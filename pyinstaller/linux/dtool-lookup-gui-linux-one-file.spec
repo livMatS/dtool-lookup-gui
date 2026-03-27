@@ -55,28 +55,41 @@ additional_datas = [
 REQUIRED_TYPELIBS = [
     'Gtk-3.0',
     'GLib-2.0',
+    'GLibUnix-2.0',
+    'GModule-2.0',
     'GObject-2.0',
     'Gio-2.0',
+    'GioUnix-2.0',
     'Gdk-3.0',
     'GdkX11-3.0',
     'GdkPixbuf-2.0',
+    'GdkPixdata-2.0',
     'Pango-1.0',
     'PangoCairo-1.0',
+    'PangoFT2-1.0',
+    'PangoFc-1.0',
+    'PangoOT-1.0',
+    'PangoXft-1.0',
     'cairo-1.0',
     'GtkSource-4',
     'freetype2-2.0',
     'HarfBuzz-0.0',
-    'GdkPixdata-2.0',
-    'Graphene-1.0',
+    'Atk-1.0',
+    'fontconfig-2.0',
     'xlib-2.0',
     'xfixes-4.0',
+    'xrandr-1.3',
+    'GL-1.0',
+    'DBus-1.0',
+    'DBusGLib-1.0',
 ]
 
-# Search standard typelib locations used by Ubuntu 24.04
+# Search standard typelib locations — order matters: Ubuntu 24.04 x86_64 first
 TYPELIB_SEARCH_DIRS = [
     '/usr/lib/x86_64-linux-gnu/girepository-1.0',
     '/usr/lib/girepository-1.0',
     '/usr/lib64/girepository-1.0',
+    '/usr/local/lib/girepository-1.0',
 ]
 
 gi_typelib_datas = []
