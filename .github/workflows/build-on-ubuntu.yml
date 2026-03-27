@@ -62,7 +62,8 @@ jobs:
     - name: Patch dtool-cli for Python 3.12+ (pkg_resources to importlib.metadata)
       # dtool-cli 0.7.1 uses pkg_resources which is not available in Python 3.12+.
       # click-plugins 1.1.1.x accesses ep.module_name (a pkg_resources-only attr).
-      # maintenance/patch_dtool_cli_compat.py replaces the import with a shim.
+      # maintenance/patch_dtool_cli_compat.py replaces the import with a shim
+      # and removes the .pyc so PyInstaller analysis subprocesses use patched source.
       run: python maintenance/patch_dtool_cli_compat.py
 
     - name: Fix setuptools_scm-generated version

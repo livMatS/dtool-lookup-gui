@@ -71,5 +71,16 @@ def main():
     print(f"Patched {p}")
 
 
+def clear_pyc(module_name):
+    """Remove .pyc bytecode so patched source is used by all subprocesses."""
+    spec = importlib.util.find_spec(module_name)
+    if spec and spec.origin:
+        pyc_dir = pathlib.Path(spec.origin).parent / "__pycache__"
+        for pyc in pyc_dir.glob(f"{pathlib.Path(spec.origin).stem}.cpython-*.pyc"):
+            pyc.unlink()
+            print(f"Removed {pyc}")
+
+
 if __name__ == "__main__":
     main()
+    clear_pyc("dtool_cli.cli")
