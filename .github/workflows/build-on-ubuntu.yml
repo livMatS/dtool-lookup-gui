@@ -89,15 +89,16 @@ jobs:
       # bundled app can decode PNG/JPEG/etc. without system gdk-pixbuf installed.
       run: |
         LOADERS_DIR=/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders
+        QUERY_LOADERS=$(find /usr -name "gdk-pixbuf-query-loaders*" 2>/dev/null | head -1)
         mkdir -p pyinstaller/linux/loaders
-        if [ -d "$LOADERS_DIR" ]; then
+        if [ -d "$LOADERS_DIR" ] && [ -n "$QUERY_LOADERS" ]; then
           cp "$LOADERS_DIR"/*.so pyinstaller/linux/loaders/ || true
-          GDK_PIXBUF_MODULEDIR=pyinstaller/linux/loaders \
-            gdk-pixbuf-query-loaders > pyinstaller/linux/loaders/loaders.cache
+          GDK_PIXBUF_MODULEDIR=$(pwd)/pyinstaller/linux/loaders \
+            "$QUERY_LOADERS" > pyinstaller/linux/loaders/loaders.cache
           echo "Loaders bundled:"
           ls -lh pyinstaller/linux/loaders/
         else
-          echo "WARNING: pixbuf loaders dir not found at $LOADERS_DIR"
+          echo "WARNING: pixbuf loaders dir=$LOADERS_DIR, query-loaders=$QUERY_LOADERS"
         fi
 
     - name: Package executable with pyinstaller
