@@ -56,6 +56,7 @@ jobs:
       run: |
         pip install --upgrade pip
         pip install wheel setuptools_scm pyinstaller-hooks-contrib
+        python pyinstaller/vendored/preremove_dtool_cli.py || true
         pip install -r pyinstaller/linux/requirements.txt
         pip install pyinstaller
 
@@ -63,9 +64,7 @@ jobs:
       # dtool-cli 0.7.1 on PyPI uses pkg_resources (unavailable in Python 3.12+)
       # and calls pretty_version_text() eagerly at import time, which fails in
       # PyInstaller's analysis subprocess and causes the module to be excluded.
-      # We overwrite the installed cli.py with the fixed version from this repo.
-      run: cp pyinstaller/vendored/dtool_cli_cli.py \
-             "$(python -c "import dtool_cli.cli, inspect; print(inspect.getfile(dtool_cli.cli))")"
+      run: python pyinstaller/vendored/override_dtool_cli.py
 
     - name: Fix setuptools_scm-generated version
       id: fix_version
