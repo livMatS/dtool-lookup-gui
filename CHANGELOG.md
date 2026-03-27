@@ -17,6 +17,8 @@ Change log for dtool-lookup-gui
 - CI: fix Ubuntu build workflow — run PyInstaller under xvfb-run so GI hook
   child processes can initialise GTK; add smoke-test step that verifies
   the bundle starts without crashing before uploading artifacts
+- BUG: fix `dtool_lookup_gui/utils/about.py` using `pkg_resources.iter_entry_points`
+  (unavailable in Python 3.12+); replace with `importlib.metadata` shim
 - BUG: fix Linux bundle crashing with `ModuleNotFoundError: No module named
   'dtool_cli.cli'` — `dtool-cli 0.7.1` uses `pkg_resources.iter_entry_points`
   (removed from Python 3.12+) and calls `pretty_version_text()` eagerly at
