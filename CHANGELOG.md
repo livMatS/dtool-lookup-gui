@@ -17,6 +17,9 @@ Change log for dtool-lookup-gui
 - CI: fix Ubuntu build workflow — run PyInstaller under xvfb-run so GI hook
   child processes can initialise GTK; add smoke-test step that verifies
   the bundle starts without crashing before uploading artifacts
+- BUG: fix Linux bundle missing `GObject.type_register` and other `gi.overrides`
+  Python wrappers; PyInstaller's GI hook skips overrides when module introspection
+  fails; explicitly collect all `gi.overrides` submodules as hidden imports
 - BUG: fix `dtool_lookup_gui/utils/about.py` using `pkg_resources.iter_entry_points`
   (unavailable in Python 3.12+); replace with `importlib.metadata` shim
 - BUG: fix Linux bundle crashing with `ModuleNotFoundError: No module named
