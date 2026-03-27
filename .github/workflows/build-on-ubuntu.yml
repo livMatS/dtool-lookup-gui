@@ -56,6 +56,42 @@ jobs:
         pip install -r pyinstaller/linux/requirements.txt
         pip install pyinstaller
 
+    - name: Patch dtool-cli for Python 3.12+ (pkg_resources → importlib.metadata)
+      # dtool-cli 0.7.1 uses pkg_resources which is not available in Python 3.12+.
+      # Until a fixed release is available on PyPI, patch the installed copy inline.
+      run: |
+        python - << 'EOF'
+        import importlib.util, pathlib, re, sys
+        spec = importlib.util.find_spec("dtool_cli.cli")
+        if spec is None:
+            print("dtool_cli not found, skipping patch", file=sys.stderr)
+            sys.exit(0)
+        p = pathlib.Path(spec.origin)
+        src = p.read_text()
+        if "pkg_resources" not in src:
+            print("dtool_cli already patched or does not use pkg_resources")
+            sys.exit(0)
+        # Replace the pkg_resources import with an importlib.metadata shim
+        old = "from pkg_resources import iter_entry_points"
+        new = (
+            "try:\n"
+            "    from importlib.metadata import entry_points as _eps\n"
+            "    def iter_entry_points(group, name=None):\n"
+            "        eps = _eps(group=group)\n"
+            "        if name is not None:\n"
+            "            eps = [e for e in eps if e.name == name]\n"
+            "        return eps\n"
+            "except ImportError:\n"
+            "    from pkg_resources import iter_entry_points"
+        )
+        if old not in src:
+            print(f"Pattern not found in {p}; skipping", file=sys.stderr)
+            sys.exit(0)
+        patched = src.replace(old, new)
+        p.write_text(patched)
+        print(f"Patched {p}")
+        EOF
+
     - name: Fix setuptools_scm-generated version
       id: fix_version
       run: |
@@ -89,16 +125,21 @@ jobs:
       # Verify the bundle starts without immediately crashing.
       # xvfb-run provides a display; timeout 10s means success if no crash within 10s.
       run: |
-        xvfb-run --auto-servernum \
-          timeout 10 ./dtool-lookup-gui 2>&1 | head -20 || EXIT=$?
-        # exit 124 = timeout (app was running) = PASS
-        # exit 0   = clean exit               = PASS  
-        # anything else                       = FAIL
-        if [ "${EXIT:-0}" -ne 124 ] && [ "${EXIT:-0}" -ne 0 ]; then
-          echo "FAIL: bundle crashed with exit code ${EXIT:-0}"
+        set +e
+        xvfb-run --auto-servernum timeout 10 ./dtool-lookup-gui > /tmp/bundle-smoke.log 2>&1
+        EXIT=$?
+        set -e
+        echo "--- bundle output ---"
+        cat /tmp/bundle-smoke.log
+        echo "--- end output ---"
+        # exit 124 = timeout (app was still running) = PASS
+        # exit 0   = clean exit                      = PASS
+        # anything else                              = FAIL
+        if [ "$EXIT" -ne 124 ] && [ "$EXIT" -ne 0 ]; then
+          echo "FAIL: bundle crashed with exit code $EXIT"
           exit 1
         fi
-        echo "PASS: bundle ran for 10s without crashing (exit=${EXIT:-0})"
+        echo "PASS: exit=$EXIT"
 
     # use tar here, see https://github.com/actions/upload-artifact/issues/38
     - name: Pack build assets
