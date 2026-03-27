@@ -1,10 +1,88 @@
 # -*- mode: python ; coding: utf-8 -*-
 from glob import glob
 import os
+import pathlib
+import textwrap
 from PyInstaller.utils.hooks import collect_entry_point, copy_metadata
 
 root_dir = os.path.abspath(os.curdir)
 block_cipher = None
+
+# ---------------------------------------------------------------------------
+# Patch dtool_cli/cli.py for Python 3.12+ compatibility.
+#
+# dtool-cli 0.7.1 uses `pkg_resources.iter_entry_points` (unavailable in
+# Python 3.12+) and calls `pretty_version_text()` eagerly as a default
+# argument, which invokes __import__() on storage broker packages. In
+# PyInstaller's analysis environment that causes ImportError, making
+# PyInstaller silently exclude dtool_cli.cli from the bundle.
+#
+# We patch the file HERE inside the spec, in the same Python process that
+# drives PyInstaller's analysis, so there are no caching or subprocess
+# timing issues.
+# ---------------------------------------------------------------------------
+_OLD_IMPORT = "from pkg_resources import iter_entry_points"
+_NEW_IMPORT = textwrap.dedent("""\
+    try:
+        from importlib.metadata import entry_points as _eps
+
+        class _EPCompat:
+            def __init__(self, ep):
+                self._ep = ep
+                self.name = ep.name
+                self.group = ep.group
+                self.value = ep.value
+                parts = ep.value.split(":")
+                self.module_name = parts[0]
+                self.attrs = parts[1].split(".") if len(parts) > 1 else []
+            def load(self):
+                return self._ep.load()
+
+        def iter_entry_points(group, name=None):
+            eps = _eps(group=group)
+            if name is not None:
+                eps = [e for e in eps if e.name == name]
+            return [_EPCompat(e) for e in eps]
+
+    except ImportError:
+        from pkg_resources import iter_entry_points
+""")
+_OLD_VERSION_OPT = "@click.version_option(message=pretty_version_text())"
+_NEW_VERSION_OPT = "@click.version_option(message=pretty_version_text() if not getattr(__import__('sys'), '_MEIPASS', None) else 'dtool')"
+
+import importlib.util as _ilu
+import site as _site
+_cli_candidates = set()
+_spec = _ilu.find_spec("dtool_cli.cli")
+if _spec and _spec.origin:
+    _cli_candidates.add(pathlib.Path(_spec.origin))
+for _base in __import__('sys').path + _site.getsitepackages():
+    _c = pathlib.Path(_base) / "dtool_cli" / "cli.py"
+    if _c.is_file():
+        _cli_candidates.add(_c)
+
+for _p in sorted(_cli_candidates):
+    _src = _p.read_text()
+    _changed = False
+    if _OLD_IMPORT in _src:
+        _src = _src.replace(_OLD_IMPORT, _NEW_IMPORT)
+        _changed = True
+        print(f"[spec] Patched pkg_resources import in {_p}")
+    if _OLD_VERSION_OPT in _src:
+        _src = _src.replace(_OLD_VERSION_OPT, _NEW_VERSION_OPT)
+        _changed = True
+        print(f"[spec] Patched version_option in {_p}")
+    if _changed:
+        _p.write_text(_src)
+        for _pyc in (_p.parent / "__pycache__").glob(f"{_p.stem}.cpython-*.pyc"):
+            _pyc.unlink()
+            print(f"[spec] Removed stale {_pyc}")
+        # Force Python to re-import from the patched source
+        import sys as _sys
+        for _mod in list(_sys.modules.keys()):
+            if _mod.startswith("dtool_cli"):
+                del _sys.modules[_mod]
+# ---------------------------------------------------------------------------
 
 # storage brokers and their entrypoints need the following special treatment,
 # as they won't be discovered by pyinstaller's default tracing mechanisms
