@@ -57,6 +57,7 @@ jobs:
         pip install --upgrade pip
         pip install wheel setuptools_scm pyinstaller-hooks-contrib
         python pyinstaller/vendored/preremove_dtool_cli.py || true
+        pip install --force-reinstall dtool-cli==0.7.1
         pip install -r pyinstaller/linux/requirements.txt
         pip install pyinstaller
 
