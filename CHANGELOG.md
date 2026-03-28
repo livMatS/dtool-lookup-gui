@@ -18,6 +18,9 @@ Change log for dtool-lookup-gui
 - Meaningful error messages when authentication fails: wrong URL now shows
   "not a valid URL", unreachable server shows "could not connect", wrong
   credentials shows "incorrect username or password" — fixes #211
+- Configurable timeout for direct base URI dataset listing (default 30s,
+  set to 0 to disable); shows "Timeout — listing took too long" in the
+  row label instead of spinning forever — fixes #45
 - Fixed Ubuntu CI build: PyInstaller one-file bundle now works on Ubuntu 24.04
   with Python 3.12 (fixes ``pkg_resources`` removal, ``gi.overrides``
   collection, GdkPixbuf loaders, ``dtool-cli`` Python 3.12 compatibility)
