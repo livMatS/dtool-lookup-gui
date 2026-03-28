@@ -21,7 +21,16 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
-from pkg_resources import iter_entry_points
+try:
+    from importlib.metadata import entry_points as _eps
+
+    def iter_entry_points(group, name=None):
+        eps = _eps(group=group)
+        if name is not None:
+            eps = [e for e in eps if e.name == name]
+        return eps
+except ImportError:
+    from pkg_resources import iter_entry_points
 
 import dtoolcore
 import dtool_lookup_api

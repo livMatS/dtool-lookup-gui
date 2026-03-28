@@ -57,6 +57,11 @@ jobs:
         run: |
           pip install .[test]
 
+      # dtool-cli 0.7.1 uses pkg_resources which was removed in Python 3.12.
+      # Patch the installed cli.py with an importlib.metadata shim.
+      - name: Patch dtool-cli for Python 3.12+ compatibility
+        run: python maintenance/patch_dtool_cli_compat.py
+
       # Required: GLib schemas must be compiled before pytest can import the app.
       # Without gschemas.compiled, Gio.SettingsSchemaSource raises GLib.Error on
       # import of dtool_lookup_gui.models.settings.
