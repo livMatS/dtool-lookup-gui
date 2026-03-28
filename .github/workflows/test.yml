@@ -22,7 +22,7 @@ jobs:
 
       - name: Get history and tags for SCM versioning to work
         run: |
-          git fetch --prune --unshallow
+          git fetch --prune --unshallow || true
           git fetch --depth=1 origin +refs/tags/*:refs/tags/*
 
       - name: Set up Python ${{ matrix.python-version }}
