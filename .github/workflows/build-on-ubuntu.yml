@@ -88,32 +88,9 @@ jobs:
       # PyInstaller's GI hook can't introspect GdkPixbuf in the headless build env,
       # so libpng16.so.16 and libjpeg.so.8 (required for built-in PNG/JPEG support)
       # are not auto-collected as transitive deps of libgdk_pixbuf-2.0.so.0.
-      # This step resolves the real .so paths via ldd and writes them to a file
-      # that the spec reads to add them as explicit binaries.
-      run: |
-        GDKPIXBUF_SO=$(find /lib /usr/lib -name 'libgdk_pixbuf-2.0.so.0*' -not -l 2>/dev/null | head -1)
-        echo "libgdk_pixbuf: $GDKPIXBUF_SO"
-        mkdir -p pyinstaller/linux
-        # Write actual resolved paths of libpng16 and libjpeg to a file for the spec
-        python3 - <<'PYEOF'
-import subprocess, os, re
-so = subprocess.run(['find', '/lib', '/usr/lib', '-name', 'libgdk_pixbuf-2.0.so.0.*', '-not', '-type', 'l'],
-                   capture_output=True, text=True).stdout.strip().split('\n')
-so = [s for s in so if s]
-deps = []
-for lib in so:
-    out = subprocess.run(['ldd', lib], capture_output=True, text=True).stdout
-    for line in out.splitlines():
-        m = re.search(r'(libpng\S+|libjpeg\S+)\s+=>\s+(\S+)', line)
-        if m:
-            path = m.group(2)
-            if os.path.isfile(path) and path not in deps:
-                deps.append(path)
-                print(f'Found dep: {path}')
-with open('pyinstaller/linux/pixbuf_deps.txt', 'w') as f:
-    f.write('\n'.join(deps) + '\n')
-print(f'Written {len(deps)} deps to pixbuf_deps.txt')
-PYEOF
+      # This step resolves the real .so paths via ldd and writes them to
+      # pyinstaller/linux/pixbuf_deps.txt for the spec to read.
+      run: python3 pyinstaller/linux/collect_pixbuf_deps.py
 
     - name: Package executable with pyinstaller
       # Run under xvfb so PyInstaller's GI hook child processes can initialise
