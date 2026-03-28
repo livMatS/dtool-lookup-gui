@@ -11,17 +11,17 @@ import importlib
 import inspect
 import sys
 
-SHIM = '''\
-try:
-    from importlib.metadata import entry_points as _entry_points
-    def iter_entry_points(group, name=None):
-        eps = _entry_points(group=group)
-        if name is not None:
-            eps = [ep for ep in eps if ep.name == name]
-        return eps
-except ImportError:
-    from pkg_resources import iter_entry_points
-'''
+SHIM = (
+    "try:\n"
+    "    from importlib.metadata import entry_points as _entry_points\n"
+    "    def iter_entry_points(group, name=None):\n"
+    "        eps = _entry_points(group=group)\n"
+    "        if name is not None:\n"
+    "            eps = [ep for ep in eps if ep.name == name]\n"
+    "        return eps\n"
+    "except ImportError:\n"
+    "    from pkg_resources import iter_entry_points"
+)
 
 
 def patch():
@@ -40,7 +40,15 @@ def patch():
         print(f"dtool_cli/cli.py already patched or unexpected content: {cli_path}")
         return
 
-    patched = source.replace(old, SHIM.rstrip())
+    patched = source.replace(old, SHIM)
+    # Sanity-check before writing: catch indentation / syntax errors immediately
+    try:
+        compile(patched, cli_path, 'exec')
+    except SyntaxError as e:
+        print(f"BUG: patched source has a syntax error: {e}", file=sys.stderr)
+        print("Patched content:\n" + patched, file=sys.stderr)
+        sys.exit(1)
+
     with open(cli_path, 'w') as f:
         f.write(patched)
 
