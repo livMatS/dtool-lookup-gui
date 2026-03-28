@@ -61,7 +61,7 @@ async def test_dependency_graph_content_type_error_on_first_page(caplog):
         await graph.trace_dependencies(lookup, root_uuid="abc-123")
 
     # Graph must be empty — no vertices
-    assert len(list(graph.graph.vertices())) == 0
+    assert graph.graph.nb_vertices == 0
 
     # Error must have been logged with a user-readable message
     assert len(caplog.records) >= 1
@@ -90,9 +90,9 @@ async def test_dependency_graph_content_type_error_on_subsequent_page(caplog):
         if call_count == 1:
             # First call: return data and set pagination via out-param
             pagination = kwargs.get("pagination", {})
-            pagination.update({"total": 20, "page_size": 10, "page_number": 1,
-                               "first_page_number": 1, "last_page_number": 2,
-                               "has_next_page": True})
+            pagination.update({"total": 20, "page_size": 10, "page": 1,
+                               "first_page": 1, "last_page": 2,
+                               "total_pages": 2})
             return [first_page_dataset]
         else:
             raise _make_content_type_error()
@@ -124,8 +124,7 @@ async def test_dependency_graph_success_builds_graph():
 
     await graph.trace_dependencies(lookup, root_uuid="root-uuid")
 
-    vertices = list(graph.graph.vertices())
-    assert len(vertices) == 2
-    uuids = {v["uuid"] for v in vertices}
+    assert graph.graph.nb_vertices == 2
+    uuids = {v["uuid"] for v in graph.graph.vertex_properties}
     assert "root-uuid" in uuids
     assert "child-uuid" in uuids

@@ -52,13 +52,16 @@ def progress_widgets():
 @pytest.fixture
 def copy_manager(progress_widgets):
     revealer, popover = progress_widgets
-    # CopyManager reads revealer.get_child().get_child() as the progress chart.
-    # Provide a stub so construction doesn't fail.
-    chart_box = Gtk.Box()
-    chart = Gtk.ProgressBar()
-    chart_box.add(chart)
-    revealer.add(chart_box)
-    return CopyManager(revealer, popover)
+    # CopyManager.__init__ does revealer.get_child().get_child() to find the
+    # ProgressBar widget.  The real UI uses a Bin subclass (ScrolledWindow /
+    # Overlay) wrapping a Box wrapping a ProgressBar.  For unit tests we patch
+    # __init__ to skip that fragile widget hierarchy lookup entirely.
+    manager = CopyManager.__new__(CopyManager)
+    manager._margin = CopyManager._margin
+    manager._progress_revealer = revealer
+    manager._progress_chart = Gtk.ProgressBar()
+    manager._progress_popover = popover
+    return manager
 
 
 @pytest.mark.asyncio
