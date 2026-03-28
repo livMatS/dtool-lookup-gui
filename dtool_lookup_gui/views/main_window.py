@@ -1388,12 +1388,24 @@ class MainWindow(Gtk.ApplicationWindow):
             if isinstance(row, DtoolBaseURIRow):
                 try:
                     _logger.debug(f"Selected base URI {row.base_uri}.")
-                    datasets = await row.base_uri.all_datasets()
+                    timeout = settings.base_uri_listing_timeout
+                    if timeout > 0:
+                        datasets = await asyncio.wait_for(
+                            row.base_uri.all_datasets(), timeout=timeout)
+                    else:
+                        datasets = await row.base_uri.all_datasets()
                     _logger.debug(f"Found {len(datasets)} datasets.")
                     update_base_uri_summary(datasets)
                     if self.base_uri_list_box.get_selected_row() == row:
                        # Only update if the row is still selected
                        self.dataset_list_box.fill(datasets, on_show=on_show)
+                except asyncio.TimeoutError:
+                    timeout = settings.base_uri_listing_timeout
+                    logger.error(
+                        "Listing datasets in '%s' timed out after %d seconds. "
+                        "The base URI may be slow or unreachable. "
+                        "You can adjust the timeout in Settings.", row.base_uri, timeout)
+                    row.info_label.set_text("Timeout — listing took too long")
                 except Exception as e:
                     self.show_error(e)
                 self.main_stack.set_visible_child(self.main_paned)
