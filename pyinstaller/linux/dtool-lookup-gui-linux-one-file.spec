@@ -173,6 +173,7 @@ hooks_path = [os.path.join(root_dir, 'pyinstaller/hooks')]
 runtime_hooks = [
     os.path.join(root_dir, 'pyinstaller/rthooks/pyi_rth_jinja2.py'),
     os.path.join(root_dir, 'pyinstaller/rthooks/pyi_rth_glib.py'),
+    os.path.join(root_dir, 'pyinstaller/rthooks/pyi_rth_gdkpixbuf.py'),
 ]
 
 a = Analysis(
