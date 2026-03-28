@@ -127,12 +127,20 @@ if os.path.isdir(_loaders_src):
     if os.path.isfile(_raw_cache):
         with open(_raw_cache, 'rb') as _f:
             _cache_data = _f.read()
-        # Rewrite absolute loader paths to @executable_path/lib/gdk-pixbuf/loaders
-        # The built-in pyi_rth_gdkpixbuf hook will replace @executable_path/lib
-        # with sys._MEIPASS/lib at runtime.
-        _cache_data = _cache_data.replace(
-            _loaders_src.encode(), b'@executable_path/lib/gdk-pixbuf/loaders'
-        )
+        # Rewrite absolute loader paths to @executable_path/lib/gdk-pixbuf/loaders.
+        # The cache was generated with system paths (e.g. /usr/lib/.../loaders).
+        # We must replace whatever path prefix is in the cache, not _loaders_src.
+        # Extract the prefix from the first quoted path in the cache.
+        import re as _re
+        _prefix_match = _re.search(rb'"\s*(/[^"]+/loaders)', _cache_data)
+        if _prefix_match:
+            _sys_loaders_path = _prefix_match.group(1)
+            _cache_data = _cache_data.replace(
+                _sys_loaders_path, b'@executable_path/lib/gdk-pixbuf/loaders'
+            )
+            print(f'[spec] Rewrote loaders.cache prefix: {_sys_loaders_path.decode()}')
+        else:
+            print('[spec] WARNING: could not find loader path prefix in loaders.cache')
         _cache_out = os.path.join(root_dir, 'build', 'loaders.cache')
         os.makedirs(os.path.dirname(_cache_out), exist_ok=True)
         with open(_cache_out, 'wb') as _f:
