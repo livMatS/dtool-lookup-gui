@@ -111,11 +111,37 @@ for typelib_name in REQUIRED_TYPELIBS:
 # so GdkPixbuf uses only its built-in loaders (PNG, JPEG) and skips external ones.
 _pixbuf_loaders_datas = []
 
-# libgdk-pixbuf-2.0.so is collected automatically by PyInstaller via the GI hook.
-# On Ubuntu 24.04 PNG/JPEG are compiled into libgdk-pixbuf (no external loader .so).
-# We do not manually collect libpng16/libjpeg/etc. here: PyInstaller's binary
-# dependency analysis handles them transitively when it scans libgdk-pixbuf-2.0.so.
+# Explicitly bundle libpng16 and libjpeg so GdkPixbuf's built-in PNG/JPEG support works.
+# On Ubuntu 24.04, PNG and JPEG are compiled into libgdk-pixbuf-2.0.so (no external
+# loader .so files). PyInstaller's GI hook fails to introspect GdkPixbuf at build time
+# (GIRepository namespace unavailable in the headless xvfb env), so the transitive
+# dependency libpng16.so.16 is NOT auto-collected. Without it, GdkPixbuf cannot decode
+# any PNG (including GTK's internal image-missing.png fallback icon), causing SIGABRT.
+import glob as _pixglob
+
+_PIXBUF_DEPS = [
+    'libgdk-pixbuf-2.0.so*',
+    'libpng16.so*',
+    'libjpeg.so*',
+]
+_PIXBUF_SEARCH = [
+    '/usr/lib/x86_64-linux-gnu',
+    '/lib/x86_64-linux-gnu',
+    '/usr/lib64',
+    '/lib64',
+]
 _pixbuf_binaries = []
+for _pat in _PIXBUF_DEPS:
+    for _sdir in _PIXBUF_SEARCH:
+        _matches = _pixglob.glob(os.path.join(_sdir, _pat))
+        for _m in _matches:
+            if os.path.isfile(_m) and not _m.endswith('.a'):
+                _pixbuf_binaries.append((_m, '.'))
+                print(f'[spec] Bundling pixbuf dep: {_m}')
+                break
+        else:
+            continue
+        break
 
 hooks_path = [os.path.join(root_dir, 'pyinstaller/hooks')]
 
