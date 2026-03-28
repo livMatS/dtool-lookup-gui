@@ -152,15 +152,11 @@ if os.path.isdir(_loaders_src):
 else:
     print(f'[spec] WARNING: loaders dir not found: {_loaders_src}')
 
-# Also bundle libpng16 and libjpeg (resolved via ldd by collect_pixbuf_deps.py)
-_pixbuf_deps_file = os.path.join(root_dir, 'pyinstaller', 'linux', 'pixbuf_deps.txt')
-if os.path.isfile(_pixbuf_deps_file):
-    with open(_pixbuf_deps_file) as _f:
-        for _line in _f:
-            _path = _line.strip()
-            if _path and os.path.isfile(_path):
-                _pixbuf_binaries.append((_path, '.'))
-                print(f'[spec] Bundling pixbuf dep: {_path}')
+# Do NOT explicitly bundle libpng16/libjpeg: they are system libs already linked into
+# the system libgdk_pixbuf-2.0.so.0. Bundling them in _MEIPASS causes two copies of
+# libpng16 to be loaded (one from _MEIPASS via LD_LIBRARY_PATH, one pulled by
+# system libgdk_pixbuf via its RPATH), corrupting libpng's global state and making
+# all PNG decoding fail with "Unrecognized image file format".
 
 hooks_path = [os.path.join(root_dir, 'pyinstaller/hooks')]
 
