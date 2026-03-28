@@ -13,6 +13,8 @@ Change log for dtool-lookup-gui
 - Improved dependency graph error message when the lookup server returns
   a non-JSON response (HTML error page): now shows a user-readable
   explanation instead of a raw ``ContentTypeError`` dump — fixes #370, #182
+- README tree view now updates immediately after saving metadata without
+  requiring dataset re-selection — fixes #526
 - Fixed Ubuntu CI build: PyInstaller one-file bundle now works on Ubuntu 24.04
   with Python 3.12 (fixes ``pkg_resources`` removal, ``gi.overrides``
   collection, GdkPixbuf loaders, ``dtool-cli`` Python 3.12 compatibility)
