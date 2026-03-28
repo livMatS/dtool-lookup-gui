@@ -14,7 +14,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
 
     steps:
       - name: Checkout
@@ -41,7 +41,9 @@ jobs:
             python3-dev \
             gir1.2-gtk-3.0 \
             gir1.2-gtksource-4 \
-            libgtksourceview-4-0
+            libgtksourceview-4-0 \
+            xvfb \
+            glib-compile-schemas
 
       - name: Install pythonic dependencies
         run: |
@@ -54,6 +56,14 @@ jobs:
       - name: Install app
         run: |
           pip install .[test]
+
+      # Required: GLib schemas must be compiled before pytest can import the app.
+      # Without gschemas.compiled, Gio.SettingsSchemaSource raises GLib.Error on
+      # import of dtool_lookup_gui.models.settings.
+      - name: Compile GLib schemas
+        run: |
+          glib-compile-schemas .
+        working-directory: dtool_lookup_gui
 
       # run in virtual X server, see https://github.com/pygobject/pygobject-travis-ci-docker-examples
       - name: Test with pytest
