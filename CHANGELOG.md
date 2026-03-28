@@ -21,6 +21,9 @@ Change log for dtool-lookup-gui
 - Configurable timeout for direct base URI dataset listing (default 30s,
   set to 0 to disable); shows "Timeout — listing took too long" in the
   row label instead of spinning forever — fixes #45
+- Dataset name dialog now shows an inline error message when the name is
+  empty or contains invalid characters, instead of silently doing nothing
+  on Apply — fixes #199
 - Fixed Ubuntu CI build: PyInstaller one-file bundle now works on Ubuntu 24.04
   with Python 3.12 (fixes ``pkg_resources`` removal, ``gi.overrides``
   collection, GdkPixbuf loaders, ``dtool-cli`` Python 3.12 compatibility)
