@@ -119,29 +119,32 @@ _pixbuf_loaders_datas = []
 # any PNG (including GTK's internal image-missing.png fallback icon), causing SIGABRT.
 import glob as _pixglob
 
+# Ubuntu 24.04 uses underscore: libgdk_pixbuf-2.0.so.0 (not hyphen libgdk-pixbuf).
+# Runtime libs are in /lib/x86_64-linux-gnu, not /usr/lib/x86_64-linux-gnu.
+# libpng16.so.16 and libjpeg.so.8 are the versioned runtime libs (not dev symlinks).
 _PIXBUF_DEPS = [
-    'libgdk-pixbuf-2.0.so*',
-    'libpng16.so*',
-    'libjpeg.so*',
+    'libgdk_pixbuf-2.0.so*',   # underscore, Ubuntu 24.04 naming
+    'libgdk-pixbuf-2.0.so*',   # hyphen, fallback for other distros
+    'libpng16.so.1*',          # versioned runtime lib only (not .so dev symlink)
+    'libjpeg.so.[0-9]*',       # versioned runtime lib only
 ]
 _PIXBUF_SEARCH = [
+    '/lib/x86_64-linux-gnu',   # Ubuntu 24.04 runtime libs location
     '/usr/lib/x86_64-linux-gnu',
-    '/lib/x86_64-linux-gnu',
-    '/usr/lib64',
     '/lib64',
+    '/usr/lib64',
 ]
 _pixbuf_binaries = []
+_seen = set()
 for _pat in _PIXBUF_DEPS:
     for _sdir in _PIXBUF_SEARCH:
-        _matches = _pixglob.glob(os.path.join(_sdir, _pat))
+        _matches = sorted(_pixglob.glob(os.path.join(_sdir, _pat)))
         for _m in _matches:
-            if os.path.isfile(_m) and not _m.endswith('.a'):
+            if os.path.isfile(_m) and not _m.endswith('.a') and _m not in _seen:
+                _seen.add(_m)
                 _pixbuf_binaries.append((_m, '.'))
                 print(f'[spec] Bundling pixbuf dep: {_m}')
                 break
-        else:
-            continue
-        break
 
 hooks_path = [os.path.join(root_dir, 'pyinstaller/hooks')]
 
