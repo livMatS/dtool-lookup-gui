@@ -1510,8 +1510,11 @@ class MainWindow(Gtk.ApplicationWindow):
     def _create_dataset(self, name):
         base_uri = self.base_uri_list_box.get_selected_row()
         if base_uri is not None:
-            self.dataset_list_box.add_dataset(base_uri.base_uri.create_dataset(name))
-            self.dataset_list_box.show_all()
+            try:
+                self.dataset_list_box.add_dataset(base_uri.base_uri.create_dataset(name))
+                self.dataset_list_box.show_all()
+            except ValueError as e:
+                logger.error("Cannot create dataset: %s", e)
     
     def _freeze_dataset(self):
         row = self.dataset_list_box.get_selected_row()
