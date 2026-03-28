@@ -109,18 +109,43 @@ for typelib_name in REQUIRED_TYPELIBS:
 # Instead, pyi_rth_gdkpixbuf.py (our custom runtime hook, which runs before
 # PyInstaller's built-in hook of the same name) writes an empty loaders.cache
 # so GdkPixbuf uses only its built-in loaders (PNG, JPEG) and skips external ones.
-_pixbuf_loaders_datas = []
+# Bundle GdkPixbuf loaders (.so files) and loaders.cache.
+# The CI step "Collect GdkPixbuf runtime dependencies" generates these under
+# pyinstaller/linux/loaders/ using gdk-pixbuf-query-loaders.
+# The runtime hook (pyi_rth_gdkpixbuf, built into PyInstaller) rewrites
+# @executable_path -> sys._MEIPASS in the cache and sets GDK_PIXBUF_MODULE_FILE.
+import glob as _pixglob
 
-# Explicitly bundle libpng16 and libjpeg so GdkPixbuf's built-in PNG/JPEG support works.
-# On Ubuntu 24.04, PNG and JPEG are compiled into libgdk_pixbuf-2.0.so.0 (no external
-# loader .so). PyInstaller's GI hook can't introspect GdkPixbuf in the headless env,
-# so libpng16.so.16 is NOT auto-collected. Without it, GdkPixbuf cannot decode any PNG
-# (including GTK's internal image-missing.png fallback icon), causing SIGABRT.
-#
-# The CI step "Collect GdkPixbuf runtime dependencies" runs ldd on libgdk_pixbuf-2.0.so.0
-# and writes the resolved .so paths to pyinstaller/linux/pixbuf_deps.txt.
-_pixbuf_deps_file = os.path.join(root_dir, 'pyinstaller', 'linux', 'pixbuf_deps.txt')
+_loaders_src = os.path.join(root_dir, 'pyinstaller', 'linux', 'loaders')
+_pixbuf_loaders_datas = []
 _pixbuf_binaries = []
+
+if os.path.isdir(_loaders_src):
+    for _so in _pixglob.glob(os.path.join(_loaders_src, '*.so')):
+        _pixbuf_loaders_datas.append((_so, os.path.join('lib', 'gdk-pixbuf', 'loaders')))
+    _raw_cache = os.path.join(_loaders_src, 'loaders.cache')
+    if os.path.isfile(_raw_cache):
+        with open(_raw_cache, 'rb') as _f:
+            _cache_data = _f.read()
+        # Rewrite absolute loader paths to @executable_path/lib/gdk-pixbuf/loaders
+        # The built-in pyi_rth_gdkpixbuf hook will replace @executable_path/lib
+        # with sys._MEIPASS/lib at runtime.
+        _cache_data = _cache_data.replace(
+            _loaders_src.encode(), b'@executable_path/lib/gdk-pixbuf/loaders'
+        )
+        _cache_out = os.path.join(root_dir, 'build', 'loaders.cache')
+        os.makedirs(os.path.dirname(_cache_out), exist_ok=True)
+        with open(_cache_out, 'wb') as _f:
+            _f.write(_cache_data)
+        _pixbuf_loaders_datas.append((_cache_out, os.path.join('lib', 'gdk-pixbuf')))
+        print(f'[spec] Bundling loaders.cache + {len(_pixbuf_loaders_datas)-1} loader .so files')
+    else:
+        print(f'[spec] WARNING: loaders.cache not found in {_loaders_src}')
+else:
+    print(f'[spec] WARNING: loaders dir not found: {_loaders_src}')
+
+# Also bundle libpng16 and libjpeg (resolved via ldd by collect_pixbuf_deps.py)
+_pixbuf_deps_file = os.path.join(root_dir, 'pyinstaller', 'linux', 'pixbuf_deps.txt')
 if os.path.isfile(_pixbuf_deps_file):
     with open(_pixbuf_deps_file) as _f:
         for _line in _f:
@@ -128,9 +153,6 @@ if os.path.isfile(_pixbuf_deps_file):
             if _path and os.path.isfile(_path):
                 _pixbuf_binaries.append((_path, '.'))
                 print(f'[spec] Bundling pixbuf dep: {_path}')
-    print(f'[spec] Total pixbuf deps: {len(_pixbuf_binaries)}')
-else:
-    print(f'[spec] WARNING: pixbuf_deps.txt not found, PNG support may be broken')
 
 hooks_path = [os.path.join(root_dir, 'pyinstaller/hooks')]
 

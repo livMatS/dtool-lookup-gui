@@ -85,12 +85,29 @@ jobs:
       working-directory: dtool_lookup_gui
 
     - name: Collect GdkPixbuf runtime dependencies
-      # PyInstaller's GI hook can't introspect GdkPixbuf in the headless build env,
-      # so libpng16.so.16 and libjpeg.so.8 (required for built-in PNG/JPEG support)
-      # are not auto-collected as transitive deps of libgdk_pixbuf-2.0.so.0.
-      # This step resolves the real .so paths via ldd and writes them to
-      # pyinstaller/linux/pixbuf_deps.txt for the spec to read.
-      run: python3 pyinstaller/linux/collect_pixbuf_deps.py
+      # PyInstaller's GI hook can't introspect GdkPixbuf in the headless build env
+      # (GIRepository namespace unavailable), so it skips generating loaders.cache
+      # and collecting loader .so files. The runtime hook still sets
+      # GDK_PIXBUF_MODULE_FILE to _MEIPASS/lib/gdk-pixbuf/loaders.cache, which
+      # doesn't exist → gdk-pixbuf falls back to built-in formats (PNG, JPEG).
+      # BUT this only works if the system loaders.cache is NOT overridden.
+      # We generate the loaders.cache here under xvfb (so GI introspection works)
+      # and stage it where the spec and runtime hook expect it.
+      run: |
+        python3 pyinstaller/linux/collect_pixbuf_deps.py
+        mkdir -p pyinstaller/linux/loaders
+        LOADERS_DIR=$(find /usr/lib -path "*/gdk-pixbuf-2.0/*/loaders" -type d 2>/dev/null | head -1)
+        QUERY_LOADERS=$(find /usr -name "gdk-pixbuf-query-loaders*" -executable -type f 2>/dev/null | head -1)
+        echo "LOADERS_DIR=$LOADERS_DIR  QUERY_LOADERS=$QUERY_LOADERS"
+        if [ -n "$LOADERS_DIR" ] && [ -n "$QUERY_LOADERS" ]; then
+          cp "$LOADERS_DIR"/*.so pyinstaller/linux/loaders/ 2>/dev/null || true
+          GDK_PIXBUF_MODULEDIR="$LOADERS_DIR" \
+            "$QUERY_LOADERS" "$LOADERS_DIR"/*.so > pyinstaller/linux/loaders/loaders.cache
+          echo "loaders.cache generated:"
+          cat pyinstaller/linux/loaders/loaders.cache
+        else
+          echo "WARNING: could not generate loaders.cache"
+        fi
 
     - name: Package executable with pyinstaller
       # Run under xvfb so PyInstaller's GI hook child processes can initialise
