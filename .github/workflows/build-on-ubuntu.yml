@@ -84,24 +84,6 @@ jobs:
         glib-compile-schemas .
       working-directory: dtool_lookup_gui
 
-    - name: Generate GdkPixbuf loaders cache
-      # Bundle pixbuf loaders (.so files) and regenerate loaders.cache so the
-      # bundled app can decode PNG/JPEG/etc. without system gdk-pixbuf installed.
-      run: |
-        LOADERS_DIR=$(find /usr/lib -path "*/gdk-pixbuf-2.0/*/loaders" -type d 2>/dev/null | head -1)
-        QUERY_LOADERS=$(find /usr -name "gdk-pixbuf-query-loaders*" -type f 2>/dev/null | head -1)
-        echo "LOADERS_DIR=$LOADERS_DIR  QUERY_LOADERS=$QUERY_LOADERS"
-        mkdir -p pyinstaller/linux/loaders
-        if [ -n "$LOADERS_DIR" ] && [ -d "$LOADERS_DIR" ] && [ -n "$QUERY_LOADERS" ]; then
-          cp "$LOADERS_DIR"/*.so pyinstaller/linux/loaders/ || true
-          GDK_PIXBUF_MODULEDIR=$(pwd)/pyinstaller/linux/loaders \
-            "$QUERY_LOADERS" > pyinstaller/linux/loaders/loaders.cache
-          echo "Loaders bundled:"
-          ls -lh pyinstaller/linux/loaders/
-        else
-          echo "WARNING: pixbuf loaders dir=$LOADERS_DIR, query-loaders=$QUERY_LOADERS"
-        fi
-
     - name: Package executable with pyinstaller
       # Run under xvfb so PyInstaller's GI hook child processes can initialise
       # GTK (gi._get_module_info) without "cannot open display" errors.
