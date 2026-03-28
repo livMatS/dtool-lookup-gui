@@ -1,6 +1,16 @@
 Change log for dtool-lookup-gui
 ===============================
 
+0.7.3 (unreleased)
+-------------------
+
+- ``save-metadata`` action: saving README metadata is now a proper window
+  action, independently testable and keyboard-shortcut-bindable
+- ``copy-dataset`` action: dataset copy is now a ``(source_uri, dest_uri)``
+  window action (resolves long-standing TODO comment)
+- ``add-local-directory`` action: adding a local base URI is now a window
+  action; the file-chooser dialog is reduced to a pure UI thin wrapper
+
 0.7.2 (13Nov25)
 ---------------
 
