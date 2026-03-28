@@ -41,7 +41,7 @@ from dtool_info.utils import sizeof_fmt
 import dtool_lookup_api.core.config
 from dtool_lookup_api.core.LookupClient import ConfigurationBasedLookupClient
 
-from dtool_lookup_gui import is_uuid
+from dtool_lookup_gui import is_uuid, fill_readme_tree_store
 
 import yamllint
 from yamllint.config import YamlLintConfig
@@ -825,6 +825,7 @@ class MainWindow(Gtk.ApplicationWindow):
             else:
                 self.linting_errors_button.set_label("No linting issues found!")
                 self.dataset_list_box.get_selected_row().dataset.put_readme(yaml_content)
+                self._rebuild_readme_tree(yaml_content)
         else:
 
             # Clear previous linting problems when linting is turned off
@@ -833,6 +834,26 @@ class MainWindow(Gtk.ApplicationWindow):
 
             _logger.debug("YAML linting turned off.")
             self.dataset_list_box.get_selected_row().dataset.put_readme(yaml_content)
+            self._rebuild_readme_tree(yaml_content)
+
+    def _rebuild_readme_tree(self, yaml_content):
+        """Rebuild the README tree view from the given YAML content string.
+
+        Called after saving README.yml so the tree reflects the new content
+        without requiring the user to re-select the dataset (fixes #526).
+        """
+        try:
+            readme_dict = yaml.safe_load(yaml_content)
+        except yaml.YAMLError as exc:
+            _logger.warning("Could not parse README YAML for tree rebuild: %s", exc)
+            return
+        store = self.readme_tree_view.get_model()
+        if store is None:
+            return
+        store.clear()
+        fill_readme_tree_store(store, readme_dict)
+        self.readme_tree_view.columns_autosize()
+        self.readme_tree_view.show_all()
 
     @Gtk.Template.Callback()
     def on_linting_errors_button_clicked(self, widget):
