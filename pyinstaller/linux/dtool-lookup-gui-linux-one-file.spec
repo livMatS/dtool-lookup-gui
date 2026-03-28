@@ -112,39 +112,25 @@ for typelib_name in REQUIRED_TYPELIBS:
 _pixbuf_loaders_datas = []
 
 # Explicitly bundle libpng16 and libjpeg so GdkPixbuf's built-in PNG/JPEG support works.
-# On Ubuntu 24.04, PNG and JPEG are compiled into libgdk-pixbuf-2.0.so (no external
-# loader .so files). PyInstaller's GI hook fails to introspect GdkPixbuf at build time
-# (GIRepository namespace unavailable in the headless xvfb env), so the transitive
-# dependency libpng16.so.16 is NOT auto-collected. Without it, GdkPixbuf cannot decode
-# any PNG (including GTK's internal image-missing.png fallback icon), causing SIGABRT.
-import glob as _pixglob
-
-# Ubuntu 24.04 uses underscore: libgdk_pixbuf-2.0.so.0 (not hyphen libgdk-pixbuf).
-# Runtime libs are in /lib/x86_64-linux-gnu, not /usr/lib/x86_64-linux-gnu.
-# libpng16.so.16 and libjpeg.so.8 are the versioned runtime libs (not dev symlinks).
-_PIXBUF_DEPS = [
-    'libgdk_pixbuf-2.0.so*',   # underscore, Ubuntu 24.04 naming
-    'libgdk-pixbuf-2.0.so*',   # hyphen, fallback for other distros
-    'libpng16.so.1*',          # versioned runtime lib only (not .so dev symlink)
-    'libjpeg.so.[0-9]*',       # versioned runtime lib only
-]
-_PIXBUF_SEARCH = [
-    '/lib/x86_64-linux-gnu',   # Ubuntu 24.04 runtime libs location
-    '/usr/lib/x86_64-linux-gnu',
-    '/lib64',
-    '/usr/lib64',
-]
+# On Ubuntu 24.04, PNG and JPEG are compiled into libgdk_pixbuf-2.0.so.0 (no external
+# loader .so). PyInstaller's GI hook can't introspect GdkPixbuf in the headless env,
+# so libpng16.so.16 is NOT auto-collected. Without it, GdkPixbuf cannot decode any PNG
+# (including GTK's internal image-missing.png fallback icon), causing SIGABRT.
+#
+# The CI step "Collect GdkPixbuf runtime dependencies" runs ldd on libgdk_pixbuf-2.0.so.0
+# and writes the resolved .so paths to pyinstaller/linux/pixbuf_deps.txt.
+_pixbuf_deps_file = os.path.join(root_dir, 'pyinstaller', 'linux', 'pixbuf_deps.txt')
 _pixbuf_binaries = []
-_seen = set()
-for _pat in _PIXBUF_DEPS:
-    for _sdir in _PIXBUF_SEARCH:
-        _matches = sorted(_pixglob.glob(os.path.join(_sdir, _pat)))
-        for _m in _matches:
-            if os.path.isfile(_m) and not _m.endswith('.a') and _m not in _seen:
-                _seen.add(_m)
-                _pixbuf_binaries.append((_m, '.'))
-                print(f'[spec] Bundling pixbuf dep: {_m}')
-                break
+if os.path.isfile(_pixbuf_deps_file):
+    with open(_pixbuf_deps_file) as _f:
+        for _line in _f:
+            _path = _line.strip()
+            if _path and os.path.isfile(_path):
+                _pixbuf_binaries.append((_path, '.'))
+                print(f'[spec] Bundling pixbuf dep: {_path}')
+    print(f'[spec] Total pixbuf deps: {len(_pixbuf_binaries)}')
+else:
+    print(f'[spec] WARNING: pixbuf_deps.txt not found, PNG support may be broken')
 
 hooks_path = [os.path.join(root_dir, 'pyinstaller/hooks')]
 
