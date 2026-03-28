@@ -1,6 +1,24 @@
 Change log for dtool-lookup-gui
 ===============================
 
+0.7.3 (unreleased)
+-------------------
+
+- Fixed frozen progress bar when dataset copy fails due to any exception
+  (previously only ``ChildProcessError`` was caught; other errors such as
+  missing storage plugin or wrong endpoint left the progress bar visible
+  forever) — fixes #169
+- Copy progress popup now shows "Copy failed: <reason>" on error instead
+  of always reporting success — fixes #169
+- Improved dependency graph error message when the lookup server returns
+  a non-JSON response (HTML error page): now shows a user-readable
+  explanation instead of a raw ``ContentTypeError`` dump — fixes #370, #182
+- Fixed Ubuntu CI build: PyInstaller one-file bundle now works on Ubuntu 24.04
+  with Python 3.12 (fixes ``pkg_resources`` removal, ``gi.overrides``
+  collection, GdkPixbuf loaders, ``dtool-cli`` Python 3.12 compatibility)
+- Fixed test CI: added missing ``glib-compile-schemas`` step, updated
+  Python matrix (drop 3.9, add 3.13)
+
 0.7.2 (13Nov25)
 ---------------
 
