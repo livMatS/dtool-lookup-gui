@@ -122,7 +122,10 @@ hooks_path = [os.path.join(root_dir, 'pyinstaller/hooks')]
 runtime_hooks = [
     os.path.join(root_dir, 'pyinstaller/rthooks/pyi_rth_jinja2.py'),
     os.path.join(root_dir, 'pyinstaller/rthooks/pyi_rth_glib.py'),
-    os.path.join(root_dir, 'pyinstaller/rthooks/pyi_rth_gdkpixbuf.py'),
+    # NOTE: do NOT add pyi_rth_gdkpixbuf here. PyInstaller ships its own hook
+    # that sets GDK_PIXBUF_MODULE_FILE. When no loaders.cache is bundled, it
+    # points to a nonexistent path → GdkPixbuf falls back to built-in PNG/JPEG.
+    # Adding our own hook that creates the file breaks this fallback.
 ]
 
 a = Analysis(
