@@ -44,6 +44,7 @@ class CopyManager:
         self._progress_revealer.set_reveal_child(True)
         tracker = self._progress_popover.add_status_box(
             self.progress_update, f'Copying dataset »{dataset}« to »{destination}«')
+        error_msg = None
         try:
             await dataset.copy(destination, progressbar=tracker)
         except ChildProcessError as exc:
@@ -51,8 +52,14 @@ class CopyManager:
             # arises if the dataset exists at the destination already.
             # TODO: check content of exc to provide simple "dataset exists" msg
             logger.error(str(exc))
+            error_msg = str(exc)
+        except Exception as exc:
+            # Catch-all: missing storage plugin, wrong endpoint, network errors, etc.
+            # Without this, any unexpected exception leaves the progress bar frozen forever.
+            logger.error("Copy failed: %s", exc)
+            error_msg = str(exc)
 
-        tracker.set_done()
+        tracker.set_done(error=error_msg)
 
         # Once all copy operations are done, we hide the pie chart and clear the popover
         if all([tracker.is_done for tracker in self._progress_popover.status_boxes]):

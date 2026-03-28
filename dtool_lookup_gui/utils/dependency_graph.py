@@ -73,7 +73,10 @@ class DependencyGraph:
                                                       page_size=self._search_state.page_size,
                                                       pagination=pagination)
         except ContentTypeError as exc:
-            logger.error("%s", exc)
+            logger.error(
+                "Failed to query dependency graph for UUID '%s': server returned an "
+                "unexpected response (not JSON). The lookup server may have returned an "
+                "error page. Details: %s", root_uuid, exc)
             return
 
         logger.debug("Got first batch of dependency graph datasets with pagination information '%s'.", pagination)
@@ -87,7 +90,9 @@ class DependencyGraph:
                                                                page_number=page, page_size=self._search_state.page_size,
                                                                pagination=pagination)
             except ContentTypeError as exc:
-                logger.error("%s", exc)
+                logger.error(
+                    "Failed to query dependency graph page %d for UUID '%s': server returned an "
+                    "unexpected response (not JSON). Details: %s", page, root_uuid, exc)
                 return
             logger.debug("Got batch #%s of dependency graph datasets with pagination information '%s'.", page, pagination)
             if len(more_datasets) > 0:
