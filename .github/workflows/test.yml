@@ -43,7 +43,7 @@ jobs:
             gir1.2-gtksource-4 \
             libgtksourceview-4-0 \
             xvfb \
-            glib-compile-schemas
+            libglib2.0-bin
 
       - name: Install pythonic dependencies
         run: |
