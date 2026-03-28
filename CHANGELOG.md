@@ -15,6 +15,9 @@ Change log for dtool-lookup-gui
   explanation instead of a raw ``ContentTypeError`` dump — fixes #370, #182
 - README tree view now updates immediately after saving metadata without
   requiring dataset re-selection — fixes #526
+- Meaningful error messages when authentication fails: wrong URL now shows
+  "not a valid URL", unreachable server shows "could not connect", wrong
+  credentials shows "incorrect username or password" — fixes #211
 - Fixed Ubuntu CI build: PyInstaller one-file bundle now works on Ubuntu 24.04
   with Python 3.12 (fixes ``pkg_resources`` removal, ``gi.overrides``
   collection, GdkPixbuf loaders, ``dtool-cli`` Python 3.12 compatibility)
