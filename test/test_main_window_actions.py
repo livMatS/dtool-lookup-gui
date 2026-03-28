@@ -765,3 +765,146 @@ async def test_do_select_dataset_row_by_uri_direct_call(populated_app_with_mock_
     if pending_tasks:
         await asyncio.gather(*pending_tasks)
 
+
+
+# ---------------------------------------------------------------------------
+# Tests for base URI listing timeout — fixes #45
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_base_uri_listing_timeout_shows_error(populated_app_with_local_dataset_data,
+                                                     local_dataset_uri, caplog):
+    """When all_datasets() takes longer than the timeout, an error is logged
+    and the row info label is updated — the spinner must not hang forever.
+    """
+    import asyncio as _asyncio
+    from unittest.mock import patch, AsyncMock
+    from dtool_lookup_gui.views.main_window import MainWindow
+    from dtool_lookup_gui.models.settings import settings
+
+    windows = populated_app_with_local_dataset_data.get_windows()
+    main_window = [w for w in windows if isinstance(w, MainWindow)][0]
+
+    # Set a very short timeout so the test runs fast
+    original_timeout = settings.base_uri_listing_timeout
+    settings.base_uri_listing_timeout = 1  # 1 second
+
+    async def slow_all_datasets():
+        await _asyncio.sleep(10)  # Much longer than the timeout
+        return []
+
+    try:
+        with patch(
+            "dtool_lookup_gui.models.base_uris.BaseURI.all_datasets",
+            new=AsyncMock(side_effect=lambda: slow_all_datasets()),
+        ):
+            with caplog.at_level(logging.ERROR, logger="dtool_lookup_gui.views.main_window"):
+                main_window.activate_action("refresh-view")
+                # Wait long enough for timeout to fire (timeout=1s + some margin)
+                await _asyncio.sleep(2.5)
+
+        error_records = [r for r in caplog.records if r.levelno >= logging.ERROR]
+        assert error_records, "Expected a timeout error to be logged"
+        msg = error_records[-1].message
+        assert "timed out" in msg.lower() or "timeout" in msg.lower(), \
+            f"Expected timeout message, got: {msg!r}"
+    finally:
+        settings.base_uri_listing_timeout = original_timeout
+
+
+@pytest.mark.asyncio
+async def test_base_uri_listing_no_timeout_when_disabled(populated_app_with_local_dataset_data,
+                                                          local_dataset_uri, caplog):
+    """When timeout is set to 0, slow listings must NOT raise TimeoutError."""
+    import asyncio as _asyncio
+    from unittest.mock import patch, AsyncMock
+    from dtool_lookup_gui.views.main_window import MainWindow
+    from dtool_lookup_gui.models.settings import settings
+
+    windows = populated_app_with_local_dataset_data.get_windows()
+    main_window = [w for w in windows if isinstance(w, MainWindow)][0]
+
+    original_timeout = settings.base_uri_listing_timeout
+    settings.base_uri_listing_timeout = 0  # disabled
+
+    call_completed = []
+
+    async def slow_but_completes():
+        await _asyncio.sleep(0.5)
+        call_completed.append(True)
+        return []
+
+    try:
+        with patch(
+            "dtool_lookup_gui.models.base_uris.BaseURI.all_datasets",
+            new=AsyncMock(side_effect=lambda: slow_but_completes()),
+        ):
+            main_window.activate_action("refresh-view")
+            await _asyncio.sleep(2.0)
+
+        timeout_errors = [r for r in caplog.records
+                          if r.levelno >= logging.ERROR and "timeout" in r.message.lower()]
+        assert not timeout_errors, \
+            "No timeout errors expected when timeout is disabled (0)"
+        assert call_completed, "all_datasets() should have completed normally"
+    finally:
+        settings.base_uri_listing_timeout = original_timeout
+
+
+# ---------------------------------------------------------------------------
+# Tests for README tree rebuild after save — fixes #526
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_readme_tree_rebuilt_after_save(populated_app_with_local_dataset_data,
+                                               local_dataset_uri):
+    """After saving README metadata, the tree view must reflect the new content
+    without requiring dataset re-selection.
+    """
+    import asyncio as _asyncio
+    import time
+    import yaml
+    from unittest.mock import patch, MagicMock
+    from dtool_lookup_gui.views.main_window import MainWindow
+
+    windows = populated_app_with_local_dataset_data.get_windows()
+    main_window = [w for w in windows if isinstance(w, MainWindow)][0]
+
+    # Load a dataset so there's a selection
+    main_window.activate_action("refresh-view")
+    start = time.time()
+    while time.time() - start < 10:
+        if len(main_window.dataset_list_box.get_children()) > 0:
+            break
+        await _asyncio.sleep(0.1)
+
+    rows = main_window.dataset_list_box.get_children()
+    assert rows, "Need at least one dataset row to test README save"
+    main_window.dataset_list_box.select_row(rows[0])
+    await _asyncio.sleep(1.0)  # Let _update_dataset_view run
+
+    new_readme = "project: test-project\nauthor: Test Author\nversion: 42\n"
+
+    # Patch put_readme so we don't write to disk
+    with patch.object(rows[0].dataset, "put_readme", return_value=None):
+        main_window.readme_buffer.set_text(new_readme)
+
+        # Simulate save button click (linting off path or linting pass path)
+        with patch("dtool_lookup_gui.models.settings.settings.yaml_linting_enabled", False):
+            main_window.on_save_metadata_button_clicked(None)
+
+    # Give GTK a moment to process
+    await _asyncio.sleep(0.2)
+
+    # The tree store must now contain entries matching the new YAML
+    store = main_window.readme_tree_view.get_model()
+    assert store is not None, "Tree view must have a model"
+
+    tree_keys = set()
+    def collect_keys(model, path, iter_):
+        tree_keys.add(model[iter_][0])
+    store.foreach(collect_keys)
+
+    expected_keys = {"project", "author", "version"}
+    assert expected_keys.issubset(tree_keys), \
+        f"Tree must contain keys from new README. Expected {expected_keys}, found {tree_keys}"
