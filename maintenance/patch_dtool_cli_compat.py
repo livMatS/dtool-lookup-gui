@@ -9,8 +9,7 @@ Idempotent: safe to run multiple times even on a cached/pre-patched file.
 
 Run after: pip install dtool-cli==0.7.1
 """
-import importlib
-import inspect
+import importlib.util
 import os
 import sys
 
@@ -31,8 +30,11 @@ OLD = 'from pkg_resources import iter_entry_points'
 
 def patch():
     try:
-        import dtool_cli.cli as cli_mod
-        cli_path = inspect.getfile(cli_mod)
+        import importlib.util
+        spec = importlib.util.find_spec('dtool_cli.cli')
+        if spec is None or not spec.origin:
+            raise ImportError("dtool_cli.cli not found in sys.path")
+        cli_path = spec.origin
     except Exception as e:
         print(f"Could not locate dtool_cli.cli: {e}", file=sys.stderr)
         sys.exit(1)
