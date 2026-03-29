@@ -78,13 +78,17 @@ def patch():
     with open(cli_path, 'r') as f:
         source = f.read()
 
-    # Already patched with the new shim — nothing to do
+    # Check if already patched with the new shim AND syntactically valid
     if SHIM_MARKER in source:
-        print(f"dtool_cli/cli.py already patched: {cli_path}")
-        return
+        try:
+            compile(source, cli_path, 'exec')
+            print(f"dtool_cli/cli.py already patched: {cli_path}")
+            return
+        except SyntaxError as e:
+            print(f"dtool_cli/cli.py has SHIM_MARKER but is broken ({e}); reinstalling ...",
+                  file=sys.stderr)
 
-    # File has broken syntax (e.g. stale toolcache with corrupt partial patch)
-    # or an old simpler shim without _EPCompat — reinstall to get a clean copy.
+    # File has broken syntax or is missing _EPCompat — reinstall to get a clean copy.
     try:
         compile(source, cli_path, 'exec')
         has_old_unindented = bool(OLD_RE.search(source))
