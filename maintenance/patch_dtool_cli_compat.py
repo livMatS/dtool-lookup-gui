@@ -9,17 +9,21 @@ Also wraps returned EntryPoints in an _EPCompat class that exposes
 .module_name and .attrs, which click-plugins 1.1.1.x accesses via the
 old pkg_resources API.
 
-Idempotent: safe to run multiple times even on a cached/pre-patched file.
-If the file is found in a broken/partial-patch state (e.g. stale toolcache),
-it is reinstated from pip before patching.
+Idempotent: safe to run multiple times even on a cached/pre-patched file,
+including files already patched with an older simpler shim.
 
 Run after: pip install dtool-cli==0.7.1
 """
 import importlib.util
 import os
+import re
 import sys
 
-OLD = 'from pkg_resources import iter_entry_points'
+# Marker unique to the new shim — if present the file is fully up to date
+SHIM_MARKER = 'class _EPCompat:'
+
+# The unindented top-level import we want to replace (anchored to start of line)
+OLD_RE = re.compile(r'^from pkg_resources import iter_entry_points', re.MULTILINE)
 
 SHIM = '''\
 try:
@@ -57,7 +61,7 @@ except ImportError:
 def _reinstall_dtool_cli():
     """Force-reinstall dtool-cli to restore a broken cli.py."""
     import subprocess
-    print("Reinstalling dtool-cli to restore broken cli.py ...", file=sys.stderr)
+    print("Reinstalling dtool-cli to restore cli.py ...", file=sys.stderr)
     subprocess.check_call([
         sys.executable, '-m', 'pip', 'install', '--force-reinstall',
         '--no-deps', '-q', 'dtool-cli==0.7.1'
@@ -74,27 +78,34 @@ def patch():
     with open(cli_path, 'r') as f:
         source = f.read()
 
-    # Detect broken/partial-patch state: shim start present but OLD absent
-    # and the file doesn't compile cleanly — reinstall and re-read.
+    # Already patched with the new shim — nothing to do
+    if SHIM_MARKER in source:
+        print(f"dtool_cli/cli.py already patched: {cli_path}")
+        return
+
+    # File has broken syntax (e.g. stale toolcache with corrupt partial patch)
+    # or an old simpler shim without _EPCompat — reinstall to get a clean copy.
     try:
         compile(source, cli_path, 'exec')
+        has_old_unindented = bool(OLD_RE.search(source))
     except SyntaxError as e:
         print(f"dtool_cli/cli.py has a syntax error ({e}); reinstalling ...", file=sys.stderr)
+        has_old_unindented = False
+
+    if not has_old_unindented:
         _reinstall_dtool_cli()
-        # Re-resolve path after reinstall (may have moved in toolcache)
         importlib.invalidate_caches()
         spec = importlib.util.find_spec('dtool_cli.cli')
         cli_path = spec.origin
         with open(cli_path, 'r') as f:
             source = f.read()
 
-    # Already fully patched — nothing to do
-    if OLD not in source:
-        print(f"dtool_cli/cli.py already patched: {cli_path}")
+    # Now replace the top-level (unindented) occurrence only
+    if not OLD_RE.search(source):
+        print(f"Pattern not found in {cli_path}; may be a different version. Skipping.")
         return
 
-    # Replace only the first occurrence to stay idempotent
-    patched = source.replace(OLD, SHIM, 1)
+    patched = OLD_RE.sub(SHIM, source, count=1)
 
     with open(cli_path, 'w') as f:
         f.write(patched)
