@@ -26,7 +26,7 @@ import os
 
 from gi.repository import Gtk
 
-from dtoolcore.utils import NAME_VALID_CHARS_LIST
+from dtoolcore.utils import NAME_VALID_CHARS_LIST, name_is_valid
 
 
 @Gtk.Template(filename=f'{os.path.dirname(__file__)}/dataset_name_dialog.ui')
@@ -35,18 +35,43 @@ class DatasetNameDialog(Gtk.Window):
 
     name_label = Gtk.Template.Child()
     name_entry = Gtk.Template.Child()
+    error_label = Gtk.Template.Child()
 
     def __init__(self, *args, **kwargs):
         self._on_confirmation = kwargs.pop('on_confirmation')
         super().__init__(*args, **kwargs)
         valid_chars = ' '.join(NAME_VALID_CHARS_LIST)
-        self.name_label.set_text(f'Please provide a name for the new dataset. The name must be unique to the local '
-                                 f'directory where the dataset is created by must not be unique across a cloud '
-                                 f'storage system. The name may only contain the following characters: {valid_chars}')
+        self.name_label.set_text(
+            f'Please provide a name for the new dataset. The name must be unique '
+            f'to the local directory where the dataset is created but need not be '
+            f'unique across a cloud storage system. The name may only contain the '
+            f'following characters: {valid_chars}')
+        self.name_entry.connect('changed', self._on_name_changed)
+
+    def _on_name_changed(self, entry):
+        """Clear the error state as the user edits the name."""
+        self.error_label.hide()
+        entry.get_style_context().remove_class('error')
+
+    def _show_error(self, message):
+        """Show an inline error message and highlight the entry."""
+        self.error_label.set_text(message)
+        self.error_label.show()
+        self.name_entry.get_style_context().add_class('error')
 
     @Gtk.Template.Callback()
     def on_apply_clicked(self, widget):
-        self._on_confirmation(self.name_entry.get_text())
+        name = self.name_entry.get_text().strip()
+        if not name:
+            self._show_error('Please enter a name for the dataset.')
+            return
+        if not name_is_valid(name):
+            valid_chars = ' '.join(NAME_VALID_CHARS_LIST)
+            self._show_error(
+                f'"{name}" is not a valid dataset name. '
+                f'Only the following characters are allowed: {valid_chars}')
+            return
+        self._on_confirmation(name)
         self.destroy()
 
     @Gtk.Template.Callback()

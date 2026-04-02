@@ -1,6 +1,5 @@
 Change log for dtool-lookup-gui
-===============================
-
+========================
 0.7.3 (unreleased)
 -------------------
 
@@ -35,6 +34,26 @@ Change log for dtool-lookup-gui
   `pyinstaller/vendored/` (importlib.metadata shim + deferred version call)
   and overwrite the installed copy before PyInstaller runs via
   `pyinstaller/vendored/override_dtool_cli.py`
+- Fixed frozen progress bar when dataset copy fails due to any exception
+  (previously only ``ChildProcessError`` was caught; other errors such as
+  missing storage plugin or wrong endpoint left the progress bar visible
+  forever) — fixes #169
+- Copy progress popup now shows "Copy failed: <reason>" on error instead
+  of always reporting success — fixes #169
+- Improved dependency graph error message when the lookup server returns
+  a non-JSON response (HTML error page): now shows a user-readable
+  explanation instead of a raw ``ContentTypeError`` dump — fixes #370, #182
+- README tree view now updates immediately after saving metadata without
+  requiring dataset re-selection — fixes #526
+- Meaningful error messages when authentication fails: wrong URL now shows
+  "not a valid URL", unreachable server shows "could not connect", wrong
+  credentials shows "incorrect username or password" — fixes #211
+- Configurable timeout for direct base URI dataset listing (default 30s,
+  set to 0 to disable); shows "Timeout — listing took too long" in the
+  row label instead of spinning forever — fixes #45
+- Dataset name dialog now shows an inline error message when the name is
+  empty or contains invalid characters, instead of silently doing nothing
+  on Apply — fixes #199
 
 0.7.2 (13Nov25)
 ---------------

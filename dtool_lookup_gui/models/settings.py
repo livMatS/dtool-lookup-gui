@@ -94,5 +94,14 @@ class Settings:
     def yaml_linting_enabled(self, value):
         self.settings.set_boolean('yaml-linting-enabled', value)
 
+    @property
+    def base_uri_listing_timeout(self):
+        """Timeout in seconds for direct base URI dataset listing. 0 = no timeout."""
+        return self.settings.get_int('base-uri-listing-timeout')
+
+    @base_uri_listing_timeout.setter
+    def base_uri_listing_timeout(self, value):
+        self.settings.set_int('base-uri-listing-timeout', value)
+
 
 settings = Settings()

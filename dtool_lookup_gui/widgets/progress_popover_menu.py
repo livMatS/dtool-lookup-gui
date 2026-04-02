@@ -83,9 +83,14 @@ class DtoolProgressStatusBox(Gtk.Box):
     def is_done(self):
         return self._done
 
-    def set_done(self):
+    def set_done(self, error=None):
         self._done = True
-        self._progress_label.set_text('Copy operation succeeded.')
+        if error is not None:
+            self._progress_bar.set_fraction(0.)
+            self._progress_label.set_text(f'Copy failed: {error}')
+        else:
+            self._progress_bar.set_fraction(1.)
+            self._progress_label.set_text('Copy operation succeeded.')
 
 
 class DtoolProgressPopoverMenu(Gtk.PopoverMenu):

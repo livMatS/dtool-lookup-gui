@@ -39,6 +39,14 @@
             <summary>Enable or disable YAML linting.</summary>
         </key>
 
+        <key name='base-uri-listing-timeout' type='i'>
+            <default>30</default>
+            <summary>
+                Timeout in seconds for direct listing of datasets in a base URI.
+                If listing takes longer than this, the operation is cancelled and
+                an error message is shown. Set to 0 to disable the timeout.
+            </summary>
+        </key>
 
     </schema>
 

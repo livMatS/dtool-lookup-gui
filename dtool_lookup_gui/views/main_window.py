@@ -41,7 +41,7 @@ from dtool_info.utils import sizeof_fmt
 import dtool_lookup_api.core.config
 from dtool_lookup_api.core.LookupClient import ConfigurationBasedLookupClient
 
-from dtool_lookup_gui import is_uuid
+from dtool_lookup_gui import is_uuid, fill_readme_tree_store
 
 import yamllint
 from yamllint.config import YamlLintConfig
@@ -825,6 +825,7 @@ class MainWindow(Gtk.ApplicationWindow):
             else:
                 self.linting_errors_button.set_label("No linting issues found!")
                 self.dataset_list_box.get_selected_row().dataset.put_readme(yaml_content)
+                self._rebuild_readme_tree(yaml_content)
         else:
 
             # Clear previous linting problems when linting is turned off
@@ -833,6 +834,26 @@ class MainWindow(Gtk.ApplicationWindow):
 
             _logger.debug("YAML linting turned off.")
             self.dataset_list_box.get_selected_row().dataset.put_readme(yaml_content)
+            self._rebuild_readme_tree(yaml_content)
+
+    def _rebuild_readme_tree(self, yaml_content):
+        """Rebuild the README tree view from the given YAML content string.
+
+        Called after saving README.yml so the tree reflects the new content
+        without requiring the user to re-select the dataset (fixes #526).
+        """
+        try:
+            readme_dict = yaml.safe_load(yaml_content)
+        except yaml.YAMLError as exc:
+            _logger.warning("Could not parse README YAML for tree rebuild: %s", exc)
+            return
+        store = self.readme_tree_view.get_model()
+        if store is None:
+            return
+        store.clear()
+        fill_readme_tree_store(store, readme_dict)
+        self.readme_tree_view.columns_autosize()
+        self.readme_tree_view.show_all()
 
     @Gtk.Template.Callback()
     def on_linting_errors_button_clicked(self, widget):
@@ -1367,12 +1388,24 @@ class MainWindow(Gtk.ApplicationWindow):
             if isinstance(row, DtoolBaseURIRow):
                 try:
                     _logger.debug(f"Selected base URI {row.base_uri}.")
-                    datasets = await row.base_uri.all_datasets()
+                    timeout = settings.base_uri_listing_timeout
+                    if timeout > 0:
+                        datasets = await asyncio.wait_for(
+                            row.base_uri.all_datasets(), timeout=timeout)
+                    else:
+                        datasets = await row.base_uri.all_datasets()
                     _logger.debug(f"Found {len(datasets)} datasets.")
                     update_base_uri_summary(datasets)
                     if self.base_uri_list_box.get_selected_row() == row:
                        # Only update if the row is still selected
                        self.dataset_list_box.fill(datasets, on_show=on_show)
+                except asyncio.TimeoutError:
+                    timeout = settings.base_uri_listing_timeout
+                    logger.error(
+                        "Listing datasets in '%s' timed out after %d seconds. "
+                        "The base URI may be slow or unreachable. "
+                        "You can adjust the timeout in Settings.", row.base_uri, timeout)
+                    row.info_label.set_text("Timeout — listing took too long")
                 except Exception as e:
                     self.show_error(e)
                 self.main_stack.set_visible_child(self.main_paned)
@@ -1477,8 +1510,11 @@ class MainWindow(Gtk.ApplicationWindow):
     def _create_dataset(self, name):
         base_uri = self.base_uri_list_box.get_selected_row()
         if base_uri is not None:
-            self.dataset_list_box.add_dataset(base_uri.base_uri.create_dataset(name))
-            self.dataset_list_box.show_all()
+            try:
+                self.dataset_list_box.add_dataset(base_uri.base_uri.create_dataset(name))
+                self.dataset_list_box.show_all()
+            except ValueError as e:
+                logger.error("Cannot create dataset: %s", e)
     
     def _freeze_dataset(self):
         row = self.dataset_list_box.get_selected_row()
