@@ -65,9 +65,37 @@ OLD_VERSION_OPTION = "@click.version_option(message=pretty_version_text())"
 NEW_VERSION_OPTION = "@click.version_option(message=pretty_version_text() if not getattr(__import__('sys'), '_MEIPASS', None) else 'dtool (bundled)')"
 
 
+def _clear_pyc(p: pathlib.Path):
+    """Remove stale .pyc files for a given .py path."""
+    pyc_dir = p.parent / "__pycache__"
+    for pyc in pyc_dir.glob(f"{p.stem}.cpython-*.pyc"):
+        pyc.unlink()
+        print(f"Removed {pyc}")
+
+
+def _reinstall_dtool_cli():
+    """Force-reinstall dtool-cli from PyPI to recover a corrupted file."""
+    import subprocess
+    print("Reinstalling dtool-cli to recover corrupted cli.py...")
+    subprocess.check_call(
+        [sys.executable, "-m", "pip", "install", "--force-reinstall", "--no-deps", "dtool-cli"],
+        stdout=subprocess.DEVNULL,
+    )
+
+
 def patch_one(p: pathlib.Path) -> bool:
     """Patch a single dtool_cli/cli.py file. Returns True if changed."""
     src = p.read_text()
+
+    # Validate: if the file has a syntax error, reinstall and re-read
+    try:
+        compile(src, str(p), "exec")
+    except SyntaxError:
+        print(f"Syntax error detected in {p}, reinstalling dtool-cli...")
+        _reinstall_dtool_cli()
+        src = p.read_text()
+        _clear_pyc(p)
+
     changed = False
 
     if OLD_IMPORT in src:
@@ -82,11 +110,14 @@ def patch_one(p: pathlib.Path) -> bool:
 
     if changed:
         p.write_text(src)
-        # Remove stale .pyc so Python recompiles from patched source
-        pyc_dir = p.parent / "__pycache__"
-        for pyc in pyc_dir.glob(f"{p.stem}.cpython-*.pyc"):
-            pyc.unlink()
-            print(f"Removed {pyc}")
+        # Validate the result before finalising
+        try:
+            compile(src, str(p), "exec")
+        except SyntaxError as e:
+            print(f"ERROR: patch produced invalid syntax in {p}: {e}", file=sys.stderr)
+            _reinstall_dtool_cli()
+            return False
+        _clear_pyc(p)
 
     return changed
 
