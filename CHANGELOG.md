@@ -10,6 +10,31 @@ Change log for dtool-lookup-gui
 - BUG: fix `collect_number_of_tests.py` propagating error text to stdout,
   which caused `pytest -n "Error..."` to fail with invalid numprocesses value
 - MAINT: fix typo in `build-on-ubuntu` workflow name
+- BUG: fix defunct Linux bundle — explicitly bundle GI typelibs (Gtk-3.0,
+  GLib-2.0, Gio-2.0, Pango-1.0, GtkSource-4, GdkPixbuf-2.0, etc.) in
+  PyInstaller spec and set `GI_TYPELIB_PATH` in runtime hook so the bundled
+  app can find them; previously all GI modules were silently missing
+- CI: fix Ubuntu build workflow — run PyInstaller under xvfb-run so GI hook
+  child processes can initialise GTK; add smoke-test step that verifies
+  the bundle starts without crashing before uploading artifacts
+- BUG: fix Linux bundle crashing with `Unrecognized image file format` on PNG;
+  explicitly bundle `libgdk-pixbuf-2.0.so`, `libpng16.so`, `libjpeg.so` and
+  related libraries; also bundle GdkPixbuf loader `.so` files and regenerate
+  `loaders.cache` in CI so the bundled app can decode images without a system
+  GdkPixbuf installation
+- BUG: fix Linux bundle missing `GObject.type_register` and other `gi.overrides`
+  Python wrappers; PyInstaller's GI hook skips overrides when module introspection
+  fails; explicitly collect all `gi.overrides` submodules as hidden imports
+- BUG: fix `dtool_lookup_gui/utils/about.py` using `pkg_resources.iter_entry_points`
+  (unavailable in Python 3.12+); replace with `importlib.metadata` shim
+- BUG: fix Linux bundle crashing with `ModuleNotFoundError: No module named
+  'dtool_cli.cli'` — `dtool-cli 0.7.1` uses `pkg_resources.iter_entry_points`
+  (removed from Python 3.12+) and calls `pretty_version_text()` eagerly at
+  module import time, causing PyInstaller analysis to fail and silently exclude
+  the module from the bundle; vendor a fixed `dtool_cli/cli.py` in
+  `pyinstaller/vendored/` (importlib.metadata shim + deferred version call)
+  and overwrite the installed copy before PyInstaller runs via
+  `pyinstaller/vendored/override_dtool_cli.py`
 
 0.7.2 (13Nov25)
 ---------------

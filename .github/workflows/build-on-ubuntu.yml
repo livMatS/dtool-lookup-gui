@@ -2,6 +2,9 @@ name: build-on-ubuntu
 
 on:
   workflow_call:
+  push:
+    branches:
+      - local-test
 
 jobs:
 
@@ -16,12 +19,8 @@ jobs:
 
     - name: Get history and tags for SCM versioning to work
       run: |
-        git fetch --prune --unshallow
-        git fetch --depth=1 origin +refs/tags/*:refs/tags/*
-
-    - name: Get version
-      id: get_version
-      uses: battila7/get-version-action@v2
+        git fetch --prune --unshallow || true  # no-op if already a full clone (e.g. act local run)
+        git fetch --depth=1 origin +refs/tags/*:refs/tags/* || true
 
     - name: Set up Python 3.12
       uses: actions/setup-python@v5
@@ -39,23 +38,35 @@ jobs:
           python3-dev \
           gir1.2-gtk-3.0 \
           gir1.2-gtksource-4 \
-          libgtksourceview-4-0
+          libgtksourceview-4-0 \
+          libgdk-pixbuf2.0-bin \
+          xvfb
 
     - name: Log system package info
       run: |
-        echo "### lab_release -a ###"
+        echo "### lsb_release -a ###"
         lsb_release -a | tee lsb_release_a.txt
         echo "### uname -a ###"
         uname -a | tee uname_a.txt
         echo "### apt list --installed ###"
         apt list --installed | tee apt_list_installed.txt
-        
+        echo "### GI typelib directory ###"
+        ls /usr/lib/x86_64-linux-gnu/girepository-1.0/ | tee typelib_list.txt
+
     - name: Install pythonic dependencies
       run: |
         pip install --upgrade pip
-        pip install wheel setuptools_scm
+        pip install wheel setuptools_scm pyinstaller-hooks-contrib
+        python pyinstaller/vendored/preremove_dtool_cli.py || true
+        pip install --force-reinstall dtool-cli==0.7.1
         pip install -r pyinstaller/linux/requirements.txt
         pip install pyinstaller
+
+    - name: Override dtool_cli with patched version
+      # dtool-cli 0.7.1 on PyPI uses pkg_resources (unavailable in Python 3.12+)
+      # and calls pretty_version_text() eagerly at import time, which fails in
+      # PyInstaller's analysis subprocess and causes the module to be excluded.
+      run: python pyinstaller/vendored/override_dtool_cli.py
 
     - name: Fix setuptools_scm-generated version
       id: fix_version
@@ -73,11 +84,63 @@ jobs:
         glib-compile-schemas .
       working-directory: dtool_lookup_gui
 
-    - name: Package executable with pyinstaller
+    - name: Collect GdkPixbuf runtime dependencies
+      # PyInstaller's GI hook can't introspect GdkPixbuf in the headless build env
+      # (GIRepository namespace unavailable), so it skips generating loaders.cache
+      # and collecting loader .so files. The runtime hook still sets
+      # GDK_PIXBUF_MODULE_FILE to _MEIPASS/lib/gdk-pixbuf/loaders.cache, which
+      # doesn't exist → gdk-pixbuf falls back to built-in formats (PNG, JPEG).
+      # BUT this only works if the system loaders.cache is NOT overridden.
+      # We generate the loaders.cache here under xvfb (so GI introspection works)
+      # and stage it where the spec and runtime hook expect it.
       run: |
-        pyinstaller -y ./pyinstaller/linux/dtool-lookup-gui-linux-one-file.spec 2>&1 | tee pyinstaller.log
+        python3 pyinstaller/linux/collect_pixbuf_deps.py
+        mkdir -p pyinstaller/linux/loaders
+        LOADERS_DIR=$(find /usr/lib -path "*/gdk-pixbuf-2.0/*/loaders" -type d 2>/dev/null | head -1)
+        QUERY_LOADERS=$(find /usr -name "gdk-pixbuf-query-loaders*" -executable -type f 2>/dev/null | head -1)
+        echo "LOADERS_DIR=$LOADERS_DIR  QUERY_LOADERS=$QUERY_LOADERS"
+        if [ -n "$LOADERS_DIR" ] && [ -n "$QUERY_LOADERS" ]; then
+          cp "$LOADERS_DIR"/*.so pyinstaller/linux/loaders/ 2>/dev/null || true
+          GDK_PIXBUF_MODULEDIR="$LOADERS_DIR" \
+            "$QUERY_LOADERS" "$LOADERS_DIR"/*.so > pyinstaller/linux/loaders/loaders.cache
+          echo "loaders.cache generated:"
+          cat pyinstaller/linux/loaders/loaders.cache
+        else
+          echo "WARNING: could not generate loaders.cache"
+        fi
+
+    - name: Package executable with pyinstaller
+      # Run under xvfb so PyInstaller's GI hook child processes can initialise
+      # GTK (gi._get_module_info) without "cannot open display" errors.
+      # Also set GI_TYPELIB_PATH and GDK_BACKEND explicitly as belt-and-suspenders.
+      env:
+        GI_TYPELIB_PATH: /usr/lib/x86_64-linux-gnu/girepository-1.0
+        GDK_BACKEND: x11
+      run: |
+        xvfb-run --auto-servernum \
+          pyinstaller -y ./pyinstaller/linux/dtool-lookup-gui-linux-one-file.spec 2>&1 | tee pyinstaller.log
         mv dist/dtool-lookup-gui dtool-lookup-gui
         chmod +x dtool-lookup-gui
+
+    - name: Smoke-test bundle (headless)
+      # Verify the bundle starts without immediately crashing.
+      # xvfb-run provides a display; timeout 10s means success if no crash within 10s.
+      run: |
+        set +e
+        xvfb-run --auto-servernum timeout 10 ./dtool-lookup-gui > /tmp/bundle-smoke.log 2>&1
+        EXIT=$?
+        set -e
+        echo "--- bundle output ---"
+        cat /tmp/bundle-smoke.log
+        echo "--- end output ---"
+        # exit 124 = timeout (app was still running) = PASS
+        # exit 0   = clean exit                      = PASS
+        # anything else                              = FAIL
+        if [ "$EXIT" -ne 124 ] && [ "$EXIT" -ne 0 ]; then
+          echo "FAIL: bundle crashed with exit code $EXIT"
+          exit 1
+        fi
+        echo "PASS: exit=$EXIT"
 
     # use tar here, see https://github.com/actions/upload-artifact/issues/38
     - name: Pack build assets
