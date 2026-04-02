@@ -78,7 +78,7 @@ jobs:
           # Cap worker count to avoid exhausting container thread limits
           if [ "$N" -gt 4 ] 2>/dev/null; then N=4; fi
           # tini as PID 1 subreaper: reaps zombie xdist workers so pytest doesn't hang
-          tini -- xvfb-run --auto-servernum pytest -n "$N" --log-cli-level=DEBUG
+          tini -s -- xvfb-run --auto-servernum pytest -n "$N" --log-cli-level=DEBUG
 
       - name: Lint with flake8
         run: |
