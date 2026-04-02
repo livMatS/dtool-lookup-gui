@@ -22,7 +22,7 @@ jobs:
 
       - name: Get history and tags for SCM versioning to work
         run: |
-          git fetch --prune --unshallow
+          git fetch --prune --unshallow || true
           git fetch --depth=1 origin +refs/tags/*:refs/tags/*
 
       - name: Set up Python ${{ matrix.python-version }}
@@ -41,7 +41,10 @@ jobs:
             python3-dev \
             gir1.2-gtk-3.0 \
             gir1.2-gtksource-4 \
-            libgtksourceview-4-0
+            libgtksourceview-4-0 \
+            xvfb \
+            libglib2.0-bin \
+            tini
 
       - name: Install pythonic dependencies
         run: |
@@ -55,6 +58,11 @@ jobs:
         run: |
           pip install .[test]
 
+      # dtool-cli 0.7.1 uses pkg_resources which was removed in Python 3.12.
+      # Patch the installed cli.py with an importlib.metadata shim.
+      - name: Patch dtool-cli for Python 3.12+ compatibility
+        run: python maintenance/patch_dtool_cli_compat.py
+
       # Required: GLib schemas must be compiled before pytest can import the app.
       # Without gschemas.compiled, Gio.SettingsSchemaSource raises GLib.Error on
       # import of dtool_lookup_gui.models.settings.
@@ -66,7 +74,11 @@ jobs:
       # run in virtual X server, see https://github.com/pygobject/pygobject-travis-ci-docker-examples
       - name: Test with pytest
         run: |
-          xvfb-run pytest -n $(python maintenance/collect_number_of_tests.py) --log-cli-level=DEBUG
+          N=$(python maintenance/collect_number_of_tests.py)
+          # Cap worker count to avoid exhausting container thread limits
+          if [ "$N" -gt 4 ] 2>/dev/null; then N=4; fi
+          # tini as PID 1 subreaper: reaps zombie xdist workers so pytest doesn't hang
+          tini -s -- xvfb-run --auto-servernum pytest -n "$N" --log-cli-level=DEBUG
 
       - name: Lint with flake8
         run: |

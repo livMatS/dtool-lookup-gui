@@ -424,6 +424,24 @@ class MainWindow(Gtk.ApplicationWindow):
         refresh_view_action.connect("activate", self.do_refresh_view)
         self.add_action(refresh_view_action)
 
+        # save metadata (YAML content string)
+        save_metadata_variant = GLib.Variant.new_string("dummy")
+        save_metadata_action = Gio.SimpleAction.new("save-metadata", save_metadata_variant.get_type())
+        save_metadata_action.connect("activate", self.do_save_metadata)
+        self.add_action(save_metadata_action)
+
+        # copy dataset — (source_uri, destination_uri) tuple
+        copy_dataset_variant_type = GLib.VariantType.new("(ss)")
+        copy_dataset_action = Gio.SimpleAction.new("copy-dataset", copy_dataset_variant_type)
+        copy_dataset_action.connect("activate", self.do_copy_dataset)
+        self.add_action(copy_dataset_action)
+
+        # add local directory as base URI (uri string)
+        add_local_dir_variant = GLib.Variant.new_string("dummy")
+        add_local_dir_action = Gio.SimpleAction.new("add-local-directory", add_local_dir_variant.get_type())
+        add_local_dir_action.connect("activate", self.do_add_local_directory)
+        self.add_action(add_local_dir_action)
+
         self.dependency_graph_widget.search_by_uuid = self._search_by_uuid
 
         self._copy_manager = CopyManager(self.progress_revealer, self.progress_popover)
@@ -622,6 +640,87 @@ class MainWindow(Gtk.ApplicationWindow):
         """Refresh view by reloading base uri list, """
         self.refresh()
 
+    def do_save_metadata(self, action, value):
+        """Save README metadata for the selected dataset.
+
+        Takes a string GLib.Variant containing the YAML content to save.
+        Validates and optionally lints the content, writes it via put_readme(),
+        and rebuilds the README tree view to reflect the new content.
+        This action wraps on_save_metadata_button_clicked for testability.
+        """
+        yaml_content = value.get_string()
+        row = self.dataset_list_box.get_selected_row()
+        if row is None:
+            logger.warning("save-metadata action: no dataset selected")
+            return
+
+        if settings.yaml_linting_enabled:
+            conf = YamlLintConfig('extends: default')
+            self.linting_problems = list(yamllint.linter.run(yaml_content, conf))
+            total_errors = len(self.linting_problems)
+            if total_errors > 0:
+                self.linting_errors_button.set_sensitive(True)
+                other = total_errors - 1
+                msg = (f"YAML Linter Error:\n{self.linting_problems[0]}"
+                       if total_errors == 1
+                       else f"YAML Linter Error:\n{self.linting_problems[0]} and {other} other YAML linting errors.\n"
+                            f"Click here for more details")
+                self.linting_errors_button.set_label(msg)
+                return  # Do not save invalid YAML
+
+            self.linting_errors_button.set_label("No linting issues found!")
+
+        try:
+            row.dataset.put_readme(yaml_content)
+        except Exception as e:
+            logger.error("Failed to save metadata: %s", e)
+            return
+
+        self._rebuild_readme_tree(yaml_content)
+        self.save_metadata_button.set_sensitive(False)
+
+    def do_copy_dataset(self, action, value):
+        """Copy a dataset from source_uri to destination_uri.
+
+        Takes a (source_uri, destination_uri) tuple GLib.Variant.
+        Delegates to CopyManager which tracks progress and handles errors.
+        Wraps on_copy_clicked for testability — the copy button and any
+        programmatic copy can both go through this action.
+        """
+        source_uri, destination_uri = value.unpack()
+        row = self.dataset_list_box.get_row_by_uri(source_uri) if hasattr(self.dataset_list_box, 'get_row_by_uri') \
+            else self.dataset_list_box.get_selected_row()
+        if row is None:
+            logger.warning("copy-dataset action: no dataset row found for URI '%s'", source_uri)
+            return
+
+        async def _copy():
+            try:
+                await self._copy_manager.copy(row.dataset, destination_uri)
+            except Exception as e:
+                self.show_error(e)
+
+        self._create_task_with_error_handling(_copy(), "Copy dataset")
+
+    def do_add_local_directory(self, action, value):
+        """Add a local directory as a base URI.
+
+        Takes a URI string GLib.Variant. Validates via LocalBaseURIModel,
+        then refreshes the base URI list. Extracted from the file-chooser
+        callback so the logic is testable independently of the dialog.
+        """
+        uri = value.get_string()
+        if not uri:
+            logger.warning("add-local-directory action: empty URI")
+            return
+        try:
+            LocalBaseURIModel.add_directory(uri)
+        except ValueError as e:
+            logger.warning("add-local-directory: %s", e)
+            return
+        self._create_task_with_error_handling(
+            self._refresh_base_uri_list_box(), "Refresh base URI list after add-local-directory")
+
     # signal handlers
 
     @Gtk.Template.Callback()
@@ -721,17 +820,11 @@ class MainWindow(Gtk.ApplicationWindow):
             uri, = dialog.get_uris()
             # For using URI scheme on local paths, we have to unquote characters to be
             uri = urllib.parse.unquote(uri, encoding='utf-8', errors='replace')
-            # Add directory to local inventory
-            try:
-                LocalBaseURIModel.add_directory(uri)
-            except ValueError as err:
-                _logger.warning(str(err))
+            # Delegate to add-local-directory action (testable independently of this dialog)
+            self.activate_action('add-local-directory', GLib.Variant.new_string(uri))
         elif response == Gtk.ResponseType.CANCEL:
-            uri = None
+            pass
         dialog.destroy()
-
-        # Refresh view of base URIs
-        self._create_task_with_error_handling(self._refresh_base_uri_list_box(), "Refresh base URI list")
 
     @Gtk.Template.Callback()
     def on_create_dataset_clicked(self, widget):
@@ -801,59 +894,12 @@ class MainWindow(Gtk.ApplicationWindow):
 
     @Gtk.Template.Callback()
     def on_save_metadata_button_clicked(self, widget):
-        """Save button on edited metadata clicked."""
-        # Get the YAML content from the source view
+        """Save button on edited metadata clicked — delegates to save-metadata action."""
         text_buffer = self.readme_source_view.get_buffer()
         start_iter, end_iter = text_buffer.get_bounds()
         yaml_content = text_buffer.get_text(start_iter, end_iter, True)
+        self.activate_action('save-metadata', GLib.Variant.new_string(yaml_content))
 
-        # Check the state of the linting switch before linting
-        if settings.yaml_linting_enabled:
-            # Lint the YAML content if the above condition wasn't met (i.e., linting is enabled)
-            conf = YamlLintConfig('extends: default')  # using the default config
-            self.linting_problems = list(yamllint.linter.run(yaml_content, conf))  # Make it an instance variable
-            _logger.debug(str(self.linting_problems))
-            total_errors = len(self.linting_problems)
-            if total_errors > 0:
-                self.linting_errors_button.set_sensitive(True)
-                if total_errors == 1:
-                    error_message = f"YAML Linter Error:\n{str(self.linting_problems[0])}"
-                else:
-                    other_errors_count = total_errors - 1  # since we're showing the first error
-                    error_message = f"YAML Linter Error:\n{str(self.linting_problems[0])} and {other_errors_count} other YAML linting errors.\nClick here for more details"
-                self.linting_errors_button.set_label(error_message)
-            else:
-                self.linting_errors_button.set_label("No linting issues found!")
-                self.dataset_list_box.get_selected_row().dataset.put_readme(yaml_content)
-                self._rebuild_readme_tree(yaml_content)
-        else:
-
-            # Clear previous linting problems when linting is turned off
-            self.linting_problems = None
-            self.linting_errors_button.set_label("YAML linting turned off.")
-
-            _logger.debug("YAML linting turned off.")
-            self.dataset_list_box.get_selected_row().dataset.put_readme(yaml_content)
-            self._rebuild_readme_tree(yaml_content)
-
-    def _rebuild_readme_tree(self, yaml_content):
-        """Rebuild the README tree view from the given YAML content string.
-
-        Called after saving README.yml so the tree reflects the new content
-        without requiring the user to re-select the dataset (fixes #526).
-        """
-        try:
-            readme_dict = yaml.safe_load(yaml_content)
-        except yaml.YAMLError as exc:
-            _logger.warning("Could not parse README YAML for tree rebuild: %s", exc)
-            return
-        store = self.readme_tree_view.get_model()
-        if store is None:
-            return
-        store.clear()
-        fill_readme_tree_store(store, readme_dict)
-        self.readme_tree_view.columns_autosize()
-        self.readme_tree_view.show_all()
 
     @Gtk.Template.Callback()
     def on_linting_errors_button_clicked(self, widget):
@@ -995,14 +1041,19 @@ class MainWindow(Gtk.ApplicationWindow):
     # go to the main app.
     # @Gtk.Template.Callback(), not in .ui
     def on_copy_clicked(self, widget):
-        """Dataset copy button clicked."""
-        async def _copy():
-            try:
-                await self._copy_manager.copy(self.dataset_list_box.get_selected_row().dataset, widget.destination)
-            except Exception as e:
-                self.show_error(e)
-
-        self._create_task_with_error_handling(_copy(), "Copy dataset")
+        """Dataset copy button clicked — delegates to copy-dataset action."""
+        row = self.dataset_list_box.get_selected_row()
+        if row is None:
+            return
+        source_uri = str(row.dataset)
+        destination_uri = widget.destination
+        self.activate_action(
+            'copy-dataset',
+            GLib.Variant.new_tuple(
+                GLib.Variant.new_string(source_uri),
+                GLib.Variant.new_string(destination_uri),
+            )
+        )
 
     # public methods
 
