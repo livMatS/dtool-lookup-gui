@@ -8,7 +8,7 @@ aiohappyeyeballs==2.6.1
     # via aiohttp
 aiohttp==3.13.3
     # via
-    #   -r requirements.in
+    #   -r linux/requirements.in
     #   dtool-lookup-api
 aiosignal==1.4.0
     # via aiohttp
@@ -47,22 +47,22 @@ dtool-cli==0.7.1
     #   dtool-info
     #   dtool-s3
 dtool-create==0.23.4
-    # via -r requirements.in
+    # via -r linux/requirements.in
 dtool-http==0.5.2
     # via dtool-create
 dtool-info==0.16.2
-    # via -r requirements.in
+    # via -r linux/requirements.in
 dtool-lookup-api==0.10.3
-    # via -r requirements.in
+    # via -r linux/requirements.in
 dtool-s3==0.14.1
-    # via -r requirements.in
+    # via -r linux/requirements.in
 dtool-smb==0.1.0
-    # via -r requirements.in
+    # via -r linux/requirements.in
 dtool-symlink==0.3.1
     # via dtool-create
 dtoolcore==3.19.0
     # via
-    #   -r requirements.in
+    #   -r linux/requirements.in
     #   dtool-cli
     #   dtool-create
     #   dtool-http
@@ -86,7 +86,7 @@ jmespath==1.0.1
     #   boto3
     #   botocore
 jwt==1.4.0
-    # via -r requirements.in
+    # via -r linux/requirements.in
 markupsafe==3.0.3
     # via jinja2
 multidict==6.7.0
@@ -95,7 +95,7 @@ multidict==6.7.0
     #   yarl
 numpy==2.3.4
     # via
-    #   -r requirements.in
+    #   -r linux/requirements.in
     #   scipy
 packaging==25.0
     # via dtool-s3
@@ -113,29 +113,29 @@ pycparser==2.23
     # via cffi
 pygments==2.19.2
     # via dtool-info
-pygobject==3.54.5
-    # via -r requirements.in
+pygobject==3.56.3
+    # via -r linux/requirements.in
 pysmb==1.2.13
     # via dtool-smb
 python-dateutil==2.9.0.post0
     # via botocore
 pyyaml==6.0.3
     # via
-    #   -r requirements.in
+    #   -r linux/requirements.in
     #   dtool-lookup-api
     #   yamllint
 requests==2.32.5
     # via dtool-http
 ruamel-yaml==0.18.16
     # via
-    #   -r requirements.in
+    #   -r linux/requirements.in
     #   dtool-create
 ruamel-yaml-clib==0.2.14
     # via ruamel-yaml
 s3transfer==0.14.0
     # via boto3
 scipy==1.16.2
-    # via -r requirements.in
+    # via -r linux/requirements.in
 six==1.17.0
     # via python-dateutil
 tqdm==4.67.1
@@ -147,7 +147,7 @@ urllib3==2.6.3
     #   botocore
     #   requests
 yamllint==1.37.1
-    # via -r requirements.in
+    # via -r linux/requirements.in
 yarl==1.22.0
     # via aiohttp
 
