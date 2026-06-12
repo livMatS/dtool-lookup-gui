@@ -32,7 +32,7 @@ dtool-symlink==0.3.1
 dtoolcore==3.18.3
 filelock==3.17.0
 frozenlist==1.5.0
-idna==3.10
+idna==3.11
 importlib_metadata==8.6.1
 Jinja2==3.1.6
 jmespath==1.0.1
