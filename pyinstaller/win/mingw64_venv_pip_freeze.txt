@@ -66,7 +66,7 @@ pysmb==1.2.10
 python-dateutil==2.9.0.post0
 pywin32-ctypes==0.2.3
 PyYAML==6.0.2
-referencing==0.36.2
+referencing==0.37.0
 requests==2.32.4
 rpds-py==0.28.0
 ruamel.yaml==0.18.6
