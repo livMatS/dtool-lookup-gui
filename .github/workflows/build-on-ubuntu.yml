@@ -12,7 +12,7 @@ jobs:
     steps:
 
     - name: checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Get history and tags for SCM versioning to work
       run: |
