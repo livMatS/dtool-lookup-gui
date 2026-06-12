@@ -39,7 +39,7 @@ click==8.3.0
     #   dtool-s3
 click-plugins==1.1.1.2
     # via dtool-cli
-cryptography==46.0.3
+cryptography==46.0.5
     # via jwt
 dtool-cli==0.7.1
     # via
