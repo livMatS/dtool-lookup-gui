@@ -47,6 +47,7 @@ from unittest.mock import patch, MagicMock, AsyncMock
 from gi.repository import GLib
 
 from dtool_lookup_gui.views.main_window import MainWindow
+from dtool_lookup_gui.models.datasets import DatasetModel
 
 
 # ---------------------------------------------------------------------------
@@ -82,7 +83,7 @@ async def _load_datasets(app, timeout=10):
 async def test_search_action_trigger(running_app):
     """'search' action must invoke do_search."""
     mw = _get_main_window(running_app)
-    with patch.object(mw, 'do_search', wraps=mw.do_search) as mock:
+    with patch.object(mw, '_search') as mock:
         mw.activate_action('search', GLib.Variant.new_string('test query'))
         await asyncio.sleep(0.2)
     mock.assert_called_once()
@@ -92,8 +93,7 @@ async def test_search_action_trigger(running_app):
 async def test_search_select_show_action_trigger(running_app):
     """'search-select-show' action must invoke do_search_select_and_show."""
     mw = _get_main_window(running_app)
-    with patch.object(mw, 'do_search_select_and_show',
-                      wraps=mw.do_search_select_and_show) as mock:
+    with patch.object(mw, '_search_select_and_show') as mock:
         mw.activate_action('search-select-show', GLib.Variant.new_string('{}'))
         await asyncio.sleep(0.2)
     mock.assert_called_once()
@@ -107,8 +107,7 @@ async def test_search_select_show_action_trigger(running_app):
 async def test_select_base_uri_action_trigger(running_app):
     """'select-base-uri' action must invoke do_select_base_uri_row_by_row_index."""
     mw = _get_main_window(running_app)
-    with patch.object(mw, 'do_select_base_uri_row_by_row_index',
-                      wraps=mw.do_select_base_uri_row_by_row_index) as mock:
+    with patch.object(mw, '_select_base_uri_row_by_row_index') as mock:
         mw.activate_action('select-base-uri', GLib.Variant.new_uint32(0))
         await asyncio.sleep(0.1)
     mock.assert_called_once()
@@ -118,8 +117,7 @@ async def test_select_base_uri_action_trigger(running_app):
 async def test_select_base_uri_by_uri_action_trigger(running_app):
     """'select-base-uri-by-uri' action must invoke do_select_base_uri_row_by_uri."""
     mw = _get_main_window(running_app)
-    with patch.object(mw, 'do_select_base_uri_row_by_uri',
-                      wraps=mw.do_select_base_uri_row_by_uri) as mock:
+    with patch.object(mw, '_select_base_uri_row_by_uri') as mock:
         mw.activate_action('select-base-uri-by-uri',
                            GLib.Variant.new_string('file:///tmp'))
         await asyncio.sleep(0.1)
@@ -130,8 +128,7 @@ async def test_select_base_uri_by_uri_action_trigger(running_app):
 async def test_show_base_uri_action_trigger(running_app):
     """'show-base-uri' action must invoke do_show_base_uri_row_by_row_index."""
     mw = _get_main_window(running_app)
-    with patch.object(mw, 'do_show_base_uri_row_by_row_index',
-                      wraps=mw.do_show_base_uri_row_by_row_index) as mock:
+    with patch.object(mw, '_show_base_uri_row_by_row_index') as mock:
         mw.activate_action('show-base-uri', GLib.Variant.new_uint32(0))
         await asyncio.sleep(0.1)
     mock.assert_called_once()
@@ -141,8 +138,7 @@ async def test_show_base_uri_action_trigger(running_app):
 async def test_show_base_uri_by_uri_action_trigger(running_app):
     """'show-base-uri-by-uri' action must invoke do_show_base_uri_row_by_uri."""
     mw = _get_main_window(running_app)
-    with patch.object(mw, 'do_show_base_uri_row_by_uri',
-                      wraps=mw.do_show_base_uri_row_by_uri) as mock:
+    with patch.object(mw, '_show_base_uri_row_by_row_index') as mock:
         mw.activate_action('show-base-uri-by-uri',
                            GLib.Variant.new_string('file:///tmp'))
         await asyncio.sleep(0.1)
@@ -158,8 +154,7 @@ async def test_show_dataset_action_trigger(populated_app_with_mock_data):
     """'show-dataset' action must invoke do_show_dataset_details_by_row_index."""
     mw, loaded = await _load_datasets(populated_app_with_mock_data)
     assert loaded
-    with patch.object(mw, 'do_show_dataset_details_by_row_index',
-                      wraps=mw.do_show_dataset_details_by_row_index) as mock:
+    with patch.object(mw, '_show_dataset_details_by_row_index') as mock:
         mw.activate_action('show-dataset', GLib.Variant.new_uint32(0))
         await asyncio.sleep(0.5)
     mock.assert_called_once()
@@ -171,8 +166,7 @@ async def test_select_dataset_by_uri_action_trigger(populated_app_with_mock_data
     mw, loaded = await _load_datasets(populated_app_with_mock_data)
     assert loaded
     first_uri = mw.dataset_list_box.get_children()[0].dataset.uri
-    with patch.object(mw, 'do_select_dataset_row_by_uri',
-                      wraps=mw.do_select_dataset_row_by_uri) as mock:
+    with patch.object(mw, '_select_dataset_row_by_uri') as mock:
         mw.activate_action('select-dataset-by-uri', GLib.Variant.new_string(first_uri))
         await asyncio.sleep(0.2)
     mock.assert_called_once()
@@ -184,8 +178,7 @@ async def test_show_dataset_by_uri_action_trigger(populated_app_with_mock_data):
     mw, loaded = await _load_datasets(populated_app_with_mock_data)
     assert loaded
     first_uri = mw.dataset_list_box.get_children()[0].dataset.uri
-    with patch.object(mw, 'do_show_dataset_details_by_uri',
-                      wraps=mw.do_show_dataset_details_by_uri) as mock:
+    with patch.object(mw, '_show_dataset_details_by_uri') as mock:
         mw.activate_action('show-dataset-by-uri', GLib.Variant.new_string(first_uri))
         await asyncio.sleep(0.5)
     mock.assert_called_once()
@@ -200,8 +193,7 @@ async def test_build_dependency_graph_action_trigger(populated_app_with_mock_dat
     """'build-dependency-graph' action must invoke do_build_dependency_graph_by_row_index."""
     mw, loaded = await _load_datasets(populated_app_with_mock_data)
     assert loaded
-    with patch.object(mw, 'do_build_dependency_graph_by_row_index',
-                      wraps=mw.do_build_dependency_graph_by_row_index) as mock:
+    with patch.object(mw, '_build_dependency_graph_by_row_index') as mock:
         mw.activate_action('build-dependency-graph', GLib.Variant.new_uint32(0))
         await asyncio.sleep(0.2)
     mock.assert_called_once()
@@ -213,8 +205,7 @@ async def test_build_dependency_graph_by_uri_action_trigger(populated_app_with_m
     mw, loaded = await _load_datasets(populated_app_with_mock_data)
     assert loaded
     first_uri = mw.dataset_list_box.get_children()[0].dataset.uri
-    with patch.object(mw, 'do_build_dependency_graph_by_uri',
-                      wraps=mw.do_build_dependency_graph_by_uri) as mock:
+    with patch.object(mw, '_build_dependency_graph_by_uri') as mock:
         mw.activate_action('build-dependency-graph-by-uri',
                            GLib.Variant.new_string(first_uri))
         await asyncio.sleep(0.2)
@@ -257,8 +248,7 @@ async def test_create_dataset_action_direct(populated_app_with_local_dataset_dat
 async def test_create_dataset_action_trigger(running_app):
     """'create-dataset' action must invoke do_create_dataset."""
     mw = _get_main_window(running_app)
-    with patch.object(mw, 'do_create_dataset',
-                      wraps=mw.do_create_dataset) as mock:
+    with patch.object(mw, '_create_dataset') as mock:
         mw.activate_action('create-dataset', GLib.Variant.new_string('my-dataset'))
         await asyncio.sleep(0.1)
     mock.assert_called_once()
@@ -277,8 +267,7 @@ async def test_freeze_dataset_action_trigger(populated_app_with_local_dataset_da
     mw.dataset_list_box.select_row(mw.dataset_list_box.get_children()[0])
     await asyncio.sleep(0.5)
 
-    with patch.object(mw, 'do_freeze_dataset',
-                      wraps=mw.do_freeze_dataset) as mock:
+    with patch.object(mw, '_freeze_dataset') as mock:
         mw.activate_action('freeze-dataset')
         await asyncio.sleep(0.3)
     mock.assert_called_once()
@@ -316,7 +305,7 @@ async def test_freeze_dataset_direct_call(populated_app_with_local_dataset_data,
 async def test_add_item_action_trigger(running_app):
     """'add-item' action must invoke do_add_item."""
     mw = _get_main_window(running_app)
-    with patch.object(mw, 'do_add_item', wraps=mw.do_add_item) as mock:
+    with patch.object(mw, '_add_item') as mock:
         mw.activate_action('add-item', GLib.Variant.new_string('/tmp/fake_item.txt'))
         await asyncio.sleep(0.1)
     mock.assert_called_once()
@@ -360,7 +349,7 @@ async def test_delete_tag_action_trigger(populated_app_with_mock_data):
     mw.dataset_list_box.select_row(mw.dataset_list_box.get_children()[0])
     await asyncio.sleep(0.5)
 
-    with patch.object(mw, 'do_delete_tag', wraps=mw.do_delete_tag) as mock:
+    with patch.object(mw, '_delete_tag') as mock:
         mw.activate_action('delete-tag', GLib.Variant.new_string('tag1'))
         await asyncio.sleep(0.2)
     mock.assert_called_once()
@@ -377,7 +366,9 @@ async def test_delete_tag_direct_call(populated_app_with_mock_data):
     row = mw.dataset_list_box.get_selected_row()
     assert row is not None
 
-    with patch.object(row.dataset, 'delete_tag', return_value=None) as mock_delete:
+    # delete_tag is a DatasetModel class method and the selected row's model
+    # instance may be rebuilt, so patch at the class level for a stable target.
+    with patch.object(DatasetModel, 'delete_tag', return_value=None) as mock_delete:
         mw.do_delete_tag(None, GLib.Variant.new_string('tag1'))
         await asyncio.sleep(0.3)
     mock_delete.assert_called_once_with('tag1')
@@ -391,7 +382,7 @@ async def test_delete_annotation_action_trigger(populated_app_with_mock_data):
     mw.dataset_list_box.select_row(mw.dataset_list_box.get_children()[0])
     await asyncio.sleep(0.5)
 
-    with patch.object(mw, 'do_delete_annotation', wraps=mw.do_delete_annotation) as mock:
+    with patch.object(mw, '_delete_annotation') as mock:
         mw.activate_action('delete-annotation', GLib.Variant.new_string('annotation1'))
         await asyncio.sleep(0.2)
     mock.assert_called_once()
@@ -408,7 +399,9 @@ async def test_delete_annotation_direct_call(populated_app_with_mock_data):
     row = mw.dataset_list_box.get_selected_row()
     assert row is not None
 
-    with patch.object(row.dataset, 'delete_annotation', return_value=None) as mock_delete:
+    # delete_annotation is a DatasetModel class method; patch at class level
+    # for a stable target (the selected row's model instance may be rebuilt).
+    with patch.object(DatasetModel, 'delete_annotation', return_value=None) as mock_delete:
         mw.do_delete_annotation(None, GLib.Variant.new_string('annotation1'))
         await asyncio.sleep(0.3)
     mock_delete.assert_called_once_with('annotation1')
@@ -427,7 +420,7 @@ async def test_copy_dataset_action_trigger(populated_app_with_mock_data):
     await asyncio.sleep(0.5)
 
     source_uri = str(mw.dataset_list_box.get_selected_row().dataset)
-    with patch.object(mw, 'do_copy_dataset', wraps=mw.do_copy_dataset) as mock:
+    with patch.object(mw, '_create_task_with_error_handling') as mock:
         mw.activate_action(
             'copy-dataset',
             GLib.Variant.new_tuple(
@@ -447,7 +440,7 @@ async def test_copy_dataset_action_trigger(populated_app_with_mock_data):
 async def test_show_page_action_trigger(running_app):
     """'show-page' action must invoke do_show_page with the given page index."""
     mw = _get_main_window(running_app)
-    with patch.object(mw, 'do_show_page', wraps=mw.do_show_page) as mock:
+    with patch.object(mw, '_show_page') as mock:
         mw.activate_action('show-page', GLib.Variant.new_uint32(2))
         await asyncio.sleep(0.1)
     mock.assert_called_once()
@@ -457,8 +450,7 @@ async def test_show_page_action_trigger(running_app):
 async def test_show_current_page_action_trigger(running_app):
     """'show-current-page' action must invoke do_show_current_page."""
     mw = _get_main_window(running_app)
-    with patch.object(mw, 'do_show_current_page',
-                      wraps=mw.do_show_current_page) as mock:
+    with patch.object(mw, '_show_page') as mock:
         mw.activate_action('show-current-page')
         await asyncio.sleep(0.1)
     mock.assert_called_once()
