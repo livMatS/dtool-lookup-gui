@@ -22,6 +22,7 @@
 # SOFTWARE.
 #
 import asyncio
+import contextlib
 import json
 import logging
 import os
@@ -31,6 +32,14 @@ import uuid
 
 import threading
 import warnings
+
+# Detach from any real D-Bus session bus *before* GTK/GIO is imported. With a session
+# bus present (developer desktops), every Gio.Application shares the one cached session-bus
+# connection and exports its object at /de/uni_freiburg/dtool_lookup_gui; registering a
+# second app in the same (xdist worker) process then fails with "An object is already
+# exported ...". Pointing the address at a non-bus makes g_bus_get() fail gracefully so each
+# app registers locally with no export -- which is exactly how the busless CI runners behave.
+os.environ["DBUS_SESSION_BUS_ADDRESS"] = "/dev/null"
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -159,6 +168,61 @@ class MockDtoolLookupAPIConfig():
     @verify_ssl.setter
     def verify_ssl(self, value):
         self._lookup_server_verify_ssl = value
+
+    @property
+    def disable_authentication(self):
+        # Select the authenticated client from the ConfigurationBasedLookupClient
+        # factory so that authenticate()/get_*() paths are exercised under test.
+        return False
+
+
+_LOOKUP_CLIENT = "dtool_lookup_api.core.LookupClient"
+
+
+@contextlib.contextmanager
+def mock_lookup_api_client(mock_token, get_datasets, get_manifest, get_readme,
+                           get_tags, get_annotations, get_config,
+                           get_graph_by_uuid=None):
+    """Patch dtool_lookup_api so the GUI talks to in-memory mock data, not a server.
+
+    Written against the dtool-lookup-api >=0.10.3 class layout:
+
+    * Data getters (``get_datasets`` etc.) are defined on ``UnauthenticatedLookupClient`` and
+      inherited by every concrete client, so patching them there covers whichever client the
+      ``ConfigurationBasedLookupClient`` factory returns.
+    * ``authenticate`` lives on ``CredentialsBasedLookupClient``.
+    * ``ConfigurationBasedAuthenticatedLookupClient.connect`` is stubbed to a no-op so no token
+      validation or network request happens (``has_valid_token`` hits the network otherwise).
+    * ``Config`` is replaced on the ``LookupClient`` module itself: it binds
+      ``from .config import Config`` at import time, so reassigning ``...core.config.Config``
+      alone is not seen here. The mock reports ``disable_authentication = False`` so the
+      factory returns the authenticated client.
+    """
+    import dtool_lookup_api.core.LookupClient as lookup_client_module
+    if get_graph_by_uuid is None:
+        get_graph_by_uuid = []
+    with (
+            patch.object(lookup_client_module, "Config", MockDtoolLookupAPIConfig()),
+            patch(f"{_LOOKUP_CLIENT}.ConfigurationBasedAuthenticatedLookupClient.connect",
+                  return_value=None),
+            patch(f"{_LOOKUP_CLIENT}.CredentialsBasedLookupClient.authenticate",
+                  return_value=mock_token),
+            patch(f"{_LOOKUP_CLIENT}.UnauthenticatedLookupClient.get_datasets",
+                  return_value=get_datasets),
+            patch(f"{_LOOKUP_CLIENT}.UnauthenticatedLookupClient.get_graph_by_uuid",
+                  return_value=get_graph_by_uuid),
+            patch(f"{_LOOKUP_CLIENT}.UnauthenticatedLookupClient.get_manifest",
+                  return_value=get_manifest),
+            patch(f"{_LOOKUP_CLIENT}.UnauthenticatedLookupClient.get_readme",
+                  return_value=get_readme),
+            patch(f"{_LOOKUP_CLIENT}.UnauthenticatedLookupClient.get_tags",
+                  return_value=get_tags),
+            patch(f"{_LOOKUP_CLIENT}.UnauthenticatedLookupClient.get_annotations",
+                  return_value=get_annotations),
+            patch(f"{_LOOKUP_CLIENT}.UnauthenticatedLookupClient.get_config",
+                  return_value=get_config),
+        ):
+        yield
 
 
 @pytest.fixture(scope="function")
@@ -315,36 +379,13 @@ async def running_app(app):
 
 @pytest_asyncio.fixture(loop_scope="function", scope="function")
 async def populated_app_with_mock_data(
-        app, mock_get_datasets,
+        app, mock_token, mock_get_datasets,
         mock_get_manifest, mock_get_readme, mock_get_tags, mock_get_annotations, mock_get_config):
     """Replaces lookup api calls with mock methods that return fake lists of datasets."""
 
-    import dtool_lookup_api.core.config
-    dtool_lookup_api.core.config.Config = MockDtoolLookupAPIConfig()
-
-    # TODO: figure out whether mocked methods work as they should
-    with (
-            patch("dtool_lookup_api.core.LookupClient.CredentialsBasedLookupClient.authenticate",
-                  eturn_value=mock_token),
-            patch("dtool_lookup_api.core.LookupClient.ConfigurationBasedLookupClient.connect",
-                  return_value=None),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_datasets",
-                  return_value=mock_get_datasets),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_graph_by_uuid",
-                  return_value=[]),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_manifest",
-                  return_value=mock_get_manifest),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_readme",
-                  return_value=mock_get_readme),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_tags",
-                  return_value=mock_get_tags),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_annotations",
-                  return_value=mock_get_annotations),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_config",
-                  return_value=mock_get_config),
-            patch("dtool_lookup_api.core.LookupClient.ConfigurationBasedLookupClient.has_valid_token",
-                  return_value=True)
-        ):
+    with mock_lookup_api_client(
+            mock_token, mock_get_datasets, mock_get_manifest, mock_get_readme,
+            mock_get_tags, mock_get_annotations, mock_get_config):
         logger.debug("Register Gtk application.")
         app.register()
         logger.debug("Called app.register().")
@@ -377,9 +418,6 @@ async def populated_app_with_local_dataset_data(
         mock_token, mock_get_readme, mock_get_tags, mock_get_annotations, mock_get_config):
     """Replaces lookup api calls with mock methods that return fake lists of datasets."""
 
-    import dtool_lookup_api.core.config
-    dtool_lookup_api.core.config.Config = MockDtoolLookupAPIConfig()
-
     from dtoolcore import DataSet
     dataset = DataSet.from_uri(local_dataset_uri)
 
@@ -401,28 +439,9 @@ async def populated_app_with_local_dataset_data(
 
     manifest = dataset.generate_manifest()
 
-    with (
-            patch("dtool_lookup_api.core.LookupClient.CredentialsBasedLookupClient.authenticate",
-                  return_value=mock_token),
-            patch("dtool_lookup_api.core.LookupClient.ConfigurationBasedLookupClient.connect",
-                  return_value=None),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_datasets",
-                  return_value=dataset_list),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_graph_by_uuid",
-                  return_value=[]),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_manifest",
-                  return_value=manifest),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_readme",
-                  return_value=mock_get_readme),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_tags",
-                  return_value=mock_get_tags),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_annotations",
-                  return_value=mock_get_annotations),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_config",
-                  return_value=mock_get_config),
-            patch("dtool_lookup_api.core.LookupClient.ConfigurationBasedLookupClient.has_valid_token",
-                  return_value=True)
-        ):
+    with mock_lookup_api_client(
+            mock_token, dataset_list, manifest, mock_get_readme,
+            mock_get_tags, mock_get_annotations, mock_get_config):
         logger.debug("Register Gtk application.")
         app.register()
         logger.debug("Called app.register().")
