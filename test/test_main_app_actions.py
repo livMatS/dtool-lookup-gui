@@ -284,7 +284,10 @@ async def test_do_renew_token_invalid_url(running_app, caplog):
             running_app.do_renew_token(None, value)
             await asyncio.sleep(0.2)
 
-    error_records = [r for r in caplog.records if r.levelno >= logging.ERROR]
+    # Filter to the app's own logger: running_app's background refresh logs
+    # unrelated network errors to caplog, which would otherwise be picked up.
+    error_records = [r for r in caplog.records
+                     if r.levelno >= logging.ERROR and r.name == 'dtool_lookup_gui.main']
     assert error_records, "Expected at least one ERROR log record"
     msg = error_records[-1].message
     assert "valid" in msg.lower() and "url" in msg.lower(), \
@@ -317,7 +320,10 @@ async def test_do_renew_token_connection_error(running_app, caplog):
             running_app.do_renew_token(None, value)
             await _asyncio.sleep(0.2)
 
-    error_records = [r for r in caplog.records if r.levelno >= logging.ERROR]
+    # Filter to the app's own logger: running_app's background refresh logs
+    # unrelated network errors to caplog, which would otherwise be picked up.
+    error_records = [r for r in caplog.records
+                     if r.levelno >= logging.ERROR and r.name == 'dtool_lookup_gui.main']
     assert error_records, "Expected at least one ERROR log record"
     msg = error_records[-1].message
     assert "connect" in msg.lower(), \
@@ -352,7 +358,10 @@ async def test_do_renew_token_wrong_credentials(running_app, caplog):
             running_app.do_renew_token(None, value)
             await _asyncio.sleep(0.2)
 
-    error_records = [r for r in caplog.records if r.levelno >= logging.ERROR]
+    # Filter to the app's own logger: running_app's background refresh logs
+    # unrelated network errors to caplog, which would otherwise be picked up.
+    error_records = [r for r in caplog.records
+                     if r.levelno >= logging.ERROR and r.name == 'dtool_lookup_gui.main']
     assert error_records, "Expected at least one ERROR log record"
     msg = error_records[-1].message
     assert "password" in msg.lower() or "credential" in msg.lower() or "incorrect" in msg.lower(), \
