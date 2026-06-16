@@ -225,6 +225,20 @@ def mock_lookup_api_client(mock_token, get_datasets, get_manifest, get_readme,
         yield
 
 
+# Teardown/await guards: under parallel (xdist) load the GTK/asyncio shutdown
+# handshake can occasionally stall; without a cap a single stuck wait_for_*
+# blocks the whole worker indefinitely (and a CI job until its hard timeout).
+_STARTUP_TIMEOUT = 30
+_SHUTDOWN_TIMEOUT = 20
+
+
+async def _await_with_timeout(awaitable, timeout, what):
+    try:
+        await asyncio.wait_for(awaitable, timeout=timeout)
+    except asyncio.TimeoutError:
+        logger.warning("Timed out after %ss waiting for %s; continuing.", timeout, what)
+
+
 @pytest.fixture(scope="function")
 def mock_token(scope="function"):
     """Provide a mock authentication token"""
@@ -355,13 +369,13 @@ async def running_app(app):
     app.register()
     logger.debug("Called app.register().")
 
-    await app.wait_for_startup()
+    await _await_with_timeout(app.wait_for_startup(), _STARTUP_TIMEOUT, "startup")
     logger.debug("App finished startup.")
 
     app.activate()
     logger.debug("Called app.activate().")
 
-    await app.wait_for_activation()
+    await _await_with_timeout(app.wait_for_activation(), _STARTUP_TIMEOUT, "activation")
     logger.debug("App finished activation.")
 
     yield app
@@ -374,9 +388,7 @@ async def running_app(app):
     await app.shutdown()
 
     logger.debug("Wait for app to finish shutdown.")
-    await app.wait_for_shutdown()
-
-
+    await _await_with_timeout(app.wait_for_shutdown(), _SHUTDOWN_TIMEOUT, "shutdown")
 @pytest_asyncio.fixture(loop_scope="function", scope="function")
 async def populated_app_with_mock_data(
         app, mock_token, mock_get_datasets,
@@ -390,13 +402,13 @@ async def populated_app_with_mock_data(
         app.register()
         logger.debug("Called app.register().")
 
-        await app.wait_for_startup()
+        await _await_with_timeout(app.wait_for_startup(), _STARTUP_TIMEOUT, "startup")
         logger.debug("App finished startup.")
 
         app.activate()
         logger.debug("Called app.activate().")
 
-        await app.wait_for_activation()
+        await _await_with_timeout(app.wait_for_activation(), _STARTUP_TIMEOUT, "activation")
         logger.debug("App finished activation.")
 
         yield app
@@ -409,9 +421,7 @@ async def populated_app_with_mock_data(
         await app.shutdown()
 
         logger.debug("Wait for app to finish shutdown.")
-        await app.wait_for_shutdown()
-
-
+        await _await_with_timeout(app.wait_for_shutdown(), _SHUTDOWN_TIMEOUT, "shutdown")
 @pytest_asyncio.fixture(loop_scope="function", scope="function")
 async def populated_app_with_local_dataset_data(
         app, local_dataset_uri,
@@ -446,13 +456,13 @@ async def populated_app_with_local_dataset_data(
         app.register()
         logger.debug("Called app.register().")
 
-        await app.wait_for_startup()
+        await _await_with_timeout(app.wait_for_startup(), _STARTUP_TIMEOUT, "startup")
         logger.debug("App finished startup.")
 
         app.activate()
         logger.debug("Called app.activate().")
 
-        await app.wait_for_activation()
+        await _await_with_timeout(app.wait_for_activation(), _STARTUP_TIMEOUT, "activation")
         logger.debug("App finished activation.")
 
         yield app
@@ -465,4 +475,4 @@ async def populated_app_with_local_dataset_data(
         await app.shutdown()
 
         logger.debug("Wait for app to finish shutdown.")
-        await app.wait_for_shutdown()
+        await _await_with_timeout(app.wait_for_shutdown(), _SHUTDOWN_TIMEOUT, "shutdown")
