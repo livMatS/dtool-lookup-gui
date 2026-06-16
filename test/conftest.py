@@ -48,6 +48,17 @@ from gi.repository import GLib, GObject, Gio, Gtk, GtkSource, GdkPixbuf
 
 from gi.events import GLibEventLoopPolicy, GLibEventLoop
 
+# Isolate tests from the host's real dtool config (~/.config/dtool/dtool.json).
+# running_app builds the SettingsDialog, which reads config via
+# dtoolcore.utils.get_config_value(); an empty/corrupt shared config file makes
+# that raise JSONDecodeError mid-construction (observed on CI), and tests that
+# write config would otherwise pollute the developer's real file. Point dtoolcore
+# at a per-process temp path -- a missing file yields config defaults instead of
+# crashing, and each xdist worker (separate process) gets its own file.
+import tempfile
+import dtoolcore.utils
+dtoolcore.utils.DEFAULT_CONFIG_PATH = os.path.join(
+    tempfile.gettempdir(), "dtool-lookup-gui-test-config-{}.json".format(os.getpid()))
 
 from dtool_lookup_gui.main import Application
 
