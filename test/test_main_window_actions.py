@@ -774,11 +774,34 @@ async def test_do_select_dataset_row_by_uri_direct_call(populated_app_with_mock_
 # Tests for base URI listing timeout — fixes #45
 # ---------------------------------------------------------------------------
 
-@pytest.mark.xfail(reason="activate_action('refresh-view') alone does not select a base-URI row "
-                          "in this fixture, so the listing path (and its asyncio.wait_for timeout) "
-                          "is never reached and no timeout error is logged. Needs explicit "
-                          "base-URI row selection to exercise the #45 timeout feature.",
-                   strict=False)
+async def _add_local_base_uri_row(main_window, local_dataset_uri):
+    """Register the local dataset's base URI and return its DtoolBaseURIRow.
+
+    The base-URI listing path only runs for a real DtoolBaseURIRow, and the
+    isolated test config has none registered, so register one explicitly.
+    """
+    import os
+    import asyncio as _asyncio
+    from dtool_lookup_gui.models.base_uris import LocalBaseURIModel
+    from dtool_lookup_gui.widgets.base_uri_row import DtoolBaseURIRow
+
+    base_dir = os.path.dirname(local_dataset_uri)
+    try:
+        LocalBaseURIModel.add_directory(base_dir)
+    except ValueError:
+        pass  # already registered
+
+    main_window.activate_action("refresh-view")
+    start = time.time()
+    while time.time() - start < 10:
+        base_rows = [r for r in main_window.base_uri_list_box.get_children()
+                     if isinstance(r, DtoolBaseURIRow)]
+        if base_rows:
+            return base_rows[0]
+        await _asyncio.sleep(0.1)
+    return None
+
+
 @pytest.mark.asyncio
 async def test_base_uri_listing_timeout_shows_error(populated_app_with_local_dataset_data,
                                                      local_dataset_uri, caplog):
@@ -793,6 +816,9 @@ async def test_base_uri_listing_timeout_shows_error(populated_app_with_local_dat
     windows = populated_app_with_local_dataset_data.get_windows()
     main_window = [w for w in windows if isinstance(w, MainWindow)][0]
 
+    base_row = await _add_local_base_uri_row(main_window, local_dataset_uri)
+    assert base_row is not None, "Need a base-URI row to exercise listing"
+
     # Set a very short timeout so the test runs fast
     original_timeout = settings.base_uri_listing_timeout
     settings.base_uri_listing_timeout = 1  # 1 second
@@ -804,27 +830,22 @@ async def test_base_uri_listing_timeout_shows_error(populated_app_with_local_dat
     try:
         with patch(
             "dtool_lookup_gui.models.base_uris.BaseURI.all_datasets",
-            new=AsyncMock(side_effect=lambda: slow_all_datasets()),
+            new=AsyncMock(side_effect=slow_all_datasets),
         ):
             with caplog.at_level(logging.ERROR, logger="dtool_lookup_gui.views.main_window"):
-                main_window.activate_action("refresh-view")
-                # Wait long enough for timeout to fire (timeout=1s + some margin)
-                await _asyncio.sleep(2.5)
+                # Selecting the base-URI row triggers the listing path + its timeout.
+                main_window.activate_action(
+                    "show-base-uri", GLib.Variant.new_uint32(base_row.get_index()))
+                await _asyncio.sleep(2.5)  # > timeout, let it fire
 
-        error_records = [r for r in caplog.records if r.levelno >= logging.ERROR]
-        assert error_records, "Expected a timeout error to be logged"
-        msg = error_records[-1].message
-        assert "timed out" in msg.lower() or "timeout" in msg.lower(), \
-            f"Expected timeout message, got: {msg!r}"
+        timeout_errors = [r for r in caplog.records
+                          if r.levelno >= logging.ERROR
+                          and ("timed out" in r.message.lower() or "timeout" in r.message.lower())]
+        assert timeout_errors, "Expected a timeout error to be logged"
     finally:
         settings.base_uri_listing_timeout = original_timeout
 
 
-@pytest.mark.xfail(reason="activate_action('refresh-view') alone does not select a base-URI row "
-                          "in this fixture, so BaseURI.all_datasets() is never reached and the "
-                          "patched listing never runs. Needs explicit base-URI row selection to "
-                          "exercise the timeout-disabled path; tracked with the #45 timeout work.",
-                   strict=False)
 @pytest.mark.asyncio
 async def test_base_uri_listing_no_timeout_when_disabled(populated_app_with_local_dataset_data,
                                                           local_dataset_uri, caplog):
@@ -837,6 +858,9 @@ async def test_base_uri_listing_no_timeout_when_disabled(populated_app_with_loca
     windows = populated_app_with_local_dataset_data.get_windows()
     main_window = [w for w in windows if isinstance(w, MainWindow)][0]
 
+    base_row = await _add_local_base_uri_row(main_window, local_dataset_uri)
+    assert base_row is not None, "Need a base-URI row to exercise listing"
+
     original_timeout = settings.base_uri_listing_timeout
     settings.base_uri_listing_timeout = 0  # disabled
 
@@ -848,14 +872,14 @@ async def test_base_uri_listing_no_timeout_when_disabled(populated_app_with_loca
         return []
 
     try:
-        # Pass the coroutine function directly so AsyncMock awaits it; a
-        # lambda returning slow_but_completes() would yield an un-awaited
-        # coroutine and the body would never run.
+        # Pass the coroutine function directly so AsyncMock awaits it; a lambda
+        # returning slow_but_completes() would yield an un-awaited coroutine.
         with patch(
             "dtool_lookup_gui.models.base_uris.BaseURI.all_datasets",
             new=AsyncMock(side_effect=slow_but_completes),
         ):
-            main_window.activate_action("refresh-view")
+            main_window.activate_action(
+                "show-base-uri", GLib.Variant.new_uint32(base_row.get_index()))
             await _asyncio.sleep(2.0)
 
         timeout_errors = [r for r in caplog.records
@@ -871,10 +895,6 @@ async def test_base_uri_listing_no_timeout_when_disabled(populated_app_with_loca
 # Tests for README tree rebuild after save — fixes #526
 # ---------------------------------------------------------------------------
 
-@pytest.mark.xfail(reason="do_save_metadata / on_save_metadata_button_clicked calls "
-                          "MainWindow._rebuild_readme_tree which does not exist, so the tree is "
-                          "never rebuilt after save. See issue #526.",
-                   strict=False)
 @pytest.mark.asyncio
 async def test_readme_tree_rebuilt_after_save(populated_app_with_local_dataset_data,
                                                local_dataset_uri):
@@ -883,9 +903,10 @@ async def test_readme_tree_rebuilt_after_save(populated_app_with_local_dataset_d
     """
     import asyncio as _asyncio
     import time
-    import yaml
-    from unittest.mock import patch, MagicMock
+    from unittest.mock import patch, PropertyMock
     from dtool_lookup_gui.views.main_window import MainWindow
+    from dtool_lookup_gui.models.datasets import DatasetModel
+    from dtool_lookup_gui.models.settings import Settings
 
     windows = populated_app_with_local_dataset_data.get_windows()
     main_window = [w for w in windows if isinstance(w, MainWindow)][0]
@@ -905,16 +926,15 @@ async def test_readme_tree_rebuilt_after_save(populated_app_with_local_dataset_d
 
     new_readme = "project: test-project\nauthor: Test Author\nversion: 42\n"
 
-    # Patch put_readme so we don't write to disk
-    with patch.object(rows[0].dataset, "put_readme", return_value=None):
+    # put_readme is a DatasetModel class method (patch at class level); disable
+    # linting via PropertyMock. on_save_metadata_button_clicked dispatches the
+    # save-metadata action synchronously, so the tree is rebuilt before we assert
+    # (no settle-sleep, which could let a background readme reload overwrite it).
+    with patch.object(DatasetModel, "put_readme", return_value=None):
         main_window.readme_buffer.set_text(new_readme)
-
-        # Simulate save button click (linting off path or linting pass path)
-        with patch("dtool_lookup_gui.models.settings.settings.yaml_linting_enabled", False):
+        with patch.object(Settings, "yaml_linting_enabled",
+                          new_callable=PropertyMock, return_value=False):
             main_window.on_save_metadata_button_clicked(None)
-
-    # Give GTK a moment to process
-    await _asyncio.sleep(0.2)
 
     # The tree store must now contain entries matching the new YAML
     store = main_window.readme_tree_view.get_model()
