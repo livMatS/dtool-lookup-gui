@@ -775,31 +775,42 @@ async def test_do_select_dataset_row_by_uri_direct_call(populated_app_with_mock_
 # ---------------------------------------------------------------------------
 
 async def _add_local_base_uri_row(main_window, local_dataset_uri):
-    """Register the local dataset's base URI and return its DtoolBaseURIRow.
+    """Register the local dataset's base URI and return its (settled) DtoolBaseURIRow.
 
     The base-URI listing path only runs for a real DtoolBaseURIRow, and the
-    isolated test config has none registered, so register one explicitly.
+    isolated test config has none registered, so register one explicitly. The
+    returned row is settled: any listing auto-triggered by refresh/selection has
+    finished (row.task is None), so a subsequent show-base-uri spawns a fresh
+    listing instead of being skipped by the `if row.task is None` guard.
     """
     import os
     import asyncio as _asyncio
-    from dtool_lookup_gui.models.base_uris import LocalBaseURIModel
+    from dtoolcore.utils import generous_parse_uri
     from dtool_lookup_gui.widgets.base_uri_row import DtoolBaseURIRow
+    from dtool_lookup_gui.models.settings import settings
 
-    base_dir = os.path.dirname(local_dataset_uri)
-    try:
-        LocalBaseURIModel.add_directory(base_dir)
-    except ValueError:
-        pass  # already registered
+    # Register only this base URI. The in-memory GSettings backend persists across
+    # the (serial) suite, so replace rather than append to keep the list isolated.
+    settings.local_base_uris = [generous_parse_uri(os.path.dirname(local_dataset_uri)).path]
 
     main_window.activate_action("refresh-view")
+    base_row = None
     start = time.time()
     while time.time() - start < 10:
         base_rows = [r for r in main_window.base_uri_list_box.get_children()
                      if isinstance(r, DtoolBaseURIRow)]
         if base_rows:
-            return base_rows[0]
+            base_row = base_rows[0]
+            break
         await _asyncio.sleep(0.1)
-    return None
+    if base_row is None:
+        return None
+
+    # Wait for any auto-triggered listing to finish before handing the row back.
+    start = time.time()
+    while getattr(base_row, "task", None) is not None and time.time() - start < 10:
+        await _asyncio.sleep(0.1)
+    return base_row
 
 
 @pytest.mark.asyncio
