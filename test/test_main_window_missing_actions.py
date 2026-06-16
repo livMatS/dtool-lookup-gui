@@ -85,7 +85,6 @@ async def test_search_action_trigger(running_app):
     mw = _get_main_window(running_app)
     with patch.object(mw, '_search') as mock:
         mw.activate_action('search', GLib.Variant.new_string('test query'))
-        await asyncio.sleep(0.2)
     mock.assert_called_once()
 
 
@@ -95,7 +94,6 @@ async def test_search_select_show_action_trigger(running_app):
     mw = _get_main_window(running_app)
     with patch.object(mw, '_search_select_and_show') as mock:
         mw.activate_action('search-select-show', GLib.Variant.new_string('{}'))
-        await asyncio.sleep(0.2)
     mock.assert_called_once()
 
 
@@ -109,7 +107,6 @@ async def test_select_base_uri_action_trigger(running_app):
     mw = _get_main_window(running_app)
     with patch.object(mw, '_select_base_uri_row_by_row_index') as mock:
         mw.activate_action('select-base-uri', GLib.Variant.new_uint32(0))
-        await asyncio.sleep(0.1)
     mock.assert_called_once()
 
 
@@ -120,7 +117,6 @@ async def test_select_base_uri_by_uri_action_trigger(running_app):
     with patch.object(mw, '_select_base_uri_row_by_uri') as mock:
         mw.activate_action('select-base-uri-by-uri',
                            GLib.Variant.new_string('file:///tmp'))
-        await asyncio.sleep(0.1)
     mock.assert_called_once()
 
 
@@ -130,7 +126,6 @@ async def test_show_base_uri_action_trigger(running_app):
     mw = _get_main_window(running_app)
     with patch.object(mw, '_show_base_uri_row_by_row_index') as mock:
         mw.activate_action('show-base-uri', GLib.Variant.new_uint32(0))
-        await asyncio.sleep(0.1)
     mock.assert_called_once()
 
 
@@ -141,7 +136,6 @@ async def test_show_base_uri_by_uri_action_trigger(running_app):
     with patch.object(mw, '_show_base_uri_row_by_row_index') as mock:
         mw.activate_action('show-base-uri-by-uri',
                            GLib.Variant.new_string('file:///tmp'))
-        await asyncio.sleep(0.1)
     mock.assert_called_once()
 
 
@@ -156,7 +150,6 @@ async def test_show_dataset_action_trigger(populated_app_with_mock_data):
     assert loaded
     with patch.object(mw, '_show_dataset_details_by_row_index') as mock:
         mw.activate_action('show-dataset', GLib.Variant.new_uint32(0))
-        await asyncio.sleep(0.5)
     mock.assert_called_once()
 
 
@@ -168,7 +161,6 @@ async def test_select_dataset_by_uri_action_trigger(populated_app_with_mock_data
     first_uri = mw.dataset_list_box.get_children()[0].dataset.uri
     with patch.object(mw, '_select_dataset_row_by_uri') as mock:
         mw.activate_action('select-dataset-by-uri', GLib.Variant.new_string(first_uri))
-        await asyncio.sleep(0.2)
     mock.assert_called_once()
 
 
@@ -180,7 +172,6 @@ async def test_show_dataset_by_uri_action_trigger(populated_app_with_mock_data):
     first_uri = mw.dataset_list_box.get_children()[0].dataset.uri
     with patch.object(mw, '_show_dataset_details_by_uri') as mock:
         mw.activate_action('show-dataset-by-uri', GLib.Variant.new_string(first_uri))
-        await asyncio.sleep(0.5)
     mock.assert_called_once()
 
 
@@ -195,10 +186,7 @@ async def test_build_dependency_graph_action_trigger(populated_app_with_mock_dat
     assert loaded
     with patch.object(mw, '_build_dependency_graph_by_row_index') as mock:
         mw.activate_action('build-dependency-graph', GLib.Variant.new_uint32(0))
-        await asyncio.sleep(0.2)
-    # at-least-once: graph rebuilds can also be triggered by background
-    # data-refresh events, so the exact count is timing-dependent.
-    assert mock.called
+    mock.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -210,10 +198,7 @@ async def test_build_dependency_graph_by_uri_action_trigger(populated_app_with_m
     with patch.object(mw, '_build_dependency_graph_by_uri') as mock:
         mw.activate_action('build-dependency-graph-by-uri',
                            GLib.Variant.new_string(first_uri))
-        await asyncio.sleep(0.2)
-    # at-least-once: graph rebuilds can also be triggered by background
-    # data-refresh events, so the exact count is timing-dependent.
-    assert mock.called
+    mock.assert_called_once()
 
 
 # ===========================================================================
@@ -254,7 +239,6 @@ async def test_create_dataset_action_trigger(running_app):
     mw = _get_main_window(running_app)
     with patch.object(mw, '_create_dataset') as mock:
         mw.activate_action('create-dataset', GLib.Variant.new_string('my-dataset'))
-        await asyncio.sleep(0.1)
     mock.assert_called_once()
 
 
@@ -273,7 +257,6 @@ async def test_freeze_dataset_action_trigger(populated_app_with_local_dataset_da
 
     with patch.object(mw, '_freeze_dataset') as mock:
         mw.activate_action('freeze-dataset')
-        await asyncio.sleep(0.3)
     mock.assert_called_once()
 
 
@@ -311,7 +294,6 @@ async def test_add_item_action_trigger(running_app):
     mw = _get_main_window(running_app)
     with patch.object(mw, '_add_item') as mock:
         mw.activate_action('add-item', GLib.Variant.new_string('/tmp/fake_item.txt'))
-        await asyncio.sleep(0.1)
     mock.assert_called_once()
 
 
@@ -355,7 +337,6 @@ async def test_delete_tag_action_trigger(populated_app_with_mock_data):
 
     with patch.object(mw, '_delete_tag') as mock:
         mw.activate_action('delete-tag', GLib.Variant.new_string('tag1'))
-        await asyncio.sleep(0.2)
     mock.assert_called_once()
 
 
@@ -374,7 +355,6 @@ async def test_delete_tag_direct_call(populated_app_with_mock_data):
     # instance may be rebuilt, so patch at the class level for a stable target.
     with patch.object(DatasetModel, 'delete_tag', return_value=None) as mock_delete:
         mw.do_delete_tag(None, GLib.Variant.new_string('tag1'))
-        await asyncio.sleep(0.3)
     mock_delete.assert_called_once_with('tag1')
 
 
@@ -388,7 +368,6 @@ async def test_delete_annotation_action_trigger(populated_app_with_mock_data):
 
     with patch.object(mw, '_delete_annotation') as mock:
         mw.activate_action('delete-annotation', GLib.Variant.new_string('annotation1'))
-        await asyncio.sleep(0.2)
     mock.assert_called_once()
 
 
@@ -407,7 +386,6 @@ async def test_delete_annotation_direct_call(populated_app_with_mock_data):
     # for a stable target (the selected row's model instance may be rebuilt).
     with patch.object(DatasetModel, 'delete_annotation', return_value=None) as mock_delete:
         mw.do_delete_annotation(None, GLib.Variant.new_string('annotation1'))
-        await asyncio.sleep(0.3)
     mock_delete.assert_called_once_with('annotation1')
 
 
@@ -432,7 +410,6 @@ async def test_copy_dataset_action_trigger(populated_app_with_mock_data):
                 GLib.Variant.new_string('file:///tmp/copy-dest'),
             )
         )
-        await asyncio.sleep(0.2)
     mock.assert_called_once()
 
 
@@ -446,7 +423,6 @@ async def test_show_page_action_trigger(running_app):
     mw = _get_main_window(running_app)
     with patch.object(mw, '_show_page') as mock:
         mw.activate_action('show-page', GLib.Variant.new_uint32(2))
-        await asyncio.sleep(0.1)
     mock.assert_called_once()
 
 
@@ -456,7 +432,6 @@ async def test_show_current_page_action_trigger(running_app):
     mw = _get_main_window(running_app)
     with patch.object(mw, '_show_page') as mock:
         mw.activate_action('show-current-page')
-        await asyncio.sleep(0.1)
     mock.assert_called_once()
 
 
@@ -477,7 +452,6 @@ async def test_show_last_page_action_trigger(running_app):
     mw = _get_main_window(running_app)
     with patch.object(mw, '_show_page') as mock_show:
         mw.activate_action('show-last-page')
-        await asyncio.sleep(0.1)
     mock_show.assert_called_once_with(mw.search_state.last_page)
 
 
@@ -487,7 +461,6 @@ async def test_show_next_page_action_trigger(running_app):
     mw = _get_main_window(running_app)
     with patch.object(mw, '_show_page') as mock_show:
         mw.activate_action('show-next-page')
-        await asyncio.sleep(0.1)
     mock_show.assert_called_once_with(mw.search_state.next_page)
 
 
@@ -497,7 +470,6 @@ async def test_show_previous_page_action_trigger(running_app):
     mw = _get_main_window(running_app)
     with patch.object(mw, '_show_page') as mock_show:
         mw.activate_action('show-previous-page')
-        await asyncio.sleep(0.1)
     mock_show.assert_called_once_with(mw.search_state.previous_page)
 
 

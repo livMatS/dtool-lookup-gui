@@ -123,10 +123,10 @@ async def test_do_select_dataset_row_by_row_index_direct_call(populated_app_with
     It verifies if the dataset list is correctly populated and the specified dataset row is selected.
     """
 
-    async def wait_for_datasets_to_load(list_box, timeout=10):
+    async def wait_for_datasets_to_load(list_box, min_count=1, timeout=10):
         start_time = time.time()
         while time.time() - start_time < timeout:
-            if len(list_box.get_children()) > 0:
+            if len(list_box.get_children()) >= min_count:
                 return True
             await asyncio.sleep(0.1)
         return False
@@ -134,13 +134,15 @@ async def test_do_select_dataset_row_by_row_index_direct_call(populated_app_with
     windows = populated_app_with_mock_data.get_windows()
     main_window = [w for w in windows if isinstance(w, MainWindow)][0]
 
+    # Select row index 6, so wait until at least 7 rows have populated; waiting
+    # only for ">0" raced the selection ahead of the full load on slower runners.
+    row_index = 6
+
     # Trigger the 'refresh-view' action and wait for datasets to load
     main_window.activate_action('refresh-view')
-    datasets_loaded = await wait_for_datasets_to_load(main_window.dataset_list_box)
+    datasets_loaded = await wait_for_datasets_to_load(
+        main_window.dataset_list_box, min_count=row_index + 1)
     assert datasets_loaded, "Datasets were not loaded in time"
-
-    # Create a GLib.Variant with a valid test row index (e.g., 0 for the first row)
-    row_index = 6
     row_index_variant = GLib.Variant.new_uint32(row_index)
 
     # Create and add the select dataset action to the main window of the application
@@ -289,10 +291,10 @@ async def test_do_show_dataset_details_by_row_index_direct_call(populated_app_wi
     It verifies if the dataset list is correctly populated and the specified dataset details are displayed.
     """
 
-    async def wait_for_datasets_to_load(list_box, timeout=10):
+    async def wait_for_datasets_to_load(list_box, min_count=1, timeout=10):
         start_time = time.time()
         while time.time() - start_time < timeout:
-            if len(list_box.get_children()) > 0:
+            if len(list_box.get_children()) >= min_count:
                 return True  # Datasets are loaded
             await asyncio.sleep(0.1)  # Yield control to allow other async tasks to run
         return False  # Timeout reached if datasets are not loaded within the specified time
@@ -300,13 +302,14 @@ async def test_do_show_dataset_details_by_row_index_direct_call(populated_app_wi
     windows = populated_app_with_mock_data.get_windows()
     main_window = [w for w in windows if isinstance(w, MainWindow)][0]
 
-    # Trigger the 'refresh-view' action and wait for datasets to load
-    main_window.activate_action('refresh-view')
-    datasets_loaded = await wait_for_datasets_to_load(main_window.dataset_list_box)
-    assert datasets_loaded, "Datasets were not loaded in time"
-
     # Create a GLib.Variant with a test row index (e.g., 0 for the first row)
     row_index = 1
+
+    # Trigger the 'refresh-view' action and wait for enough datasets to load
+    main_window.activate_action('refresh-view')
+    datasets_loaded = await wait_for_datasets_to_load(
+        main_window.dataset_list_box, min_count=row_index + 1)
+    assert datasets_loaded, "Datasets were not loaded in time"
     row_index_variant = GLib.Variant.new_uint32(row_index)
 
     # Create and add the show dataset action to the main window of the application
