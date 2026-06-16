@@ -46,10 +46,6 @@ from dtool_lookup_gui.models.datasets import DatasetModel
 # save-metadata action
 # ---------------------------------------------------------------------------
 
-@pytest.mark.xfail(reason="do_save_metadata calls MainWindow._rebuild_readme_tree which "
-                          "does not exist; the readme tree is never rebuilt after save. "
-                          "See issue #526.",
-                   strict=False)
 @pytest.mark.asyncio
 async def test_do_save_metadata_valid_yaml(populated_app_with_local_dataset_data, local_dataset_uri):
     """save-metadata action with valid YAML saves readme and rebuilds tree."""
@@ -72,16 +68,15 @@ async def test_do_save_metadata_valid_yaml(populated_app_with_local_dataset_data
     new_yaml = "project: action-test\nauthor: Tester\nversion: 99\n"
 
     put_readme_calls = []
-    original_put_readme = rows[0].dataset.put_readme
-
-    def mock_put_readme(text):
-        put_readme_calls.append(text)
-
-    with patch.object(rows[0].dataset, 'put_readme', side_effect=mock_put_readme):
-        with patch('dtool_lookup_gui.models.settings.settings.yaml_linting_enabled', False):
+    # put_readme is a DatasetModel class method; patch at class level. Disable
+    # linting via PropertyMock (the property has no deleter). save-metadata
+    # dispatches synchronously, so assert without a settle-sleep that could let a
+    # background readme reload overwrite the tree.
+    with patch.object(DatasetModel, 'put_readme',
+                      side_effect=lambda t: put_readme_calls.append(t)):
+        with patch.object(Settings, 'yaml_linting_enabled',
+                          new_callable=PropertyMock, return_value=False):
             main_window.activate_action('save-metadata', GLib.Variant.new_string(new_yaml))
-
-    await asyncio.sleep(0.2)
 
     assert put_readme_calls, "put_readme() should have been called"
     assert put_readme_calls[0] == new_yaml
