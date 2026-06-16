@@ -46,7 +46,6 @@ test = [
     "pytest",
     "pytest-cov",
     "pytest-asyncio",
-    "pytest-flake8",
     "pytest-xdist",
 ]
 
