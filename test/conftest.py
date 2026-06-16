@@ -41,6 +41,13 @@ import warnings
 # app registers locally with no export -- which is exactly how the busless CI runners behave.
 os.environ["DBUS_SESSION_BUS_ADDRESS"] = "/dev/null"
 
+# Use the in-memory GSettings backend. The default dconf backend needs the
+# session bus we just disabled (so writes fail with "dconf-WARNING ... does not
+# contain a colon" and don't persist -- e.g. registering a local base URI never
+# reaches base_uri_list_box). The memory backend gives each test process fresh,
+# fully isolated, working settings.
+os.environ["GSETTINGS_BACKEND"] = "memory"
+
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('GtkSource', '4')
