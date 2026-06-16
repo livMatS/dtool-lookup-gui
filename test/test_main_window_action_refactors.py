@@ -231,7 +231,7 @@ async def test_do_add_local_directory_valid(running_app, tmp_path):
 
 @pytest.mark.xfail(reason="do_add_local_directory's except handler calls bare 'logger' "
                           "(only '_logger' is defined in main_window.py) -> NameError, so the "
-                          "warning is never logged. App bug; tracked separately.",
+                          "warning is never logged. App bug; see issue #875.",
                    strict=False)
 @pytest.mark.asyncio
 async def test_do_add_local_directory_invalid_does_not_crash(running_app, caplog):

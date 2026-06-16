@@ -774,7 +774,7 @@ async def test_do_select_dataset_row_by_uri_direct_call(populated_app_with_mock_
 
 @pytest.mark.xfail(reason="the asyncio.TimeoutError handler logs via bare 'logger' (only "
                           "'_logger' is defined in main_window.py) -> NameError, so the timeout "
-                          "message is never emitted. App bug; tracked separately.",
+                          "message is never emitted. App bug; see issue #875.",
                    strict=False)
 @pytest.mark.asyncio
 async def test_base_uri_listing_timeout_shows_error(populated_app_with_local_dataset_data,
