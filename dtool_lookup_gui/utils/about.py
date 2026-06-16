@@ -57,7 +57,7 @@ def pretty_version_text():
     # List the storage broker packages.
     version_lines.append("\n<b>Storage brokers</b>:")
     for ep in iter_entry_points("dtool.storage_brokers"):
-        package = ep.module_name.split(".")[0]
+        package = ep.module.split(".")[0]
         dyn_load_p = __import__(package)
         version = dyn_load_p.__version__
         storage_broker = ep.load()
@@ -68,7 +68,7 @@ def pretty_version_text():
                 version))
 
     # List the plugin packages.
-    modules = [ep.module_name for ep in iter_entry_points("dtool.cli")]
+    modules = [ep.module for ep in iter_entry_points("dtool.cli")]
     packages = set([m.split(".")[0] for m in modules])
     version_lines.append("\n<b>Plugins</b>:")
     for p in packages:

@@ -651,7 +651,7 @@ class MainWindow(Gtk.ApplicationWindow):
         yaml_content = value.get_string()
         row = self.dataset_list_box.get_selected_row()
         if row is None:
-            logger.warning("save-metadata action: no dataset selected")
+            _logger.warning("save-metadata action: no dataset selected")
             return
 
         if settings.yaml_linting_enabled:
@@ -673,7 +673,7 @@ class MainWindow(Gtk.ApplicationWindow):
         try:
             row.dataset.put_readme(yaml_content)
         except Exception as e:
-            logger.error("Failed to save metadata: %s", e)
+            _logger.error("Failed to save metadata: %s", e)
             return
 
         self._rebuild_readme_tree(yaml_content)
@@ -691,7 +691,7 @@ class MainWindow(Gtk.ApplicationWindow):
         row = self.dataset_list_box.get_row_by_uri(source_uri) if hasattr(self.dataset_list_box, 'get_row_by_uri') \
             else self.dataset_list_box.get_selected_row()
         if row is None:
-            logger.warning("copy-dataset action: no dataset row found for URI '%s'", source_uri)
+            _logger.warning("copy-dataset action: no dataset row found for URI '%s'", source_uri)
             return
 
         async def _copy():
@@ -711,12 +711,12 @@ class MainWindow(Gtk.ApplicationWindow):
         """
         uri = value.get_string()
         if not uri:
-            logger.warning("add-local-directory action: empty URI")
+            _logger.warning("add-local-directory action: empty URI")
             return
         try:
             LocalBaseURIModel.add_directory(uri)
         except ValueError as e:
-            logger.warning("add-local-directory: %s", e)
+            _logger.warning("add-local-directory: %s", e)
             return
         self._create_task_with_error_handling(
             self._refresh_base_uri_list_box(), "Refresh base URI list after add-local-directory")
@@ -841,7 +841,7 @@ class MainWindow(Gtk.ApplicationWindow):
     def on_show_clicked(self, widget):
         row = self.dataset_list_box.get_selected_row()
         if row is None:
-            logger.warning("No dataset selected")
+            _logger.warning("No dataset selected")
             return
         uri = str(row.dataset)
         launch_default_app_for_uri(uri)
@@ -1452,7 +1452,7 @@ class MainWindow(Gtk.ApplicationWindow):
                        self.dataset_list_box.fill(datasets, on_show=on_show)
                 except asyncio.TimeoutError:
                     timeout = settings.base_uri_listing_timeout
-                    logger.error(
+                    _logger.error(
                         "Listing datasets in '%s' timed out after %d seconds. "
                         "The base URI may be slow or unreachable. "
                         "You can adjust the timeout in Settings.", row.base_uri, timeout)
@@ -1504,7 +1504,7 @@ class MainWindow(Gtk.ApplicationWindow):
         """
         children = self.base_uri_list_box.get_children()
         if not children:
-            logger.warning("No base URIs available")
+            _logger.warning("No base URIs available")
             return
         first_row = children[0]
         self.base_uri_list_box.select_row(first_row)
@@ -1565,7 +1565,7 @@ class MainWindow(Gtk.ApplicationWindow):
                 self.dataset_list_box.add_dataset(base_uri.base_uri.create_dataset(name))
                 self.dataset_list_box.show_all()
             except ValueError as e:
-                logger.error("Cannot create dataset: %s", e)
+                _logger.error("Cannot create dataset: %s", e)
     
     def _freeze_dataset(self):
         row = self.dataset_list_box.get_selected_row()
