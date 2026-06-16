@@ -772,9 +772,10 @@ async def test_do_select_dataset_row_by_uri_direct_call(populated_app_with_mock_
 # Tests for base URI listing timeout — fixes #45
 # ---------------------------------------------------------------------------
 
-@pytest.mark.xfail(reason="the asyncio.TimeoutError handler logs via bare 'logger' (only "
-                          "'_logger' is defined in main_window.py) -> NameError, so the timeout "
-                          "message is never emitted. App bug; see issue #875.",
+@pytest.mark.xfail(reason="activate_action('refresh-view') alone does not select a base-URI row "
+                          "in this fixture, so the listing path (and its asyncio.wait_for timeout) "
+                          "is never reached and no timeout error is logged. Needs explicit "
+                          "base-URI row selection to exercise the #45 timeout feature.",
                    strict=False)
 @pytest.mark.asyncio
 async def test_base_uri_listing_timeout_shows_error(populated_app_with_local_dataset_data,
