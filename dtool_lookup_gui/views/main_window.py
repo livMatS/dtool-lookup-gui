@@ -679,6 +679,21 @@ class MainWindow(Gtk.ApplicationWindow):
         self._rebuild_readme_tree(yaml_content)
         self.save_metadata_button.set_sensitive(False)
 
+    def _rebuild_readme_tree(self, yaml_content):
+        """Rebuild the README tree view from YAML text.
+
+        Used after saving metadata so the tree reflects the new content without
+        requiring the dataset to be re-selected. Mirrors the tree population done
+        when a dataset's README is loaded.
+        """
+        readme_dict = yaml.safe_load(yaml_content)
+
+        store = self.readme_tree_view.get_model()
+        store.clear()
+        fill_readme_tree_store(store, readme_dict)
+        self.readme_tree_view.columns_autosize()
+        self.readme_tree_view.show_all()
+
     def do_copy_dataset(self, action, value):
         """Copy a dataset from source_uri to destination_uri.
 
