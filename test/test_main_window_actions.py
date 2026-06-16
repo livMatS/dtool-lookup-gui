@@ -152,11 +152,10 @@ async def test_do_select_dataset_row_by_row_index_direct_call(populated_app_with
     # Connect the select dataset action to the do_select_dataset_row_by_row_index method
     select_dataset_action.connect("activate", main_window.do_select_dataset_row_by_row_index)
 
-    # Trigger the select dataset action with the test row index
+    # Trigger the select dataset action with the test row index. Selection is
+    # synchronous, so assert immediately: an await here would let a pending
+    # dataset_list_box.fill() rebuild the list and reset the selection to row 0.
     select_dataset_action.activate(row_index_variant)
-
-    # Optionally, wait for the UI to update if necessary
-    await asyncio.sleep(0.1)  # Adjust this sleep duration as needed
 
     # Perform assertions to verify that the correct dataset row is selected
     selected_row = main_window.dataset_list_box.get_selected_row()
