@@ -36,6 +36,11 @@ import sys
 import dtoolcore
 import dtool_lookup_api.core.config
 
+from aiohttp.client_exceptions import (
+    ClientConnectorError,
+    ClientResponseError,
+    InvalidURL,
+)
 from dtool_lookup_api.core.LookupClient import ConfigurationBasedLookupClient
 
 import gi
@@ -368,11 +373,36 @@ class Application(Gtk.Application):
 
         async def retrieve_token(auth_url, username, password):
             try:
+                # Force the authenticating client: renew-token is an explicit
+                # credentials-based authentication, so it must not depend on the
+                # configured disable_authentication (which would otherwise yield an
+                # UnauthenticatedLookupClient that has no authenticate()).
                 async with ConfigurationBasedLookupClient(
-                        auth_url=auth_url, username=username, password=password) as lookup_client:
+                        auth_url=auth_url, username=username, password=password,
+                        disable_authentication=False) as lookup_client:
                     token = await lookup_client.authenticate()
+            except InvalidURL as e:
+                logger.error(
+                    "Authentication failed: '%s' is not a valid URL. "
+                    "Please check the authentication URL in Settings.", auth_url)
+                return
+            except ClientConnectorError as e:
+                logger.error(
+                    "Authentication failed: could not connect to '%s'. "
+                    "Please check that the server is reachable and the URL is correct. "
+                    "(Details: %s)", auth_url, e.strerror)
+                return
+            except ClientResponseError as e:
+                if e.status == 401:
+                    logger.error(
+                        "Authentication failed: incorrect username or password for '%s'.", auth_url)
+                else:
+                    logger.error(
+                        "Authentication failed: server at '%s' returned HTTP %d %s.",
+                        auth_url, e.status, e.message)
+                return
             except Exception as e:
-                logger.error(str(e))
+                logger.error("Authentication failed: %s", e)
                 return
 
             dtool_lookup_api.core.config.Config.token = token

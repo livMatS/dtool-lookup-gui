@@ -23,3 +23,25 @@ if xdg_data_dirs_orig is not None:
     os.environ['XDG_DATA_DIRS'] = xdg_data_dirs_prepend + os.pathsep + xdg_data_dirs_orig
 else:
     os.environ['XDG_DATA_DIRS'] = xdg_data_dirs_prepend
+
+# Set GI_TYPELIB_PATH so gi.repository can find the bundled typelib files.
+# PyInstaller bundles typelibs into the gi_typelibs/ subdirectory of _MEIPASS.
+# Without this, the bundled app raises:
+#   gi.RepositoryError: Typelib file for namespace 'Gtk', version '3.0' not found
+#
+# We prepend the bundled path but also keep system paths as fallback so that
+# any typelib not explicitly bundled is still found on the host system.
+gi_typelib_path = os.path.join(sys._MEIPASS, 'gi_typelibs')
+gi_typelib_path_orig = os.environ.get("GI_TYPELIB_PATH", None)
+
+# Build the combined path: bundled first, then system fallbacks
+system_typelib_dirs = [
+    '/usr/lib/x86_64-linux-gnu/girepository-1.0',
+    '/usr/lib/girepository-1.0',
+    '/usr/lib64/girepository-1.0',
+    '/usr/local/lib/girepository-1.0',
+]
+system_typelib_path = os.pathsep.join(d for d in system_typelib_dirs if os.path.isdir(d))
+
+parts = [p for p in [gi_typelib_path, gi_typelib_path_orig, system_typelib_path] if p]
+os.environ['GI_TYPELIB_PATH'] = os.pathsep.join(parts)

@@ -1,5 +1,69 @@
 Change log for dtool-lookup-gui
-===============================
+========================
+0.7.3 (unreleased)
+-------------------
+
+- CI: fix test workflow — add missing `glib-compile-schemas` step that was
+  causing all test jobs to fail since early 2026 (GLib.Error on settings import)
+- CI: update Python test matrix to 3.10–3.13 (drop EOL 3.9, add 3.13)
+- BUG: fix `collect_number_of_tests.py` propagating error text to stdout,
+  which caused `pytest -n "Error..."` to fail with invalid numprocesses value
+- MAINT: fix typo in `build-on-ubuntu` workflow name
+- BUG: fix defunct Linux bundle — explicitly bundle GI typelibs (Gtk-3.0,
+  GLib-2.0, Gio-2.0, Pango-1.0, GtkSource-4, GdkPixbuf-2.0, etc.) in
+  PyInstaller spec and set `GI_TYPELIB_PATH` in runtime hook so the bundled
+  app can find them; previously all GI modules were silently missing
+- CI: fix Ubuntu build workflow — run PyInstaller under xvfb-run so GI hook
+  child processes can initialise GTK; add smoke-test step that verifies
+  the bundle starts without crashing before uploading artifacts
+- BUG: fix Linux bundle crashing with `Unrecognized image file format` on PNG;
+  explicitly bundle `libgdk-pixbuf-2.0.so`, `libpng16.so`, `libjpeg.so` and
+  related libraries; also bundle GdkPixbuf loader `.so` files and regenerate
+  `loaders.cache` in CI so the bundled app can decode images without a system
+  GdkPixbuf installation
+- BUG: fix Linux bundle missing `GObject.type_register` and other `gi.overrides`
+  Python wrappers; PyInstaller's GI hook skips overrides when module introspection
+  fails; explicitly collect all `gi.overrides` submodules as hidden imports
+- BUG: fix `dtool_lookup_gui/utils/about.py` using `pkg_resources.iter_entry_points`
+  (unavailable in Python 3.12+); replace with `importlib.metadata` shim
+- BUG: fix Linux bundle crashing with `ModuleNotFoundError: No module named
+  'dtool_cli.cli'` — `dtool-cli 0.7.1` uses `pkg_resources.iter_entry_points`
+  (removed from Python 3.12+) and calls `pretty_version_text()` eagerly at
+  module import time, causing PyInstaller analysis to fail and silently exclude
+  the module from the bundle; vendor a fixed `dtool_cli/cli.py` in
+  `pyinstaller/vendored/` (importlib.metadata shim + deferred version call)
+  and overwrite the installed copy before PyInstaller runs via
+  `pyinstaller/vendored/override_dtool_cli.py`
+- Fixed frozen progress bar when dataset copy fails due to any exception
+  (previously only ``ChildProcessError`` was caught; other errors such as
+  missing storage plugin or wrong endpoint left the progress bar visible
+  forever) — fixes #169
+- Copy progress popup now shows "Copy failed: <reason>" on error instead
+  of always reporting success — fixes #169
+- Improved dependency graph error message when the lookup server returns
+  a non-JSON response (HTML error page): now shows a user-readable
+  explanation instead of a raw ``ContentTypeError`` dump — fixes #370, #182
+- README tree view now updates immediately after saving metadata without
+  requiring dataset re-selection — fixes #526
+- Meaningful error messages when authentication fails: wrong URL now shows
+  "not a valid URL", unreachable server shows "could not connect", wrong
+  credentials shows "incorrect username or password" — fixes #211
+- Configurable timeout for direct base URI dataset listing (default 30s,
+  set to 0 to disable); shows "Timeout — listing took too long" in the
+  row label instead of spinning forever — fixes #45
+- Dataset name dialog now shows an inline error message when the name is
+  empty or contains invalid characters, instead of silently doing nothing
+  on Apply — fixes #199
+
+0.7.3 (unreleased)
+-------------------
+
+- ``save-metadata`` action: saving README metadata is now a proper window
+  action, independently testable and keyboard-shortcut-bindable
+- ``copy-dataset`` action: dataset copy is now a ``(source_uri, dest_uri)``
+  window action (resolves long-standing TODO comment)
+- ``add-local-directory`` action: adding a local base URI is now a window
+  action; the file-chooser dialog is reduced to a pure UI thin wrapper
 
 0.7.2 (13Nov25)
 ---------------

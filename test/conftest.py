@@ -22,6 +22,7 @@
 # SOFTWARE.
 #
 import asyncio
+import contextlib
 import json
 import logging
 import os
@@ -32,6 +33,21 @@ import uuid
 import threading
 import warnings
 
+# Detach from any real D-Bus session bus *before* GTK/GIO is imported. With a session
+# bus present (developer desktops), every Gio.Application shares the one cached session-bus
+# connection and exports its object at /de/uni_freiburg/dtool_lookup_gui; registering a
+# second app in the same (xdist worker) process then fails with "An object is already
+# exported ...". Pointing the address at a non-bus makes g_bus_get() fail gracefully so each
+# app registers locally with no export -- which is exactly how the busless CI runners behave.
+os.environ["DBUS_SESSION_BUS_ADDRESS"] = "/dev/null"
+
+# Use the in-memory GSettings backend. The default dconf backend needs the
+# session bus we just disabled (so writes fail with "dconf-WARNING ... does not
+# contain a colon" and don't persist -- e.g. registering a local base URI never
+# reaches base_uri_list_box). The memory backend gives each test process fresh,
+# fully isolated, working settings.
+os.environ["GSETTINGS_BACKEND"] = "memory"
+
 import gi
 gi.require_version('Gtk', '3.0')
 gi.require_version('GtkSource', '4')
@@ -39,6 +55,17 @@ from gi.repository import GLib, GObject, Gio, Gtk, GtkSource, GdkPixbuf
 
 from gi.events import GLibEventLoopPolicy, GLibEventLoop
 
+# Isolate tests from the host's real dtool config (~/.config/dtool/dtool.json).
+# running_app builds the SettingsDialog, which reads config via
+# dtoolcore.utils.get_config_value(); an empty/corrupt shared config file makes
+# that raise JSONDecodeError mid-construction (observed on CI), and tests that
+# write config would otherwise pollute the developer's real file. Point dtoolcore
+# at a per-process temp path -- a missing file yields config defaults instead of
+# crashing, and each xdist worker (separate process) gets its own file.
+import tempfile
+import dtoolcore.utils
+dtoolcore.utils.DEFAULT_CONFIG_PATH = os.path.join(
+    tempfile.gettempdir(), "dtool-lookup-gui-test-config-{}.json".format(os.getpid()))
 
 from dtool_lookup_gui.main import Application
 
@@ -159,6 +186,75 @@ class MockDtoolLookupAPIConfig():
     @verify_ssl.setter
     def verify_ssl(self, value):
         self._lookup_server_verify_ssl = value
+
+    @property
+    def disable_authentication(self):
+        # Select the authenticated client from the ConfigurationBasedLookupClient
+        # factory so that authenticate()/get_*() paths are exercised under test.
+        return False
+
+
+_LOOKUP_CLIENT = "dtool_lookup_api.core.LookupClient"
+
+
+@contextlib.contextmanager
+def mock_lookup_api_client(mock_token, get_datasets, get_manifest, get_readme,
+                           get_tags, get_annotations, get_config,
+                           get_graph_by_uuid=None):
+    """Patch dtool_lookup_api so the GUI talks to in-memory mock data, not a server.
+
+    Written against the dtool-lookup-api >=0.10.3 class layout:
+
+    * Data getters (``get_datasets`` etc.) are defined on ``UnauthenticatedLookupClient`` and
+      inherited by every concrete client, so patching them there covers whichever client the
+      ``ConfigurationBasedLookupClient`` factory returns.
+    * ``authenticate`` lives on ``CredentialsBasedLookupClient``.
+    * ``ConfigurationBasedAuthenticatedLookupClient.connect`` is stubbed to a no-op so no token
+      validation or network request happens (``has_valid_token`` hits the network otherwise).
+    * ``Config`` is replaced on the ``LookupClient`` module itself: it binds
+      ``from .config import Config`` at import time, so reassigning ``...core.config.Config``
+      alone is not seen here. The mock reports ``disable_authentication = False`` so the
+      factory returns the authenticated client.
+    """
+    import dtool_lookup_api.core.LookupClient as lookup_client_module
+    if get_graph_by_uuid is None:
+        get_graph_by_uuid = []
+    with (
+            patch.object(lookup_client_module, "Config", MockDtoolLookupAPIConfig()),
+            patch(f"{_LOOKUP_CLIENT}.ConfigurationBasedAuthenticatedLookupClient.connect",
+                  return_value=None),
+            patch(f"{_LOOKUP_CLIENT}.CredentialsBasedLookupClient.authenticate",
+                  return_value=mock_token),
+            patch(f"{_LOOKUP_CLIENT}.UnauthenticatedLookupClient.get_datasets",
+                  return_value=get_datasets),
+            patch(f"{_LOOKUP_CLIENT}.UnauthenticatedLookupClient.get_graph_by_uuid",
+                  return_value=get_graph_by_uuid),
+            patch(f"{_LOOKUP_CLIENT}.UnauthenticatedLookupClient.get_manifest",
+                  return_value=get_manifest),
+            patch(f"{_LOOKUP_CLIENT}.UnauthenticatedLookupClient.get_readme",
+                  return_value=get_readme),
+            patch(f"{_LOOKUP_CLIENT}.UnauthenticatedLookupClient.get_tags",
+                  return_value=get_tags),
+            patch(f"{_LOOKUP_CLIENT}.UnauthenticatedLookupClient.get_annotations",
+                  return_value=get_annotations),
+            patch(f"{_LOOKUP_CLIENT}.UnauthenticatedLookupClient.get_config",
+                  return_value=get_config),
+        ):
+        yield
+
+
+# Teardown/await guards: under parallel (xdist) load the GTK/asyncio shutdown
+# handshake can occasionally stall; without a cap a single stuck wait_for_*
+# blocks the whole worker indefinitely (and a CI job until its hard timeout).
+_STARTUP_TIMEOUT = 30
+_SHUTDOWN_TIMEOUT = 20
+
+
+async def _await_with_timeout(awaitable, timeout, what):
+    try:
+        await asyncio.wait_for(awaitable, timeout=timeout)
+    except asyncio.TimeoutError:
+        logger.warning("Timed out after %ss waiting for %s; continuing.", timeout, what)
 
 
 @pytest.fixture(scope="function")
@@ -291,13 +387,13 @@ async def running_app(app):
     app.register()
     logger.debug("Called app.register().")
 
-    await app.wait_for_startup()
+    await _await_with_timeout(app.wait_for_startup(), _STARTUP_TIMEOUT, "startup")
     logger.debug("App finished startup.")
 
     app.activate()
     logger.debug("Called app.activate().")
 
-    await app.wait_for_activation()
+    await _await_with_timeout(app.wait_for_activation(), _STARTUP_TIMEOUT, "activation")
     logger.debug("App finished activation.")
 
     yield app
@@ -310,52 +406,27 @@ async def running_app(app):
     await app.shutdown()
 
     logger.debug("Wait for app to finish shutdown.")
-    await app.wait_for_shutdown()
-
-
+    await _await_with_timeout(app.wait_for_shutdown(), _SHUTDOWN_TIMEOUT, "shutdown")
 @pytest_asyncio.fixture(loop_scope="function", scope="function")
 async def populated_app_with_mock_data(
-        app, mock_get_datasets,
+        app, mock_token, mock_get_datasets,
         mock_get_manifest, mock_get_readme, mock_get_tags, mock_get_annotations, mock_get_config):
     """Replaces lookup api calls with mock methods that return fake lists of datasets."""
 
-    import dtool_lookup_api.core.config
-    dtool_lookup_api.core.config.Config = MockDtoolLookupAPIConfig()
-
-    # TODO: figure out whether mocked methods work as they should
-    with (
-            patch("dtool_lookup_api.core.LookupClient.CredentialsBasedLookupClient.authenticate",
-                  eturn_value=mock_token),
-            patch("dtool_lookup_api.core.LookupClient.ConfigurationBasedLookupClient.connect",
-                  return_value=None),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_datasets",
-                  return_value=mock_get_datasets),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_graph_by_uuid",
-                  return_value=[]),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_manifest",
-                  return_value=mock_get_manifest),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_readme",
-                  return_value=mock_get_readme),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_tags",
-                  return_value=mock_get_tags),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_annotations",
-                  return_value=mock_get_annotations),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_config",
-                  return_value=mock_get_config),
-            patch("dtool_lookup_api.core.LookupClient.ConfigurationBasedLookupClient.has_valid_token",
-                  return_value=True)
-        ):
+    with mock_lookup_api_client(
+            mock_token, mock_get_datasets, mock_get_manifest, mock_get_readme,
+            mock_get_tags, mock_get_annotations, mock_get_config):
         logger.debug("Register Gtk application.")
         app.register()
         logger.debug("Called app.register().")
 
-        await app.wait_for_startup()
+        await _await_with_timeout(app.wait_for_startup(), _STARTUP_TIMEOUT, "startup")
         logger.debug("App finished startup.")
 
         app.activate()
         logger.debug("Called app.activate().")
 
-        await app.wait_for_activation()
+        await _await_with_timeout(app.wait_for_activation(), _STARTUP_TIMEOUT, "activation")
         logger.debug("App finished activation.")
 
         yield app
@@ -368,17 +439,12 @@ async def populated_app_with_mock_data(
         await app.shutdown()
 
         logger.debug("Wait for app to finish shutdown.")
-        await app.wait_for_shutdown()
-
-
+        await _await_with_timeout(app.wait_for_shutdown(), _SHUTDOWN_TIMEOUT, "shutdown")
 @pytest_asyncio.fixture(loop_scope="function", scope="function")
 async def populated_app_with_local_dataset_data(
         app, local_dataset_uri,
         mock_token, mock_get_readme, mock_get_tags, mock_get_annotations, mock_get_config):
     """Replaces lookup api calls with mock methods that return fake lists of datasets."""
-
-    import dtool_lookup_api.core.config
-    dtool_lookup_api.core.config.Config = MockDtoolLookupAPIConfig()
 
     from dtoolcore import DataSet
     dataset = DataSet.from_uri(local_dataset_uri)
@@ -401,39 +467,20 @@ async def populated_app_with_local_dataset_data(
 
     manifest = dataset.generate_manifest()
 
-    with (
-            patch("dtool_lookup_api.core.LookupClient.CredentialsBasedLookupClient.authenticate",
-                  return_value=mock_token),
-            patch("dtool_lookup_api.core.LookupClient.ConfigurationBasedLookupClient.connect",
-                  return_value=None),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_datasets",
-                  return_value=dataset_list),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_graph_by_uuid",
-                  return_value=[]),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_manifest",
-                  return_value=manifest),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_readme",
-                  return_value=mock_get_readme),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_tags",
-                  return_value=mock_get_tags),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_annotations",
-                  return_value=mock_get_annotations),
-            patch("dtool_lookup_api.core.LookupClient.TokenBasedLookupClient.get_config",
-                  return_value=mock_get_config),
-            patch("dtool_lookup_api.core.LookupClient.ConfigurationBasedLookupClient.has_valid_token",
-                  return_value=True)
-        ):
+    with mock_lookup_api_client(
+            mock_token, dataset_list, manifest, mock_get_readme,
+            mock_get_tags, mock_get_annotations, mock_get_config):
         logger.debug("Register Gtk application.")
         app.register()
         logger.debug("Called app.register().")
 
-        await app.wait_for_startup()
+        await _await_with_timeout(app.wait_for_startup(), _STARTUP_TIMEOUT, "startup")
         logger.debug("App finished startup.")
 
         app.activate()
         logger.debug("Called app.activate().")
 
-        await app.wait_for_activation()
+        await _await_with_timeout(app.wait_for_activation(), _STARTUP_TIMEOUT, "activation")
         logger.debug("App finished activation.")
 
         yield app
@@ -446,4 +493,4 @@ async def populated_app_with_local_dataset_data(
         await app.shutdown()
 
         logger.debug("Wait for app to finish shutdown.")
-        await app.wait_for_shutdown()
+        await _await_with_timeout(app.wait_for_shutdown(), _SHUTDOWN_TIMEOUT, "shutdown")

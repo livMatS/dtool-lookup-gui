@@ -23,6 +23,7 @@
 # SOFTWARE.
 #
 import asyncio
+import logging
 import time
 from pathlib import Path
 
@@ -122,10 +123,10 @@ async def test_do_select_dataset_row_by_row_index_direct_call(populated_app_with
     It verifies if the dataset list is correctly populated and the specified dataset row is selected.
     """
 
-    async def wait_for_datasets_to_load(list_box, timeout=10):
+    async def wait_for_datasets_to_load(list_box, min_count=1, timeout=10):
         start_time = time.time()
         while time.time() - start_time < timeout:
-            if len(list_box.get_children()) > 0:
+            if len(list_box.get_children()) >= min_count:
                 return True
             await asyncio.sleep(0.1)
         return False
@@ -133,13 +134,15 @@ async def test_do_select_dataset_row_by_row_index_direct_call(populated_app_with
     windows = populated_app_with_mock_data.get_windows()
     main_window = [w for w in windows if isinstance(w, MainWindow)][0]
 
+    # Select row index 6, so wait until at least 7 rows have populated; waiting
+    # only for ">0" raced the selection ahead of the full load on slower runners.
+    row_index = 6
+
     # Trigger the 'refresh-view' action and wait for datasets to load
     main_window.activate_action('refresh-view')
-    datasets_loaded = await wait_for_datasets_to_load(main_window.dataset_list_box)
+    datasets_loaded = await wait_for_datasets_to_load(
+        main_window.dataset_list_box, min_count=row_index + 1)
     assert datasets_loaded, "Datasets were not loaded in time"
-
-    # Create a GLib.Variant with a valid test row index (e.g., 0 for the first row)
-    row_index = 6
     row_index_variant = GLib.Variant.new_uint32(row_index)
 
     # Create and add the select dataset action to the main window of the application
@@ -149,11 +152,10 @@ async def test_do_select_dataset_row_by_row_index_direct_call(populated_app_with
     # Connect the select dataset action to the do_select_dataset_row_by_row_index method
     select_dataset_action.connect("activate", main_window.do_select_dataset_row_by_row_index)
 
-    # Trigger the select dataset action with the test row index
+    # Trigger the select dataset action with the test row index. Selection is
+    # synchronous, so assert immediately: an await here would let a pending
+    # dataset_list_box.fill() rebuild the list and reset the selection to row 0.
     select_dataset_action.activate(row_index_variant)
-
-    # Optionally, wait for the UI to update if necessary
-    await asyncio.sleep(0.1)  # Adjust this sleep duration as needed
 
     # Perform assertions to verify that the correct dataset row is selected
     selected_row = main_window.dataset_list_box.get_selected_row()
@@ -288,10 +290,10 @@ async def test_do_show_dataset_details_by_row_index_direct_call(populated_app_wi
     It verifies if the dataset list is correctly populated and the specified dataset details are displayed.
     """
 
-    async def wait_for_datasets_to_load(list_box, timeout=10):
+    async def wait_for_datasets_to_load(list_box, min_count=1, timeout=10):
         start_time = time.time()
         while time.time() - start_time < timeout:
-            if len(list_box.get_children()) > 0:
+            if len(list_box.get_children()) >= min_count:
                 return True  # Datasets are loaded
             await asyncio.sleep(0.1)  # Yield control to allow other async tasks to run
         return False  # Timeout reached if datasets are not loaded within the specified time
@@ -299,13 +301,14 @@ async def test_do_show_dataset_details_by_row_index_direct_call(populated_app_wi
     windows = populated_app_with_mock_data.get_windows()
     main_window = [w for w in windows if isinstance(w, MainWindow)][0]
 
-    # Trigger the 'refresh-view' action and wait for datasets to load
-    main_window.activate_action('refresh-view')
-    datasets_loaded = await wait_for_datasets_to_load(main_window.dataset_list_box)
-    assert datasets_loaded, "Datasets were not loaded in time"
-
     # Create a GLib.Variant with a test row index (e.g., 0 for the first row)
     row_index = 1
+
+    # Trigger the 'refresh-view' action and wait for enough datasets to load
+    main_window.activate_action('refresh-view')
+    datasets_loaded = await wait_for_datasets_to_load(
+        main_window.dataset_list_box, min_count=row_index + 1)
+    assert datasets_loaded, "Datasets were not loaded in time"
     row_index_variant = GLib.Variant.new_uint32(row_index)
 
     # Create and add the show dataset action to the main window of the application
@@ -765,3 +768,194 @@ async def test_do_select_dataset_row_by_uri_direct_call(populated_app_with_mock_
     if pending_tasks:
         await asyncio.gather(*pending_tasks)
 
+
+
+# ---------------------------------------------------------------------------
+# Tests for base URI listing timeout — fixes #45
+# ---------------------------------------------------------------------------
+
+async def _add_local_base_uri_row(main_window, local_dataset_uri):
+    """Register the local dataset's base URI and return its (settled) DtoolBaseURIRow.
+
+    The base-URI listing path only runs for a real DtoolBaseURIRow, and the
+    isolated test config has none registered, so register one explicitly. The
+    returned row is settled: any listing auto-triggered by refresh/selection has
+    finished (row.task is None), so a subsequent show-base-uri spawns a fresh
+    listing instead of being skipped by the `if row.task is None` guard.
+    """
+    import os
+    import asyncio as _asyncio
+    from dtoolcore.utils import generous_parse_uri
+    from dtool_lookup_gui.widgets.base_uri_row import DtoolBaseURIRow
+    from dtool_lookup_gui.models.settings import settings
+
+    # Register only this base URI. The in-memory GSettings backend persists across
+    # the (serial) suite, so replace rather than append to keep the list isolated.
+    settings.local_base_uris = [generous_parse_uri(os.path.dirname(local_dataset_uri)).path]
+
+    main_window.activate_action("refresh-view")
+    base_row = None
+    start = time.time()
+    while time.time() - start < 10:
+        base_rows = [r for r in main_window.base_uri_list_box.get_children()
+                     if isinstance(r, DtoolBaseURIRow)]
+        if base_rows:
+            base_row = base_rows[0]
+            break
+        await _asyncio.sleep(0.1)
+    if base_row is None:
+        return None
+
+    # Wait for any auto-triggered listing to finish before handing the row back.
+    start = time.time()
+    while getattr(base_row, "task", None) is not None and time.time() - start < 10:
+        await _asyncio.sleep(0.1)
+    return base_row
+
+
+@pytest.mark.asyncio
+async def test_base_uri_listing_timeout_shows_error(populated_app_with_local_dataset_data,
+                                                     local_dataset_uri, caplog):
+    """When all_datasets() takes longer than the timeout, an error is logged
+    and the row info label is updated — the spinner must not hang forever.
+    """
+    import asyncio as _asyncio
+    from unittest.mock import patch, AsyncMock
+    from dtool_lookup_gui.views.main_window import MainWindow
+    from dtool_lookup_gui.models.settings import settings
+
+    windows = populated_app_with_local_dataset_data.get_windows()
+    main_window = [w for w in windows if isinstance(w, MainWindow)][0]
+
+    base_row = await _add_local_base_uri_row(main_window, local_dataset_uri)
+    assert base_row is not None, "Need a base-URI row to exercise listing"
+
+    # Set a very short timeout so the test runs fast
+    original_timeout = settings.base_uri_listing_timeout
+    settings.base_uri_listing_timeout = 1  # 1 second
+
+    async def slow_all_datasets():
+        await _asyncio.sleep(10)  # Much longer than the timeout
+        return []
+
+    try:
+        with patch(
+            "dtool_lookup_gui.models.base_uris.BaseURI.all_datasets",
+            new=AsyncMock(side_effect=slow_all_datasets),
+        ):
+            with caplog.at_level(logging.ERROR, logger="dtool_lookup_gui.views.main_window"):
+                # Selecting the base-URI row triggers the listing path + its timeout.
+                main_window.activate_action(
+                    "show-base-uri", GLib.Variant.new_uint32(base_row.get_index()))
+                await _asyncio.sleep(2.5)  # > timeout, let it fire
+
+        timeout_errors = [r for r in caplog.records
+                          if r.levelno >= logging.ERROR
+                          and ("timed out" in r.message.lower() or "timeout" in r.message.lower())]
+        assert timeout_errors, "Expected a timeout error to be logged"
+    finally:
+        settings.base_uri_listing_timeout = original_timeout
+
+
+@pytest.mark.asyncio
+async def test_base_uri_listing_no_timeout_when_disabled(populated_app_with_local_dataset_data,
+                                                          local_dataset_uri, caplog):
+    """When timeout is set to 0, slow listings must NOT raise TimeoutError."""
+    import asyncio as _asyncio
+    from unittest.mock import patch, AsyncMock
+    from dtool_lookup_gui.views.main_window import MainWindow
+    from dtool_lookup_gui.models.settings import settings
+
+    windows = populated_app_with_local_dataset_data.get_windows()
+    main_window = [w for w in windows if isinstance(w, MainWindow)][0]
+
+    base_row = await _add_local_base_uri_row(main_window, local_dataset_uri)
+    assert base_row is not None, "Need a base-URI row to exercise listing"
+
+    original_timeout = settings.base_uri_listing_timeout
+    settings.base_uri_listing_timeout = 0  # disabled
+
+    call_completed = []
+
+    async def slow_but_completes():
+        await _asyncio.sleep(0.5)
+        call_completed.append(True)
+        return []
+
+    try:
+        # Pass the coroutine function directly so AsyncMock awaits it; a lambda
+        # returning slow_but_completes() would yield an un-awaited coroutine.
+        with patch(
+            "dtool_lookup_gui.models.base_uris.BaseURI.all_datasets",
+            new=AsyncMock(side_effect=slow_but_completes),
+        ):
+            main_window.activate_action(
+                "show-base-uri", GLib.Variant.new_uint32(base_row.get_index()))
+            await _asyncio.sleep(2.0)
+
+        timeout_errors = [r for r in caplog.records
+                          if r.levelno >= logging.ERROR and "timeout" in r.message.lower()]
+        assert not timeout_errors, \
+            "No timeout errors expected when timeout is disabled (0)"
+        assert call_completed, "all_datasets() should have completed normally"
+    finally:
+        settings.base_uri_listing_timeout = original_timeout
+
+
+# ---------------------------------------------------------------------------
+# Tests for README tree rebuild after save — fixes #526
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_readme_tree_rebuilt_after_save(populated_app_with_local_dataset_data,
+                                               local_dataset_uri):
+    """After saving README metadata, the tree view must reflect the new content
+    without requiring dataset re-selection.
+    """
+    import asyncio as _asyncio
+    import time
+    from unittest.mock import patch, PropertyMock
+    from dtool_lookup_gui.views.main_window import MainWindow
+    from dtool_lookup_gui.models.datasets import DatasetModel
+    from dtool_lookup_gui.models.settings import Settings
+
+    windows = populated_app_with_local_dataset_data.get_windows()
+    main_window = [w for w in windows if isinstance(w, MainWindow)][0]
+
+    # Load a dataset so there's a selection
+    main_window.activate_action("refresh-view")
+    start = time.time()
+    while time.time() - start < 10:
+        if len(main_window.dataset_list_box.get_children()) > 0:
+            break
+        await _asyncio.sleep(0.1)
+
+    rows = main_window.dataset_list_box.get_children()
+    assert rows, "Need at least one dataset row to test README save"
+    main_window.dataset_list_box.select_row(rows[0])
+    await _asyncio.sleep(1.0)  # Let _update_dataset_view run
+
+    new_readme = "project: test-project\nauthor: Test Author\nversion: 42\n"
+
+    # put_readme is a DatasetModel class method (patch at class level); disable
+    # linting via PropertyMock. on_save_metadata_button_clicked dispatches the
+    # save-metadata action synchronously, so the tree is rebuilt before we assert
+    # (no settle-sleep, which could let a background readme reload overwrite it).
+    with patch.object(DatasetModel, "put_readme", return_value=None):
+        main_window.readme_buffer.set_text(new_readme)
+        with patch.object(Settings, "yaml_linting_enabled",
+                          new_callable=PropertyMock, return_value=False):
+            main_window.on_save_metadata_button_clicked(None)
+
+    # The tree store must now contain entries matching the new YAML
+    store = main_window.readme_tree_view.get_model()
+    assert store is not None, "Tree view must have a model"
+
+    tree_keys = set()
+    def collect_keys(model, path, iter_):
+        tree_keys.add(model[iter_][0])
+    store.foreach(collect_keys)
+
+    expected_keys = {"project", "author", "version"}
+    assert expected_keys.issubset(tree_keys), \
+        f"Tree must contain keys from new README. Expected {expected_keys}, found {tree_keys}"

@@ -22,6 +22,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 #
+import asyncio
 import json
 import logging
 import types
@@ -255,3 +256,145 @@ async def test_do_renew_token(running_app):
         # Since the actual token retrieval is asynchronous and mocked,
         # we cannot assert this directly in this test.
         # mock_emit.assert_called_once_with('dtool-config-changed')
+
+# ---------------------------------------------------------------------------
+# Tests for meaningful auth error messages — fixes #211
+# ---------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_do_renew_token_invalid_url(running_app, caplog):
+    """InvalidURL must produce a user-readable error mentioning 'valid URL'."""
+    from aiohttp.client_exceptions import InvalidURL
+    from aiohttp import RequestInfo
+    from yarl import URL
+
+    bad_url = "not-a-url-at-all"
+    value = MagicMock()
+    value.unpack.return_value = ("user", "pass", bad_url)
+
+    with patch(
+        "dtool_lookup_gui.main.ConfigurationBasedLookupClient",
+    ) as MockClient:
+        MockClient.return_value.__aenter__ = AsyncMock(
+            side_effect=InvalidURL(bad_url)
+        )
+        MockClient.return_value.__aexit__ = AsyncMock(return_value=False)
+
+        with caplog.at_level(logging.ERROR, logger="dtool_lookup_gui.main"):
+            running_app.do_renew_token(None, value)
+            await asyncio.sleep(0.2)
+
+    # Filter to the app's own logger: running_app's background refresh logs
+    # unrelated network errors to caplog, which would otherwise be picked up.
+    error_records = [r for r in caplog.records
+                     if r.levelno >= logging.ERROR and r.name == 'dtool_lookup_gui.main']
+    assert error_records, "Expected at least one ERROR log record"
+    msg = error_records[-1].message
+    assert "valid" in msg.lower() and "url" in msg.lower(), \
+        f"Expected user-friendly InvalidURL message, got: {msg!r}"
+
+
+@pytest.mark.asyncio
+async def test_do_renew_token_connection_error(running_app, caplog):
+    """ClientConnectorError must produce a user-readable 'could not connect' message."""
+    import asyncio as _asyncio
+    from aiohttp.client_exceptions import ClientConnectorError
+    from unittest.mock import patch
+
+    auth_url = "https://unreachable.example.com/token"
+    value = MagicMock()
+    value.unpack.return_value = ("user", "pass", auth_url)
+
+    conn_err = ClientConnectorError(
+        connection_key=MagicMock(host="unreachable.example.com"),
+        os_error=OSError("Connection refused"),
+    )
+
+    with patch(
+        "dtool_lookup_gui.main.ConfigurationBasedLookupClient",
+    ) as MockClient:
+        MockClient.return_value.__aenter__ = AsyncMock(side_effect=conn_err)
+        MockClient.return_value.__aexit__ = AsyncMock(return_value=False)
+
+        with caplog.at_level(logging.ERROR, logger="dtool_lookup_gui.main"):
+            running_app.do_renew_token(None, value)
+            await _asyncio.sleep(0.2)
+
+    # Filter to the app's own logger: running_app's background refresh logs
+    # unrelated network errors to caplog, which would otherwise be picked up.
+    error_records = [r for r in caplog.records
+                     if r.levelno >= logging.ERROR and r.name == 'dtool_lookup_gui.main']
+    assert error_records, "Expected at least one ERROR log record"
+    msg = error_records[-1].message
+    assert "connect" in msg.lower(), \
+        f"Expected 'could not connect' message, got: {msg!r}"
+
+
+@pytest.mark.asyncio
+async def test_do_renew_token_wrong_credentials(running_app, caplog):
+    """HTTP 401 must produce a user-readable 'incorrect username or password' message."""
+    import asyncio as _asyncio
+    from aiohttp import RequestInfo
+    from aiohttp.client_exceptions import ClientResponseError
+    from yarl import URL
+
+    auth_url = "https://auth.example.com/token"
+    value = MagicMock()
+    value.unpack.return_value = ("user", "wrongpass", auth_url)
+
+    request_info = RequestInfo(
+        url=URL(auth_url), method="POST", headers={}, real_url=URL(auth_url)
+    )
+    resp_err = ClientResponseError(request_info, history=(), status=401, message="Unauthorized")
+
+    with patch(
+        "dtool_lookup_gui.main.ConfigurationBasedLookupClient",
+    ) as MockClient:
+        MockClient.return_value.__aenter__ = AsyncMock(return_value=MockClient.return_value)
+        MockClient.return_value.__aexit__ = AsyncMock(return_value=False)
+        MockClient.return_value.authenticate = AsyncMock(side_effect=resp_err)
+
+        with caplog.at_level(logging.ERROR, logger="dtool_lookup_gui.main"):
+            running_app.do_renew_token(None, value)
+            await _asyncio.sleep(0.2)
+
+    # Filter to the app's own logger: running_app's background refresh logs
+    # unrelated network errors to caplog, which would otherwise be picked up.
+    error_records = [r for r in caplog.records
+                     if r.levelno >= logging.ERROR and r.name == 'dtool_lookup_gui.main']
+    assert error_records, "Expected at least one ERROR log record"
+    msg = error_records[-1].message
+    assert "password" in msg.lower() or "credential" in msg.lower() or "incorrect" in msg.lower(), \
+        f"Expected credential error message, got: {msg!r}"
+
+
+@pytest.mark.asyncio
+async def test_do_renew_token_forces_authentication(running_app):
+    """renew-token must request an authenticating client regardless of the
+    configured disable_authentication.
+
+    Regression: the ConfigurationBasedLookupClient factory returns an
+    UnauthenticatedLookupClient (which has no authenticate()) when
+    disable_authentication is True, so do_renew_token must pass
+    disable_authentication=False explicitly.
+    """
+    import asyncio as _asyncio
+
+    value = MagicMock()
+    value.unpack.return_value = ("user", "pass", "https://auth.example.com/token")
+
+    with patch("dtool_lookup_gui.main.ConfigurationBasedLookupClient") as MockClient, \
+            patch.object(running_app, "emit") as mock_emit:
+        MockClient.return_value.__aenter__ = AsyncMock(return_value=MockClient.return_value)
+        MockClient.return_value.__aexit__ = AsyncMock(return_value=False)
+        MockClient.return_value.authenticate = AsyncMock(return_value="new-token")
+
+        running_app.do_renew_token(None, value)
+        await _asyncio.sleep(0.2)
+
+    # The factory must be told to authenticate, irrespective of the config.
+    assert MockClient.call_args.kwargs.get("disable_authentication") is False
+    # On success the token-renewed signal is emitted.
+    assert any(call.args and call.args[0] == "token-renewed"
+               for call in mock_emit.call_args_list), \
+        "Expected 'token-renewed' to be emitted after successful authentication"
