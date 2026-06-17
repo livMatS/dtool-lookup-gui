@@ -28,5 +28,46 @@ import multiprocessing
 
 if __name__ == '__main__':
     multiprocessing.freeze_support()
+
+    # TEMPORARY frozen-runtime diagnostic (revert before merge): when
+    # DTOOL_GUI_DIAG is set, report GdkPixbuf state from INSIDE the frozen
+    # interpreter (after all PyInstaller rthooks have run) and exit.
+    import os as _os
+    if _os.environ.get("DTOOL_GUI_DIAG"):
+        import sys as _sys
+        print("DIAG GDK_PIXBUF_MODULE_FILE=", _os.environ.get("GDK_PIXBUF_MODULE_FILE"))
+        print("DIAG GDK_PIXBUF_MODULEDIR=", _os.environ.get("GDK_PIXBUF_MODULEDIR"))
+        print("DIAG cache exists=",
+              _os.path.exists(_os.environ.get("GDK_PIXBUF_MODULE_FILE") or ""))
+        try:
+            with open("/proc/self/maps") as _fh:
+                _libs = sorted({ln.split()[-1] for ln in _fh
+                                if "libgdk_pixbuf" in ln or "libpng16" in ln})
+            print("DIAG MAPPED:", _libs)
+        except Exception as _e:
+            print("DIAG MAPPED err", _e)
+        import gi as _gi
+        _gi.require_version("GdkPixbuf", "2.0")
+        from gi.repository import GdkPixbuf as _GP
+        print("DIAG FORMATS:", sorted(f.get_name() for f in _GP.Pixbuf.get_formats()))
+        import struct as _st, zlib as _zl
+
+        def _chunk(t, d):
+            return (_st.pack(">I", len(d)) + t + d
+                    + _st.pack(">I", _zl.crc32(t + d) & 0xffffffff))
+        _png = (b"\x89PNG\r\n\x1a\n"
+                + _chunk(b"IHDR", _st.pack(">IIBBBBB", 1, 1, 8, 6, 0, 0, 0))
+                + _chunk(b"IDAT", _zl.compress(b"\x00\xff\x00\x00\xff"))
+                + _chunk(b"IEND", b""))
+        try:
+            _l = _GP.PixbufLoader()
+            _l.write(_png)
+            _l.close()
+            print("DIAG SNIFF_PNG: OK", _l.get_pixbuf().get_width())
+        except Exception as _e:
+            print("DIAG SNIFF_PNG: FAIL:", repr(_e))
+        _sys.stdout.flush()
+        _sys.exit(0)
+
     from dtool_lookup_gui.main import run_gui
     run_gui()
