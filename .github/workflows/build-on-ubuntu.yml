@@ -104,6 +104,33 @@ jobs:
         mv dist/dtool-lookup-gui dtool-lookup-gui
         chmod +x dtool-lookup-gui
 
+    - name: DIAG scriptable PNG repro (temporary)
+      env:
+        GI_TYPELIB_PATH: /usr/lib/x86_64-linux-gnu/girepository-1.0
+        GDK_BACKEND: x11
+      run: |
+        set +e
+        echo "===== build dir-mode (on disk) to get bundled libs ====="
+        xvfb-run --auto-servernum pyinstaller -y pyinstaller/linux/dtool-lookup-gui-linux.spec >/tmp/db.log 2>&1
+        echo "dir build EXIT=$?"
+        INTERNAL=$(find dist -follow -type d -name _internal 2>/dev/null | head -1)
+        [ -z "$INTERNAL" ] && INTERNAL=$(dirname "$(find dist -follow -type f -name dtool-lookup-gui | head -1)")
+        echo "INTERNAL=$INTERNAL"
+        echo "===== A) baseline: pure system libs ====="
+        GDK_PIXBUF_MODULE_FILE=/nonexistent python pyinstaller/linux/_diag_probe.py
+        echo "===== B) bundle libs on LD_LIBRARY_PATH (reproduce bundle mix) ====="
+        GDK_PIXBUF_MODULE_FILE=/nonexistent LD_LIBRARY_PATH="$INTERNAL" python pyinstaller/linux/_diag_probe.py
+        echo "===== bundled vs system libpng16 (version/identity) ====="
+        ls -l "$INTERNAL"/libpng16.so.16 /usr/lib/x86_64-linux-gnu/libpng16.so.16 2>/dev/null
+        md5sum "$INTERNAL"/libpng16.so.16 /usr/lib/x86_64-linux-gnu/libpng16.so.16 2>/dev/null
+        echo "===== C) bundle libs minus libpng16 ====="
+        cp -a "$INTERNAL" /tmp/nob && rm -f /tmp/nob/libpng16.so.16
+        GDK_PIXBUF_MODULE_FILE=/nonexistent LD_LIBRARY_PATH="/tmp/nob" python pyinstaller/linux/_diag_probe.py
+        echo "===== D) bundle libs minus glib stack (libglib/gobject/gio/gmodule) ====="
+        cp -a "$INTERNAL" /tmp/nog && rm -f /tmp/nog/libglib-2.0.so.0 /tmp/nog/libgobject-2.0.so.0 /tmp/nog/libgio-2.0.so.0 /tmp/nog/libgmodule-2.0.so.0
+        GDK_PIXBUF_MODULE_FILE=/nonexistent LD_LIBRARY_PATH="/tmp/nog" python pyinstaller/linux/_diag_probe.py
+        true
+
     - name: Smoke-test bundle (headless)
       # Verify the bundle starts without immediately crashing.
       # xvfb-run provides a display; timeout 10s means success if no crash within 10s.
