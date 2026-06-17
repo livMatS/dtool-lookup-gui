@@ -30,3 +30,4 @@ __pycache__
 
 # pytest coverage data
 .coverage
+TRIAGE.md
