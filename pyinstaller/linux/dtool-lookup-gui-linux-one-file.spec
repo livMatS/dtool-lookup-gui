@@ -101,30 +101,36 @@ for typelib_name in REQUIRED_TYPELIBS:
             gi_typelib_datas.append((full_path, 'gi_typelibs'))
             break
 
-# GdkPixbuf bundling. The crash this fixes: the build-on-ubuntu smoke test aborted
-# (SIGABRT) when GTK rendered its built-in image-missing.png fallback, because the
-# bundle MIXED the *system* libgdk-pixbuf with the *bundled* GLib/libpng stack —
-# PyInstaller bundles libpng/glib (link-time deps of cairo/PIL/etc.) but MISSES
-# libgdk-pixbuf-2.0.so itself (it is dlopen'd via the gi typelib at runtime, and
-# PyInstaller's GdkPixbuf hook is skipped because GIRepository introspection is
-# unavailable in the headless build env). The system libgdk-pixbuf then ran against
-# mismatched bundled libs and its loaders failed to register ("pixbuf loaders could
-# not be found").
+# Icon theme bundling. The crash this fixes: the build-on-ubuntu smoke test aborted
+# (SIGABRT, gtkiconhelper.c:495) when GTK could not resolve a themed icon and tried
+# to render its built-in image-missing.png fallback. The root cause is NOT a broken
+# PNG/libpng stack — a scriptable CI diagnostic (system Python + the bundled libs on
+# LD_LIBRARY_PATH) confirmed GdkPixbuf reports png in get_formats() and decodes PNG
+# correctly even in the bundle-mix. The real problem is that no icon theme is bundled
+# (PyInstaller's GI hook, which would collect the Adwaita theme requested in
+# hooksconfig below, is skipped because GIRepository introspection is unavailable in
+# the headless build env). With no icon theme on disk, every themed-icon lookup fails
+# and GTK falls into the image-missing fallback path, which asserts and aborts in the
+# headless/no-theme environment.
 #
-# Fix: bundle libgdk-pixbuf-2.0.so explicitly so the app uses the bundled copy,
-# consistent with the rest of the bundled stack. PNG/JPEG are compiled into
-# libgdk-pixbuf-2.0.so on Ubuntu 24.04, so its built-in loaders suffice and no
-# external loader .so / loaders.cache is needed (PyInstaller's gdk-pixbuf rthook
-# points GDK_PIXBUF_MODULE_FILE at a nonexistent path → built-in loaders are used).
+# Fix: explicitly bundle the Adwaita + hicolor icon themes into share/icons/. The
+# runtime hook pyi_rth_glib.py already prepends {_MEIPASS}/share to XDG_DATA_DIRS, so
+# GTK finds them at $XDG_DATA_DIRS/icons and resolves icons normally — the
+# image-missing fallback is never triggered.
+#
+# We do NOT bundle libgdk-pixbuf-2.0.so or libpng16/libjpeg: the system
+# libgdk-pixbuf runs fine against the bundled GLib stack (verified by the diagnostic
+# above), and its built-in PNG/JPEG loaders suffice on Ubuntu 24.04.
 _pixbuf_loaders_datas = []
-_pixbuf_binaries = [(_so, '.') for _so in glob('/usr/lib/*/libgdk_pixbuf-2.0.so*')]
-print(f'[spec] bundling libgdk-pixbuf: {[p for p, _ in _pixbuf_binaries]}')
+_pixbuf_binaries = []
 
-# Do NOT explicitly bundle libpng16/libjpeg: they are system libs already linked into
-# the system libgdk_pixbuf-2.0.so.0. Bundling them in _MEIPASS causes two copies of
-# libpng16 to be loaded (one from _MEIPASS via LD_LIBRARY_PATH, one pulled by
-# system libgdk_pixbuf via its RPATH), corrupting libpng's global state and making
-# all PNG decoding fail with "Unrecognized image file format".
+_icon_theme_datas = []
+for _theme in ('Adwaita', 'hicolor'):
+    _theme_dir = os.path.join('/usr/share/icons', _theme)
+    if os.path.isdir(_theme_dir):
+        _icon_theme_datas += Tree(_theme_dir, prefix=os.path.join('share', 'icons', _theme))
+print(f'[spec] bundling icon themes: {sorted({d.split(os.sep)[2] for d, _s, _t in _icon_theme_datas})}'
+      if _icon_theme_datas else '[spec] WARNING: no icon themes found to bundle')
 
 hooks_path = [os.path.join(root_dir, 'pyinstaller/hooks')]
 
@@ -173,6 +179,10 @@ a = Analysis(
     cipher=block_cipher,
     noarchive=False,
 )
+# Tree() yields 3-tuple TOC entries (dest, src, typecode); append to a.datas
+# directly rather than passing through Analysis(datas=...), which expects 2-tuples.
+a.datas += _icon_theme_datas
+
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
 exe = EXE(
