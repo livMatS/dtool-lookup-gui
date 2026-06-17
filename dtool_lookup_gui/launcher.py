@@ -35,6 +35,14 @@ if __name__ == '__main__':
     import os as _os
     if _os.environ.get("DTOOL_GUI_DIAG"):
         import sys as _sys
+        # Fix-test override applied BEFORE first GdkPixbuf use (after rthooks ran):
+        #   DTOOL_GUI_DIAG_CACHE=UNSET   -> remove GDK_PIXBUF_MODULE_FILE
+        #   DTOOL_GUI_DIAG_CACHE=<path>  -> set it to <path>
+        _ov = _os.environ.get("DTOOL_GUI_DIAG_CACHE")
+        if _ov == "UNSET":
+            _os.environ.pop("GDK_PIXBUF_MODULE_FILE", None)
+        elif _ov:
+            _os.environ["GDK_PIXBUF_MODULE_FILE"] = _ov
         print("DIAG GDK_PIXBUF_MODULE_FILE=", _os.environ.get("GDK_PIXBUF_MODULE_FILE"))
         print("DIAG GDK_PIXBUF_MODULEDIR=", _os.environ.get("GDK_PIXBUF_MODULEDIR"))
         print("DIAG cache exists=",
@@ -66,6 +74,13 @@ if __name__ == '__main__':
             print("DIAG SNIFF_PNG: OK", _l.get_pixbuf().get_width())
         except Exception as _e:
             print("DIAG SNIFF_PNG: FAIL:", repr(_e))
+        try:
+            with open("/proc/self/maps") as _fh:
+                _libs2 = sorted({ln.split()[-1] for ln in _fh
+                                 if "libgdk_pixbuf" in ln})
+            print("DIAG MAPPED_AFTER:", _libs2)
+        except Exception as _e:
+            print("DIAG MAPPED_AFTER err", _e)
         _sys.stdout.flush()
         _sys.exit(0)
 

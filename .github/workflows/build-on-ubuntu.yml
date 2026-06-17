@@ -107,12 +107,16 @@ jobs:
         mv dist/dtool-lookup-gui dtool-lookup-gui
         chmod +x dtool-lookup-gui
 
-    - name: DIAG frozen-runtime GdkPixbuf state (temporary)
+    - name: DIAG frozen-runtime GdkPixbuf fix-test (temporary)
       run: |
         set +e
-        echo "===== frozen one-file binary self-report (DTOOL_GUI_DIAG) ====="
-        xvfb-run --auto-servernum env DTOOL_GUI_DIAG=1 ./dtool-lookup-gui 2>&1 | tail -30
-        echo "frozen DIAG EXIT=${PIPESTATUS[0]}"
+        SYS_CACHE=/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders.cache
+        echo "===== A) default (rthook nonexistent cache) -> reproduce ====="
+        xvfb-run --auto-servernum env DTOOL_GUI_DIAG=1 ./dtool-lookup-gui 2>&1 | grep -a DIAG
+        echo "===== B) GDK_PIXBUF_MODULE_FILE unset ====="
+        xvfb-run --auto-servernum env DTOOL_GUI_DIAG=1 DTOOL_GUI_DIAG_CACHE=UNSET ./dtool-lookup-gui 2>&1 | grep -a DIAG
+        echo "===== C) GDK_PIXBUF_MODULE_FILE = system cache ====="
+        xvfb-run --auto-servernum env DTOOL_GUI_DIAG=1 DTOOL_GUI_DIAG_CACHE="$SYS_CACHE" ./dtool-lookup-gui 2>&1 | grep -a DIAG
         true
 
     - name: Smoke-test bundle (headless)
