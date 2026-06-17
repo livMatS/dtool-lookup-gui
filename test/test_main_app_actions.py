@@ -366,3 +366,35 @@ async def test_do_renew_token_wrong_credentials(running_app, caplog):
     msg = error_records[-1].message
     assert "password" in msg.lower() or "credential" in msg.lower() or "incorrect" in msg.lower(), \
         f"Expected credential error message, got: {msg!r}"
+
+
+@pytest.mark.asyncio
+async def test_do_renew_token_forces_authentication(running_app):
+    """renew-token must request an authenticating client regardless of the
+    configured disable_authentication.
+
+    Regression: the ConfigurationBasedLookupClient factory returns an
+    UnauthenticatedLookupClient (which has no authenticate()) when
+    disable_authentication is True, so do_renew_token must pass
+    disable_authentication=False explicitly.
+    """
+    import asyncio as _asyncio
+
+    value = MagicMock()
+    value.unpack.return_value = ("user", "pass", "https://auth.example.com/token")
+
+    with patch("dtool_lookup_gui.main.ConfigurationBasedLookupClient") as MockClient, \
+            patch.object(running_app, "emit") as mock_emit:
+        MockClient.return_value.__aenter__ = AsyncMock(return_value=MockClient.return_value)
+        MockClient.return_value.__aexit__ = AsyncMock(return_value=False)
+        MockClient.return_value.authenticate = AsyncMock(return_value="new-token")
+
+        running_app.do_renew_token(None, value)
+        await _asyncio.sleep(0.2)
+
+    # The factory must be told to authenticate, irrespective of the config.
+    assert MockClient.call_args.kwargs.get("disable_authentication") is False
+    # On success the token-renewed signal is emitted.
+    assert any(call.args and call.args[0] == "token-renewed"
+               for call in mock_emit.call_args_list), \
+        "Expected 'token-renewed' to be emitted after successful authentication"
