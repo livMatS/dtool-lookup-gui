@@ -183,15 +183,6 @@ a = Analysis(
 # directly rather than passing through Analysis(datas=...), which expects 2-tuples.
 a.datas += _icon_theme_datas
 
-# TEMP EXPERIMENT (revert if it doesn't help): drop the bundled GLib + libpng stack
-# so the frozen app loads the *system* ones, matching the working system-Python case.
-_EXCLUDE_PREFIXES = ('libglib-2.0', 'libgobject-2.0', 'libgio-2.0',
-                     'libgmodule-2.0', 'libpng16')
-_before = len(a.binaries)
-a.binaries = [b for b in a.binaries
-              if not os.path.basename(b[0]).startswith(_EXCLUDE_PREFIXES)]
-print(f'[spec] excluded {_before - len(a.binaries)} glib/png binaries from bundle')
-
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
 exe = EXE(

@@ -33,6 +33,8 @@ jobs:
         sudo apt-get install -y \
           libgirepository1.0-dev \
           libgirepository-2.0-dev \
+          gir1.2-girepository-2.0 \
+          gir1.2-girepository-3.0 \
           libcairo2-dev \
           pkg-config \
           python3-dev \
@@ -107,17 +109,13 @@ jobs:
         mv dist/dtool-lookup-gui dtool-lookup-gui
         chmod +x dtool-lookup-gui
 
-    - name: DIAG frozen-runtime GdkPixbuf fix-test (temporary)
+    - name: DIAG GI-hook + png self-report (temporary)
       run: |
         set +e
-        SYS_CACHE=/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders.cache
-        SYS_CACHE=/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders.cache
-        echo "===== A) default (rthook nonexistent cache) ====="
-        xvfb-run --auto-servernum env DTOOL_GUI_DIAG=1 ./dtool-lookup-gui 2>&1 | grep -aE "SNIFF|FORMATS|MODULE_FILE="
-        echo "===== B) GDK_PIXBUF_MODULE_FILE unset ====="
-        xvfb-run --auto-servernum env DTOOL_GUI_DIAG=1 DTOOL_GUI_DIAG_CACHE=UNSET ./dtool-lookup-gui 2>&1 | grep -aE "SNIFF|FORMATS|MODULE_FILE="
-        echo "===== C) GDK_PIXBUF_MODULE_FILE = system cache ====="
-        xvfb-run --auto-servernum env DTOOL_GUI_DIAG=1 DTOOL_GUI_DIAG_CACHE="$SYS_CACHE" ./dtool-lookup-gui 2>&1 | grep -aE "SNIFF|FORMATS|MODULE_FILE="
+        echo "===== GI hook failures in build log (expect 0 now) ====="
+        grep -c "Failed to query GI module" pyinstaller.log
+        echo "===== frozen app png self-report ====="
+        xvfb-run --auto-servernum env DTOOL_GUI_DIAG=1 ./dtool-lookup-gui 2>&1 | grep -aE "DIAG (GDK_PIXBUF_MODULE_FILE=|cache exists|FORMATS|SNIFF)"
         true
 
     - name: Smoke-test bundle (headless)
