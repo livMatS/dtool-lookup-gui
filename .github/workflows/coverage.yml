@@ -67,7 +67,7 @@ jobs:
             xvfb-run --auto-servernum pytest -n "$N" --log-cli-level=DEBUG
 
       - name: setup pages
-        uses: actions/configure-pages@v5
+        uses: actions/configure-pages@v6
 
       - name: upload artifact
         uses: actions/upload-pages-artifact@v3
