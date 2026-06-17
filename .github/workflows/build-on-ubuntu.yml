@@ -104,6 +104,35 @@ jobs:
         mv dist/dtool-lookup-gui dtool-lookup-gui
         chmod +x dtool-lookup-gui
 
+    - name: DIAG GdkPixbuf in bundle (temporary)
+      run: |
+        set +e
+        echo "===== 1. embedded gdk-pixbuf / png / jpeg entries ====="
+        pyi-archive_viewer -l ./dtool-lookup-gui 2>/dev/null | grep -iE "gdk.pixbuf|loaders|libpng|libjpeg|pixbufloader" | head -50
+        echo "===== 2. extract _MEI and inspect ====="
+        xvfb-run --auto-servernum bash -c '
+          ./dtool-lookup-gui >/tmp/diag-run.log 2>&1 &
+          APP=$!
+          sleep 3
+          MEI=$(ls -dt /tmp/_MEI* 2>/dev/null | head -1)
+          echo "MEI=$MEI"
+          echo "--- contents of lib/gdk-pixbuf ---"
+          find "$MEI" -ipath "*gdk-pixbuf*" 2>/dev/null | head -40
+          CACHE=$(find "$MEI" -name "loaders.cache" 2>/dev/null | head -1)
+          echo "--- loaders.cache path: $CACHE ---"
+          [ -n "$CACHE" ] && cat "$CACHE"
+          LGP=$(find "$MEI" -name "libgdk_pixbuf*.so*" -o -name "libgdk-pixbuf*.so*" 2>/dev/null | head -1)
+          echo "--- ldd $LGP (png/jpeg/not found) ---"
+          ldd "$LGP" 2>/dev/null | grep -iE "png|jpeg|not found"
+          kill $APP 2>/dev/null
+        '
+        echo "--- app run log ---"; grep -ivE "dbind-WARNING|AT-SPI" /tmp/diag-run.log | tail -15
+        echo "===== 3. hypothesis: force GDK_PIXBUF_MODULE_FILE=/nonexistent ====="
+        GDK_PIXBUF_MODULE_FILE=/nonexistent xvfb-run --auto-servernum timeout 10 ./dtool-lookup-gui >/tmp/diag-forced.log 2>&1
+        echo "forced-nonexistent EXIT=$? (124/0 = no crash)"
+        grep -ivE "dbind-WARNING|AT-SPI" /tmp/diag-forced.log | tail -10
+        true
+
     - name: Smoke-test bundle (headless)
       # Verify the bundle starts without immediately crashing.
       # xvfb-run provides a display; timeout 10s means success if no crash within 10s.
