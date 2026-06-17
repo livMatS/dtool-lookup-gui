@@ -104,35 +104,6 @@ jobs:
         mv dist/dtool-lookup-gui dtool-lookup-gui
         chmod +x dtool-lookup-gui
 
-    - name: DIAG dir-mode bundle inspect (temporary)
-      env:
-        GI_TYPELIB_PATH: /usr/lib/x86_64-linux-gnu/girepository-1.0
-        GDK_BACKEND: x11
-      run: |
-        set +e
-        echo "===== build dir-mode bundle (stays on disk, inspectable) ====="
-        xvfb-run --auto-servernum pyinstaller -y pyinstaller/linux/dtool-lookup-gui-linux.spec >/tmp/dirbuild.log 2>&1
-        echo "dir build EXIT=$?"; tail -3 /tmp/dirbuild.log
-        echo "--- libgdk-pixbuf / libpng / libjpeg / pixbuf loaders bundled in dist ---"
-        find dist -follow \( -iname "*gdk*pixbuf*" -o -iname "libpng*" -o -iname "libjpeg*" -o -ipath "*pixbuf*loaders*" \) 2>/dev/null | head -50
-        LGP=$(find dist -follow -iname "libgdk*pixbuf-2*.so*" 2>/dev/null | head -1)
-        echo "--- ldd bundled libgdk-pixbuf ($LGP) ---"
-        ldd "$LGP" 2>&1 | grep -iE "png|jpeg|=> not found"
-        echo "--- does bundled libgdk-pixbuf carry built-in png/jpeg? (symbols) ---"
-        nm -D "$LGP" 2>/dev/null | grep -iE "png|jpeg" | head -5
-        echo "===== decisive experiment: vary bundled libpng + module file ====="
-        APPDIR=$(dirname "$(find dist -follow -type f -name dtool-lookup-gui | head -1)")
-        SYSCACHE=$(find /usr/lib -name loaders.cache -path "*gdk-pixbuf*" 2>/dev/null | head -1)
-        echo "APPDIR=$APPDIR  SYSCACHE=$SYSCACHE"
-        runit() { GDK_PIXBUF_MODULE_FILE="$1" xvfb-run --auto-servernum timeout 8 "$APPDIR/dtool-lookup-gui" >/tmp/r.log 2>&1; local e=$?; echo "  EXIT=$e (124/0=PASS)"; grep -iE "bail out|could not load a pixbuf" /tmp/r.log | head -1; }
-        echo "V1 as-built, module=/nonexistent:";        runit /nonexistent
-        echo "V2 as-built, module=SYSCACHE:";            runit "$SYSCACHE"
-        rm -f "$APPDIR"/_internal/libpng16.so.16 "$APPDIR"/libpng16.so.16 2>/dev/null
-        echo "(removed bundled libpng16)"
-        echo "V3 no-bundled-libpng, module=/nonexistent:"; runit /nonexistent
-        echo "V4 no-bundled-libpng, module=SYSCACHE:";      runit "$SYSCACHE"
-        true
-
     - name: Smoke-test bundle (headless)
       # Verify the bundle starts without immediately crashing.
       # xvfb-run provides a display; timeout 10s means success if no crash within 10s.
