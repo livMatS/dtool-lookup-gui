@@ -17,10 +17,12 @@ Change log for dtool-lookup-gui
   child processes can initialise GTK; add smoke-test step that verifies
   the bundle starts without crashing before uploading artifacts
 - BUG: fix Linux bundle crashing with `Unrecognized image file format` on PNG;
-  explicitly bundle `libgdk-pixbuf-2.0.so`, `libpng16.so`, `libjpeg.so` and
-  related libraries; also bundle GdkPixbuf loader `.so` files and regenerate
-  `loaders.cache` in CI so the bundled app can decode images without a system
-  GdkPixbuf installation
+  rely on GdkPixbuf's built-in PNG/JPEG loaders (compiled into
+  `libgdk-pixbuf-2.0.so` on Ubuntu 24.04) and bundle the GdkPixbuf loader
+  `.so` files with a path-rewritten `loaders.cache`. `libpng16`/`libjpeg` are
+  deliberately NOT bundled separately — doing so loaded two copies of `libpng16`
+  (one from the bundle, one via the system `libgdk-pixbuf` RPATH) and corrupted
+  libpng's global state
 - BUG: fix Linux bundle missing `GObject.type_register` and other `gi.overrides`
   Python wrappers; PyInstaller's GI hook skips overrides when module introspection
   fails; explicitly collect all `gi.overrides` submodules as hidden imports
@@ -54,10 +56,14 @@ Change log for dtool-lookup-gui
 - Dataset name dialog now shows an inline error message when the name is
   empty or contains invalid characters, instead of silently doing nothing
   on Apply — fixes #199
-
-0.7.3 (unreleased)
--------------------
-
+- BUG: fix token renewal crashing with `AttributeError: 'UnauthenticatedLookupClient'
+  object has no attribute 'authenticate'` when authentication is disabled in the
+  configuration; the renew-token action now always requests an authenticating
+  client — fixes #882
+- BUG: fix several main-window error/warning handlers referencing an undefined
+  `logger` (only `_logger` was defined), which raised `NameError` instead of
+  reporting the problem (e.g. failed add-local-directory, base-URI listing
+  timeout, dataset copy, create-dataset) — fixes #875
 - ``save-metadata`` action: saving README metadata is now a proper window
   action, independently testable and keyboard-shortcut-bindable
 - ``copy-dataset`` action: dataset copy is now a ``(source_uri, dest_uri)``
