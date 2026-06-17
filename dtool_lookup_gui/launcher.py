@@ -57,6 +57,21 @@ if __name__ == '__main__':
         import gi as _gi
         _gi.require_version("GdkPixbuf", "2.0")
         from gi.repository import GdkPixbuf as _GP
+        from gi.repository import GLib as _GLib
+        print("DIAG GLIB_VERSION=%d.%d.%d" % (
+            _GLib.MAJOR_VERSION, _GLib.MINOR_VERSION, _GLib.MICRO_VERSION))
+        print("DIAG MEIPASS=", getattr(_sys, "_MEIPASS", None))
+        try:
+            with open("/proc/self/maps") as _fh:
+                _glibs = sorted({ln.split()[-1] for ln in _fh
+                                 if any(k in ln for k in (
+                                     "libglib-2.0", "libgobject-2.0",
+                                     "libgio-2.0", "libgmodule-2.0",
+                                     "libpng16", "libgdk_pixbuf"))})
+            for _p in _glibs:
+                print("DIAG GLIBMAP:", _p)
+        except Exception as _e:
+            print("DIAG GLIBMAP err", _e)
         print("DIAG FORMATS:", sorted(f.get_name() for f in _GP.Pixbuf.get_formats()))
         import struct as _st, zlib as _zl
 
