@@ -101,56 +101,21 @@ for typelib_name in REQUIRED_TYPELIBS:
             gi_typelib_datas.append((full_path, 'gi_typelibs'))
             break
 
-# GdkPixbuf loaders: on Ubuntu 24.04, PNG and JPEG are compiled directly into
-# libgdk-pixbuf-2.0.so (no libpixbufloader-png.so exists). External loaders
-# (svg, tiff, gif, etc.) would require additional .so dependencies (librsvg-2,
-# libtiff, etc.) and can cause SIGABRT if those deps are incomplete in the bundle.
-# We therefore do NOT bundle the external loader .so files or loaders.cache here.
-# Instead, pyi_rth_gdkpixbuf.py (our custom runtime hook, which runs before
-# PyInstaller's built-in hook of the same name) writes an empty loaders.cache
-# so GdkPixbuf uses only its built-in loaders (PNG, JPEG) and skips external ones.
-# Bundle GdkPixbuf loaders (.so files) and loaders.cache.
-# The CI step "Collect GdkPixbuf runtime dependencies" generates these under
-# pyinstaller/linux/loaders/ using gdk-pixbuf-query-loaders.
-# The runtime hook (pyi_rth_gdkpixbuf, built into PyInstaller) rewrites
-# @executable_path -> sys._MEIPASS in the cache and sets GDK_PIXBUF_MODULE_FILE.
-import glob as _pixglob
-
-_loaders_src = os.path.join(root_dir, 'pyinstaller', 'linux', 'loaders')
+# GdkPixbuf loaders: do NOT bundle a loaders.cache or external loader .so files.
+# On Ubuntu 24.04 the PNG and JPEG loaders are compiled directly into
+# libgdk-pixbuf-2.0.so (there is no libpixbufloader-png.so on disk). A
+# loaders.cache generated from the system loaders directory therefore lists only
+# the *external* formats (svg, tiff, bmp, …) and contains NO png/jpeg entry.
+# Bundling such a cache and pointing GDK_PIXBUF_MODULE_FILE at it disables the
+# built-in loaders, so the app aborts with SIGABRT the moment GTK loads any PNG
+# (e.g. its image-missing.png icon fallback) — which is exactly what broke the
+# build-on-ubuntu smoke test.
+#
+# With no cache bundled, PyInstaller's built-in gdk-pixbuf hook points
+# GDK_PIXBUF_MODULE_FILE at a nonexistent path and GdkPixbuf falls back to its
+# built-in PNG/JPEG loaders, which is all the GUI needs.
 _pixbuf_loaders_datas = []
 _pixbuf_binaries = []
-
-if os.path.isdir(_loaders_src):
-    for _so in _pixglob.glob(os.path.join(_loaders_src, '*.so')):
-        _pixbuf_loaders_datas.append((_so, os.path.join('lib', 'gdk-pixbuf', 'loaders')))
-    _raw_cache = os.path.join(_loaders_src, 'loaders.cache')
-    if os.path.isfile(_raw_cache):
-        with open(_raw_cache, 'rb') as _f:
-            _cache_data = _f.read()
-        # Rewrite absolute loader paths to @executable_path/lib/gdk-pixbuf/loaders.
-        # The cache was generated with system paths (e.g. /usr/lib/.../loaders).
-        # We must replace whatever path prefix is in the cache, not _loaders_src.
-        # Extract the prefix from the first quoted path in the cache.
-        import re as _re
-        _prefix_match = _re.search(rb'"\s*(/[^"]+/loaders)', _cache_data)
-        if _prefix_match:
-            _sys_loaders_path = _prefix_match.group(1)
-            _cache_data = _cache_data.replace(
-                _sys_loaders_path, b'@executable_path/lib/gdk-pixbuf/loaders'
-            )
-            print(f'[spec] Rewrote loaders.cache prefix: {_sys_loaders_path.decode()}')
-        else:
-            print('[spec] WARNING: could not find loader path prefix in loaders.cache')
-        _cache_out = os.path.join(root_dir, 'build', 'loaders.cache')
-        os.makedirs(os.path.dirname(_cache_out), exist_ok=True)
-        with open(_cache_out, 'wb') as _f:
-            _f.write(_cache_data)
-        _pixbuf_loaders_datas.append((_cache_out, os.path.join('lib', 'gdk-pixbuf')))
-        print(f'[spec] Bundling loaders.cache + {len(_pixbuf_loaders_datas)-1} loader .so files')
-    else:
-        print(f'[spec] WARNING: loaders.cache not found in {_loaders_src}')
-else:
-    print(f'[spec] WARNING: loaders dir not found: {_loaders_src}')
 
 # Do NOT explicitly bundle libpng16/libjpeg: they are system libs already linked into
 # the system libgdk_pixbuf-2.0.so.0. Bundling them in _MEIPASS causes two copies of
