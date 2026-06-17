@@ -27,3 +27,7 @@ __pycache__
 /helpers/.ipynb_checkpoints/
 /venv
 /AUTHORS
+
+# pytest coverage data
+.coverage
+TRIAGE.md

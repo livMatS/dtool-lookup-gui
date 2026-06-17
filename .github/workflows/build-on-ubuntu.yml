@@ -33,6 +33,8 @@ jobs:
         sudo apt-get install -y \
           libgirepository1.0-dev \
           libgirepository-2.0-dev \
+          gir1.2-girepository-2.0 \
+          gir1.2-girepository-3.0 \
           libcairo2-dev \
           pkg-config \
           python3-dev \
@@ -40,6 +42,8 @@ jobs:
           gir1.2-gtksource-4 \
           libgtksourceview-4-0 \
           libgdk-pixbuf2.0-bin \
+          adwaita-icon-theme \
+          hicolor-icon-theme \
           xvfb
 
     - name: Log system package info
@@ -84,30 +88,11 @@ jobs:
         glib-compile-schemas .
       working-directory: dtool_lookup_gui
 
-    - name: Collect GdkPixbuf runtime dependencies
-      # PyInstaller's GI hook can't introspect GdkPixbuf in the headless build env
-      # (GIRepository namespace unavailable), so it skips generating loaders.cache
-      # and collecting loader .so files. The runtime hook still sets
-      # GDK_PIXBUF_MODULE_FILE to _MEIPASS/lib/gdk-pixbuf/loaders.cache, which
-      # doesn't exist → gdk-pixbuf falls back to built-in formats (PNG, JPEG).
-      # BUT this only works if the system loaders.cache is NOT overridden.
-      # We generate the loaders.cache here under xvfb (so GI introspection works)
-      # and stage it where the spec and runtime hook expect it.
-      run: |
-        python3 pyinstaller/linux/collect_pixbuf_deps.py
-        mkdir -p pyinstaller/linux/loaders
-        LOADERS_DIR=$(find /usr/lib -path "*/gdk-pixbuf-2.0/*/loaders" -type d 2>/dev/null | head -1)
-        QUERY_LOADERS=$(find /usr -name "gdk-pixbuf-query-loaders*" -executable -type f 2>/dev/null | head -1)
-        echo "LOADERS_DIR=$LOADERS_DIR  QUERY_LOADERS=$QUERY_LOADERS"
-        if [ -n "$LOADERS_DIR" ] && [ -n "$QUERY_LOADERS" ]; then
-          cp "$LOADERS_DIR"/*.so pyinstaller/linux/loaders/ 2>/dev/null || true
-          GDK_PIXBUF_MODULEDIR="$LOADERS_DIR" \
-            "$QUERY_LOADERS" "$LOADERS_DIR"/*.so > pyinstaller/linux/loaders/loaders.cache
-          echo "loaders.cache generated:"
-          cat pyinstaller/linux/loaders/loaders.cache
-        else
-          echo "WARNING: could not generate loaders.cache"
-        fi
+    # NOTE: GdkPixbuf loaders + loaders.cache, icons and themes are bundled by
+    # PyInstaller's GI hook. That hook introspects gi modules in a subprocess via the
+    # GIRepository typelib (gir1.2-girepository-2.0/-3.0, installed above). Without it
+    # the hook silently fails for every gi module and the frozen app cannot decode PNG
+    # (SIGABRT on GTK's image-missing.png fallback). See the spec for details.
 
     - name: Package executable with pyinstaller
       # Run under xvfb so PyInstaller's GI hook child processes can initialise
@@ -121,6 +106,20 @@ jobs:
           pyinstaller -y ./pyinstaller/linux/dtool-lookup-gui-linux-one-file.spec 2>&1 | tee pyinstaller.log
         mv dist/dtool-lookup-gui dtool-lookup-gui
         chmod +x dtool-lookup-gui
+
+    - name: Verify GI hook succeeded
+      # Guard against silent regression: if the GIRepository typelib goes missing the
+      # GI hook fails for every gi module and the bundle becomes defunct (see NOTE).
+      # GioWin32 is a Windows-only namespace and never introspects on Linux; ignore it.
+      run: |
+        failures=$(grep "Failed to query GI module" pyinstaller.log | grep -v "GioWin32" || true)
+        if [ -n "$failures" ]; then
+          echo "ERROR: PyInstaller GI hook failed to introspect gi modules:"
+          echo "$failures"
+          echo "Ensure gir1.2-girepository-2.0/-3.0 are installed."
+          exit 1
+        fi
+        echo "OK: GI hook introspected all required gi modules."
 
     - name: Smoke-test bundle (headless)
       # Verify the bundle starts without immediately crashing.
