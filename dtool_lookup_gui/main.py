@@ -373,8 +373,13 @@ class Application(Gtk.Application):
 
         async def retrieve_token(auth_url, username, password):
             try:
+                # Force the authenticating client: renew-token is an explicit
+                # credentials-based authentication, so it must not depend on the
+                # configured disable_authentication (which would otherwise yield an
+                # UnauthenticatedLookupClient that has no authenticate()).
                 async with ConfigurationBasedLookupClient(
-                        auth_url=auth_url, username=username, password=password) as lookup_client:
+                        auth_url=auth_url, username=username, password=password,
+                        disable_authentication=False) as lookup_client:
                     token = await lookup_client.authenticate()
             except InvalidURL as e:
                 logger.error(
