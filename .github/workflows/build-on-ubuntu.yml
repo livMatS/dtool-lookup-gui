@@ -110,14 +110,16 @@ jobs:
     - name: Verify GI hook succeeded
       # Guard against silent regression: if the GIRepository typelib goes missing the
       # GI hook fails for every gi module and the bundle becomes defunct (see NOTE).
+      # GioWin32 is a Windows-only namespace and never introspects on Linux; ignore it.
       run: |
-        if grep -q "Failed to query GI module" pyinstaller.log; then
+        failures=$(grep "Failed to query GI module" pyinstaller.log | grep -v "GioWin32" || true)
+        if [ -n "$failures" ]; then
           echo "ERROR: PyInstaller GI hook failed to introspect gi modules:"
-          grep "Failed to query GI module" pyinstaller.log
+          echo "$failures"
           echo "Ensure gir1.2-girepository-2.0/-3.0 are installed."
           exit 1
         fi
-        echo "OK: GI hook introspected all gi modules."
+        echo "OK: GI hook introspected all required gi modules."
 
     - name: Smoke-test bundle (headless)
       # Verify the bundle starts without immediately crashing.
