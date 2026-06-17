@@ -120,12 +120,17 @@ jobs:
         ldd "$LGP" 2>&1 | grep -iE "png|jpeg|=> not found"
         echo "--- does bundled libgdk-pixbuf carry built-in png/jpeg? (symbols) ---"
         nm -D "$LGP" 2>/dev/null | grep -iE "png|jpeg" | head -5
-        echo "--- run dir-mode app headless (GDK_PIXBUF_MODULE_FILE forced nonexistent) ---"
+        echo "===== decisive experiment: vary bundled libpng + module file ====="
         APPDIR=$(dirname "$(find dist -follow -type f -name dtool-lookup-gui | head -1)")
-        echo "APPDIR=$APPDIR"
-        GDK_PIXBUF_MODULE_FILE=/nonexistent xvfb-run --auto-servernum timeout 8 "$APPDIR/dtool-lookup-gui" >/tmp/dirrun.log 2>&1
-        echo "dir-run forced-nonexistent EXIT=$?"
-        grep -ivE "dbind-WARNING|AT-SPI" /tmp/dirrun.log | tail -8
+        SYSCACHE=$(find /usr/lib -name loaders.cache -path "*gdk-pixbuf*" 2>/dev/null | head -1)
+        echo "APPDIR=$APPDIR  SYSCACHE=$SYSCACHE"
+        runit() { GDK_PIXBUF_MODULE_FILE="$1" xvfb-run --auto-servernum timeout 8 "$APPDIR/dtool-lookup-gui" >/tmp/r.log 2>&1; local e=$?; echo "  EXIT=$e (124/0=PASS)"; grep -iE "bail out|could not load a pixbuf" /tmp/r.log | head -1; }
+        echo "V1 as-built, module=/nonexistent:";        runit /nonexistent
+        echo "V2 as-built, module=SYSCACHE:";            runit "$SYSCACHE"
+        rm -f "$APPDIR"/_internal/libpng16.so.16 "$APPDIR"/libpng16.so.16 2>/dev/null
+        echo "(removed bundled libpng16)"
+        echo "V3 no-bundled-libpng, module=/nonexistent:"; runit /nonexistent
+        echo "V4 no-bundled-libpng, module=SYSCACHE:";      runit "$SYSCACHE"
         true
 
     - name: Smoke-test bundle (headless)
