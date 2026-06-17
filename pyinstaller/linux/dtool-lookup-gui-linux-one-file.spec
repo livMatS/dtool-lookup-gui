@@ -170,6 +170,20 @@ a = Analysis(
     cipher=block_cipher,
     noarchive=False,
 )
+
+# Drop libpng/libjpeg that PyInstaller auto-collected as dependencies of
+# libgdk-pixbuf. Keeping them in _MEIPASS loads a SECOND copy of libpng16
+# (one from the bundle via LD_LIBRARY_PATH, one pulled by the system
+# libgdk-pixbuf via its RPATH); the duplicate corrupts libpng's global state so
+# every PNG decode aborts with a GTK assertion (SIGABRT) — e.g. when GTK renders
+# its image-missing.png fallback for a missing icon. The bundled libgdk-pixbuf
+# then resolves these against the single system copy instead.
+_excluded_lib_prefixes = ('libpng16', 'libpng', 'libjpeg')
+a.binaries = [
+    b for b in a.binaries
+    if not os.path.basename(b[0]).startswith(_excluded_lib_prefixes)
+]
+
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
 exe = EXE(
