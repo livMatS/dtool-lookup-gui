@@ -1,12 +1,21 @@
 version: "2"
 
 build:
-  os: "ubuntu-22.04"
+  # 24.04 provides libgirepository-2.0-dev, which PyGObject >=3.56 needs and which
+  # does not exist on 22.04. Matches the Ubuntu version used by the CI workflows.
+  os: "ubuntu-24.04"
   tools:
     python: "3.10"
   apt_packages:
-    - "gir1.2-gtksource-4"
+    # Build deps for PyGObject (>=3.56 needs girepository-2.0, not just 1.0) and pycairo.
     - "libgirepository1.0-dev"
+    - "libgirepository-2.0-dev"
+    - "libcairo2-dev"
+    - "pkg-config"
+    # Typelibs needed when autodoc imports the GTK-based modules.
+    - "gir1.2-gtk-3.0"
+    - "gir1.2-gtksource-4"
+    - "libgtksourceview-4-0"
 
 python:
   install:
