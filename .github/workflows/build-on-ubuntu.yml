@@ -88,13 +88,11 @@ jobs:
         glib-compile-schemas .
       working-directory: dtool_lookup_gui
 
-    # NOTE: we intentionally do NOT generate/stage a GdkPixbuf loaders.cache.
-    # On Ubuntu 24.04 PNG/JPEG are built into libgdk-pixbuf-2.0.so; a cache built
-    # from the system loaders dir omits them, and bundling it disables the built-in
-    # loaders. With no cache bundled, GdkPixbuf uses its built-in PNG/JPEG loaders,
-    # which is all the GUI needs. The Smoke-test SIGABRT was actually caused by a
-    # missing icon theme (GTK's image-missing fallback path), not broken PNG decode;
-    # the spec now bundles the Adwaita + hicolor icon themes. See the spec for details.
+    # NOTE: GdkPixbuf loaders + loaders.cache, icons and themes are bundled by
+    # PyInstaller's GI hook. That hook introspects gi modules in a subprocess via the
+    # GIRepository typelib (gir1.2-girepository-2.0/-3.0, installed above). Without it
+    # the hook silently fails for every gi module and the frozen app cannot decode PNG
+    # (SIGABRT on GTK's image-missing.png fallback). See the spec for details.
 
     - name: Package executable with pyinstaller
       # Run under xvfb so PyInstaller's GI hook child processes can initialise
@@ -109,14 +107,17 @@ jobs:
         mv dist/dtool-lookup-gui dtool-lookup-gui
         chmod +x dtool-lookup-gui
 
-    - name: DIAG GI-hook + png self-report (temporary)
+    - name: Verify GI hook succeeded
+      # Guard against silent regression: if the GIRepository typelib goes missing the
+      # GI hook fails for every gi module and the bundle becomes defunct (see NOTE).
       run: |
-        set +e
-        echo "===== GI hook failures in build log (expect 0 now) ====="
-        grep -c "Failed to query GI module" pyinstaller.log
-        echo "===== frozen app png self-report ====="
-        xvfb-run --auto-servernum env DTOOL_GUI_DIAG=1 ./dtool-lookup-gui 2>&1 | grep -aE "DIAG (GDK_PIXBUF_MODULE_FILE=|cache exists|FORMATS|SNIFF)"
-        true
+        if grep -q "Failed to query GI module" pyinstaller.log; then
+          echo "ERROR: PyInstaller GI hook failed to introspect gi modules:"
+          grep "Failed to query GI module" pyinstaller.log
+          echo "Ensure gir1.2-girepository-2.0/-3.0 are installed."
+          exit 1
+        fi
+        echo "OK: GI hook introspected all gi modules."
 
     - name: Smoke-test bundle (headless)
       # Verify the bundle starts without immediately crashing.
