@@ -104,23 +104,28 @@ jobs:
         mv dist/dtool-lookup-gui dtool-lookup-gui
         chmod +x dtool-lookup-gui
 
-    - name: DIAG GdkPixbuf in bundle (temporary)
+    - name: DIAG dir-mode bundle inspect (temporary)
+      env:
+        GI_TYPELIB_PATH: /usr/lib/x86_64-linux-gnu/girepository-1.0
+        GDK_BACKEND: x11
       run: |
         set +e
-        echo "===== run once to crash & leave _MEI (SIGABRT skips atexit cleanup) ====="
-        GDK_PIXBUF_MODULE_FILE=/nonexistent xvfb-run --auto-servernum timeout 8 ./dtool-lookup-gui >/tmp/diag.log 2>&1
-        echo "EXIT=$?"
-        MEI=$(ls -dt /tmp/_MEI* 2>/dev/null | head -1)
-        echo "MEI=$MEI"
-        echo "--- bundled libgdk-pixbuf / libpng / libjpeg / loaders ---"
-        find "$MEI" \( -iname "*gdk*pixbuf*" -o -iname "libpng*" -o -iname "libjpeg*" -o -ipath "*pixbuf*loaders*" \) 2>/dev/null
-        LGP=$(find "$MEI" -iname "libgdk*pixbuf*.so*" 2>/dev/null | head -1)
-        echo "--- ldd of bundled libgdk-pixbuf ($LGP) ---"
-        ldd "$LGP" 2>&1 | grep -iE "png|jpeg|not found"
-        echo "--- which libpng GTK actually pulls (LD_DEBUG) ---"
-        GDK_PIXBUF_MODULE_FILE=/nonexistent LD_DEBUG=libs xvfb-run --auto-servernum timeout 6 ./dtool-lookup-gui 2>/tmp/lddbg.log >/dev/null
-        grep -iE "libpng16.*(trying|found|calling)|libgdk_pixbuf.*found" /tmp/lddbg.log | head -8
-        echo "--- crash output ---"; grep -ivE "dbind-WARNING|AT-SPI" /tmp/diag.log | tail -8
+        echo "===== build dir-mode bundle (stays on disk, inspectable) ====="
+        xvfb-run --auto-servernum pyinstaller -y pyinstaller/linux/dtool-lookup-gui-linux.spec >/tmp/dirbuild.log 2>&1
+        echo "dir build EXIT=$?"; tail -3 /tmp/dirbuild.log
+        echo "--- libgdk-pixbuf / libpng / libjpeg / pixbuf loaders bundled in dist ---"
+        find dist -follow \( -iname "*gdk*pixbuf*" -o -iname "libpng*" -o -iname "libjpeg*" -o -ipath "*pixbuf*loaders*" \) 2>/dev/null | head -50
+        LGP=$(find dist -follow -iname "libgdk*pixbuf-2*.so*" 2>/dev/null | head -1)
+        echo "--- ldd bundled libgdk-pixbuf ($LGP) ---"
+        ldd "$LGP" 2>&1 | grep -iE "png|jpeg|=> not found"
+        echo "--- does bundled libgdk-pixbuf carry built-in png/jpeg? (symbols) ---"
+        nm -D "$LGP" 2>/dev/null | grep -iE "png|jpeg" | head -5
+        echo "--- run dir-mode app headless (GDK_PIXBUF_MODULE_FILE forced nonexistent) ---"
+        APPDIR=$(dirname "$(find dist -follow -type f -name dtool-lookup-gui | head -1)")
+        echo "APPDIR=$APPDIR"
+        GDK_PIXBUF_MODULE_FILE=/nonexistent xvfb-run --auto-servernum timeout 8 "$APPDIR/dtool-lookup-gui" >/tmp/dirrun.log 2>&1
+        echo "dir-run forced-nonexistent EXIT=$?"
+        grep -ivE "dbind-WARNING|AT-SPI" /tmp/dirrun.log | tail -8
         true
 
     - name: Smoke-test bundle (headless)
