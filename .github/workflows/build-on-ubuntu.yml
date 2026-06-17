@@ -111,11 +111,13 @@ jobs:
       run: |
         set +e
         SYS_CACHE=/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders.cache
-        echo "===== A) frozen app self-report (mapped glib/gdk-pixbuf + versions) ====="
-        xvfb-run --auto-servernum env DTOOL_GUI_DIAG=1 ./dtool-lookup-gui 2>&1 | grep -a DIAG
-        echo "===== system reference: glib + libgdk_pixbuf package versions ====="
-        dpkg -l 'libglib2.0-0*' 'libgdk-pixbuf-2.0-0' 2>/dev/null | grep -E '^ii' | awk '{print $2, $3}'
-        ls -l /usr/lib/x86_64-linux-gnu/libglib-2.0.so.0
+        SYS_CACHE=/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders.cache
+        echo "===== A) default (rthook nonexistent cache) ====="
+        xvfb-run --auto-servernum env DTOOL_GUI_DIAG=1 ./dtool-lookup-gui 2>&1 | grep -aE "SNIFF|FORMATS|MODULE_FILE="
+        echo "===== B) GDK_PIXBUF_MODULE_FILE unset ====="
+        xvfb-run --auto-servernum env DTOOL_GUI_DIAG=1 DTOOL_GUI_DIAG_CACHE=UNSET ./dtool-lookup-gui 2>&1 | grep -aE "SNIFF|FORMATS|MODULE_FILE="
+        echo "===== C) GDK_PIXBUF_MODULE_FILE = system cache ====="
+        xvfb-run --auto-servernum env DTOOL_GUI_DIAG=1 DTOOL_GUI_DIAG_CACHE="$SYS_CACHE" ./dtool-lookup-gui 2>&1 | grep -aE "SNIFF|FORMATS|MODULE_FILE="
         true
 
     - name: Smoke-test bundle (headless)
