@@ -101,21 +101,24 @@ for typelib_name in REQUIRED_TYPELIBS:
             gi_typelib_datas.append((full_path, 'gi_typelibs'))
             break
 
-# GdkPixbuf loaders: do NOT bundle a loaders.cache or external loader .so files.
-# On Ubuntu 24.04 the PNG and JPEG loaders are compiled directly into
-# libgdk-pixbuf-2.0.so (there is no libpixbufloader-png.so on disk). A
-# loaders.cache generated from the system loaders directory therefore lists only
-# the *external* formats (svg, tiff, bmp, …) and contains NO png/jpeg entry.
-# Bundling such a cache and pointing GDK_PIXBUF_MODULE_FILE at it disables the
-# built-in loaders, so the app aborts with SIGABRT the moment GTK loads any PNG
-# (e.g. its image-missing.png icon fallback) — which is exactly what broke the
-# build-on-ubuntu smoke test.
+# GdkPixbuf bundling. The crash this fixes: the build-on-ubuntu smoke test aborted
+# (SIGABRT) when GTK rendered its built-in image-missing.png fallback, because the
+# bundle MIXED the *system* libgdk-pixbuf with the *bundled* GLib/libpng stack —
+# PyInstaller bundles libpng/glib (link-time deps of cairo/PIL/etc.) but MISSES
+# libgdk-pixbuf-2.0.so itself (it is dlopen'd via the gi typelib at runtime, and
+# PyInstaller's GdkPixbuf hook is skipped because GIRepository introspection is
+# unavailable in the headless build env). The system libgdk-pixbuf then ran against
+# mismatched bundled libs and its loaders failed to register ("pixbuf loaders could
+# not be found").
 #
-# With no cache bundled, PyInstaller's built-in gdk-pixbuf hook points
-# GDK_PIXBUF_MODULE_FILE at a nonexistent path and GdkPixbuf falls back to its
-# built-in PNG/JPEG loaders, which is all the GUI needs.
+# Fix: bundle libgdk-pixbuf-2.0.so explicitly so the app uses the bundled copy,
+# consistent with the rest of the bundled stack. PNG/JPEG are compiled into
+# libgdk-pixbuf-2.0.so on Ubuntu 24.04, so its built-in loaders suffice and no
+# external loader .so / loaders.cache is needed (PyInstaller's gdk-pixbuf rthook
+# points GDK_PIXBUF_MODULE_FILE at a nonexistent path → built-in loaders are used).
 _pixbuf_loaders_datas = []
-_pixbuf_binaries = []
+_pixbuf_binaries = [(_so, '.') for _so in glob('/usr/lib/*/libgdk_pixbuf-2.0.so*')]
+print(f'[spec] bundling libgdk-pixbuf: {[p for p, _ in _pixbuf_binaries]}')
 
 # Do NOT explicitly bundle libpng16/libjpeg: they are system libs already linked into
 # the system libgdk_pixbuf-2.0.so.0. Bundling them in _MEIPASS causes two copies of
@@ -170,20 +173,6 @@ a = Analysis(
     cipher=block_cipher,
     noarchive=False,
 )
-
-# Drop libpng/libjpeg that PyInstaller auto-collected as dependencies of
-# libgdk-pixbuf. Keeping them in _MEIPASS loads a SECOND copy of libpng16
-# (one from the bundle via LD_LIBRARY_PATH, one pulled by the system
-# libgdk-pixbuf via its RPATH); the duplicate corrupts libpng's global state so
-# every PNG decode aborts with a GTK assertion (SIGABRT) — e.g. when GTK renders
-# its image-missing.png fallback for a missing icon. The bundled libgdk-pixbuf
-# then resolves these against the single system copy instead.
-_excluded_lib_prefixes = ('libpng16', 'libpng', 'libjpeg')
-a.binaries = [
-    b for b in a.binaries
-    if not os.path.basename(b[0]).startswith(_excluded_lib_prefixes)
-]
-
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
 exe = EXE(
