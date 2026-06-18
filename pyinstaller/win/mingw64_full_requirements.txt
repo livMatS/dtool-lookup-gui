@@ -104,7 +104,7 @@ pathspec==0.12.1
     # via yamllint
 propcache==0.3.0
     # via yarl
-pyasn1==0.6.1
+pyasn1==0.6.3
     # via
     #   -r pyinstaller/mingw64_requirements.in
     #   pysmb
