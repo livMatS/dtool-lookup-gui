@@ -53,8 +53,18 @@ jobs:
             libgtksourceview-4-0
 
       - name: Install app
+        # Editable install so coverage measures the same dtool_lookup_gui copy
+        # the tests import. A non-editable install drops the package into
+        # site-packages; tests then execute that copy while coverage reports the
+        # in-tree copy, yielding a misleading 0% report on the published pages.
         run: |
-            pip install .[test]
+            pip install -e .[test]
+
+      # Editable installs skip the custom build backend that compiles the GLib
+      # schema, so compile it explicitly (otherwise importing the app fails).
+      - name: Compile GLib schemas
+        run: glib-compile-schemas .
+        working-directory: dtool_lookup_gui
 
         # run in virtual X server, see https://github.com/pygobject/pygobject-travis-ci-docker-examples
       - name: Test with pytest
