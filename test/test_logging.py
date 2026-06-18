@@ -25,11 +25,9 @@
 
 The GTK buffer log handlers are exercised against real Gtk.TextBuffer / Label /
 InfoBar widgets (no window required). Covered are the handlers actually wired up
-in the app (appending text buffer, single-message info bar) plus the working
-prepending text-buffer handler, the max_lines validation, and the emit error
-path. The Gtk*EntryBufferHandler classes are unused in the app and currently
-broken (Gtk.EntryBuffer.set_text arity), so their emit paths are not asserted
-here.
+in the app (appending text buffer, single-message info bar) plus the
+prepending text-buffer handler, the entry-buffer handlers, the max_lines
+validation, and the emit error path.
 """
 import logging
 from unittest.mock import MagicMock
@@ -159,9 +157,42 @@ def test_infobar_handler_sets_label_and_reveals():
 
 
 # ===========================================================================
-# Entry-buffer handler construction (emit path is broken and unused)
+# Entry-buffer handlers
 # ===========================================================================
 
 def test_entry_buffer_handler_construction_uses_default_max_lines():
     handler = L.AppendingGtkEntryBufferHandler(entry_buffer=Gtk.EntryBuffer())
     assert handler.max_lines == L.DEFAULT_ENTRY_MAX_LINES
+
+
+def test_appending_entry_buffer_keeps_latest_message():
+    buf = Gtk.EntryBuffer()
+    handler = L.AppendingGtkEntryBufferHandler(entry_buffer=buf, max_lines=3)
+    for i in range(5):
+        handler.emit(_record(f"entry{i}"))
+    text = buf.get_text()
+    assert "entry4" in text
+    assert len(text.splitlines()) <= 3
+
+
+def test_appending_entry_buffer_shortens_multiline_message():
+    buf = Gtk.EntryBuffer()
+    handler = L.AppendingGtkEntryBufferHandler(entry_buffer=buf, max_lines=2)
+    handler.emit(_record("a\nb\nc\nd\ne"))
+    assert "..." in buf.get_text()
+
+
+def test_single_message_entry_buffer_stores_only_last_message():
+    buf = Gtk.EntryBuffer()
+    handler = L.SingleMessageGtkEntryBufferHandler(entry_buffer=buf, max_lines=5)
+    handler.emit(_record("first"))
+    handler.emit(_record("second"))
+    assert buf.get_text() == "second"
+
+
+def test_single_message_entry_buffer_shortens_multiline_message():
+    buf = Gtk.EntryBuffer()
+    handler = L.SingleMessageGtkEntryBufferHandler(entry_buffer=buf, max_lines=2)
+    handler.emit(_record("a\nb\nc\nd\ne"))
+    # The middle is elided with an ellipsis marker.
+    assert "..." in buf.get_text()
