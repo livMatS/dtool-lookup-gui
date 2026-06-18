@@ -216,8 +216,8 @@ class AppendingGtkEntryBufferHandler(GtkEntryBufferHandler):
         if len(msg.splitlines()) > self._max_lines:
             new_text = "\n".join([
                 *msg.splitlines()[:self._max_lines//2],
-                '...'
-                * msg.splitlines()[self._max_lines//2+1:]
+                '...',
+                *msg.splitlines()[self._max_lines//2+1:]
             ])
         else: # crop older messages if too long
             original_text = self._buffer.get_text()
@@ -227,7 +227,7 @@ class AppendingGtkEntryBufferHandler(GtkEntryBufferHandler):
                 lines_to_remove = len(new_text.splitlines()) - self._max_lines
                 new_text = "\n".join(new_text.splitlines()[lines_to_remove:])
 
-        self._buffer.set_text(new_text)
+        self._buffer.set_text(new_text, -1)
 
 
 class SingleMessageGtkEntryBufferHandler(GtkEntryBufferHandler):
@@ -238,12 +238,12 @@ class SingleMessageGtkEntryBufferHandler(GtkEntryBufferHandler):
         if len(msg.splitlines()) > self._max_lines:
             new_text = "\n".join([
                 *msg.splitlines()[:self._max_lines//2],
-                '...'
-                * msg.splitlines()[self._max_lines//2+1:]
+                '...',
+                *msg.splitlines()[self._max_lines//2+1:]
             ])
         else:
             new_text = msg
-        self._buffer.set_text(new_text)
+        self._buffer.set_text(new_text, -1)
 
 
 class SingleMessageGtkLabelHandler(GtkLabelHandler):

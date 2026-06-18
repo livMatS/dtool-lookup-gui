@@ -137,7 +137,11 @@ class GraphLayout:
 
     def _compute_spring_energy_and_forces(self, pos):
         nb_vertices = self.graph.nb_vertices
-        if nb_vertices <= 1:
+        # With no edges there are no spring forces; bail out before building the
+        # neighbor list. An empty edge list would otherwise become a float NumPy
+        # array and fail when used to index positions (raised on graphs whose
+        # datasets have no dependencies).
+        if nb_vertices <= 1 or self.graph.nb_edges == 0:
             return 0, np.zeros_like(pos)
 
         # Neighbor list (edge list)
