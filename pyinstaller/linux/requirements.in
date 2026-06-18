@@ -7,7 +7,7 @@ dtool-smb
 aiohttp
 pyyaml
 ruamel.yaml
-PyGObject>=3.50
+PyGObject>=3.56.3
 numpy>=1.26.0
 scipy>=1.11
 jwt
