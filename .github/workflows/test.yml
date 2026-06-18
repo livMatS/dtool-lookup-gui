@@ -55,8 +55,10 @@ jobs:
           pip list
 
       - name: Install app
+        # Editable install so coverage measures the same dtool_lookup_gui copy
+        # the tests import (a non-editable install reports 0% -- see coverage.yml).
         run: |
-          pip install .[test]
+          pip install -e .[test]
 
       # dtool-cli 0.7.1 uses pkg_resources which was removed in Python 3.12.
       # Patch the installed cli.py with an importlib.metadata shim.
