@@ -154,14 +154,14 @@ jobs:
         fi
 
     - name: Upload build artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: dtool-lookup-gui-macos
         path: dtool-lookup-gui-macos.tar
         if-no-files-found: error
 
     - name: Upload release artifact
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: dtool-lookup-gui-macos-release
         path: dtool-lookup-gui-${{ steps.fix_version.outputs.version }}-macos.dmg
