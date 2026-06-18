@@ -254,6 +254,13 @@ and perform an editable install with
 
    pip install -e .
 
+To also pull in the dependencies needed for running the test suite, install the
+``test`` extra instead:
+
+.. code:: bash
+
+   pip install -e .[test]
+
 Also run
 
 .. code:: bash
@@ -285,7 +292,16 @@ username and a password. To do this, click on the "Burger" symbol and select
 Pinned requirements
 ^^^^^^^^^^^^^^^^^^^
 
-``requirements.in`` contains unpinned dependencies. ``requirements.txt`` with pinned versions has been auto-generated with
+The runtime and test dependencies are declared, unpinned, in ``pyproject.toml``
+(under ``[project] dependencies`` and the ``test`` optional-dependency group). A
+plain ``pip install -e .[test]`` resolves them freshly and is what you want for
+development.
+
+Pinned dependency sets only exist for the packaged binary builds, one per target
+platform under ``pyinstaller/linux``, ``pyinstaller/macos`` and ``pyinstaller/win``.
+In each of those directories ``requirements.in`` lists the unpinned inputs and
+``requirements.txt`` holds the fully pinned versions, regenerated with
+`pip-tools <https://github.com/jazzband/pip-tools>`_:
 
 .. code:: bash
 
@@ -313,7 +329,32 @@ within Glade's preferences dialog.
 Running unit tests
 ^^^^^^^^^^^^^^^^^^
 
-Running the unit tests requires `pytest` and `pytest-asyncio`. Then, run all tests from repository root with `pytest`.
+The test dependencies (``pytest``, ``pytest-asyncio``, ``pytest-cov``,
+``pytest-xdist`` and the ``dtool-s3``/``dtool-smb`` plugins) come with the
+``test`` extra:
+
+.. code:: bash
+
+   pip install -e .[test]
+
+Make sure the GSettings schema has been compiled first (``glib-compile-schemas .``
+from within ``dtool_lookup_gui``, see Installation_ above) — otherwise the app
+cannot be imported and collection fails. Then run all tests from the repository
+root with
+
+.. code:: bash
+
+   pytest
+
+The tests drive a GTK application, so a display is required. On a headless
+machine, wrap the call in a virtual framebuffer:
+
+.. code:: bash
+
+   xvfb-run --auto-servernum pytest
+
+The suite mocks ``dtool_lookup_api`` entirely (see ``test/conftest.py``), so no
+running lookup server is needed.
 
 Funding
 -------
