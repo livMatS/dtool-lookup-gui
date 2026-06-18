@@ -151,6 +151,40 @@ def test_smb_all_discovers_configured_servers():
     assert "myserver" in names
 
 
+def test_s3_property_round_trips_via_config(tmp_path):
+    s3 = S3BaseURIModel("roundtrip-bucket")
+    s3.endpoint = "https://s3.example.com:9000"
+    # Reading back goes through dtool config, keyed by uri_name.
+    assert s3.endpoint == "https://s3.example.com:9000"
+    assert S3BaseURIModel("roundtrip-bucket").endpoint == \
+        "https://s3.example.com:9000"
+
+
+def test_smb_property_round_trips_via_config():
+    smb = SMBBaseURIModel("roundtrip-server")
+    smb.server_name = "fileserver"
+    smb.username = "alice"
+    assert smb.server_name == "fileserver"
+    assert smb.username == "alice"
+
+
+def test_config_model_unset_property_defaults_to_empty():
+    # An unset config value yields '' rather than raising.
+    assert S3BaseURIModel("never-configured").access_key_id == ""
+
+
+def test_config_model_unknown_property_raises_attribute_error():
+    with pytest.raises(AttributeError):
+        S3BaseURIModel("bucket").not_a_real_property
+
+
+def test_config_model_unknown_private_attribute_raises_attribute_error():
+    # Regression guard: missing private attributes must raise AttributeError,
+    # not crash on a non-existent super().__getattr__.
+    with pytest.raises(AttributeError):
+        S3BaseURIModel("bucket")._does_not_exist
+
+
 # --- LookupBaseURIModel ----------------------------------------------------
 
 def test_lookup_base_uri_parses_uri():

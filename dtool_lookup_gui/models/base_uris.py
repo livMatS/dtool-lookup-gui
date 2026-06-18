@@ -173,9 +173,11 @@ class ConfigBaseURIModel(BaseURI):
 
     def __getattr__(self, name):
         if name.startswith('_'):
-            return super().__getattr__(name)
+            # object has no __getattr__; a missing private/dunder attribute is
+            # a genuine AttributeError, not a config lookup.
+            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
         try:
-            return get_config_value(self._properties[name].format(self._name), default='')
+            return get_config_value(self._properties[name].format(self.uri_name), default='')
         except KeyError:
             raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'" )
 
@@ -183,7 +185,7 @@ class ConfigBaseURIModel(BaseURI):
         if name.startswith('_'):
             return super().__setattr__(name, value)
         try:
-            return write_config_value_to_file(self._properties[name].format(self._name), value)
+            return write_config_value_to_file(self._properties[name].format(self.uri_name), value)
         except KeyError:
             raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'" )
 
