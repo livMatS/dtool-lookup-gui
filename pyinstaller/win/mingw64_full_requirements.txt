@@ -78,7 +78,7 @@ dtoolcore==3.18.3
     #   dtool-s3
     #   dtool-smb
     #   dtool-symlink
-frozenlist==1.5.0
+frozenlist==1.8.0
     # via
     #   aiohttp
     #   aiosignal
