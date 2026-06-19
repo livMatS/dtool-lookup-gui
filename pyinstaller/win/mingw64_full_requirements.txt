@@ -50,7 +50,7 @@ dtool-config==0.4.1
     # via -r pyinstaller/mingw64_requirements.in
 dtool-create==0.23.4
     # via -r pyinstaller/mingw64_requirements.in
-dtool-http==0.5.1
+dtool-http==0.5.2
     # via
     #   -r pyinstaller/mingw64_requirements.in
     #   dtool-create
