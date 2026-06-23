@@ -48,6 +48,9 @@ test = [
     "pytest-asyncio",
     "pytest-xdist",
 ]
+solidipes = [
+    "solidipes"
+]
 
 [project.urls]
 documentation = "https://dtool-lookup-gui.readthedocs.io"
@@ -70,3 +73,7 @@ write_to = "dtool_lookup_gui/version.py"
 [tool.pytest.ini_options]
 asyncio_default_fixture_loop_scope = "function"
 addopts = "--cov=dtool_lookup_gui --cov-report html"
+
+
+[project.entry-points."dtool.gui"]
+"SolidipesPlugin" = "dtool_lookup_gui.plugins.solidipes:SolidipesPlugin"
