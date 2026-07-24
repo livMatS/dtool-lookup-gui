@@ -101,7 +101,7 @@ propcache==0.2.0
     # via
     #   aiohttp
     #   yarl
-pyasn1==0.6.1
+pyasn1==0.6.4
     # via pysmb
 pycparser==2.22
     # via cffi
